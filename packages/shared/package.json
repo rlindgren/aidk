@@ -1,0 +1,69 @@
+{
+  "name": "aidk-shared",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "src/index.ts",
+  "files": ["dist"],
+  "exports": {
+    ".": "./src/index.ts",
+    "./blocks": "./src/blocks.ts",
+    "./block-types": "./src/block-types.ts",
+    "./tools": "./src/tools.ts",
+    "./input": "./src/input.ts",
+    "./messages": "./src/messages.ts",
+    "./streaming": "./src/streaming.ts",
+    "./models": "./src/models.ts",
+    "./timeline": "./src/timeline.ts"
+  },
+  "publishConfig": {
+    "access": "public",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./blocks": {
+        "types": "./dist/blocks.d.ts",
+        "import": "./dist/blocks.js"
+      },
+      "./block-types": {
+        "types": "./dist/block-types.d.ts",
+        "import": "./dist/block-types.js"
+      },
+      "./tools": {
+        "types": "./dist/tools.d.ts",
+        "import": "./dist/tools.js"
+      },
+      "./input": {
+        "types": "./dist/input.d.ts",
+        "import": "./dist/input.js"
+      },
+      "./messages": {
+        "types": "./dist/messages.d.ts",
+        "import": "./dist/messages.js"
+      },
+      "./streaming": {
+        "types": "./dist/streaming.d.ts",
+        "import": "./dist/streaming.js"
+      },
+      "./models": {
+        "types": "./dist/models.d.ts",
+        "import": "./dist/models.js"
+      },
+      "./timeline": {
+        "types": "./dist/timeline.d.ts",
+        "import": "./dist/timeline.js"
+      }
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "test": "jest",
+    "typecheck": "tsc -p tsconfig.build.json --noEmit",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "pnpm build",
+    "dev": "tsc --watch"
+  }
+}

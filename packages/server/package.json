@@ -1,0 +1,23 @@
+{
+  "name": "aidk-server",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "src/index.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "test": "jest",
+    "typecheck": "tsc -p tsconfig.build.json --noEmit",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "pnpm build",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "aidk": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts"
+  }
+}

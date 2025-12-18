@@ -1,0 +1,2461 @@
+import type { Middleware, MiddlewarePipeline, Procedure, HandleFactory } from 'aidk-kernel';
+import { Logger } from 'aidk-kernel';
+import { Context } from '../context';
+import type { EngineContext } from '../types';
+import { createEngineProcedure, applyRegistryMiddleware, isProcedure } from '../procedure';
+import { getWaitHandles } from '../jsx/components/fork-spawn-helpers';
+import { EventEmitter } from 'node:events';
+import { randomUUID } from 'node:crypto';
+import type { ModelInstance, ModelInput, ModelOutput } from '../model/model';
+import { type ToolClass, isToolClass } from '../tool/tool';
+import { toolRegistry, modelRegistry } from '../registry';
+import type { Component, TickState, ComponentDefinition, ComponentClass, ComponentFactory, EngineError, RecoveryAction } from '../component/component';
+import type { COMInput, COMOutput, EngineInput, COMTimelineEntry, COMSection } from '../com/types';
+import { ContextObjectModel, type COMTickStatus } from '../com/object-model';
+import type { ToolExecutionOptions } from '../types';
+import type { ExecutableTool } from '../tool/tool';
+import type { AgentToolCall, AgentToolResult,  StreamChunk } from 'aidk-shared';
+import { ToolExecutor } from './tool-executor';
+import { type JSX, createElement, Fragment, isElement, ensureElement } from '../jsx/jsx-runtime';
+import { StructureRenderer } from '../structure-renderer/structure-renderer';
+import { MarkdownRenderer, XMLRenderer } from '../renderers';
+import { type EngineStreamEvent } from './engine-events';
+import { type EngineResponse } from './engine-response';
+import { ComponentHookRegistry, type ComponentHookName, type ComponentSelector, type ComponentHookMiddleware, getComponentTags, getComponentName } from '../component/component-hooks';
+import { ModelHookRegistry, type ModelHookName, type ModelHookMiddleware } from '../model/model-hooks';
+import { ToolHookRegistry, type ToolHookName, type ToolHookMiddleware } from '../tool/tool-hooks';
+import { EngineHookRegistry, type EngineHookName, type EngineHookMiddleware } from './engine-hooks';
+import { EngineLifecycleHookRegistry, type EngineLifecycleHookName, type EngineLifecycleHook, type EngineLifecycleHookArgs } from './engine-lifecycle-hooks';
+import { MCPClient, MCPService, type MCPServerConfig, normalizeMCPConfig, type MCPConfig} from '../mcp';
+import { ChannelService, type ChannelServiceConfig } from '../channels/service';
+import { ExecutionGraph } from './execution-graph';
+import { type ExecutionHandle, type ExecutionState, type ExecutionMetrics, type ExecutionTreeNode, type EngineMetrics, type ForkInheritanceOptions, generatePid, type SignalType, type SignalEvent } from './execution-types';
+import { createEngineHandleFactory, ExecutionHandleImpl } from './execution-handle';
+import type { CompiledStructure } from '../compiler/types';
+import type { Renderer } from '../renderers/base';
+import { isAbortError, mergeAbortSignals } from '../utils/abort-utils';
+import { CompileJSXService } from '../utils/compile-jsx-service';
+import type { FiberCompiler, isFragment } from '../compiler';
+
+// Module-level logger for Engine
+const log = Logger.for('Engine');
+
+// Helper to check for async iterable
+function isAsyncIterable(obj: any): obj is AsyncIterable<any> {
+  return obj != null && typeof obj[Symbol.asyncIterator] === 'function';
+}
+
+export interface EngineLifecycleHooks {
+  // Hooks can be Procedures or async functions (will be wrapped in Procedures)
+  onInit?: (EngineLifecycleHook<'onInit'> | ((engine: Engine) => Promise<void> | void))[];
+  onShutdown?: (EngineLifecycleHook<'onShutdown'> | ((engine: Engine, reason?: string) => Promise<void> | void))[];
+  onDestroy?: (EngineLifecycleHook<'onDestroy'> | ((engine: Engine) => Promise<void> | void))[];
+  onExecutionStart?: (EngineLifecycleHook<'onExecutionStart'> | ((input: EngineInput, agent?: ComponentDefinition, handle?: ExecutionHandle) => Promise<void> | void))[];
+  onExecutionEnd?: (EngineLifecycleHook<'onExecutionEnd'> | ((output: COMInput, handle?: ExecutionHandle) => Promise<void> | void))[];
+  onExecutionError?: (EngineLifecycleHook<'onExecutionError'> | ((error: Error, handle?: ExecutionHandle) => Promise<void> | void))[];
+  onTickStart?: (EngineLifecycleHook<'onTickStart'> | ((tick: number, state: TickState, handle?: ExecutionHandle) => Promise<void> | void))[];
+  onTickEnd?: (EngineLifecycleHook<'onTickEnd'> | ((tick: number, state: TickState, response: EngineResponse, handle?: ExecutionHandle) => Promise<void> | void))[];
+  onAfterCompile?: (EngineLifecycleHook<'onAfterCompile'> | ((compiled: CompiledStructure, state: TickState, handle?: ExecutionHandle) => Promise<void> | void))[];
+}
+
+export interface EngineConfig {
+  id?: string; // Optional, auto-generated if not provided (required for telemetry)
+  name?: string;
+  tools?: (ToolClass | ExecutableTool | string)[];
+  model?: ModelInstance | string;
+  maxTicks?: number;
+  mcpServers?: Record<string, MCPServerConfig | MCPConfig>;
+  channels?: ChannelServiceConfig | ChannelService;
+  root?: JSX.Element | ComponentDefinition;
+  components?: ComponentDefinition[];
+  persistExecutionState?: (state: ExecutionState) => Promise<void>;
+  loadExecutionState?: (pid: string) => Promise<ExecutionState | undefined>;
+  lifecycleHooks?: EngineLifecycleHooks;
+  hooks?: EngineStaticHooks;
+  /**
+   * Tool execution configuration.
+   * Controls parallel execution, timeouts, and error handling.
+   */
+  toolExecution?: ToolExecutionOptions;
+  renderers?: {
+    [key: string]: Renderer;
+  }
+}
+
+export interface EngineStaticHooks {
+  execute?: EngineHookMiddleware<'execute'>[];
+  stream?: EngineHookMiddleware<'stream'>[];
+  component?: {
+    [K in ComponentHookName]?: ComponentHookMiddleware<K>[];
+  };
+  model?: {
+    [K in ModelHookName]?: ModelHookMiddleware<K>[];
+  };
+  tool?: {
+    [K in ToolHookName]?: ToolHookMiddleware<K>[];
+  };
+  lifecycle?: EngineLifecycleHooks;
+}
+
+/**
+ * Engine - Built with Procedures
+ * 
+ * Key features:
+ * - execute() and stream() are Procedures (via factory)
+ * - Full type safety with .use(), .withHandle(), etc.
+ * - Maintains feature parity with Engine v1
+ */
+export class Engine extends EventEmitter {
+  // Static middleware support (like ProcedureBase, but we can't extend both EventEmitter and ProcedureBase)
+  static middleware?: {
+    execute?: Middleware<[EngineInput, ComponentDefinition?]>[];
+    stream?: Middleware<[EngineInput, ComponentDefinition?]>[];
+    'stream:chunk'?: Middleware<[any]>[];
+  };
+  public readonly id: string; // Required for telemetry span attributes
+  private toolExecutor: ToolExecutor;
+  private componentHooksRegistry: ComponentHookRegistry;
+  private modelHooksRegistry: ModelHookRegistry;
+  private toolHooksRegistry: ToolHookRegistry;
+  private engineHooksRegistry: EngineHookRegistry;
+  private lifecycleHooksRegistry: EngineLifecycleHookRegistry;
+  private unregisteredLifecycleHooks: WeakSet<EngineLifecycleHook<EngineLifecycleHookName>> = new WeakSet();
+  private mcpClient?: MCPClient;
+  private mcpService?: MCPService;
+  private _channelService?: ChannelService;
+  private executionGraph: ExecutionGraph;
+  private wrappedModelCache = new WeakMap<ModelInstance, ModelInstance>();
+  private renderers: {
+    [key: string]: Renderer;
+  };
+  // Internal Procedure implementations
+  // For execute: handler returns Promise<COMInput>, so TOutput = COMInput
+  // For stream: handler returns AsyncIterable<EngineStreamEvent>, so TOutput = AsyncIterable<EngineStreamEvent>
+  // Initialized in constructor via buildProcedures()
+  private executeProc!: Procedure<((input: EngineInput, agent?: ComponentDefinition) => Promise<COMInput>)>;
+  private streamProc!: Procedure<((input: EngineInput, agent?: ComponentDefinition) => AsyncIterable<EngineStreamEvent>)>;
+
+  get model(): ModelInstance | undefined {
+    return this.getWrappedModel();
+  }
+
+  get tools(): (ToolClass | ExecutableTool)[] {
+    return this.getTools();
+  }
+
+  get hooks() {
+    return Object.assign(
+      this.engineHooks, {
+      components: this.componentHooks,
+      models: this.modelHooks,
+      tools: this.toolHooks,
+    }
+    );
+  }
+
+  get componentHooks(): ComponentHookRegistry {
+    return this.componentHooksRegistry;
+  }
+
+  get modelHooks(): ModelHookRegistry {
+    return this.modelHooksRegistry;
+  }
+
+  get toolHooks(): ToolHookRegistry {
+    return this.toolHooksRegistry;
+  }
+
+  get engineHooks(): EngineHookRegistry {
+    return this.engineHooksRegistry;
+  }
+
+  get lifecycleHooks(): EngineLifecycleHookRegistry {
+    return this.lifecycleHooksRegistry;
+  }
+
+  /**
+   * Get the channel service for external access (e.g., HTTP/SSE bridges).
+   * Returns undefined if channels are not configured.
+   */
+  get channels(): ChannelService | undefined {
+    return this._channelService;
+  }
+
+  // Expose Procedures directly
+  // Procedures always return Promise<TOutput>
+  // For execute: TOutput = COMInput, so await returns COMInput
+  // For stream: TOutput = AsyncIterable<EngineStreamEvent>, so await returns AsyncIterable<EngineStreamEvent>
+  get execute() {
+    // Read hooks dynamically at call time to pick up hooks registered after construction
+    const dynamicExecuteMw = this.engineHooks.getMiddleware('execute');
+    if (dynamicExecuteMw.length > 0) {
+      // Apply dynamic hooks on top of base procedure
+      // Cast to correct type - hooks are typed as Middleware<any[]> but work with our procedure signature
+      return this.executeProc.use(...(normalizeEngineMiddleware(dynamicExecuteMw) as any));
+    }
+    return this.executeProc;
+  }
+
+  get stream() {
+    // Read hooks dynamically at call time to pick up hooks registered after construction
+    const dynamicStreamMw = this.engineHooks.getMiddleware('stream');
+    if (dynamicStreamMw.length > 0) {
+      // Apply dynamic hooks on top of base procedure
+      // Cast to correct type - hooks are typed as Middleware<any[]> but work with our procedure signature
+      return this.streamProc.use(...(normalizeEngineMiddleware(dynamicStreamMw) as any));
+    }
+    return this.streamProc;
+  }
+
+  constructor(private config: EngineConfig = {}) {
+    super();
+    // Generate ID if not provided (required for telemetry span attributes)
+    this.id = config.id || config.name || `engine_${randomUUID()}`;
+    this.componentHooksRegistry = new ComponentHookRegistry();
+    this.modelHooksRegistry = new ModelHookRegistry();
+    this.toolHooksRegistry = new ToolHookRegistry();
+    this.engineHooksRegistry = new EngineHookRegistry();
+    this.lifecycleHooksRegistry = new EngineLifecycleHookRegistry();
+    this.toolExecutor = new ToolExecutor(this.toolHooksRegistry);
+    this.executionGraph = new ExecutionGraph();
+    this.renderers = {
+      markdown: new MarkdownRenderer(),
+      xml: new XMLRenderer(),
+      ...(config.renderers || {}),
+    };
+
+    // Initialize MCP client/service if MCP servers are configured
+    if (config.mcpServers && Object.keys(config.mcpServers).length > 0) {
+      this.mcpClient = new MCPClient();
+      this.mcpService = new MCPService(this.mcpClient);
+      this.connectMCPServers();
+    }
+
+    // Initialize channel service if configured
+    if (config.channels) {
+      if (config.channels instanceof ChannelService) {
+        this._channelService = config.channels;
+      } else {
+        this._channelService = new ChannelService(config.channels);
+      }
+    }
+
+    // Auto-register static hooks from Engine subclass
+    this.registerStaticHooks();
+
+    // Register lifecycle hooks from config
+    if (config.lifecycleHooks) {
+      this.registerLifecycleHooks(this, config.lifecycleHooks);
+    }
+
+    // Register static lifecycle hooks
+    this.registerStaticLifecycleHooks();
+
+    // Create procedures with only static middleware initially
+    // Dynamic hooks (from registries) are read dynamically in the getters
+    this.buildProcedures({ includeDynamic: false });
+
+    // Call onInit hooks after initialization
+    // Note: We don't await this - onInit hooks are side effects and shouldn't block construction
+    // If hooks need to complete before engine is used, they should handle that internally
+    this.callLifecycleHooks('onInit', [this]).catch(error => {
+      log.error({ err: error }, 'Error in onInit hooks');
+    });
+  }
+
+  addRenderer(name: string, renderer: Renderer): void {
+    this.renderers[name] = renderer;
+  }
+
+  getRenderers(): { [key: string]: Renderer } {
+    return this.renderers;
+  }
+
+  /**
+   * Internal execute implementation (called by Procedure)
+   */
+  private async executeInternal(
+    input: EngineInput,
+    agent?: ComponentDefinition
+  ): Promise<COMInput> {
+    // Get handle from context (created by handle factory)
+    const ctx = Context.get();
+    if (!ctx?.executionHandle) {
+      throw new Error('Execution handle not found in context');
+    }
+    const handle = ctx.executionHandle as ExecutionHandleImpl;
+
+    // Create the actual execute implementation
+    const executeImpl = async (): Promise<COMInput> => {
+      const rootElement = this.getRootElement(agent);
+      const iterator = this.iterateTicks(input, rootElement, false, handle, this._channelService);
+      let lastComInput: COMInput | undefined;
+
+      for await (const event of iterator) {
+        if (event.type === 'error') {
+          throw event.error;
+        }
+        if (event.type === 'agent_end') {
+          lastComInput = event.output;
+        }
+      }
+
+      // Check if handle was cancelled during execution (race condition check)
+      if (handle.status === 'cancelled') {
+        const error = new Error('Execution cancelled');
+        error.name = 'AbortError';
+        throw error;
+      }
+
+      const result = lastComInput || { timeline: [], sections: {}, tools: [], ephemeral: [], metadata: {}, system: [] };
+      handle.complete(result);
+      const graphToUpdate = handle.executionGraphForStatus || this.executionGraph;
+      if (graphToUpdate && typeof graphToUpdate.updateStatus === 'function') {
+        graphToUpdate.updateStatus(handle.pid, 'completed');
+      } else {
+        this.executionGraph.updateStatus(handle.pid, 'completed');
+      }
+      return result;
+    };
+
+    // Middleware is now applied at procedure creation time, not here
+    // Just execute the implementation directly
+    return executeImpl();
+  }
+
+  /**
+   * Internal stream implementation (called by Procedure)
+   */
+  private async *streamInternal(
+    input: EngineInput,
+    agent?: ComponentDefinition
+  ): AsyncIterable<EngineStreamEvent> {
+    // Get handle from context (created by handle factory)
+    const ctx = Context.get();
+    if (!ctx?.executionHandle) {
+      throw new Error('Execution handle not found in context');
+    }
+    const handle = ctx.executionHandle as ExecutionHandleImpl;
+
+    const streamImpl = async function* (this: Engine): AsyncIterable<EngineStreamEvent> {
+      const rootElement = this.getRootElement(agent);
+      const iterator = this.iterateTicks(input, rootElement, true, handle, this._channelService);
+
+      // Set iterator on handle so handle.stream() works
+      handle.setStreamIterator(iterator);
+
+      try {
+        for await (const event of iterator) {
+          yield event;
+        }
+      } catch (error: any) {
+        const isAbort = isAbortError(error);
+        if (isAbort) {
+          handle.cancel();
+          this.executionGraph.updateStatus(handle.pid, 'cancelled', error);
+        } else {
+          handle.fail(error instanceof Error ? error : new Error(String(error)));
+          this.executionGraph.updateStatus(handle.pid, 'failed', error);
+        }
+        throw error;
+      } finally {
+        handle.complete({ timeline: [], sections: {}, tools: [], ephemeral: [], metadata: {}, system: [] });
+        const graphToUpdate = handle.executionGraphForStatus || this.executionGraph;
+        if (graphToUpdate && typeof graphToUpdate.updateStatus === 'function') {
+          graphToUpdate.updateStatus(handle.pid, 'completed');
+        } else {
+          this.executionGraph.updateStatus(handle.pid, 'completed');
+        }
+      }
+    };
+
+    // Middleware is now applied at procedure creation time, not here
+    // Just execute the implementation directly
+    yield* streamImpl.call(this);
+  }
+
+
+  private async connectMCPServers(): Promise<void> {
+    if (!this.config.mcpServers || !this.mcpService) {
+      return;
+    }
+    const clientPromises = Object.entries(this.config.mcpServers).map(async ([serverName, config]) => {
+      try {
+        const mcpConfig = normalizeMCPConfig(serverName, config);
+        await this.mcpService!.connect(mcpConfig);
+      } catch (error) {
+        log.error({ err: error, serverName }, 'Failed to initialize MCP server');
+        // Continue with other servers even if one fails
+      }
+    });
+
+    await Promise.all(clientPromises);
+  }
+
+  /**
+   * Get current execution PID from EngineContext (if available)
+   */
+  private getCurrentExecutionPid(): string | undefined {
+    const ctx = Context.tryGet();
+    if (ctx?.executionHandle && 'pid' in ctx.executionHandle) {
+      return (ctx.executionHandle as ExecutionHandle).pid;
+    }
+    return undefined;
+  }
+
+  /**
+   * Get the tool executor for the engine.
+   * @returns ToolExecutor
+   */
+  getToolExecutor(): ToolExecutor {
+    return this.toolExecutor;
+  }
+
+  /**
+   * Register graceful shutdown hook for the engine.
+   * Hooks are called when shutdown() is called, before aborting executions.
+   * 
+   * @param handler Shutdown hook function
+   * @returns Unsubscribe function
+   */
+  /**
+   * Register onShutdown lifecycle hook.
+   * @param handler Async function that receives the engine instance and optional reason
+   * @returns Unregister function
+   */
+  onShutdown(handler: (engine: Engine, reason?: string) => Promise<void> | void): () => void {
+    const procedure = createEngineProcedure(
+      {
+        name: 'engine:onShutdown',
+        metadata: {
+          type: 'engine',
+          id: this.id,
+          operation: 'onShutdown'
+        }
+      },
+      async (engine: Engine, reason?: string) => {
+        await handler(engine, reason);
+      }
+    );
+    this.lifecycleHooksRegistry.register('onShutdown', procedure);
+    // Return unsubscribe function that marks hook as unregistered
+    return () => {
+      this.unregisteredLifecycleHooks.add(procedure);
+    };
+  }
+
+  /**
+   * Listen for signals at engine level.
+   * 
+   * @param signal Signal type to listen for
+   * @param handler Signal handler
+   * @returns Unsubscribe function
+   */
+  onSignal(signal: SignalType, handler: (event: SignalEvent) => void): () => void {
+    this.on(signal, handler);
+    return () => this.off(signal, handler);
+  }
+
+  /**
+   * Graceful shutdown of the engine.
+   * - Runs shutdown hooks
+   * - Aborts all running executions
+   * - Emits shutdown signal
+   * 
+   * @param reason Reason for shutdown
+   */
+  async shutdown(reason?: string): Promise<void> {
+    // Emit shutdown signal
+    this.emit('shutdown', {
+      type: 'shutdown',
+      source: 'engine',
+      reason,
+      timestamp: Date.now(),
+    } as SignalEvent);
+
+    // Call lifecycle hooks
+    await this.callLifecycleHooks('onShutdown', [this, reason]);
+
+    // Abort all running executions
+    const activeExecutions = this.executionGraph.getActiveExecutions();
+    for (const handle of activeExecutions) {
+      handle.cancel(reason || 'Engine shutdown');
+    }
+
+    // Wait for executions to complete cancellation
+    await Promise.all(
+      activeExecutions.map(handle =>
+        handle.waitForCompletion({ timeout: 1000 }).catch(() => {
+          // Expected - executions are being cancelled
+        })
+      )
+    );
+  }
+
+  /**
+   * Clean up resources.
+   * Call this when the engine is no longer needed.
+   */
+  destroy(): void {
+    // Call lifecycle hooks before cleanup
+    this.callLifecycleHooks('onDestroy', [this]).catch(error => {
+      log.error({ err: error }, 'Error in onDestroy hooks');
+    });
+
+    // Destroy channel service (cleans up intervals and connections)
+    if (this._channelService) {
+      this._channelService.destroy();
+    }
+
+    // Clear all executions
+    this.executionGraph.clear();
+  }
+
+  /**
+   * Register static hooks defined on Engine subclass.
+   * Called automatically in constructor.
+   */
+  private registerStaticHooks(): void {
+    const engineClass = this.constructor as typeof Engine & { hooks?: EngineStaticHooks };
+    const staticHooks = engineClass.hooks;
+
+    if (!staticHooks) {
+      return;
+    }
+
+    this.registerHooks(this, staticHooks);
+  }
+
+  /**
+   * Build execute and stream procedures with middleware.
+   * @param includeDynamic Whether to include dynamic middleware from registries
+   */
+  private buildProcedures({includeDynamic}: {includeDynamic: boolean}): void {
+    const handleFactory = createEngineHandleFactory(this.executionGraph);
+
+    // Get static middleware from class
+    const staticExecuteMw = (this.constructor as typeof Engine).middleware?.execute || [];
+    const staticStreamMw = (this.constructor as typeof Engine).middleware?.stream || [];
+
+    // Get dynamic middleware from registries if requested
+    const dynamicExecuteMw = includeDynamic ? this.engineHooks.getMiddleware('execute') : [];
+    const dynamicStreamMw = includeDynamic ? this.engineHooks.getMiddleware('stream') : [];
+
+    // Build execute procedure
+    // Cast handleFactory for compatibility - createEngineProcedure expects HandleFactory<any> (KernelContext by default)
+    const executeProcBase = createEngineProcedure(
+      {
+        name: 'engine:execute',
+        metadata: {
+          type: 'engine',
+          id: this.id,
+          operation: 'execute'
+        },
+        handleFactory: handleFactory as HandleFactory<any>,
+      },
+      async (input: EngineInput, agent?: ComponentDefinition): Promise<COMInput> => {
+        return this.executeInternal(input, agent);
+      }
+    ) as Procedure<((input: EngineInput, agent?: ComponentDefinition) => Promise<COMInput>)>;
+
+    this.executeProc = applyRegistryMiddleware(
+      executeProcBase,
+      ...normalizeEngineMiddleware(staticExecuteMw),
+      ...(includeDynamic ? normalizeEngineMiddleware(dynamicExecuteMw) : [])
+    );
+
+    // Build stream procedure
+    const streamInternalBound = this.streamInternal.bind(this);
+    // Cast handleFactory for compatibility - createEngineProcedure expects HandleFactory<any> (KernelContext by default)
+    const streamProcBase = createEngineProcedure(
+      {
+        name: 'engine:stream',
+        metadata: {
+          type: 'engine',
+          id: this.id,
+          operation: 'stream'
+        },
+        handleFactory: handleFactory as HandleFactory<any>,
+      },
+      async function* (input: EngineInput, agent?: ComponentDefinition): AsyncIterable<EngineStreamEvent> {
+        yield* streamInternalBound(input, agent);
+      }
+    ) as Procedure<((input: EngineInput, agent?: ComponentDefinition) => AsyncIterable<EngineStreamEvent>)>;
+
+    this.streamProc = applyRegistryMiddleware(
+      streamProcBase,
+      ...normalizeEngineMiddleware(staticStreamMw),
+      ...(includeDynamic ? normalizeEngineMiddleware(dynamicStreamMw) : [])
+    );
+  }
+
+  /**
+   * Register hooks from EngineStaticHooks structure.
+   * Used for both static hooks (from Engine subclass) and fork-specific hooks.
+   * 
+   * @param targetEngine - The engine to register hooks on
+   * @param hooks - The hooks structure to register
+   */
+  private registerHooks(targetEngine: Engine, hooks: EngineStaticHooks): void {
+    // Register top-level engine hooks
+    if (hooks.execute) {
+      for (const mw of hooks.execute) {
+        targetEngine.engineHooks.register('execute', mw);
+      }
+    }
+    if (hooks.stream) {
+      for (const mw of hooks.stream) {
+        targetEngine.engineHooks.register('stream', mw);
+      }
+    }
+
+    // Register component hooks
+    if (hooks.component) {
+      for (const [hookName, middleware] of Object.entries(hooks.component)) {
+        if (middleware && Array.isArray(middleware)) {
+          for (const mw of middleware) {
+            targetEngine.componentHooks.register(hookName as ComponentHookName, mw);
+          }
+        }
+      }
+    }
+
+    // Register model hooks
+    if (hooks.model) {
+      for (const [hookName, middleware] of Object.entries(hooks.model)) {
+        if (middleware && Array.isArray(middleware)) {
+          for (const mw of middleware) {
+            targetEngine.modelHooks.register(hookName as ModelHookName, mw);
+          }
+        }
+      }
+    }
+
+    // Register tool hooks
+    if (hooks.tool) {
+      for (const [hookName, middleware] of Object.entries(hooks.tool)) {
+        if (middleware && Array.isArray(middleware)) {
+          for (const mw of middleware) {
+            targetEngine.toolHooks.register(hookName as ToolHookName, mw);
+          }
+        }
+      }
+    }
+
+    // Register lifecycle hooks
+    if (hooks.lifecycle) {
+      this.registerLifecycleHooks(targetEngine, hooks.lifecycle);
+    }
+  }
+
+  private registerLifecycleHook(targetEngine: Engine, hookName: EngineLifecycleHookName, hook: EngineLifecycleHook<EngineLifecycleHookName>): EngineLifecycleHook<EngineLifecycleHookName> {
+
+    if (isProcedure(hook)) {
+      // Hook is already a Procedure - register it directly
+      targetEngine.lifecycleHooksRegistry.register(
+        hookName as EngineLifecycleHookName,
+        hook as EngineLifecycleHook<EngineLifecycleHookName>
+      );
+
+      return hook as EngineLifecycleHook<EngineLifecycleHookName>;
+    }
+
+    // Hook is a plain function - wrap it in a Procedure with generic name and metadata
+    const procedure = createEngineProcedure(
+      {
+        name: `engine:${hookName}`,  // Generic span name
+        metadata: {
+          type: 'engine',
+          id: targetEngine.id,        // Identifier in metadata
+          operation: hookName
+        }
+      },
+      hook
+    );
+
+    targetEngine.lifecycleHooksRegistry.register(
+      hookName as EngineLifecycleHookName,
+      procedure as EngineLifecycleHook<EngineLifecycleHookName>
+    );
+
+    return procedure;
+  }
+
+  /**
+   * Register lifecycle hooks from EngineLifecycleHooks structure.
+   * Hooks in the config can be either Procedures or async functions.
+   * If they're functions, we wrap them in Procedures.
+   */
+  private registerLifecycleHooks(
+    targetEngine: Engine,
+    hooks: EngineLifecycleHooks
+  ): void {
+    for (const [hookName, hookArray] of Object.entries(hooks)) {
+      if (hookArray && Array.isArray(hookArray)) {
+        for (const hook of hookArray) {
+          this.registerLifecycleHook(targetEngine, hookName as EngineLifecycleHookName, hook as EngineLifecycleHook<EngineLifecycleHookName>);
+        }
+      }
+    }
+  }
+
+  /**
+   * Register static lifecycle hooks from Engine subclass.
+   */
+  private registerStaticLifecycleHooks(): void {
+    const engineClass = this.constructor as typeof Engine & {
+      lifecycle?: EngineLifecycleHooks;
+    };
+    const staticLifecycleHooks = engineClass.lifecycle;
+
+    if (!staticLifecycleHooks) {
+      return;
+    }
+
+    this.registerLifecycleHooks(this, staticLifecycleHooks);
+  }
+
+  /**
+   * Create a lifecycle hook.
+   * @param hookName - The name of the hook
+   * @param handler - The handler function for the hook
+   * @returns An unregister function
+   */
+  private createLifecycleHook<T extends EngineLifecycleHookName>(
+    hookName: T,
+    handler: EngineLifecycleHook<T> | ((...args: EngineLifecycleHookArgs<T>) => Promise<void> | void)
+  ): () => void {
+    const procedure = this.registerLifecycleHook(this, hookName as EngineLifecycleHookName, handler as EngineLifecycleHook<EngineLifecycleHookName>);
+    return () => this.unregisteredLifecycleHooks.add(procedure as EngineLifecycleHook<EngineLifecycleHookName>);
+  }
+
+  /**
+   * Call lifecycle hooks for a specific hook name.
+   * Hooks are Procedures - call them directly.
+   * Hooks are called sequentially and awaited.
+   */
+  private async callLifecycleHooks<T extends EngineLifecycleHookName>(
+    hookName: T,
+    args: EngineLifecycleHookArgs<T>
+  ): Promise<void> {
+    const hooks = this.lifecycleHooksRegistry.getMiddleware(hookName);
+
+    for (const hook of hooks) {
+      // Skip unregistered hooks
+      if (this.unregisteredLifecycleHooks.has(hook)) {
+        continue;
+      }
+
+      try {
+        // Hooks are Procedures - call them directly (they're callable functions)
+        await hook(...args);
+      } catch (error) {
+        log.error({ err: error, hookName }, 'Error in lifecycle hook');
+        // Don't throw - lifecycle hooks are side effects only
+      }
+    }
+  }
+
+  /**
+   * Register onInit lifecycle hook.
+   * @param handler Async function that receives the engine instance
+   * @returns Unregister function
+   */
+  onInit(handler: (engine: Engine) => Promise<void> | void): () => void {
+    return this.createLifecycleHook('onInit', handler);
+  }
+
+  /**
+   * Register onDestroy lifecycle hook.
+   * @param handler Async function that receives the engine instance
+   * @returns Unregister function
+   */
+  onDestroy(handler: (engine: Engine) => Promise<void> | void): () => void {
+    return this.createLifecycleHook('onDestroy', handler);
+  }
+
+  /**
+   * Register onExecutionStart lifecycle hook.
+   * @param handler Async function that receives input, agent, and handle
+   * @returns Unregister function
+   */
+  onExecutionStart(handler: (input: EngineInput, agent?: ComponentDefinition, handle?: ExecutionHandle) => Promise<void> | void): () => void {
+    return this.createLifecycleHook('onExecutionStart', handler);
+  }
+
+  /**
+   * Register onExecutionEnd lifecycle hook.
+   * @param handler Async function that receives output and handle
+   * @returns Unregister function
+   */
+  onExecutionEnd(handler: (output: COMInput, handle?: ExecutionHandle) => Promise<void> | void): () => void {
+    return this.createLifecycleHook('onExecutionEnd', handler);
+  }
+
+  /**
+   * Register onExecutionError lifecycle hook.
+   * @param handler Async function that receives error and handle
+   * @returns Unregister function
+   */
+  onExecutionError(handler: (error: Error, handle?: ExecutionHandle) => Promise<void> | void): () => void {
+    return this.createLifecycleHook('onExecutionError', handler);
+  }
+
+  /**
+   * Register onTickStart lifecycle hook.
+   * @param handler Async function that receives tick, state, and handle
+   * @returns Unregister function
+   */
+  onTickStart(handler: (tick: number, state: TickState, handle?: ExecutionHandle) => Promise<void> | void): () => void {
+    return this.createLifecycleHook('onTickStart', handler);
+  }
+
+  /**
+   * Register onTickEnd lifecycle hook.
+   * @param handler Async function that receives tick, state, response, and handle
+   * @returns Unregister function
+   */
+  onTickEnd(handler: (tick: number, state: TickState, response: EngineResponse, handle?: ExecutionHandle) => Promise<void> | void): () => void {
+    return this.createLifecycleHook('onTickEnd', handler);
+  }
+
+  /**
+   * Register onAfterCompile lifecycle hook.
+   * @param handler Async function that receives compiled, state, and handle
+   * @returns Unregister function
+   */
+  onAfterCompile(handler: (compiled: CompiledStructure, state: TickState, handle?: ExecutionHandle) => Promise<void> | void): () => void {
+    return this.createLifecycleHook('onAfterCompile', handler);
+  }
+
+  /**
+   * Resolves a model from COM, config, or registry.
+   * @param com Optional ContextObjectModel to get model from. If not provided, uses config.
+   */
+  private getRawModel(com?: ContextObjectModel): ModelInstance | undefined {
+    // First check COM (set by Model component)
+    if (com) {
+      const comModel = com.getModel();
+      if (comModel) {
+        if (typeof comModel === 'string') {
+          const model = modelRegistry.get(comModel);
+          if (!model) {
+            throw new Error(`Model '${comModel}' not found in registry.`);
+          }
+          return model;
+        }
+        return comModel;
+      }
+    }
+
+    // Fall back to config model
+    if (this.config.model) {
+      if (typeof this.config.model === 'string') {
+        const model = modelRegistry.get(this.config.model);
+        if (!model) {
+          throw new Error(`Model '${this.config.model}' not found in registry.`);
+        }
+        return model;
+      }
+      return this.config.model;
+    }
+
+    // No model configured
+    return undefined;
+  }
+
+  /**
+   * Gets the wrapped model with hooks applied.
+   * Wraps once and caches the result per model instance.
+   * @param com Optional ContextObjectModel to get model from.
+   */
+  private getWrappedModel(com?: ContextObjectModel): ModelInstance | undefined {
+    const rawModel = this.getRawModel(com);
+    if (!rawModel) {
+      return undefined;
+    }
+
+    // Check cache first
+    const cached = this.wrappedModelCache.get(rawModel);
+    if (cached) {
+      return cached;
+    }
+
+    // Wrap and cache
+    const wrapped = this.wrapModel(rawModel);
+    this.wrappedModelCache.set(rawModel, wrapped);
+    return wrapped;
+  }
+
+  /**
+   * Wraps model methods with hooks.
+   * Note: generate and stream are already Procedures, so we add middleware via .use()
+   */
+  private wrapModel(model: ModelInstance): ModelInstance {
+    const wrapped = Object.create(model);
+
+    // Wrap fromEngineState (not a Procedure - create one with middleware)
+    if (model.fromEngineState) {
+      const original = model.fromEngineState.bind(model);
+      const middleware = this.modelHooks.getMiddleware('fromEngineState');
+      const modelId = model.metadata?.id || 'unknown'
+      if (middleware.length > 0) {
+        wrapped.fromEngineState = applyRegistryMiddleware(
+          createEngineProcedure({
+            name: 'model:fromEngineState',
+            metadata: {
+              type: 'model',
+              id: modelId,
+              operation: 'fromEngineState'
+            }
+          }, original),
+          ...normalizeModelHookMiddleware(middleware)
+        );
+      } else {
+        wrapped.fromEngineState = original;
+      }
+    }
+
+    // Wrap generate (already a Procedure - add middleware via applyRegistryMiddleware)
+    const generateMiddleware = this.modelHooks.getMiddleware('generate');
+    if (generateMiddleware.length > 0) {
+      // model.generate is a Procedure, use type-safe helper
+      wrapped.generate = applyRegistryMiddleware(
+        model.generate as Procedure<((input: ModelInput) => Promise<ModelOutput>)>,
+        ...normalizeModelHookMiddleware(generateMiddleware)
+      );
+    } else {
+      wrapped.generate = model.generate;
+    }
+
+    // Wrap stream (already a Procedure - add middleware via applyRegistryMiddleware)
+    const streamMiddleware = this.modelHooks.getMiddleware('stream');
+    if (streamMiddleware.length > 0) {
+      // model.stream is a Procedure, use type-safe helper
+      wrapped.stream = applyRegistryMiddleware(
+        model.stream as unknown as Procedure<((input: ModelInput) => AsyncIterable<StreamChunk>)>,
+        ...normalizeModelHookMiddleware(streamMiddleware)
+      );
+    } else {
+      wrapped.stream = model.stream;
+    }
+
+    // Wrap toEngineState (not a Procedure - create one with middleware)
+    if (model.toEngineState) {
+      const original = model.toEngineState.bind(model);
+      const middleware = this.modelHooks.getMiddleware('toEngineState');
+      const modelId = model.metadata?.id || 'unknown';
+      if (middleware.length > 0) {
+        wrapped.toEngineState = applyRegistryMiddleware(
+          createEngineProcedure({
+            name: 'model:toEngineState',
+            metadata: {
+              type: 'model',
+              id: modelId,
+              operation: 'toEngineState'
+            }
+          }, original),
+          ...normalizeModelHookMiddleware(middleware)
+        );
+      } else {
+        wrapped.toEngineState = original;
+      }
+    }
+
+    return wrapped;
+  }
+
+  /**
+   * Resolves tools from the config or registry.
+   */
+  private getTools(): (ToolClass | ExecutableTool)[] {
+    if (!this.config.tools) {
+      return [];
+    }
+    return this.config.tools.map(t => {
+      if (typeof t === 'string') {
+        const tool = toolRegistry.get(t);
+        if (!tool) {
+          throw new Error(`Tool '${t}' not found in registry.`);
+        }
+        return tool;
+      }
+      return t;
+    });
+  }
+
+  /**
+   * Resolves the root element for execution.
+   * Priority:
+   * 1. Agent passed to execute/stream (highest priority)
+   * 2. Engine's default root component (from config)
+   * 3. Empty Fragment (fallback)
+   */
+  private getRootElement(agent?: JSX.Element | ComponentDefinition | ComponentDefinition[]): JSX.Element {
+    // If agent is provided, use it (overrides config root)
+    if (agent !== undefined) {
+      return ensureElement(agent);
+    }
+
+    // Fall back to Engine's default root component
+    let root = this.config.root;
+    const legacyComponents = this.config.components || [];
+
+    if (legacyComponents.length > 0) {
+      // Convert legacy components to elements
+      const children = legacyComponents.map(c => ensureElement(c));
+
+      if (root) {
+        // Merge config root with legacy components
+        root = createElement(Fragment, {}, ensureElement(root), ...children);
+      } else {
+        root = createElement(Fragment, {}, ...children);
+      }
+    }
+
+    if (!root) {
+      // No root configured - return empty Fragment
+      return createElement(Fragment, {});
+    }
+
+    // Ensure root is an Element (ensureElement always returns JSX.Element, never undefined)
+    return ensureElement(root);
+  }
+
+  /**
+   * Runs a task through the engine.
+   * Ensures context is propagated.
+   */
+  async run<T>(
+    task: (context: EngineContext) => Promise<T>,
+    options?: Partial<EngineContext>
+  ): Promise<T> {
+    const context = Context.create({
+      ...options,
+      metadata: {
+        ...options?.metadata,
+        engineName: this.config.name || 'default',
+      },
+      channels: this._channelService, // Inject channel service into context
+    });
+
+    return Context.run(context, async () => {
+      return task(Context.get());
+    });
+  }
+
+  /**
+   * Determine if a model error is recoverable.
+   */
+  private isRecoverableModelError(error: any): boolean {
+    log.debug({ err: error }, 'Checking if model error is recoverable');
+    // Network errors are usually recoverable
+    if (error.code === 'ETIMEDOUT' || error.code === 'ECONNRESET' || error.code === 'ENOTFOUND') {
+      return true;
+    }
+
+    // Rate limiting might be recoverable with backoff
+    if (error.status === 429) {
+      return true;
+    }
+
+    // Authentication errors are usually not recoverable without intervention
+    if (error.status === 401 || error.status === 403) {
+      return false;
+    }
+
+    // Default: assume recoverable for transient errors
+    return false;
+  }
+
+  /**
+   * Persist partial message from accumulated chunks.
+   */
+  private async persistPartialMessage(
+    com: ContextObjectModel,
+    chunks: unknown[],
+    handle: ExecutionHandleImpl,
+    tick: number,
+    rootElement: JSX.Element,
+    input: EngineInput,
+    previousState?: COMInput
+  ): Promise<void> {
+    if (!this.config.persistExecutionState || chunks.length === 0) {
+      return;
+    }
+
+    try {
+      // Try to extract text from chunks (model-specific)
+      let partialText = '';
+      for (const chunk of chunks) {
+        if (chunk && typeof chunk === 'object') {
+          // Check for common chunk formats
+          if ('delta' in chunk && typeof chunk.delta === 'string') {
+            partialText += chunk.delta;
+          } else if ('text' in chunk && typeof chunk.text === 'string') {
+            partialText += chunk.text;
+          } else if ('content' in chunk && Array.isArray(chunk.content)) {
+            // Try to extract text from content array
+            const content = chunk.content;
+            for (const item of content) {
+              if (item?.type === 'text' && item?.text) {
+                partialText += item.text;
+              }
+            }
+          }
+        }
+      }
+
+      // Only persist if we extracted some text
+      if (partialText.trim().length > 0) {
+        // Add partial message to COM timeline
+        com.addTimelineEntry({
+          message: {
+            role: 'assistant',
+            content: [{
+              type: 'text',
+              text: partialText,
+              semantic: {
+                type: 'preformatted',
+                preformatted: true,
+              }
+            }],
+          },
+          metadata: {
+            partial: true,
+            interrupted: true,
+            tick,
+            chunkCount: chunks.length,
+          }
+        } as any);
+
+        // Persist state with partial message
+        const currentComInput = com.toInput();
+        const state = handle.toState(rootElement as ComponentDefinition, input, tick, currentComInput);
+        await this.config.persistExecutionState(state);
+      }
+    } catch (error) {
+      log.error({ err: error }, 'Failed to persist partial message');
+      // Don't throw - abort should still proceed
+    }
+  }
+
+  /**
+   * Core tick loop - executes the agent across multiple ticks
+   * Ported from Engine v1 - maintains full feature parity
+   */
+  private async *iterateTicks(
+    input: EngineInput,
+    rootElement: JSX.Element,
+    streamModel: boolean,
+    handle: ExecutionHandleImpl,
+    channelService?: ChannelService
+  ): AsyncGenerator<EngineStreamEvent> {
+    let com: ContextObjectModel | undefined;
+    let compiler: FiberCompiler | undefined;
+    let structureRenderer: StructureRenderer | undefined;
+
+    // Setup abort signal listeners
+    let shouldAbort = false;
+    let abortListener: ((event: any) => void) | undefined;
+    let contextSignalListener: (() => void) | undefined;
+
+    // Listen to handle abort signals
+    // The event listener will catch all aborts, including:
+    // 1. Aborts from handle.cancel()
+    // 2. Aborts from handle.emitSignal('abort')
+    // 3. Aborts from controller.signal.abort() (via setCancelController listener)
+    // The listener is set up synchronously at the start of iterateTicks, so there's minimal
+    // window for missed events. If emitSignal('abort') is called before iterateTicks starts,
+    // the event will be emitted but the listener won't catch it. We check wasAbortEmitted()
+    // to catch this case, but only if the handle is still running to avoid false positives.
+    if (handle) {
+      const implHandle = handle;
+
+      // Set up the listener FIRST so we catch any abort events that fire during this setup
+      abortListener = () => { shouldAbort = true; };
+      implHandle.on('abort', abortListener);
+
+      // Check if abort was already emitted before iterateTicks started (before listeners were set up)
+      // This catches cases where emitSignal('abort') was called before iterateTicks began execution
+      // Only check if handle is still running to avoid false positives from cancelled handles
+      if (implHandle.status === 'running' && implHandle.wasAbortEmitted?.()) {
+        shouldAbort = true;
+      }
+
+      // Mark that listeners are set up (prevents _abortEmitted from being set in future emitSignal calls)
+      implHandle.markListenersSetup?.();
+    }
+
+    // Listen to abort signal from ExecutionHandle (not Context)
+    // Signal ownership: ExecutionHandle owns signal lifecycle, Context is for cross-cutting concerns only
+    const handleSignal = handle.getCancelSignal();
+    if (handleSignal) {
+      if (handleSignal.aborted) {
+        shouldAbort = true;
+      } else {
+        contextSignalListener = () => { shouldAbort = true; };
+        handleSignal.addEventListener('abort', contextSignalListener);
+      }
+    }
+
+    // Also check Context signal for external aborts (e.g., from user code)
+    // But ExecutionHandle signal takes precedence
+    const ctx = Context.tryGet();
+    if (ctx?.signal && ctx.signal !== handleSignal) {
+      if (ctx.signal.aborted) {
+        shouldAbort = true;
+      } else {
+        const externalSignalListener = () => { shouldAbort = true; };
+        ctx.signal.addEventListener('abort', externalSignalListener);
+      }
+    }
+
+    try {
+      // Call onExecutionStart hook
+      // Handle is always provided from executeInternal/streamInternal
+      await this.callLifecycleHooks('onExecutionStart', [
+        input,
+        rootElement as ComponentDefinition,
+        handle
+      ]);
+
+      let stopReason: string | undefined;
+      
+      // Create persistent COM for this execution
+      // Capture handle PID for process operations (handle may not exist yet for root execution)
+      const compileService = new CompileJSXService({
+        tools: this.getTools(),
+        mcpServers: this.config.mcpServers,
+        channels: channelService ?? this._channelService,
+        renderers: this.getRenderers(),
+        hookRegistries: {
+          components: this.componentHooksRegistry,
+          models: this.modelHooksRegistry,
+          tools: this.toolHooksRegistry,
+          engine: this.engineHooksRegistry,
+          lifecycle: this.lifecycleHooksRegistry,
+        },
+        modelGetter: (com) => this.getRawModel(com),
+        abortChecker: () => shouldAbort, // From Engine's abort signal
+        processMethods: {
+          fork: (forkInput, agent, options) => {
+            return this.fork(
+              agent || rootElement,
+              forkInput,
+              options ? {
+                parentPid: options.parentPid,
+                inherit: options.inherit,
+                engineConfig: options.engineConfig,
+              } : undefined
+            );
+          },
+          spawn: (spawnInput, agent, options) => {
+            return this.spawn(
+              agent || rootElement,
+              spawnInput,
+              options ? {
+                engineConfig: options.engineConfig,
+              } : undefined
+            );
+          },
+          signal: (pid, signal, reason) => {
+            const targetHandle = this.executionGraph.getHandle(pid);
+            if (targetHandle) {
+              targetHandle.emitSignal(signal, reason);
+            }
+          },
+          kill: (pid, reason) => {
+            const targetHandle = this.executionGraph.getHandle(pid);
+            if (targetHandle) {
+              targetHandle.cancel(reason);
+            }
+          },
+          list: () => {
+            const currentPid = handle?.pid;
+            if (currentPid) {
+              return this.executionGraph.getOutstandingForks(currentPid);
+            }
+            return this.executionGraph.getActiveExecutions();
+          },
+          get: (pid) => {
+            return this.executionGraph.getHandle(pid);
+          },
+        } as ContextObjectModel['process'],
+      });
+    
+      // Setup compilation infrastructure (replaces ~120 lines)
+      const { com, compiler, structureRenderer } = await compileService.setup(
+        input,
+        rootElement,
+        handle
+      );
+
+      yield {
+        type: 'agent_start',
+        agent_name: this.config.name || 'engine',
+        timestamp: new Date().toISOString()
+      };
+
+      // Check abort flag immediately after setup (before entering tick loop)
+      // This catches aborts that occurred during setup or before iterateTicks started
+      if (shouldAbort) {
+        const abortError = new Error('Operation aborted');
+        abortError.name = 'AbortError';
+        throw abortError;
+      }
+
+      let tick = 1;
+      const maxTicks = this.config.maxTicks || 10;
+      let lastComInput: COMInput | undefined;
+      let previousState: COMInput | undefined;
+      let currentState: COMOutput | undefined;
+      let shouldContinue = true;
+      let tickState!: TickState
+
+      try {
+        while (shouldContinue && tick <= maxTicks) {
+          // Check abort flag (set by signal listeners)
+          if (shouldAbort) {
+            // Persist state before aborting
+            await this.persistExecutionState(handle, rootElement, input, tick, previousState);
+            const abortError = new Error('Operation aborted');
+            abortError.name = 'AbortError';
+            throw abortError;
+          }
+        
+          yield {
+            type: 'tick_start',
+            tick,
+            timestamp: new Date().toISOString()
+          };
+        
+          // Compile tick using service (replaces ~200 lines)
+          let compilationResult;
+          try {
+            compilationResult = await compileService.compileTick(
+              com,
+              compiler,
+              structureRenderer,
+              rootElement,
+              tick,
+              previousState,
+              currentState,
+              stopReason,
+              shouldContinue,
+              handle
+            );
+          } catch (error: any) {
+            // Re-throw abort errors
+            if (error.name === 'AbortError') {
+              throw error;
+            }
+            // Handle other compilation errors...
+            throw error;
+          }
+        
+          const { 
+            compiled, 
+            formatted, 
+            tickControl, 
+            stopReason: compilationStopReason, 
+            tickState: compilationTickState,
+            model: compilationModel,
+            modelInput: compilationModelInput
+          } = compilationResult;
+          
+          // Set tickState so Engine can update it after model execution
+          tickState = compilationTickState;
+        
+          // Handle component-requested stop (from TickState.stop() callback)
+          if (compilationStopReason) {
+            shouldContinue = false;
+            stopReason = compilationStopReason;
+            break;
+          }
+          
+          // Handle COM control requests (requestStop takes precedence)
+          if (tickControl.status === 'aborted' || tickControl.status === 'completed') {
+            shouldContinue = false;
+            stopReason = tickControl.terminationReason;
+            break;
+          } else if (tickControl.status === 'continue' && !shouldContinue) {
+            // Component requested continue override
+            shouldContinue = true;
+          }
+        
+          // Exclude system from previousState/lastComInput (execution state management)
+          const rawComInput = com.toInput();
+          const { system: _sys1, ...previousStateWithoutSystem } = rawComInput;
+          const { system: _sys2, ...comInputWithoutSystem } = formatted;
+          previousState = previousStateWithoutSystem as COMInput;
+          lastComInput = comInputWithoutSystem as COMInput;
+        
+          // Use formatted input for model (includes system)
+          const comInput = formatted;
+
+          // 2. Model Execution
+          let response: EngineResponse;
+          try {
+            // Use model and modelInput from compilation if available, otherwise fall back to Engine's logic
+            let model: ModelInstance | undefined;
+            let modelInput: ModelInput | undefined;
+            
+            if (compilationModel && compilationModelInput) {
+              // Use model and modelInput from compilation service
+              // Note: Engine may still wrap the model with hooks, but we use the already-transformed input
+              model = this.getWrappedModel(com) || compilationModel;
+              modelInput = compilationModelInput;
+            } else {
+              // Fallback: get model and transform input (for cases where service doesn't have modelGetter)
+              model = this.getWrappedModel(com);
+              if (!model) {
+                throw new Error('No model configured. Add a <Model> component or configure model in EngineConfig.');
+              }
+
+              // Transform COMInput to Model-specific Input (opaque)
+              modelInput = model.fromEngineState
+                ? await model.fromEngineState(comInput)
+                : (comInput as unknown as ModelInput);
+            }
+            
+            if (!model) {
+              throw new Error('No model configured. Add a <Model> component or configure model in EngineConfig.');
+            }
+
+            // Check abort flag before model execution
+            if (shouldAbort) {
+              const abortError = new Error('Operation aborted');
+              abortError.name = 'AbortError';
+              throw abortError;
+            }
+
+            Context.emit('tick:model:request', { tick, input: modelInput });
+
+            // Type erasure at Engine boundary
+            let modelOutput: unknown;
+            if (streamModel && model.stream) {
+              const rawResult = model.stream(modelInput);
+              let iterable: AsyncIterable<unknown>;
+
+              if (isAsyncIterable(rawResult)) {
+                iterable = rawResult;
+              } else {
+                const resolved = await rawResult;
+                if (isAsyncIterable(resolved)) {
+                  iterable = resolved;
+                } else {
+                  iterable = {
+                    async *[Symbol.asyncIterator]() {
+                      yield resolved;
+                    }
+                  };
+                }
+              }
+
+              // Accumulate chunks (opaque at Engine boundary)
+              const chunks: unknown[] = [];
+              for await (const chunk of iterable) {
+                // Check abort between chunks
+                if (shouldAbort) {
+                  // Persist partial message before aborting
+                  await this.persistPartialMessage(com, chunks, handle!, tick, rootElement, input, previousState);
+                  const abortError = new Error('Operation aborted during model streaming');
+                  abortError.name = 'AbortError';
+                  throw abortError;
+                }
+
+                yield {
+                  type: 'model_chunk',
+                  chunk, // Opaque chunk
+                  tick
+                };
+                chunks.push(chunk);
+              }
+
+              // Cast at boundary: model.processStream gets type-safe chunks in implementation
+              if (!model.processStream) {
+                throw new Error('Model does not implement processStream for streaming responses.');
+              }
+              modelOutput = await model.processStream(chunks as StreamChunk[]);
+            } else {
+              const result = await model.generate(modelInput);
+              if (isAsyncIterable(result)) {
+                throw new Error('Model generate method returned an async iterable.');
+              }
+              modelOutput = result;
+            }
+
+            // 3. Transform Model Output to Engine Response
+            if (!model.toEngineState) {
+              throw new Error('Model must implement toEngineState to convert outputs.');
+            }
+            response = await model.toEngineState(modelOutput as ModelOutput);
+
+            // Check abort flag after model execution
+            if (shouldAbort) {
+              const abortError = new Error('Operation aborted');
+              abortError.name = 'AbortError';
+              throw abortError;
+            }
+          } catch (error: any) {
+            // Check if this is an abort error - don't try to recover from abort
+            const isAbort = isAbortError(error);
+            if (isAbort) {
+              // Persist state before rethrowing abort error
+              await this.persistExecutionState(handle, rootElement, input, tick, previousState);
+              throw error;
+            }
+
+            // Handle model execution errors - allow components to recover
+            const errorState: TickState = {
+              ...tickState,
+              stop: tickState.stop,
+              error: {
+                error: error instanceof Error ? error : new Error(String(error)),
+                phase: 'model_execution',
+                recoverable: this.isRecoverableModelError(error),
+                context: {
+                  tick,
+                  model: this.getRawModel(com)?.metadata.id || 'unknown',
+                }
+              }
+            };
+
+            const recovery = await compiler.notifyError(errorState);
+            if (recovery?.continue) {
+              // Apply recovery modifications if any
+              if (recovery.modifications) {
+                await recovery.modifications(com);
+              }
+              // Add recovery message if provided
+              if (recovery.recoveryMessage) {
+                com.addTimelineEntry({
+                  kind: 'message',
+                  message: {
+                    role: 'event',
+                    content: [{ type: 'system_event', event: 'error_recovery', source: 'error_recovery', data: { recoveryMessage: recovery.recoveryMessage } }]
+                  },
+                  tags: ['error_recovery']
+                });
+              }
+              // Create a minimal response to continue
+              response = {
+                shouldStop: false,
+                newTimelineEntries: [],
+              };
+            } else {
+              // No recovery - rethrow error
+              throw error;
+            }
+          }
+
+          Context.emit('tick:model:response', { tick, response });
+
+          // 3a. Apply State Updates from Response
+          if (response.updatedSections) {
+            for (const section of response.updatedSections) {
+              com.addSection(section);
+            }
+          }
+
+          // 4. Tool Execution & Evaluation
+          // Start with any already-executed tool results from provider/adapter
+          let toolResults: AgentToolResult[] = response.executedToolResults || [];
+          
+          // Yield events for already-executed tools (from provider/adapter)
+          for (const result of toolResults) {
+            yield {
+              type: 'tool_result',
+              result,
+              tick
+            };
+          }
+          
+          // Execute any pending tool calls (not already executed by provider/adapter)
+          if (response.toolCalls && response.toolCalls.length > 0) {
+            // Check abort flag before tool execution
+            if (shouldAbort) {
+              const abortError = new Error('Operation aborted');
+              abortError.name = 'AbortError';
+              throw abortError;
+            }
+
+            try {
+              // Use ToolExecutor service for robust execution
+              const configTools = this.getTools();
+              
+              // Merge tool execution options: EngineInput > EngineConfig > defaults
+              const toolExecOptions: ToolExecutionOptions = {
+                parallel: true,  // Default: parallel execution
+                maxConcurrent: 10,
+                defaultTimeoutMs: 30000,
+                continueOnError: true,
+                ...this.config.toolExecution,
+                ...input.toolExecution,
+              };
+              
+              const engineResults = await this.toolExecutor.executeToolCalls(
+                response.toolCalls,
+                com,
+                toolExecOptions.parallel ?? true,
+                configTools
+              );
+              
+              // Mark engine-executed results and merge
+              toolResults = [
+                ...toolResults,
+                ...engineResults.map(r => ({ ...r, executed_by: 'engine' as const }))
+              ];
+
+              // Check abort flag after tool execution
+              if (shouldAbort) {
+                const abortError = new Error('Operation aborted');
+                abortError.name = 'AbortError';
+                throw abortError;
+              }
+            } catch (error: any) {
+              // Check if this is an abort error
+              const isAbort = isAbortError(error);
+              if (isAbort) {
+                // Persist state before rethrowing abort error
+                await this.persistExecutionState(handle, rootElement, input, tick, previousState);
+                throw error;
+              }
+              // Handle tool execution errors - allow components to recover
+              const errorState: TickState = {
+                ...tickState,
+                stop: tickState.stop,
+                error: {
+                  error: error instanceof Error ? error : new Error(String(error)),
+                  phase: 'tool_execution',
+                  recoverable: true,
+                  context: {
+                    toolCalls: response.toolCalls,
+                  }
+                }
+              };
+
+              const recovery = await compiler.notifyError(errorState);
+              if (recovery?.continue) {
+                // Apply recovery modifications if any
+                if (recovery.modifications) {
+                  await recovery.modifications(com);
+                }
+                // Add recovery message if provided
+                if (recovery.recoveryMessage) {
+                  com.addTimelineEntry({
+                    kind: 'message',
+                    message: {
+                      role: 'event',
+                      content: [{ type: 'system_event', event: 'error_recovery', source: 'error_recovery', data: { recoveryMessage: recovery.recoveryMessage } }]
+                    },
+                    tags: ['error_recovery']
+                  });
+                }
+                // Continue with only the already-executed results
+              } else {
+                // No recovery - rethrow error
+                throw error;
+              }
+            }
+
+            // Yield events for pending tool calls and their results
+            for (const call of response.toolCalls) {
+              yield {
+                type: 'tool_call',
+                call: { id: call.id, name: call.name, input: call.input },
+                tick
+              };
+            }
+            // Yield only the engine-executed results (already yielded provider/adapter results above)
+            for (const result of toolResults.filter(r => r.executed_by === 'engine')) {
+              yield {
+                type: 'tool_result',
+                result,
+                tick
+              };
+            }
+          }
+
+          // Build COMOutput from response and tool execution
+          const toolResultEntries: COMTimelineEntry[] = toolResults.length > 0 ? [{
+            kind: 'message' as const,
+            message: {
+              role: 'tool' as const,
+              content: toolResults.map(r => ({
+                id: r.id,
+                type: 'tool_result' as const,
+                tool_use_id: r.tool_use_id,
+                name: r.name,
+                content: (r.content || []).map((block: any) => ({
+                  ...block,
+                  semantic: { type: 'preformatted' as const, preformatted: true }
+                })),
+                metadata: r.metadata,
+                executed_by: r.executed_by || 'engine',
+                is_error: !r.success,
+                semantic: { type: 'preformatted' as const, preformatted: true }
+              }))
+            },
+            tags: ['tool_output'],
+          }] : [];
+
+          // Update currentState with model output + tool results (the delta from this tick)
+          // This is what gets passed to the agent as state.currentState
+          currentState = {
+            timeline: [
+              ...(response.newTimelineEntries || []),
+              ...toolResultEntries,
+            ],
+            toolCalls: response.toolCalls,
+            toolResults: toolResults,
+          };
+
+          // Automatically add model outputs to COM
+          if (response.newTimelineEntries && response.newTimelineEntries.length > 0) {
+            for (const entry of response.newTimelineEntries) {
+              const wrappedEntry = {
+                ...entry,
+                message: {
+                  ...entry.message,
+                  content: entry.message.content.map(block => ({
+                    ...block,
+                    semantic: { type: 'preformatted' as const, preformatted: true }
+                  }))
+                }
+              };
+              com.addTimelineEntry(wrappedEntry);
+            }
+          }
+
+          // Add tool results as tool message with tool_result blocks
+          // AI SDK and other providers expect role: 'tool' for tool results
+          if (toolResults && toolResults.length > 0) {
+            const resultMessage = {
+              role: 'tool' as const,
+              content: toolResults.map(r => ({
+                type: 'tool_result' as const,
+                tool_use_id: r.tool_use_id,
+                name: r.name,
+                content: (r.content || []).map((block: any) => ({
+                  ...block,
+                  semantic: { type: 'preformatted' as const, preformatted: true }
+                })),
+                is_error: !r.success,
+                semantic: { type: 'preformatted' as const, preformatted: true }
+              }))
+            };
+            com.addTimelineEntry({
+              kind: 'message',
+              message: resultMessage,
+              tags: ['tool_output']
+            });
+          }
+
+          // Update tickState with currentState and stopReason
+          tickState.currentState = currentState;
+          tickState.stopReason = response.stopReason;
+
+          // Note: We don't set shouldContinue here based on model stop reason.
+          // Control requests will be resolved AFTER onTickEnd/notifyTickEnd
+          // This allows components to call requestContinue() in onTickEnd to override model stop reasons.
+
+          yield {
+            type: 'tick_end',
+            tick,
+            response,
+            timestamp: new Date().toISOString()
+          };
+
+          // Call onTickEnd hook
+          // Handle is always provided from executeInternal/streamInternal
+          await this.callLifecycleHooks('onTickEnd', [
+            tick,
+            tickState,
+            response,
+            handle
+          ]);
+
+          // onTickEnd is called AFTER model execution
+          if (shouldAbort) {
+            const abortError = new Error('Operation aborted');
+            abortError.name = 'AbortError';
+            throw abortError;
+          }
+
+          try {
+            await compiler.notifyTickEnd(tickState);
+          } catch (error: any) {
+            const isAbort = error?.name === 'AbortError' || error?.message?.includes('abort') || error?.message?.includes('cancelled');
+            if (isAbort) {
+              await this.persistExecutionState(handle, rootElement, input, tick, previousState);
+              throw error;
+            }
+            // Handle onTickEnd errors
+            const errorState: TickState = {
+              ...tickState,
+              stop: tickState.stop,
+              error: {
+                error: error instanceof Error ? error : new Error(String(error)),
+                phase: 'tick_end',
+                recoverable: true,
+              }
+            };
+
+            const recovery = await compiler.notifyError(errorState);
+            if (recovery?.continue) {
+              if (recovery.modifications) {
+                await recovery.modifications(com);
+              }
+              if (recovery.recoveryMessage) {
+                com.addTimelineEntry({
+                  kind: 'message',
+                  message: {
+                    role: 'event',
+                    content: [{ type: 'system_event', event: 'error_recovery', source: 'error_recovery', data: { recoveryMessage: recovery.recoveryMessage } }]
+                  },
+                  tags: ['error_recovery']
+                });
+              }
+            } else {
+              throw error;
+            }
+          }
+
+          // Resolve tick control requests AFTER onTickEnd/notifyTickEnd
+          // Components can call requestContinue() in onTickEnd to override model stop reasons
+          // or requestStop() to force stop despite model wanting to continue
+          // 
+          // Default status: 'completed' if model wants to stop (recoverable or not),
+          // 'continue' if model doesn't want to stop.
+          // Continue requests can override 'completed' to allow execution to continue.
+          const defaultPostTickStatus: COMTickStatus = response.shouldStop ? 'completed' : 'continue';
+          
+          const postTickControlDecision = com._resolveTickControl(
+            defaultPostTickStatus,
+            response.stopReason?.reason,
+            tick
+          );
+          
+          // Control requests take precedence over model's shouldStop
+          if (postTickControlDecision.status === 'aborted' || postTickControlDecision.status === 'completed') {
+            // Component requested stop OR model wants to stop with no continue override
+            shouldContinue = false;
+            stopReason = postTickControlDecision.terminationReason;
+          } else {
+            // Component requested continue (overriding model stop) OR model doesn't want to stop
+            shouldContinue = true;
+          }
+
+          // Update previousState for next tick
+          // previousState = what was sent to the model (captured BEFORE model execution)
+          // currentState = new model output (set above after model execution)
+          //
+          // Agent combines: previousState + currentState
+          // lastComInput was captured at line ~1550 before model execution
+          // Note: system is excluded from lastComInput (already done at capture time)
+          // previousState = lastComInput;
+
+          // Update handle tick count
+          if (handle) {
+            // handle is ExecutionHandleImpl (from handle factory)
+            (handle as ExecutionHandleImpl).incrementTick();
+          }
+
+          // Persist state if hook is configured
+          await this.persistExecutionState(handle, rootElement, input, tick, previousState);
+
+          // Check abort flag between ticks
+          if (shouldAbort) {
+            const abortError = new Error('Operation aborted');
+            abortError.name = 'AbortError';
+            throw abortError;
+          }
+
+          tick++;
+        }
+
+        // Check abort flag after loop completes (before finalizing)
+        if (shouldAbort) {
+          // Persist state before aborting
+          await this.persistExecutionState(handle, rootElement, input, tick, previousState);
+          const abortError = new Error('Operation aborted');
+          abortError.name = 'AbortError';
+          throw abortError;
+        }
+
+        // Get the final state from the COM
+        const finalOutput = structureRenderer.formatInput(com.toInput());
+
+        // Notify components that execution is complete
+        try {
+          await compiler.notifyComplete(finalOutput);
+        } catch (error: any) {
+          const errorState: TickState = {
+            tick: tick - 1,
+            previousState: finalOutput,
+            stop: () => { },
+            error: {
+              error: error instanceof Error ? error : new Error(String(error)),
+              phase: 'complete',
+              recoverable: true,
+            }
+          };
+
+          const recovery = await compiler.notifyError(errorState);
+          if (!recovery?.continue) {
+            log.error({ err: error }, 'Error in onComplete, no recovery');
+          }
+        }
+
+        // Check abort flag after notifyComplete (signal might have been emitted during completion)
+        if (shouldAbort) {
+          const abortError = new Error('Operation aborted');
+          abortError.name = 'AbortError';
+          throw abortError;
+        }
+
+        const finalOutputAfterComplete = structureRenderer.formatInput(com.toInput());
+
+        yield {
+          type: 'agent_end',
+          output: finalOutputAfterComplete,
+          timestamp: new Date().toISOString()
+        };
+
+        // Call onExecutionEnd hook
+        // Handle is always provided from executeInternal/streamInternal
+        await this.callLifecycleHooks('onExecutionEnd', [
+          finalOutputAfterComplete,
+          handle
+        ]);
+      } catch (error: any) {
+        const isAbort = isAbortError(error);
+
+        if (isAbort && com) {
+          await this.persistExecutionState(handle, rootElement, input, tick, previousState);
+        }
+
+        if (isAbort && handle) {
+          handle.cancel();
+          this.executionGraph.updateStatus(handle.pid, 'cancelled', error);
+        }
+
+        const errorEvent = {
+          type: 'error' as const,
+          error: error instanceof Error ? error : new Error(String(error)),
+          timestamp: new Date().toISOString()
+        };
+        yield errorEvent as EngineStreamEvent;
+
+        // Call onExecutionError hook
+        // Handle is always provided from executeInternal/streamInternal
+        await this.callLifecycleHooks('onExecutionError', [
+          error instanceof Error ? error : new Error(String(error)),
+          handle
+        ]);
+        return;
+      }
+    } catch (error: any) {
+      const isAbort = isAbortError(error);
+
+      if (isAbort && handle) {
+        handle.cancel();
+        this.executionGraph.updateStatus(handle.pid, 'cancelled', error);
+      }
+
+      const errorEvent = {
+        type: 'error' as const,
+        error: error instanceof Error ? error : new Error(String(error)),
+        timestamp: new Date().toISOString()
+      };
+      yield errorEvent as EngineStreamEvent;
+
+      // Call onExecutionError hook
+      // Handle is always provided from executeInternal/streamInternal
+      await this.callLifecycleHooks('onExecutionError', [
+        error instanceof Error ? error : new Error(String(error)),
+        handle
+      ]);
+      return;
+    } finally {
+      // Cleanup abort signal listeners
+      if (handle && abortListener) {
+        handle.off('abort', abortListener);
+      }
+      if (contextSignalListener) {
+        const handleSignal = handle.getCancelSignal();
+        if (handleSignal) {
+          handleSignal.removeEventListener('abort', contextSignalListener);
+        }
+      }
+
+      if (compiler) {
+        try {
+          await compiler.unmount();
+        } catch (error: any) {
+          const isAbort = isAbortError(error);
+          if (!isAbort) {
+            throw error;
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Prepare input with inherited state from parent
+   */
+  private prepareInheritedInput(
+    input: EngineInput,
+    parentHandle: ExecutionHandle,
+    inherit?: ForkInheritanceOptions
+  ): EngineInput {
+    if (!inherit) {
+      return input;
+    }
+
+    const parentResult = parentHandle.getResult();
+    if (!parentResult) {
+      return input;
+    }
+
+    const inherited: EngineInput = { ...input };
+
+    // Inherit timeline
+    if (inherit.timeline === 'copy' && parentResult.timeline) {
+      inherited.timeline = [
+        ...(inherited.timeline || []),
+        ...JSON.parse(JSON.stringify(parentResult.timeline)),
+      ];
+    } else if (inherit.timeline === 'reference' && parentResult.timeline) {
+      inherited.timeline = [
+        ...(inherited.timeline || []),
+        ...parentResult.timeline,
+      ];
+    }
+
+    // Inherit sections
+    if (inherit.sections === 'copy' && parentResult['sections']) {
+      inherited['sections'] = JSON.parse(JSON.stringify(parentResult['sections']));
+    } else if (inherit.sections === 'reference' && parentResult['sections']) {
+      inherited['sections'] = parentResult['sections'];
+    }
+
+    return inherited;
+  }
+
+  /**
+   * Prepare inherited EngineContext from parent execution
+   */
+  private prepareInheritedContext(
+    options: {
+      inherit?: ForkInheritanceOptions;
+    } & Partial<Omit<EngineContext, 'channels'>> & { channels?: ChannelServiceConfig } | undefined,
+    parentHandle: ExecutionHandle
+  ): Partial<Omit<EngineContext, 'channels'>> {
+    const inherit = options?.inherit;
+    const { channels: _channelsConfig, ...restOptions } = options || {};
+    const inherited: Partial<Omit<EngineContext, 'channels'>> = {
+      ...restOptions,
+    };
+
+    const parentContext = Context.tryGet();
+
+    // Inherit traceId
+    if (inherit?.traceId && parentContext?.traceId) {
+      inherited.traceId = parentContext.traceId;
+    }
+
+    // Inherit context properties (metadata, user, traceId, etc.)
+    // BUT: Don't inherit signal from parent context if parent has completed
+    // The signal will be set explicitly via mergedSignal in runForkExecution
+    if (inherit?.context && parentContext) {
+      inherited.metadata = { ...parentContext.metadata };
+      inherited.user = parentContext.user;
+      if (!inherited.traceId) {
+        inherited.traceId = parentContext.traceId;
+      }
+      // Explicitly exclude signal - it will be set via mergedSignal
+      // This prevents inheriting an aborted signal from the parent's context
+      inherited.signal = undefined;
+    }
+
+    inherited.requestId = undefined;
+
+    return inherited;
+  }
+
+  /**
+   * Spawn a new independent execution.
+   */
+  spawn(
+    agent: JSX.Element | ComponentDefinition | ComponentDefinition[],
+    input: EngineInput,
+    options?: {
+      engineClass?: typeof Engine;
+      engineConfig?: Partial<EngineConfig>;
+    } & Partial<Omit<EngineContext, 'channels'>> & { channels?: ChannelServiceConfig }
+  ): ExecutionHandle {
+    const pid = generatePid('spawn');
+    const rootPid = pid;
+
+    const EngineClass = options?.engineClass || (this.constructor as typeof Engine);
+    const childEngine = new EngineClass({
+      ...this.config,
+      ...options?.engineConfig,
+    });
+
+    const handle = new ExecutionHandleImpl(pid, rootPid, 'spawn', undefined, undefined, this.executionGraph);
+    handle.setExecutionGraph(this.executionGraph);
+    handle.setExecutionGraphForStatus(this.executionGraph);
+
+    this.executionGraph.register(handle);
+
+    this.runForkSpawnExecution(childEngine, handle, agent, input, options).catch(error => {
+      handle.fail(error);
+      this.executionGraph.updateStatus(pid, 'failed', error);
+      childEngine.destroy();
+    }).then(() => {
+      if (handle.status !== 'running') {
+        childEngine.destroy();
+      }
+    });
+
+    return handle;
+  }
+
+  /**
+   * Fork a new execution with inherited state from parent.
+   */
+  fork(
+    agent: JSX.Element | ComponentDefinition | ComponentDefinition[],
+    input: EngineInput,
+    options?: {
+      parentPid?: string;
+      inherit?: ForkInheritanceOptions;
+      engineClass?: typeof Engine;
+      engineConfig?: Partial<EngineConfig>;
+      hooks?: EngineStaticHooks;
+    } & Partial<Omit<EngineContext, 'channels'>> & { channels?: ChannelServiceConfig }
+  ): ExecutionHandle {
+    const parentPid = options?.parentPid || this.getCurrentExecutionPid();
+    if (!parentPid) {
+      throw new Error('Cannot fork: no parent execution found. Provide parentPid or call fork from within an execution context.');
+    }
+
+    const parentHandle = this.executionGraph.getHandle(parentPid);
+    if (!parentHandle) {
+      throw new Error(`Parent execution ${parentPid} not found`);
+    }
+
+    const EngineClass = options?.engineClass || (this.constructor as typeof Engine);
+    const shouldInheritHooks = options?.inherit?.hooks !== false;
+
+    // Build child engine config - exclude lifecycle hooks if not inheriting
+    const childConfig: EngineConfig = {
+      ...this.config,
+      ...options?.engineConfig,
+    };
+
+    // If not inheriting hooks, exclude lifecycle hooks from parent config
+    if (!shouldInheritHooks && this.config.lifecycleHooks) {
+      delete childConfig.lifecycleHooks;
+    }
+
+    const childEngine = new EngineClass(childConfig);
+
+    if (shouldInheritHooks) {
+      childEngine.componentHooksRegistry.copyHooksFrom(this.componentHooksRegistry);
+      childEngine.modelHooksRegistry.copyHooksFrom(this.modelHooksRegistry);
+      childEngine.toolHooksRegistry.copyHooksFrom(this.toolHooksRegistry);
+      childEngine.engineHooksRegistry.copyHooksFrom(this.engineHooksRegistry);
+      childEngine.lifecycleHooksRegistry.copyHooksFrom(this.lifecycleHooksRegistry);
+    }
+
+    if (options?.hooks) {
+      this.registerHooks(childEngine, options.hooks);
+      // Rebuild procedures to pick up newly registered hooks
+      childEngine.buildProcedures({includeDynamic: true});
+    }
+
+    // Register fork-specific lifecycle hooks (composed with inherited hooks)
+    if (options?.engineConfig?.lifecycleHooks) {
+      this.registerLifecycleHooks(childEngine, options.engineConfig.lifecycleHooks);
+    }
+
+    const pid = generatePid('fork');
+    const rootPid = parentHandle.rootPid;
+
+    const handle = new ExecutionHandleImpl(pid, rootPid, 'fork', parentPid, parentHandle, this.executionGraph);
+    handle.setExecutionGraph(this.executionGraph);
+    handle.setExecutionGraphForStatus(this.executionGraph);
+
+    const forkController = new AbortController();
+    handle.setCancelController(forkController);
+
+    // Only include parent signal if parent is still running and signal is not already aborted
+    // If parent has already completed, fork runs independently (orphaned fork)
+    const parentSignalRaw = parentHandle.getCancelSignal();
+    const parentSignal = (parentHandle.status === 'running' && parentSignalRaw && !parentSignalRaw.aborted)
+      ? parentSignalRaw
+      : undefined;
+
+    const mergedSignal = mergeAbortSignals([
+      forkController.signal,
+      parentSignal,
+      options?.signal,
+    ].filter(Boolean) as AbortSignal[]);
+
+    this.executionGraph.register(handle, parentPid);
+
+    const inheritedInput = this.prepareInheritedInput(input, parentHandle, options?.inherit);
+    const inheritedContext = this.prepareInheritedContext(options, parentHandle);
+
+    this.runForkSpawnExecution(
+      childEngine,
+      handle,
+      agent,
+      inheritedInput,
+      {
+        ...inheritedContext,
+        signal: mergedSignal,
+        ...options,
+      },
+      parentHandle
+    ).catch(error => {
+      handle.fail(error);
+      this.executionGraph.updateStatus(handle.pid, 'failed', error);
+      childEngine.destroy();
+    }).then(() => {
+      if (handle.status !== 'running') {
+        childEngine.destroy();
+      }
+    });
+
+    return handle;
+  }
+
+  private async runForkSpawnExecution(
+    childEngine: Engine,
+    handle: ExecutionHandleImpl,
+    agent: JSX.Element | ComponentDefinition | ComponentDefinition[],
+    input: EngineInput,
+    options?: {
+      parentPid?: string;
+      inherit?: ForkInheritanceOptions;
+      engineClass?: typeof Engine;
+      engineConfig?: Partial<EngineConfig>;
+    } & Partial<Omit<EngineContext, 'channels'>> & { channels?: ChannelServiceConfig },
+    parentHandle?: ExecutionHandle
+  ) {
+    try {
+      const { engineClass, engineConfig, channels, ...kernelOptions } = options || {};
+
+      // Note: Engine's execute method is a Procedure, so we call it directly
+      // Normalize agent to single ComponentDefinition or undefined
+      const normalizedAgent: ComponentDefinition | undefined = Array.isArray(agent)
+        ? undefined // Arrays handled by getRootElement
+        : (agent as ComponentDefinition | undefined);
+
+      // Pass the fork handle in context so the handle factory reuses it instead of creating a new one
+      // This ensures abort signals propagate correctly to the fork execution
+      // Use EngineContext cast to include executionHandle and other Engine-specific properties
+      const result = await childEngine.execute.withContext({
+        ...kernelOptions,
+        executionHandle: handle, // Pass fork handle so it's reused by handle factory
+      } as Partial<EngineContext>).call(input, normalizedAgent);
+
+      // Ensure result is COMInput (not AsyncIterable)
+      if (isAsyncIterable(result)) {
+        throw new Error('execute returned async iterable instead of Promise');
+      }
+
+      handle.complete(result as COMInput);
+      this.executionGraph.updateStatus(handle.pid, 'completed');
+    } catch (error: any) {
+      const isAbort = isAbortError(error);
+      if (isAbort) {
+        handle.cancel();
+        this.executionGraph.updateStatus(handle.pid, 'cancelled', error);
+      } else {
+        handle.fail(error instanceof Error ? error : new Error(String(error)));
+        this.executionGraph.updateStatus(handle.pid, 'failed', error);
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Persist execution state
+   */
+  async persistExecutionState(handle: ExecutionHandleImpl, rootElement: JSX.Element, input: EngineInput, tick: number, previousState?: COMInput): Promise<void> {
+    if (!handle || !this.config.persistExecutionState) {
+      return;
+    }
+
+    try {
+      const stateToPersist = handle.toState(rootElement as ComponentDefinition, input, tick, previousState);
+      await this.config.persistExecutionState(stateToPersist);
+    } catch (persistError) {
+      log.error({ err: persistError }, 'Failed to persist state on abort');
+    }
+  }
+
+  /**
+   * Get execution metrics for the engine
+   */
+  getMetrics(): EngineMetrics {
+    const allExecutions = this.executionGraph.getAllExecutions();
+    const activeExecutions = this.executionGraph.getActiveCount();
+    const totalExecutions = this.executionGraph.getCount();
+
+    const executionsByStatus: Record<string, number> = {
+      running: 0,
+      completed: 0,
+      failed: 0,
+      cancelled: 0,
+    };
+
+    const executionsByType: Record<string, number> = {
+      root: 0,
+      spawn: 0,
+      fork: 0,
+    };
+
+    let totalDuration = 0;
+    let completedCount = 0;
+
+    for (const handle of allExecutions) {
+      executionsByStatus[handle.status] = (executionsByStatus[handle.status] || 0) + 1;
+      executionsByType[handle.type] = (executionsByType[handle.type] || 0) + 1;
+
+      if (handle.status === 'completed' || handle.status === 'failed' || handle.status === 'cancelled') {
+        const duration = handle.getDuration();
+        totalDuration += duration;
+        completedCount++;
+      }
+    }
+
+    const averageExecutionTime = completedCount > 0 ? totalDuration / completedCount : 0;
+
+    return {
+      activeExecutions,
+      totalExecutions,
+      executionsByStatus: executionsByStatus as Record<'running' | 'completed' | 'failed' | 'cancelled' | 'pending', number>,
+      executionsByType: executionsByType as Record<'root' | 'spawn' | 'fork', number>,
+      averageExecutionTime,
+      memoryUsage: process.memoryUsage(),
+      timestamp: new Date(),
+    };
+  }
+
+  /**
+   * Get execution tree starting from a root PID
+   */
+  getExecutionTree(rootPid: string): ExecutionTreeNode | undefined {
+    return this.executionGraph.getExecutionTree(rootPid);
+  }
+
+  /**
+   * Get outstanding forks/spawns for a parent execution
+   */
+  getOutstandingForks(parentPid: string): ExecutionHandle[] {
+    return this.executionGraph.getOutstandingForks(parentPid);
+  }
+
+  /**
+   * Get orphaned forks/spawns (parent completed but child still running)
+   */
+  getOrphanedForks(): ExecutionHandle[] {
+    return this.executionGraph.getOrphanedForks();
+  }
+
+  /**
+   * Get execution handle by PID
+   */
+  getExecutionHandle(pid: string): ExecutionHandle | undefined {
+    return this.executionGraph.getHandle(pid);
+  }
+
+  /**
+   * Resume an execution from persisted state
+   */
+  async resumeExecution(state: ExecutionState): Promise<ExecutionHandle> {
+    if (!this.config.loadExecutionState) {
+      throw new Error('loadExecutionState not configured. Cannot resume execution.');
+    }
+
+    const handle = new ExecutionHandleImpl(state.pid, state.rootPid, state.type, state.parentPid, undefined, this.executionGraph);
+    handle.setExecutionGraph(this.executionGraph);
+    handle.status = state.status;
+    handle.completedAt = state.completedAt;
+
+    if (state.error) {
+      handle.fail(new Error(state.error.message));
+    }
+
+    this.executionGraph.register(handle, state.parentPid);
+
+    if (state.status === 'running') {
+      const error = new Error('Execution resumption not yet implemented');
+      handle.fail(error);
+      this.executionGraph.updateStatus(state.pid, 'failed', error);
+      throw error;
+    }
+
+    return handle;
+  }
+
+  /**
+   * Get recoverable executions (for crash recovery)
+   */
+  async getRecoverableExecutions(): Promise<ExecutionState[]> {
+    if (!this.config.loadExecutionState) {
+      return [];
+    }
+
+    return [];
+  }
+}
+
+// ============================================================================
+// Middleware Normalization Helpers
+// ============================================================================
+
+/**
+ * Normalize engine hook middleware to the generic Middleware<any[]>[] format
+ * required by applyRegistryMiddleware.
+ * 
+ * Similar to normalizeToolMiddleware and normalizeModelMiddleware, but for
+ * engine hooks (execute, stream).
+ * 
+ * Handles both static middleware (Middleware<[EngineInput, ComponentDefinition?]>[])
+ * and hook registry middleware (EngineHookMiddleware<'execute' | 'stream'>[]).
+ */
+function normalizeEngineMiddleware<T extends EngineHookName>(
+  middleware?: Middleware<[EngineInput, ComponentDefinition?]>[] | EngineHookMiddleware<T>[]
+): (Middleware<any[]> | MiddlewarePipeline)[] {
+  if (!middleware || middleware.length === 0) {
+    return [];
+  }
+  return middleware as unknown as (Middleware<any[]> | MiddlewarePipeline)[];
+}
+
+/**
+ * Normalize model hook middleware to the generic Middleware<any[]>[] format
+ * required by applyRegistryMiddleware.
+ * 
+ * Similar to normalizeMiddleware in model.ts, but for
+ * middleware retrieved from ModelHookRegistry.
+ */
+function normalizeModelHookMiddleware(
+  middleware: ModelHookMiddleware<ModelHookName>[]
+): (Middleware<any[]> | MiddlewarePipeline)[] {
+  if (!middleware || middleware.length === 0) {
+    return [];
+  }
+  return middleware as unknown as (Middleware<any[]> | MiddlewarePipeline)[];
+}
+

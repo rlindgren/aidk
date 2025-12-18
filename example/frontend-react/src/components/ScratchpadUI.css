@@ -1,0 +1,191 @@
+/* Scratchpad - Minimal inline panel */
+
+.scratchpad {
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.scratchpad-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.scratchpad-header:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.scratchpad-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.scratchpad-icon {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.note-count {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.toggle-btn {
+  background: none;
+  border: none;
+  font-size: 8px;
+  color: rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  padding: 4px;
+}
+
+.scratchpad-content {
+  padding: 0 12px 10px;
+}
+
+.empty-notes {
+  text-align: center;
+  padding: 8px 0;
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 12px;
+}
+
+.empty-notes .hint {
+  font-size: 11px;
+  opacity: 0.7;
+  margin-top: 2px;
+}
+
+.notes-list {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 8px;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.note-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+  font-size: 13px;
+  line-height: 1.3;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.note-item:last-child {
+  border-bottom: none;
+}
+
+.note-item.source-model .note-source {
+  color: #60a5fa;
+}
+
+.note-item.source-user .note-source {
+  color: #34d399;
+}
+
+.note-source {
+  flex-shrink: 0;
+  font-size: 11px;
+  opacity: 0.8;
+}
+
+.note-text {
+  flex: 1;
+  color: rgba(255, 255, 255, 0.8);
+  word-break: break-word;
+}
+
+.note-item .remove-btn {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 14px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  padding: 0;
+  line-height: 1;
+}
+
+.note-item:hover .remove-btn {
+  opacity: 1;
+}
+
+.note-item .remove-btn:hover {
+  color: #f87171;
+}
+
+.add-note-form {
+  display: flex;
+  gap: 6px;
+}
+
+.add-note-form input {
+  flex: 1;
+  padding: 6px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  font-size: 12px;
+  background: rgba(0, 0, 0, 0.2);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.add-note-form input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.add-note-form input:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.add-note-form button {
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.7);
+  border: none;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.add-note-form button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.add-note-form button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.scratchpad-content .clear-btn {
+  display: block;
+  padding: 4px;
+  width: 100%;
+  margin-top: 0.5rem;
+  background: transparent;
+  border: none;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+}
+
+.scratchpad-content .clear-btn:hover {
+  color: rgba(255, 255, 255, 0.5);
+}

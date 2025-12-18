@@ -1,0 +1,431 @@
+# State Management
+
+AIDK provides a signal-based reactive state system inspired by Angular Signals and SolidJS. This guide covers how to manage state in your components.
+
+## Overview
+
+There are three types of state signals in AIDK:
+
+| Type | Function | Scope | Writable? | Persisted? |
+|------|----------|-------|-----------|------------|
+| **Local State** | `signal()` | Single component | Yes | No |
+| **COM State (owned)** | `comState()` | Shared | Yes | Yes |
+| **COM State (watched)** | `watchComState()` / `watch()` | Shared | **No** | Yes |
+
+**Writable signals** (`signal`, `comState`) return `Signal<T>`:
+- `signal()` — read current value
+- `signal.set(value)` — set new value
+- `signal.update(fn)` — update with function
+- `signal.dispose()` — cleanup (usually automatic)
+
+**Read-only signals** (`watchComState`, `watch`) return `ReadonlySignal<T>`:
+- `signal()` — read current value
+- `signal.dispose()` — cleanup
+- ❌ No `.set()` or `.update()` — can only observe, not modify
+
+## Basic Usage
+
+### Local State with `signal()`
+
+Use `signal()` for component-local state that doesn't need to be shared:
+
+```typescript
+import { EngineComponent, signal } from 'aidk';
+
+class CounterComponent extends Component {
+  // Local state - only this component can access it
+  private count = signal(0);
+  private startedAt = signal(new Date());
+
+  onTickStart(com, state) {
+    this.count.update(n => n + 1);
+  }
+
+  render() {
+    return <div>Count: {this.count()}, Started: {this.startedAt()}</div>;
+  }
+}
+```
+
+### Shared State with `comState()`
+
+Use `comState()` for state shared across components and persisted across ticks:
+
+```typescript
+import { EngineComponent, comState, type COMTimelineEntry } from 'aidk';
+
+class TimelineComponent extends Component {
+  // COM state - shared across all components, persisted across ticks
+  private timeline = comState<COMTimelineEntry[]>('timeline', []);
+
+  async onMount(com) {
+    // Load initial data
+    const history = await loadHistory();
+    this.timeline.set(history);
+  }
+
+  onTickStart(com, state) {
+    // Append new entries from current tick
+    if (state.currentState?.timeline?.length) {
+      this.timeline.update(t => [...t, ...state.currentState.timeline]);
+    }
+  }
+
+  render() {
+    return (
+      <Timeline>
+        {this.timeline().map((entry, i) => (
+          <Message key={i} {...entry.message} />
+        ))}
+      </Timeline>
+    );
+  }
+}
+```
+
+### Watching State with `watchComState()` / `watch()`
+
+Use `watchComState()` (or its shorthand `watch()`) when you want to **observe** COM state that another component owns, without being able to modify it:
+
+```typescript
+import { EngineComponent, watchComState, watch, computed } from 'aidk';
+
+class StatusDisplay extends Component {
+  // Watch state owned by TimelineComponent
+  private timeline = watchComState<COMTimelineEntry[]>('timeline');
+  
+  // Shorthand version
+  private status = watch<'idle' | 'loading' | 'done'>('status', 'idle');
+  
+  // Can derive from watched state
+  private messageCount = computed(() => this.timeline()?.length ?? 0);
+
+  render() {
+    return (
+      <div>
+        Status: {this.status()} | Messages: {this.messageCount()}
+      </div>
+    );
+    
+    // Cannot modify - these would be TypeScript errors:
+    // this.timeline.set([...])  // ❌ No .set() method
+    // this.status.update(...)   // ❌ No .update() method
+  }
+}
+```
+
+**When to use `watchComState` vs `comState`:**
+- Use `comState()` when your component **owns** the state (creates, updates, manages it)
+- Use `watchComState()` when your component just **observes** state owned by another component
+
+### Derived State with `computed()`
+
+Use `computed()` for values derived from other signals. Computed signals are:
+- **Lazy** — only computed when read
+- **Memoized** — cached until dependencies change
+- **Reactive** — auto-update when dependencies change
+
+```typescript
+import { EngineComponent, signal, computed } from 'aidk';
+
+class StatsComponent extends Component {
+  private items = signal<Item[]>([]);
+  
+  // Computed - recalculates only when items changes
+  private totalPrice = computed(() => 
+    this.items().reduce((sum, item) => sum + item.price, 0)
+  );
+  
+  private itemCount = computed(() => this.items().length);
+
+  render() {
+    return (
+      <div>
+        Items: {this.itemCount()}, Total: ${this.totalPrice()}
+      </div>
+    );
+  }
+}
+```
+
+### Side Effects with `effect()`
+
+Use `effect()` sparingly for syncing with external systems. **Prefer `computed()` for derived values.**
+
+```typescript
+import { EngineComponent, signal, effect } from 'aidk';
+
+class LoggingComponent extends Component {
+  private count = signal(0);
+  private loggerEffect;
+
+  onMount(com) {
+    // Effect runs when count changes
+    this.loggerEffect = effect(() => {
+      console.log('Count changed:', this.count());
+    });
+  }
+
+  // Effect is automatically cleaned up in onUnmount
+}
+```
+
+Effects can return a cleanup function:
+
+```typescript
+effect(() => {
+  const timer = setInterval(() => console.log('tick'), 1000);
+  
+  // Cleanup runs before next execution and on dispose
+  return () => clearInterval(timer);
+});
+```
+
+## Batching Updates
+
+When updating multiple signals, use `batch()` to prevent intermediate re-renders:
+
+```typescript
+import { batch, signal } from 'aidk';
+
+const firstName = signal('');
+const lastName = signal('');
+
+// Without batch: effects run twice
+firstName.set('John');
+lastName.set('Doe');
+
+// With batch: effects run once
+batch(() => {
+  firstName.set('John');
+  lastName.set('Doe');
+});
+```
+
+## Reading Without Tracking
+
+Use `untracked()` to read a signal without creating a dependency:
+
+```typescript
+import { effect, signal, untracked } from 'aidk';
+
+const user = signal('Alice');
+const count = signal(0);
+
+effect(() => {
+  const currentUser = user();  // Tracked - effect re-runs when user changes
+  const currentCount = untracked(() => count());  // Not tracked
+  
+  console.log(`${currentUser} has count ${currentCount}`);
+});
+
+count.set(10);  // Effect does NOT re-run
+user.set('Bob');  // Effect re-runs
+```
+
+## Cleanup
+
+All signals are **automatically cleaned up** when a component unmounts. The cleanup:
+
+- **signal()** — Clears all subscribers
+- **comState()** — Removes COM event listener, clears subscribers
+- **computed()** — Unsubscribes from dependencies, clears subscribers
+- **effect()** — Unsubscribes from dependencies, runs cleanup function
+
+### Manual Disposal
+
+If you need to dispose a signal before unmount:
+
+```typescript
+class MyComponent extends Component {
+  private tempData = signal<Data | null>(null);
+
+  clearTempData() {
+    this.tempData.dispose();
+    this.tempData = signal(null);  // Create fresh if needed
+  }
+}
+```
+
+## Important: Class Components Only
+
+> ⚠️ **Signals only work in class components (`EngineComponent`), not pure function components.**
+
+### Why?
+
+Pure function components are re-executed on every render. Signals created inside them would be recreated each time, losing their state:
+
+```typescript
+// ❌ WRONG - Creates new signal every render!
+function BadComponent(props) {
+  const count = signal(0);  // New signal each render
+  return <div>{count()}</div>;
+}
+```
+
+### The Correct Patterns
+
+```typescript
+// ✅ Use EngineComponent for stateful components
+class GoodComponent extends Component {
+  private count = signal(0);  // Stored on instance, persists
+  
+  render() {
+    return <div>{this.count()}</div>;
+  }
+}
+
+// ✅ Pure function components should be stateless
+function PureComponent(props: { count: number }) {
+  return <div>{props.count}</div>;  // Receive state as props
+}
+
+// ✅ Or use COM state passed down
+function TimelineView(props: { entries: COMTimelineEntry[] }) {
+  return <Timeline>{props.entries.map(...)}</Timeline>;
+}
+```
+
+## API Reference
+
+### `signal<T>(initialValue: T, options?): Signal<T>`
+
+Creates a local reactive signal.
+
+```typescript
+const count = signal(0);
+const name = signal('', { equal: (a, b) => a.toLowerCase() === b.toLowerCase() });
+
+count();           // Read: 0
+count.set(10);     // Set: 10
+count.update(n => n + 1);  // Update: 11
+count.value;       // Property access: 11
+count.dispose();   // Cleanup
+count.disposed;    // Check: true
+```
+
+### `comState<T>(key: string, initialValue: T): Signal<T>`
+
+Creates a COM-bound signal (shared, persisted). Use when you **own** the state.
+
+```typescript
+const timeline = comState<Entry[]>('timeline', []);
+
+// Automatically syncs with COM state
+timeline.set([...]);  // Updates COM
+com.setState('timeline', [...]);  // Updates signal
+```
+
+### `watchComState<T>(key: string, defaultValue?): ReadonlySignal<T>`
+
+Creates a **read-only** signal that watches COM state. Use when another component owns the state.
+
+```typescript
+class ObserverComponent extends Component {
+  // Watch state set by another component
+  private timeline = watchComState<Entry[]>('timeline');
+  
+  // Can derive from it
+  private count = computed(() => this.timeline()?.length ?? 0);
+  
+  render() {
+    // Can read
+    return <div>Count: {this.count()}</div>;
+    
+    // Cannot write - no .set() or .update()
+    // this.timeline.set([...])  // ❌ Not available
+  }
+}
+```
+
+### `watch<T>(key: string, defaultValue?): ReadonlySignal<T>`
+
+Shorthand for `watchComState`. Same API.
+
+```typescript
+private status = watch<'idle' | 'loading'>('status', 'idle');
+```
+
+### `computed<T>(fn: () => T, options?): ComputedSignal<T>`
+
+Creates a derived signal.
+
+```typescript
+const doubled = computed(() => count() * 2);
+
+doubled();       // Read (triggers computation if dirty)
+doubled.value;   // Property access
+doubled.dispose();
+```
+
+### `effect(fn): EffectRef`
+
+Runs a side effect when dependencies change.
+
+```typescript
+const ref = effect((onCleanup) => {
+  console.log(count());
+  onCleanup(() => console.log('cleaning up'));
+});
+
+// Or return cleanup
+const ref = effect(() => {
+  const timer = setInterval(...);
+  return () => clearInterval(timer);
+});
+
+ref.dispose();  // Stop effect
+ref.disposed;   // Check: true
+```
+
+### `batch<T>(fn: () => T): T`
+
+Groups updates to prevent intermediate notifications.
+
+```typescript
+batch(() => {
+  a.set(1);
+  b.set(2);
+  c.set(3);
+  // Effects run once here
+});
+```
+
+### `untracked<T>(fn: () => T): T`
+
+Reads signals without creating dependencies.
+
+```typescript
+effect(() => {
+  const tracked = count();
+  const notTracked = untracked(() => other());
+});
+```
+
+### Type Guards
+
+```typescript
+import { isSignal, isComputed, isEffect } from 'aidk';
+
+isSignal(count);     // true for signal()
+isComputed(doubled); // true for computed()
+isEffect(ref);       // true for effect()
+```
+
+### Manual Disposal
+
+```typescript
+import { disposeSignal } from 'aidk';
+
+disposeSignal(mySignal);  // Same as mySignal.dispose()
+```
+
+## Best Practices
+
+1. **Prefer `signal()` for local state** — simpler, no COM overhead
+2. **Use `comState()` for shared/persisted state** — timeline, user preferences, etc.
+3. **Use `computed()` for derived values** — not `effect()` with `set()`
+4. **Use `effect()` sparingly** — only for external side effects
+5. **Batch related updates** — prevents intermediate renders
+6. **Don't use signals in function components** — use `EngineComponent` instead
+

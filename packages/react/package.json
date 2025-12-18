@@ -1,0 +1,40 @@
+{
+  "name": "aidk-react",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./markdown.css": "./src/markdown.css"
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && cp src/markdown.css dist/markdown.css",
+    "test": "jest",
+    "typecheck": "tsc -p tsconfig.build.json --noEmit",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "pnpm build",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "aidk-client": "workspace:*"
+  },
+  "peerDependencies": {
+    "aidk-client": "workspace:*",
+    "react": "^18.0.0",
+    "marked": "^17.0.1"
+  },
+  "devDependencies": {
+    "aidk-client": "workspace:*",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "./markdown.css": "./dist/markdown.css"
+  }
+}

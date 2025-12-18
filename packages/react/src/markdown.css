@@ -1,0 +1,201 @@
+/* Aidk React - Markdown Styles
+ * Optional stylesheet for markdown rendering
+ * Import in your application: import 'aidk-react/dist/markdown.css'
+ */
+
+.aidk-markdown {
+  line-height: 1.6;
+  color: inherit;
+}
+
+.aidk-markdown h1, .aidk-markdown h2, .aidk-markdown h3, 
+.aidk-markdown h4, .aidk-markdown h5, .aidk-markdown h6 {
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.aidk-markdown h1 {
+  font-size: 2em;
+  border-bottom: 1px solid #eaecef;
+  padding-bottom: 0.3em;
+}
+
+.aidk-markdown h2 {
+  font-size: 1.5em;
+  border-bottom: 1px solid #eaecef;
+  padding-bottom: 0.3em;
+}
+
+.aidk-markdown h3 { font-size: 1.25em; }
+.aidk-markdown h4 { font-size: 1em; }
+.aidk-markdown h5 { font-size: 0.875em; }
+.aidk-markdown h6 {
+  font-size: 0.85em;
+  color: #6a737d;
+}
+
+.aidk-markdown p {
+  margin-top: 0;
+  margin-bottom: 16px;
+}
+
+.aidk-markdown ul, .aidk-markdown ol {
+  margin-top: 0;
+  margin-bottom: 16px;
+  padding-left: 1.5em;
+  list-style-position: outside;
+}
+
+.aidk-markdown ul {
+  list-style-type: disc;
+}
+
+.aidk-markdown ul ul {
+  list-style-type: circle;
+  margin-top: 0.25em;
+  margin-bottom: 0.25em;
+}
+
+.aidk-markdown ul ul ul {
+  list-style-type: square;
+}
+
+.aidk-markdown ol {
+  list-style-type: decimal;
+}
+
+.aidk-markdown ol ol {
+  list-style-type: lower-alpha;
+  margin-top: 0.25em;
+  margin-bottom: 0.25em;
+}
+
+.aidk-markdown ol ol ol {
+  list-style-type: lower-roman;
+}
+
+.aidk-markdown li {
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+  line-height: 1.6;
+}
+
+.aidk-markdown li > p {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.aidk-markdown li > p + p {
+  margin-top: 16px;
+}
+
+.aidk-markdown li + li {
+  margin-top: 0.5em;
+}
+
+.aidk-markdown a {
+  color: #0366d6;
+  text-decoration: none;
+}
+
+.aidk-markdown a:hover {
+  text-decoration: underline;
+}
+
+.aidk-markdown code {
+  padding: 0.2em 0.4em;
+  margin: 0;
+  font-size: 85%;
+  background-color: rgba(27, 31, 35, 0.05);
+  border-radius: 3px;
+  font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+}
+
+.aidk-markdown pre {
+  padding: 16px;
+  overflow: auto;
+  font-size: 85%;
+  line-height: 1.45;
+  background-color: #f6f8fa;
+  border-radius: 6px;
+  margin-top: 0;
+  margin-bottom: 16px;
+}
+
+.aidk-markdown pre code {
+  display: inline;
+  padding: 0;
+  margin: 0;
+  overflow: visible;
+  line-height: inherit;
+  word-wrap: normal;
+  background-color: transparent;
+  border: 0;
+}
+
+.aidk-markdown blockquote {
+  padding: 0 1em;
+  color: #6a737d;
+  border-left: 0.25em solid #dfe2e5;
+  margin: 0 0 16px 0;
+}
+
+.aidk-markdown blockquote > :first-child {
+  margin-top: 0;
+}
+
+.aidk-markdown blockquote > :last-child {
+  margin-bottom: 0;
+}
+
+.aidk-markdown table {
+  border-spacing: 0;
+  border-collapse: collapse;
+  margin-top: 0;
+  margin-bottom: 16px;
+  width: 100%;
+}
+
+.aidk-markdown table th, .aidk-markdown table td {
+  padding: 6px 13px;
+  border: 1px solid #dfe2e5;
+}
+
+.aidk-markdown table th {
+  font-weight: 600;
+  background-color: #f6f8fa;
+}
+
+.aidk-markdown table tr {
+  background-color: #fff;
+  border-top: 1px solid #c6cbd1;
+}
+
+.aidk-markdown table tr:nth-child(2n) {
+  background-color: #f6f8fa;
+}
+
+.aidk-markdown hr {
+  height: 0.25em;
+  padding: 0;
+  margin: 24px 0;
+  background-color: #e1e4e8;
+  border: 0;
+}
+
+.aidk-markdown img {
+  max-width: 100%;
+  box-sizing: content-box;
+  background-color: #fff;
+}
+
+.aidk-markdown strong {
+  font-weight: 600;
+}
+
+.aidk-markdown em {
+  font-style: italic;
+}
+

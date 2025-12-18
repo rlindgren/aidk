@@ -1,0 +1,36 @@
+{
+  "name": "aidk-nestjs",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "src/index.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "test": "jest",
+    "typecheck": "tsc -p tsconfig.build.json --noEmit",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "pnpm build",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "aidk-server": "workspace:*",
+    "aidk": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.0",
+    "@types/express": "^5.0.0"
+  },
+  "peerDependencies": {
+    "@nestjs/common": "^10.0.0",
+    "@nestjs/core": "^10.0.0",
+    "@nestjs/platform-express": "^10.0.0",
+    "rxjs": "^7.0.0",
+    "express": "^5.0.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts"
+  }
+}
+

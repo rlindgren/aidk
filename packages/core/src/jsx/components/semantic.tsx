@@ -1,0 +1,186 @@
+import { createElement, type JSX } from '../jsx-runtime';
+
+/**
+ * Semantic content primitives for expressive rendering.
+ * These provide semantic meaning to renderers beyond plain text.
+ */
+
+import type { ComponentBaseProps } from '../jsx-types';
+
+interface BaseProps extends ComponentBaseProps {
+}
+
+/**
+ * Generic heading component
+ */
+export interface HeaderProps extends BaseProps {
+  level?: 1 | 2 | 3 | 4 | 5 | 6;
+  children?: any;
+}
+export function Header(props: HeaderProps): JSX.Element {
+  return createElement(Header, props);
+}
+
+/**
+ * Heading level 1
+ */
+export interface H1Props extends BaseProps {
+  children?: any;
+}
+export function H1(props: H1Props): JSX.Element {
+  return createElement(H1, props);
+}
+
+/**
+ * Heading level 2
+ */
+export interface H2Props extends BaseProps {
+  children?: any;
+}
+export function H2(props: H2Props): JSX.Element {
+  return createElement(H2, props);
+}
+
+/**
+ * Heading level 3
+ */
+export interface H3Props extends BaseProps {
+  children?: any;
+}
+export function H3(props: H3Props): JSX.Element {
+  return createElement(H3, props);
+}
+
+/**
+ * Paragraph component
+ */
+export interface ParagraphProps extends BaseProps {
+  key?: string;
+  children?: any;
+}
+export function Paragraph(props: ParagraphProps): JSX.Element {
+  return createElement(Paragraph, props);
+}
+
+/**
+ * List component
+ */
+export interface ListProps extends BaseProps {
+  ordered?: boolean;
+  children?: any;
+}
+export function List(props: ListProps): JSX.Element {
+  return createElement(List, props);
+}
+
+/**
+ * List item component
+ */
+export interface ListItemProps extends BaseProps {
+  children?: any;
+}
+export function ListItem(props: ListItemProps): JSX.Element {
+  return createElement(ListItem, props);
+}
+
+/**
+ * Table content block.
+ * Usage: <Table headers={['Name', 'Age']} rows={[['John', 30], ['Jane', 25]]} />
+ * or
+ * <Table headers={['Name', 'Age']}>
+ *   <Row>
+ *     <Column>John</Column>
+ *     <Column align="right">30</Column>
+ *   </Row>
+ *   <Row>
+ *     <Column>Jane</Column>
+ *     <Column align="right">25</Column>
+ *   </Row>
+ * </Table>
+ * or
+ * <Table
+ *   <Row header>
+ *     <Column>Name</Column>
+ *     <Column align="right">Age</Column>
+ *   </Row>
+ *   <Row>
+ *     <Column>John</Column>
+ *     <Column align="right">30</Column>
+ *   </Row>
+ * </Table>
+ */
+export interface TableProps extends BaseProps {
+  children?: any;
+  name?: string;
+  description?: string;
+  headers?: string[];
+  rows?: string[][];
+}
+export function Table(props: TableProps): JSX.Element {
+  return createElement(Table, props);
+}
+
+/**
+ * Row content block.
+ */
+export interface RowProps extends BaseProps {
+  children?: any;
+  header?: boolean;
+}
+export function Row(props: RowProps): JSX.Element {
+  props.key ??= `row-${Math.random().toString(36).substring(2, 15)}`;
+  return createElement(Row, props);
+}
+
+/**
+ * Column content block.
+ */
+export interface ColumnProps extends BaseProps {
+  children?: any;
+  align?: 'left' | 'center' | 'right';
+}
+export function Column(props: ColumnProps): JSX.Element {
+  props.align ??= 'left';
+  return createElement(Column, props);
+}
+
+/**
+ * Strong (bold) text component
+ */
+export interface StrongProps extends BaseProps {
+  children?: any;
+}
+export function Strong(props: StrongProps): JSX.Element {
+  return createElement(Strong, props);
+}
+
+/**
+ * Emphasis (italic) text component
+ */
+export interface EmProps extends BaseProps {
+  children?: any;
+}
+export function Em(props: EmProps): JSX.Element {
+  return createElement(Em, props);
+}
+
+/**
+ * Inline code component (use <code> for code blocks)
+ */
+export interface InlineCodeProps extends BaseProps {
+  children?: any;
+}
+export function InlineCode(props: InlineCodeProps): JSX.Element {
+  return createElement(InlineCode, props);
+}
+
+/**
+ * Mark (highlighted) text component
+ */
+export interface MarkProps extends BaseProps {
+  children?: any;
+}
+export function Mark(props: MarkProps): JSX.Element {
+  return createElement(Mark, props);
+}
+

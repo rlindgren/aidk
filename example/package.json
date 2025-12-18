@@ -1,0 +1,17 @@
+{
+  "name": "aidk-examples",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Example applications using AIDK",
+  "packageManager": "pnpm@10.25.0",
+  "scripts": {
+    "dev:backend": "pnpm --filter aidk-backend-example dev",
+    "dev:frontend-react": "pnpm --filter aidk-frontend-react-example dev",
+    "dev:frontend-angular": "pnpm --filter aidk-frontend-angular-example dev",
+    "build": "turbo build",
+    "typecheck": "turbo typecheck",
+    "clean": "turbo clean",
+    "dev": "turbo dev",
+    "start": "turbo start"
+  }
+}

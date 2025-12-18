@@ -1,0 +1,38 @@
+{
+  "name": "aidk-backend-example",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Example backend using AIDK with Express",
+  "type": "module",
+  "scripts": {
+    "dev": "vite-node --watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "aidk": "link:../../packages/core",
+    "aidk-express": "link:../../packages/express",
+    "aidk-ai-sdk": "link:../../packages/adapters/ai-sdk",
+    "aidk-openai": "link:../../packages/adapters/openai",
+    "aidk-google": "link:../../packages/adapters/google",
+    "express": "^5.0.0",
+    "dotenv": "^16.4.5",
+    "cors": "^2.8.5",
+    "zod": "^4.1.13",
+    "ai": "^5.0.0",
+    "@ai-sdk/openai": "^2.0.0",
+    "@ai-sdk/google": "^2.0.0",
+    "@ai-sdk/google-vertex": "^3.0.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/node": "^24.10.0",
+    "typescript": "^5.3.3",
+    "vite": "^5.2.0",
+    "vite-node": "^2.1.0"
+  }
+}
+
