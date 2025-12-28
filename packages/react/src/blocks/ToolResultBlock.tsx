@@ -6,8 +6,8 @@ interface Props {
 }
 
 export function ToolResultBlock({ block, className }: Props) {
-  const statusIcon = block.is_error ? '❌' : '✅';
-  const executedBy = block.executed_by ? ` (${block.executed_by})` : '';
+  const statusIcon = block.isError ? '❌' : '✅';
+  const executedBy = block.executedBy ? ` (${block.executedBy})` : '';
 
   return (
     <div
@@ -17,10 +17,10 @@ export function ToolResultBlock({ block, className }: Props) {
         alignItems: 'center',
         gap: '6px',
         padding: '4px 8px',
-        backgroundColor: block.is_error ? '#fff0f0' : '#f0fff0',
+        backgroundColor: block.isError ? '#fff0f0' : '#f0fff0',
         borderRadius: '4px',
         fontSize: '0.875rem',
-        color: block.is_error ? '#c00' : '#080',
+        color: block.isError ? '#c00' : '#080',
       }}
     >
       <span>{statusIcon}</span>

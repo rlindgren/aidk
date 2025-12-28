@@ -7,7 +7,7 @@ import { type KernelContext } from './context';
 
 /**
  * Add a metric value (accumulates).
- * Supports dot notation for nested paths: 'usage.input_tokens'
+ * Supports dot notation for nested paths: 'usage.inputTokens'
  */
 export function addMetric(ctx: KernelContext, key: string, value: number): void {
   if (!ctx.metrics) {
@@ -18,7 +18,7 @@ export function addMetric(ctx: KernelContext, key: string, value: number): void 
 
 /**
  * Set a metric value (overwrites).
- * Supports dot notation for nested paths: 'usage.input_tokens'
+ * Supports dot notation for nested paths: 'usage.inputTokens'
  */
 export function setMetric(ctx: KernelContext, key: string, value: number): void {
   if (!ctx.metrics) {
@@ -29,7 +29,7 @@ export function setMetric(ctx: KernelContext, key: string, value: number): void 
 
 /**
  * Get a metric value.
- * Supports dot notation for nested paths: 'usage.input_tokens'
+ * Supports dot notation for nested paths: 'usage.inputTokens'
  */
 export function getMetric(ctx: KernelContext, key: string): number {
   return ctx.metrics?.[key] || 0;
@@ -40,9 +40,9 @@ export function getMetric(ctx: KernelContext, key: string): number {
  * Converts nested structure to flat dot-notation keys.
  * 
  * @example
- * addUsageMetrics(ctx, { input_tokens: 100, output_tokens: 50 });
- * // Sets: ctx.metrics['usage.input_tokens'] = 100
- * //       ctx.metrics['usage.output_tokens'] = 50
+ * addUsageMetrics(ctx, { inputTokens: 100, outputTokens: 50 });
+ * // Sets: ctx.metrics['usage.inputTokens'] = 100
+ * //       ctx.metrics['usage.outputTokens'] = 50
  */
 export function addUsageMetrics(ctx: KernelContext, usage: Record<string, number>): void {
   if (!ctx.metrics) {
@@ -61,7 +61,7 @@ export function addUsageMetrics(ctx: KernelContext, usage: Record<string, number
  * 
  * @example
  * const usage = getUsageMetrics(ctx);
- * // Returns: { input_tokens: 100, output_tokens: 50 }
+ * // Returns: { inputTokens: 100, outputTokens: 50 }
  */
 export function getUsageMetrics(ctx: KernelContext): Record<string, number> {
   if (!ctx.metrics) {

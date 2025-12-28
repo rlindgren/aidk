@@ -1,15 +1,15 @@
 /**
  * Logger - Structured logging with automatic context injection
- * 
+ *
  * Built on pino for performance, with automatic injection of:
- * - Execution context (execution_id, thread_id, user_id, tick)
+ * - Execution context (executionId, threadId, userId, tick)
  * - OpenTelemetry trace/span IDs for log-trace correlation
  * - Custom metadata
- * 
+ *
  * @example
  * ```typescript
  * import { Logger } from 'aidk-kernel';
- * 
+ *
  * // Configure once at app start
  * Logger.configure({
  *   level: 'info',
@@ -20,31 +20,45 @@
  *     ],
  *   },
  * });
- * 
+ *
  * // Use anywhere - context is auto-injected
  * const log = Logger.get();
  * log.info('Processing request');
- * 
+ *
  * // Create scoped child logger
  * const toolLog = Logger.for('CalculatorTool');
  * toolLog.debug('Executing', { expression: '2+2' });
  * ```
  */
 
-import pino, { type Logger as PinoLogger, type LoggerOptions, type TransportSingleOptions, type TransportMultiOptions } from 'pino';
-import { Context, type KernelContext } from './context';
+import pino, {
+  type Logger as PinoLogger,
+  type LoggerOptions,
+  type TransportSingleOptions,
+  type TransportMultiOptions,
+} from "pino";
+import { Context, type KernelContext } from "./context";
 
 // =============================================================================
 // Types
 // =============================================================================
 
-export type LogLevel = 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal' | 'silent';
+export type LogLevel =
+  | "trace"
+  | "debug"
+  | "info"
+  | "warn"
+  | "error"
+  | "fatal"
+  | "silent";
 
 /**
  * Function to extract fields from KernelContext for logging.
  * Return an object with fields to include in every log entry.
  */
-export type ContextFieldsExtractor<TContext extends KernelContext = KernelContext> = (ctx: TContext) => Record<string, unknown>;
+export type ContextFieldsExtractor<
+  TContext extends KernelContext = KernelContext,
+> = (ctx: TContext) => Record<string, unknown>;
 
 export interface LoggerConfig<TContext extends KernelContext = KernelContext> {
   /** Log level (default: 'info') */
@@ -53,11 +67,11 @@ export interface LoggerConfig<TContext extends KernelContext = KernelContext> {
   transport?: TransportSingleOptions | TransportMultiOptions;
   /** Auto-inject execution context into every log (default: true) */
   includeContext?: boolean;
-  /** 
+  /**
    * Custom function to extract fields from context.
    * If not provided, only core KernelContext fields are extracted.
    * Use this to add application-specific fields from user/metadata.
-   * 
+   *
    * @example
    * ```typescript
    * Logger.configure({
@@ -66,8 +80,8 @@ export interface LoggerConfig<TContext extends KernelContext = KernelContext> {
    *     request_id: ctx.requestId,
    *     trace_id: ctx.traceId,
    *     // Your custom fields
-   *     tenant_id: ctx.user?.tenantId,
-   *     thread_id: ctx.metadata?.thread_id,
+   *     tenantId: ctx.user?.tenantId,
+   *     threadId: ctx.metadata?.threadId,
    *   }),
    * });
    * ```
@@ -79,6 +93,12 @@ export interface LoggerConfig<TContext extends KernelContext = KernelContext> {
   mixin?: () => Record<string, unknown>;
   /** Pretty print in development (default: true if NODE_ENV !== 'production') */
   prettyPrint?: boolean;
+  /**
+   * Replace existing config instead of merging (default: false).
+   * When true, completely replaces the existing configuration.
+   * When false (default), merges with existing configuration.
+   */
+  replace?: boolean;
 }
 
 export interface LogMethod {
@@ -93,13 +113,13 @@ export interface KernelLogger {
   warn: LogMethod;
   error: LogMethod;
   fatal: LogMethod;
-  
+
   /** Create a child logger with additional bindings */
   child(bindings: Record<string, unknown>): KernelLogger;
-  
+
   /** Get the current log level */
   level: LogLevel;
-  
+
   /** Check if a level is enabled */
   isLevelEnabled(level: LogLevel): boolean;
 }
@@ -118,16 +138,16 @@ let globalConfig: LoggerConfig = {};
  */
 const defaultContextFieldsExtractor: ContextFieldsExtractor = (ctx) => {
   const fields: Record<string, unknown> = {};
-  
+
   // Core KernelContext fields (well-defined)
   if (ctx.requestId) fields.request_id = ctx.requestId;
   if (ctx.traceId) fields.trace_id = ctx.traceId;
-  
+
   // Procedure context (well-defined)
   if (ctx.procedurePid) fields.procedure_id = ctx.procedurePid;
   if (ctx.procedureNode?.name) fields.procedure_name = ctx.procedureNode.name;
   if (ctx.origin?.name) fields.origin_procedure = ctx.origin.name;
-  
+
   return fields;
 };
 
@@ -139,12 +159,12 @@ function getContextFields(config: LoggerConfig): Record<string, unknown> {
   if (config.includeContext === false) {
     return {};
   }
-  
+
   const ctx = Context.tryGet();
   if (!ctx) {
     return {};
   }
-  
+
   // Use custom extractor or default
   const extractor = config.contextFields ?? defaultContextFieldsExtractor;
   return extractor(ctx);
@@ -154,38 +174,38 @@ function getContextFields(config: LoggerConfig): Record<string, unknown> {
  * Create pino logger options from config.
  */
 function createPinoOptions(config: LoggerConfig): LoggerOptions {
-  const isDev = process.env.NODE_ENV !== 'production';
+  const isDev = process.env.NODE_ENV !== "production";
   const usePretty = config.prettyPrint ?? isDev;
-  
+
   const options: LoggerOptions = {
-    level: config.level ?? 'info',
+    level: config.level ?? "info",
     base: config.base ?? { pid: process.pid },
-    
+
     // Mixin runs on every log to inject context
     mixin: () => {
       const contextFields = getContextFields(config);
       const customFields = config.mixin?.() ?? {};
       return { ...contextFields, ...customFields };
     },
-    
+
     // Timestamp in ISO format
     timestamp: pino.stdTimeFunctions.isoTime,
   };
-  
+
   // Transport configuration
   if (config.transport) {
     options.transport = config.transport;
   } else if (usePretty) {
     options.transport = {
-      target: 'pino-pretty',
+      target: "pino-pretty",
       options: {
         colorize: true,
-        translateTime: 'SYS:standard',
-        ignore: 'pid,hostname',
+        translateTime: "SYS:standard",
+        ignore: "pid,hostname",
       },
     };
   }
-  
+
   return options;
 }
 
@@ -200,15 +220,15 @@ function wrapLogger(pinoLogger: PinoLogger): KernelLogger {
     warn: pinoLogger.warn.bind(pinoLogger),
     error: pinoLogger.error.bind(pinoLogger),
     fatal: pinoLogger.fatal.bind(pinoLogger),
-    
+
     child(bindings: Record<string, unknown>): KernelLogger {
       return wrapLogger(pinoLogger.child(bindings));
     },
-    
+
     get level(): LogLevel {
       return pinoLogger.level as LogLevel;
     },
-    
+
     isLevelEnabled(level: LogLevel): boolean {
       return pinoLogger.isLevelEnabled(level);
     },
@@ -231,23 +251,23 @@ function getOrCreateGlobalLogger(): PinoLogger {
 
 /**
  * Logger singleton for AIDK applications.
- * 
+ *
  * Provides structured logging with automatic context injection from the
  * current execution context (via AsyncLocalStorage).
- * 
+ *
  * @example
  * ```typescript
  * // Configure at app startup
  * Logger.configure({ level: 'debug' });
- * 
+ *
  * // Get logger (context auto-injected)
  * const log = Logger.get();
  * log.info('Request received');
- * 
+ *
  * // Create child logger for a component
  * const componentLog = Logger.for('MyComponent');
  * componentLog.debug('Initializing');
- * 
+ *
  * // Or from an object (uses constructor name)
  * class MyTool {
  *   private log = Logger.for(this);
@@ -258,9 +278,9 @@ export const Logger = {
   /**
    * Configure the global logger.
    * Should be called once at application startup.
-   * 
+   *
    * @param config Logger configuration
-   * 
+   *
    * @example
    * ```typescript
    * Logger.configure({
@@ -275,43 +295,54 @@ export const Logger = {
    * ```
    */
   configure(config: LoggerConfig): void {
-    globalConfig = config;
-    if (config.contextFields) {
-      globalConfig.contextFields = composeContextFields(defaultContextFields, config.contextFields);
+    // Replace or merge with existing config
+    if (config.replace) {
+      globalConfig = config;
     } else {
+      globalConfig = { ...globalConfig, ...config };
+    }
+
+    // Handle contextFields composition
+    if (config.contextFields) {
+      globalConfig.contextFields = composeContextFields(
+        defaultContextFields,
+        config.contextFields,
+      );
+    } else if (!globalConfig.contextFields) {
       globalConfig.contextFields = defaultContextFields;
     }
-    globalLogger = pino(createPinoOptions(config));
+
+    globalLogger = pino(createPinoOptions(globalConfig));
   },
-  
+
   /**
    * Get the global logger instance.
    * Context is automatically injected into every log.
-   * 
+   *
    * @returns KernelLogger instance
-   * 
+   *
    * @example
    * ```typescript
    * const log = Logger.get();
    * log.info('Processing', { items: 5 });
-   * // Output includes execution_id, user_id, trace_id, etc.
+   * // Output includes executionId, userId, trace_id, etc.
    * ```
    */
   get(): KernelLogger {
     return wrapLogger(getOrCreateGlobalLogger());
   },
-  
+
   /**
    * Create a child logger scoped to a component or name.
-   * 
+   *
    * @param nameOrComponent Component name or object (uses constructor.name)
    * @returns Child logger with component binding
-   * 
+   *
    * @example
    * ```typescript
    * // With string name
    * const log = Logger.for('CalculatorTool');
-   * 
+   *
    * // With object (uses class name)
    * class MyAgent {
    *   private log = Logger.for(this);
@@ -319,18 +350,19 @@ export const Logger = {
    * ```
    */
   for(nameOrComponent: string | object): KernelLogger {
-    const name = typeof nameOrComponent === 'string' 
-      ? nameOrComponent 
-      : nameOrComponent.constructor.name;
+    const name =
+      typeof nameOrComponent === "string"
+        ? nameOrComponent
+        : nameOrComponent.constructor.name;
     return wrapLogger(getOrCreateGlobalLogger().child({ component: name }));
   },
-  
+
   /**
    * Create a child logger with custom bindings.
-   * 
+   *
    * @param bindings Key-value pairs to include in every log
    * @returns Child logger with bindings
-   * 
+   *
    * @example
    * ```typescript
    * const requestLog = Logger.child({ request_id: req.id });
@@ -340,14 +372,14 @@ export const Logger = {
   child(bindings: Record<string, unknown>): KernelLogger {
     return wrapLogger(getOrCreateGlobalLogger().child(bindings));
   },
-  
+
   /**
    * Create a standalone logger instance with custom config.
    * Does not affect the global logger.
-   * 
+   *
    * @param config Logger configuration
    * @returns New logger instance
-   * 
+   *
    * @example
    * ```typescript
    * const auditLog = Logger.create({
@@ -359,33 +391,33 @@ export const Logger = {
   create(config: LoggerConfig = {}): KernelLogger {
     return wrapLogger(pino(createPinoOptions(config)));
   },
-  
+
   /**
    * Get the current log level.
    */
   get level(): LogLevel {
     return getOrCreateGlobalLogger().level as LogLevel;
   },
-  
+
   /**
    * Set the log level at runtime.
-   * 
+   *
    * @param level New log level
    */
   setLevel(level: LogLevel): void {
     getOrCreateGlobalLogger().level = level;
   },
-  
+
   /**
    * Check if a level is enabled.
-   * 
+   *
    * @param level Log level to check
    * @returns true if the level is enabled
    */
   isLevelEnabled(level: LogLevel): boolean {
     return getOrCreateGlobalLogger().isLevelEnabled(level);
   },
-  
+
   /**
    * Reset the global logger (mainly for testing).
    */
@@ -402,18 +434,18 @@ export const Logger = {
 /**
  * Compose multiple context field extractors into one.
  * Later extractors override earlier ones for the same keys.
- * 
+ *
  * @example
  * ```typescript
  * import { composeContextFields, defaultContextFields } from 'aidk-kernel';
- * 
+ *
  * Logger.configure({
  *   contextFields: composeContextFields(
  *     defaultContextFields,  // Core kernel fields
  *     (ctx) => ({            // Your custom fields
- *       tenant_id: ctx.user?.tenantId,
- *       thread_id: ctx.metadata?.thread_id,
- *       execution_id: ctx.metadata?.execution_id,
+ *       tenantId: ctx.user?.tenantId,
+ *       threadId: ctx.metadata?.threadId,
+ *       executionId: ctx.metadata?.executionId,
  *     }),
  *   ),
  * });

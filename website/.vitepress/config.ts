@@ -1,0 +1,114 @@
+import { defineConfig } from "vitepress";
+
+export default defineConfig({
+  title: "AIDK",
+  description:
+    "Context engineering for AI agents. Control what your model sees on every tick.",
+  base: "/aidk/",
+  ignoreDeadLinks: true, // TODO: Fix remaining dead links as docs are completed
+
+  head: [
+    ["link", { rel: "icon", type: "image/svg+xml", href: "/aidk/logo.svg" }],
+    ["meta", { name: "theme-color", content: "#3b9eff" }],
+    ["meta", { property: "og:type", content: "website" }],
+    [
+      "meta",
+      {
+        property: "og:title",
+        content: "AIDK - Context Engineering for AI Agents",
+      },
+    ],
+    [
+      "meta",
+      {
+        property: "og:description",
+        content:
+          "Control what your model sees on every tick. No templates. No YAML. Just code.",
+      },
+    ],
+  ],
+
+  themeConfig: {
+    logo: "/logo.svg",
+
+    nav: [
+      { text: "Docs", link: "/docs/" },
+      { text: "Examples", link: "/examples/" },
+      {
+        text: "GitHub",
+        link: "https://github.com/lindgrengroup/aidk",
+      },
+    ],
+
+    sidebar: {
+      "/docs/": [
+        {
+          text: "Getting Started",
+          items: [
+            { text: "What is AIDK?", link: "/docs/" },
+            { text: "Installation", link: "/docs/installation" },
+            { text: "Quick Start", link: "/docs/getting-started" },
+            { text: "Core Concepts", link: "/docs/concepts" },
+          ],
+        },
+        {
+          text: "Building Agents",
+          items: [
+            { text: "Components", link: "/docs/components" },
+            { text: "State Management", link: "/docs/state-management" },
+            { text: "Creating Tools", link: "/docs/guides/tools" },
+            { text: "Semantic Primitives", link: "/docs/semantic-primitives" },
+            { text: "Renderers", link: "/docs/guides/renderers" },
+          ],
+        },
+        {
+          text: "Advanced",
+          items: [
+            {
+              text: "Progressive Adoption",
+              link: "/docs/progressive-adoption",
+            },
+            { text: "Real-time Channels", link: "/docs/guides/channels" },
+            { text: "Fork & Spawn", link: "/docs/guides/fork-spawn" },
+          ],
+        },
+        {
+          text: "Integration",
+          items: [
+            { text: "Vercel AI SDK", link: "/docs/adapters/ai-sdk" },
+            { text: "Express", link: "/docs/frameworks/express" },
+            { text: "React", link: "/docs/frameworks/react" },
+          ],
+        },
+      ],
+      "/examples/": [
+        {
+          text: "Examples",
+          items: [
+            { text: "Overview", link: "/examples/" },
+            { text: "Simple Chat", link: "/examples/simple-chat" },
+            { text: "Task Assistant", link: "/examples/task-assistant" },
+          ],
+        },
+      ],
+    },
+
+    socialLinks: [
+      { icon: "github", link: "https://github.com/lindgrengroup/aidk" },
+    ],
+
+    footer: {
+      message: "Released under the MIT License.",
+      copyright: "Copyright 2024-present",
+    },
+
+    search: {
+      provider: "local",
+    },
+
+    editLink: {
+      pattern: "https://github.com/lindgrengroup/aidk/edit/main/website/:path",
+      text: "Edit this page on GitHub",
+    },
+  },
+});

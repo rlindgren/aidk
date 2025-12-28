@@ -1,15 +1,15 @@
 /**
  * MCP Service
- * 
+ *
  * Manages MCP server connections, tool discovery, and registration.
  * Uses the official @modelcontextprotocol/sdk Client.
  */
 
-import { Client } from '@modelcontextprotocol/sdk/client';
-import { MCPClient } from './client';
-import { MCPTool } from './tool';
-import type { MCPConfig, MCPToolDefinition } from './types';
-import { ContextObjectModel } from '../com/object-model';
+import { Client } from "@modelcontextprotocol/sdk/client";
+import { MCPClient } from "./client";
+import { MCPTool } from "./tool";
+import type { MCPConfig, MCPToolDefinition } from "./types";
+import { ContextObjectModel } from "../com/object-model";
 
 /**
  * MCP Service handles discovery and registration of MCP tools
@@ -34,7 +34,7 @@ export class MCPService {
    */
   async connectAndDiscover(config: MCPConfig): Promise<MCPToolDefinition[]> {
     await this.connect(config);
-    
+
     return await this.listTools(config.serverName);
   }
 
@@ -43,22 +43,17 @@ export class MCPService {
    */
   async discoverAndRegister(
     config: MCPConfig,
-    com: ContextObjectModel
+    com: ContextObjectModel,
   ): Promise<void> {
     const tools = await this.connectAndDiscover(config);
-    
+
     for (const mcpToolDef of tools) {
-      const tool = new MCPTool(
-        this.mcpClient,
-        config.serverName,
-        mcpToolDef,
-        {
-          serverUrl: config.connection.url,
-          serverName: config.serverName,
-          transport: config.transport,
-        }
-      );
-      
+      const tool = new MCPTool(this.mcpClient, config.serverName, mcpToolDef, {
+        serverUrl: config.connection.url,
+        serverName: config.serverName,
+        transport: config.transport,
+      });
+
       com.addTool(tool);
     }
   }
@@ -73,41 +68,36 @@ export class MCPService {
   registerMCPTool(
     config: MCPConfig,
     mcpToolDef: MCPToolDefinition,
-    com: ContextObjectModel
+    com: ContextObjectModel,
   ): void {
-    const tool = new MCPTool(
-      this.mcpClient,
-      config.serverName,
-      mcpToolDef,
-      {
-        serverUrl: config.connection.url,
-        serverName: config.serverName,
-        transport: config.transport,
-      }
-    );
-    
+    const tool = new MCPTool(this.mcpClient, config.serverName, mcpToolDef, {
+      serverUrl: config.connection.url,
+      serverName: config.serverName,
+      transport: config.transport,
+    });
+
     com.addTool(tool);
   }
 
   /**
-   * Disconnect from an MCP server and remove its tools
+   * Disconnect from an MCP server and remove its tools.
+   * Finds tools belonging to this server by checking metadata.mcpConfig.serverName.
    */
   async disconnectAndUnregister(
     serverName: string,
-    com: ContextObjectModel
+    com: ContextObjectModel,
   ): Promise<void> {
-    // Get all tools from this server
-    const toolsToRemove: string[] = [];
-    
-    // Note: We'd need a way to track which tools belong to which MCP server
-    // For now, we'll need to pass tool names or track them separately
-    // This is a limitation we should address
-    
+    // Find all tools that belong to this MCP server
+    const allTools = com.getTools();
+    const toolsToRemove = allTools
+      .filter((tool) => tool.metadata.mcpConfig?.serverName === serverName)
+      .map((tool) => tool.metadata.name);
+
+    // Remove each tool from the COM
     for (const toolName of toolsToRemove) {
       com.removeTool(toolName);
     }
-    
+
     await this.disconnect(serverName);
   }
 }
-

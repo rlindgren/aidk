@@ -25,10 +25,10 @@ export const TodoListTool = createTool({
     // Get context during execution
     const ctx = Context.get();
     const userId = ctx.user.id 
-      || ctx.metadata.user_id 
+      || ctx.metadata.userId 
       || 'anonymous';
-    const sourceConnectionId = ctx.metadata.session_id;
-    const threadId = ctx.metadata.thread_id;
+    const sourceConnectionId = ctx.metadata.sessionId;
+    const threadId = ctx.metadata.threadId;
     
     const options: TodoActionOptions = {
       sourceConnectionId,
@@ -73,7 +73,7 @@ export const TodoListTool = createTool({
     // Resolve userId from context
     const ctx = Context.get();
     const userId = ctx.user.id 
-      || ctx.metadata.user_id 
+      || ctx.metadata.userId 
       || (com.getUserInput() as any)?.userId
       || 'anonymous';
     
@@ -141,10 +141,10 @@ export const TodoListTool = createTool({
               </Row>
               {tasks.map(t => (
                 <Row key={t.id}>
+                  <Column>[{t.completed ? '✔' : ' '}]</Column>
                   <Column>{t.id}</Column>
                   <Column>{t.title}</Column>
                   <Column>{t.description || '-'}</Column>
-                  <Column>{t.completed ? '✔' : '✘'}</Column>
                 </Row>
               ))}
             </Table>

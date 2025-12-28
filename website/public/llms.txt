@@ -1,0 +1,72 @@
+# AIDK - AI Agent Development Kit
+
+> A React-inspired JSX framework for building AI agents
+
+## Overview
+
+AIDK is a TypeScript framework for building AI agents using familiar React patterns:
+- JSX components for declarative agent definitions
+- Hooks (useState, useEffect, useComputed) for state management
+- Signal-based reactivity for efficient updates
+- Multi-model support (OpenAI, Google, Anthropic via AI SDK)
+
+## Documentation
+
+- Getting Started: https://aidk.dev/docs/getting-started
+- API Reference: https://aidk.dev/api
+- Examples: https://aidk.dev/examples
+
+## Source Code
+
+- Repository: https://github.com/aidk/aidk
+- AI Agent Guide: https://github.com/aidk/aidk/blob/main/CLAUDE.md
+
+## Key Concepts
+
+### JSX Components
+Define agents as JSX components with familiar patterns:
+```tsx
+function MyAgent() {
+  const [count, setCount] = useState(0);
+  return <Assistant model="gpt-4o">You are helpful. Count: {count}</Assistant>;
+}
+```
+
+### Tools
+Create tools with typed parameters:
+```tsx
+const Calculator = createTool({
+  name: 'calculate',
+  parameters: z.object({ expression: z.string() }),
+  handler: async ({ expression }) => eval(expression)
+});
+```
+
+### Streaming
+Stream agent responses in real-time:
+```tsx
+for await (const event of engine.stream(agent, input)) {
+  if (event.type === 'model_chunk') console.log(event.chunk.delta);
+}
+```
+
+## Package Structure
+
+| Package | Description |
+|---------|-------------|
+| aidk | Core framework (JSX, hooks, engine) |
+| aidk-kernel | Low-level execution primitives |
+| aidk-shared | Platform-independent types |
+| aidk-client | Browser client |
+| aidk-server | Server utilities |
+| aidk-express | Express middleware |
+| aidk-nestjs | NestJS module |
+| aidk-react | React bindings |
+| aidk-angular | Angular bindings |
+| aidk-ai-sdk | Vercel AI SDK adapter |
+| aidk-openai | OpenAI native adapter |
+| aidk-google | Google AI native adapter |
+
+## License
+
+MIT License - See LICENSE file for details.

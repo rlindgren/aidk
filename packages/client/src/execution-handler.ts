@@ -1,17 +1,18 @@
 /**
  * ExecutionHandler - Framework-agnostic execution management
- * 
+ *
  * Provides:
  * - Message accumulation
  * - Stream event processing
  * - Thread management
  * - Error handling
- * 
+ *
  * Used by React hooks and Angular services for consistent behavior.
  */
 
-import { EngineClient } from './engine-client';
-import type { Message, ContentBlock, EngineStreamEvent } from './types';
+import { EngineClient } from "./engine-client";
+import type { Message, ContentBlock, EngineStreamEvent } from "./types";
+import { ValidationError } from "aidk-shared";
 
 // =============================================================================
 // Message Helpers
@@ -30,17 +31,16 @@ export function generateMessageId(): string {
  * Create a Message object with generated ID and timestamp
  */
 export function createMessage(
-  role: Message['role'],
+  role: Message["role"],
   content: ContentBlock[] | string,
-  metadata?: Record<string, unknown>
+  metadata?: Record<string, unknown>,
 ): Message {
   return {
     id: generateMessageId(),
     role,
-    content: typeof content === 'string' 
-      ? [{ type: 'text', text: content }] 
-      : content,
-    created_at: new Date().toISOString(),
+    content:
+      typeof content === "string" ? [{ type: "text", text: content }] : content,
+    createdAt: new Date().toISOString(),
     metadata,
   };
 }
@@ -49,42 +49,49 @@ export function createMessage(
  * Flexible message input types
  */
 export type MessageInput =
-  | string                    // Simple text -> user message
-  | ContentBlock              // Single block -> user message
-  | ContentBlock[]            // Multiple blocks -> user message
-  | Message                   // Full message
-  | Message[];                // Multiple messages
+  | string // Simple text -> user message
+  | ContentBlock // Single block -> user message
+  | ContentBlock[] // Multiple blocks -> user message
+  | Message // Full message
+  | Message[]; // Multiple messages
 
 /**
  * Normalize flexible input to Message array
  */
-export function normalizeMessageInput(input: MessageInput, defaultRole: Message['role'] = 'user'): Message[] {
+export function normalizeMessageInput(
+  input: MessageInput,
+  defaultRole: Message["role"] = "user",
+): Message[] {
   // Already an array of messages
-  if (Array.isArray(input) && input.length > 0 && 'role' in input[0]) {
+  if (Array.isArray(input) && input.length > 0 && "role" in input[0]) {
     return input as Message[];
   }
-  
+
   // Single message
-  if (typeof input === 'object' && 'role' in input && 'content' in input) {
+  if (typeof input === "object" && "role" in input && "content" in input) {
     return [input as Message];
   }
-  
+
   // String -> text block in user message
-  if (typeof input === 'string') {
+  if (typeof input === "string") {
     return [createMessage(defaultRole, input)];
   }
-  
+
   // Single content block
-  if (typeof input === 'object' && 'type' in input) {
+  if (typeof input === "object" && "type" in input) {
     return [createMessage(defaultRole, [input as ContentBlock])];
   }
-  
+
   // Array of content blocks
   if (Array.isArray(input)) {
     return [createMessage(defaultRole, input as ContentBlock[])];
   }
-  
-  throw new Error(`Invalid message input: ${typeof input}`);
+
+  throw ValidationError.type(
+    "input",
+    "string | Message | Message[] | ContentBlock[]",
+    typeof input,
+  );
 }
 
 // =============================================================================
@@ -125,7 +132,7 @@ interface ToolUseLocation {
 
 /**
  * StreamProcessor - Framework-agnostic stream event processor
- * 
+ *
  * Handles:
  * - Message accumulation
  * - Text delta aggregation
@@ -135,8 +142,8 @@ interface ToolUseLocation {
 export class StreamProcessor {
   private messages: Message[] = [];
   private callbacks: StreamProcessorCallbacks;
-  
-  /** Index for O(1) tool_use block lookup by tool_use_id */
+
+  /** Index for O(1) tool_use block lookup by toolUseId */
   private toolUseIndex = new Map<string, ToolUseLocation>();
 
   constructor(callbacks: StreamProcessorCallbacks) {
@@ -169,8 +176,8 @@ export class StreamProcessor {
    * Update a message by ID
    */
   updateMessage(id: string, updater: (message: Message) => Message): void {
-    this.messages = this.messages.map(msg => 
-      msg.id === id ? updater(msg) : msg
+    this.messages = this.messages.map((msg) =>
+      msg.id === id ? updater(msg) : msg,
     );
     this.callbacks.onMessagesChange(this.messages);
   }
@@ -179,19 +186,23 @@ export class StreamProcessor {
    * Patch a tool_use block with its result.
    * Uses the pre-built index for O(1) lookup.
    */
-  private patchToolUseWithResult(location: ToolUseLocation, result: ContentBlock): void {
-    this.messages = this.messages.map(msg => {
+  private patchToolUseWithResult(
+    location: ToolUseLocation,
+    result: ContentBlock,
+  ): void {
+    this.messages = this.messages.map((msg) => {
       if (msg.id !== location.messageId) return msg;
-      
+
       return {
         ...msg,
         content: msg.content.map((block, index) => {
-          if (index !== location.blockIndex || block.type !== 'tool_use') return block;
-          
+          if (index !== location.blockIndex || block.type !== "tool_use")
+            return block;
+
           // Patch the tool_use block with the result
           return {
             ...block,
-            tool_result: result,
+            toolResult: result,
           } as ContentBlock;
         }),
       };
@@ -201,117 +212,126 @@ export class StreamProcessor {
 
   /**
    * Process a stream event and update state
-   * 
+   *
    * @returns Processing result with state updates
    */
   processEvent(
     event: StreamEvent,
     context: StreamEventContext,
-    addedAssistantMessage: boolean
+    addedAssistantMessage: boolean,
   ): { addedAssistantMessage: boolean } {
     const { assistantMessage, assistantMessageId } = context;
 
     switch (event.type) {
-      case 'execution_start':
+      case "execution_start":
         // Execution started with thread context
-        if (event.thread_id) {
-          this.callbacks.onThreadIdChange?.(event.thread_id);
+        if (event.threadId) {
+          this.callbacks.onThreadIdChange?.(event.threadId);
         }
         break;
 
-      case 'execution_end':
+      case "execution_end":
         // Execution ended
         break;
 
-      case 'agent_start':
+      case "agent_start":
         // Agent started - could emit event
         break;
 
-      case 'tick_start':
+      case "tick_start":
         // New tick starting
         break;
 
-      case 'model_chunk':
+      case "model_chunk":
         // Process the chunk based on its type
         const chunk = event.chunk as any;
         if (!chunk?.type) break;
-        
+
         switch (chunk.type) {
           // Message lifecycle - create placeholder here
-          case 'message_start':
+          case "message_start":
             if (!addedAssistantMessage) {
               this.addMessage(assistantMessage);
               addedAssistantMessage = true;
             }
             break;
-          case 'message_end':
+          case "message_end":
             // Message ended - could extract final usage stats from chunk.usage
             break;
-            
+
           // Reasoning/thinking chunks
-          case 'reasoning_start':
-          case 'reasoning_delta':
-          case 'reasoning_end':
+          case "reasoning_start":
+          case "reasoning_delta":
+          case "reasoning_end":
             if (chunk.reasoning) {
               this.updateMessage(assistantMessageId, (msg) => {
-                const existingReasoning = msg.content.find(b => b.type === 'reasoning') as any;
+                const existingReasoning = msg.content.find(
+                  (b) => b.type === "reasoning",
+                ) as any;
                 if (existingReasoning) {
                   return {
                     ...msg,
-                    content: msg.content.map(b => 
-                      b.type === 'reasoning' 
+                    content: msg.content.map((b) =>
+                      b.type === "reasoning"
                         ? { ...b, text: (b as any).text + chunk.reasoning }
-                        : b
+                        : b,
                     ),
                   };
                 } else {
                   // Add reasoning block at the start of content
                   return {
                     ...msg,
-                    content: [{ type: 'reasoning', text: chunk.reasoning }, ...msg.content],
+                    content: [
+                      { type: "reasoning", text: chunk.reasoning },
+                      ...msg.content,
+                    ],
                   };
                 }
               });
             }
             break;
-            
+
           // Content chunks
-          case 'content_start':
+          case "content_start":
             // Content block starting - could track by chunk.id for multi-block support
             break;
-          case 'content_delta':
+          case "content_delta":
             if (chunk.delta) {
               // Check if this is tool input streaming (blockType: 'tool_use')
-              if (chunk.blockType === 'tool_use') {
+              if (chunk.blockType === "tool_use") {
                 // Tool input streaming - informational only, full input arrives via tool_call event
                 break;
               }
-              
+
               // Check if this is tool result content streaming (blockType: 'tool_result')
-              if (chunk.blockType === 'tool_result') {
+              if (chunk.blockType === "tool_result") {
                 // Tool result content streaming - accumulate in the most recent tool_result block
                 this.updateMessage(assistantMessageId, (msg) => {
-                  const toolResultBlocks = msg.content.filter(b => b.type === 'tool_result');
+                  const toolResultBlocks = msg.content.filter(
+                    (b) => b.type === "tool_result",
+                  );
                   if (toolResultBlocks.length > 0) {
-                    const lastToolResult = toolResultBlocks[toolResultBlocks.length - 1];
+                    const lastToolResult =
+                      toolResultBlocks[toolResultBlocks.length - 1];
                     // Append delta to the last text block in tool_result content, or create new text block
                     const updatedContent = [...lastToolResult.content];
-                    const lastTextBlock = updatedContent[updatedContent.length - 1];
-                    if (lastTextBlock?.type === 'text') {
+                    const lastTextBlock =
+                      updatedContent[updatedContent.length - 1];
+                    if (lastTextBlock?.type === "text") {
                       updatedContent[updatedContent.length - 1] = {
                         ...lastTextBlock,
                         text: lastTextBlock.text + chunk.delta,
                       };
                     } else {
-                      updatedContent.push({ type: 'text', text: chunk.delta });
+                      updatedContent.push({ type: "text", text: chunk.delta });
                     }
-                    
+
                     return {
                       ...msg,
-                      content: msg.content.map(b => 
-                        b === lastToolResult 
+                      content: msg.content.map((b) =>
+                        b === lastToolResult
                           ? { ...b, content: updatedContent }
-                          : b
+                          : b,
                       ),
                     };
                   }
@@ -319,37 +339,42 @@ export class StreamProcessor {
                 });
                 break;
               }
-              
+
               // Regular text content delta
               this.updateMessage(assistantMessageId, (msg) => {
-                const existingText = msg.content.find(b => b.type === 'text') as any;
+                const existingText = msg.content.find(
+                  (b) => b.type === "text",
+                ) as any;
                 if (existingText) {
                   return {
                     ...msg,
-                    content: msg.content.map(b => 
-                      b.type === 'text' 
+                    content: msg.content.map((b) =>
+                      b.type === "text"
                         ? { ...b, text: (b as any).text + chunk.delta }
-                        : b
+                        : b,
                     ),
                   };
                 } else {
                   return {
                     ...msg,
-                    content: [...msg.content, { type: 'text', text: chunk.delta }],
+                    content: [
+                      ...msg.content,
+                      { type: "text", text: chunk.delta },
+                    ],
                   };
                 }
               });
             }
             break;
-          case 'content_end':
+          case "content_end":
             // Content block ended
             break;
-            
+
           // Tool-related chunks
-          case 'tool_call':
+          case "tool_call":
             // Handled via the tool_call event type above
             break;
-          case 'tool_result':
+          case "tool_result":
             // Provider-executed tool result (web search, code execution, etc.)
             // Add as tool_result block to assistant message
             this.updateMessage(assistantMessageId, (msg) => ({
@@ -357,58 +382,60 @@ export class StreamProcessor {
               content: [
                 ...msg.content,
                 {
-                  type: 'tool_result',
-                  tool_use_id: chunk.toolCallId,
+                  type: "tool_result",
+                  toolUseId: chunk.toolCallId,
                   name: chunk.toolName,
-                  content: Array.isArray(chunk.toolResult) 
-                    ? chunk.toolResult 
-                    : [{ type: 'text', text: String(chunk.toolResult) }],
-                  is_error: chunk.isToolError || false,
-                  executed_by: chunk.providerExecuted ? 'provider' : 'engine',
+                  content: Array.isArray(chunk.toolResult)
+                    ? chunk.toolResult
+                    : [{ type: "text", text: String(chunk.toolResult) }],
+                  isError: chunk.isToolError || false,
+                  executedBy: chunk.providerExecuted ? "provider" : "engine",
                 } as ContentBlock,
               ],
             }));
             break;
-            
+
           // Step lifecycle
-          case 'step_start':
+          case "step_start":
             // Step starting - could emit event or track metadata
             break;
-          case 'step_end':
+          case "step_end":
             // Step ended - could extract usage stats from chunk.usage
             break;
-            
+
           // Errors
-          case 'error':
+          case "error":
             if (chunk.raw?.error) {
               this.callbacks.onError?.(
-                chunk.raw.error instanceof Error 
-                  ? chunk.raw.error 
-                  : new Error(String(chunk.raw.error))
+                chunk.raw.error instanceof Error
+                  ? chunk.raw.error
+                  : new Error(String(chunk.raw.error)),
               );
             }
             break;
         }
         break;
 
-      case 'tool_call':
+      case "tool_call":
         // Find current block count to know where this tool_use will be
-        const currentMsg = this.messages.find(m => m.id === assistantMessageId);
+        const currentMsg = this.messages.find(
+          (m) => m.id === assistantMessageId,
+        );
         const blockIndex = currentMsg?.content.length ?? 0;
-        
+
         // Register in index for O(1) lookup when result arrives
         this.toolUseIndex.set(event.call.id, {
           messageId: assistantMessageId,
           blockIndex,
         });
-        
+
         this.updateMessage(assistantMessageId, (msg) => ({
           ...msg,
           content: [
             ...msg.content,
             {
-              type: 'tool_use',
-              tool_use_id: event.call.id,
+              type: "tool_use",
+              toolUseId: event.call.id,
               name: event.call.name,
               input: event.call.input,
             } as ContentBlock,
@@ -416,45 +443,46 @@ export class StreamProcessor {
         }));
         break;
 
-      case 'tool_result':
-        // Backend sends: { tool_use_id, name, success, content, error, executed_by }
+      case "tool_result":
+        // Backend sends: { toolUseId, name, success, content, error, executedBy }
         const toolResult = event.result as any;
-        
+
         // Build the tool result block
         const toolResultBlock: ContentBlock = {
-          type: 'tool_result',
-          tool_use_id: toolResult.tool_use_id,
+          type: "tool_result",
+          toolUseId: toolResult.toolUseId,
           name: toolResult.name,
           content: toolResult.content || [],
-          is_error: !toolResult.success,
-          executed_by: toolResult.executed_by,
+          isError: !toolResult.success,
+          executedBy: toolResult.executedBy,
         };
-        
+
         // Patch the tool_use block with the result (O(1) lookup)
-        const location = this.toolUseIndex.get(toolResult.tool_use_id);
+        const location = this.toolUseIndex.get(toolResult.toolUseId);
         if (location) {
           this.patchToolUseWithResult(location, toolResultBlock);
         }
-        
+
         // Also add tool result as separate message (for API/model compatibility)
-        const toolResultMessage = createMessage('tool', [toolResultBlock]);
+        const toolResultMessage = createMessage("tool", [toolResultBlock]);
         this.addMessage(toolResultMessage);
         break;
 
-      case 'tick_end':
+      case "tick_end":
         // Tick completed
         break;
 
-      case 'agent_end':
-        // Extract thread_id from result metadata
+      case "agent_end":
+        // Extract threadId from result metadata
         const result = event.output as any;
         this.callbacks.onComplete?.(result);
         break;
 
-      case 'error':
-        const error = event.error instanceof Error 
-          ? event.error 
-          : new Error(String(event.error));
+      case "error":
+        const error =
+          event.error instanceof Error
+            ? event.error
+            : new Error(String(event.error));
         this.callbacks.onError?.(error);
         break;
     }
@@ -501,7 +529,7 @@ export interface SendMessageOptions {
 
 /**
  * ExecutionHandler - Full execution management
- * 
+ *
  * Wraps EngineClient and StreamProcessor for complete execution lifecycle.
  * Framework-agnostic - used by React hooks and Angular services.
  */
@@ -572,10 +600,10 @@ export class ExecutionHandler {
   async sendMessage(
     agentId: string,
     input: MessageInput,
-    options: SendMessageOptions = {}
+    options: SendMessageOptions = {},
   ): Promise<void> {
     // Normalize input to messages
-    const inputMessages = normalizeMessageInput(input, 'user');
+    const inputMessages = normalizeMessageInput(input, "user");
 
     // Add input messages to display
     for (const msg of inputMessages) {
@@ -584,14 +612,14 @@ export class ExecutionHandler {
     }
 
     // Create placeholder for assistant response
-    const assistantMessage = createMessage('assistant', []);
+    const assistantMessage = createMessage("assistant", []);
     const assistantMessageId = assistantMessage.id!;
     this.processor.setCurrentAssistantId(assistantMessageId);
 
     // Build engine input
     const engineInput = {
       messages: inputMessages,
-      thread_id: options.threadId || this.threadId || undefined,
+      threadId: options.threadId || this.threadId || undefined,
       metadata: options.metadata,
     };
 
@@ -613,7 +641,7 @@ export class ExecutionHandler {
         const result = this.processor.processEvent(
           event as StreamEvent,
           { assistantMessage, assistantMessageId },
-          addedAssistantMessage
+          addedAssistantMessage,
         );
         addedAssistantMessage = result.addedAssistantMessage;
       }
@@ -637,4 +665,3 @@ export class ExecutionHandler {
     this.callbacks.onErrorChange?.(null);
   }
 }
-

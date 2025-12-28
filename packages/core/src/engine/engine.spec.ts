@@ -431,10 +431,10 @@ describe('Engine v2', () => {
                 type: 'tool_result' as const,
                 id: r.id,
                 name: r.name || 'unknown',
-                tool_use_id: r.tool_use_id,
+                toolUseId: r.toolUseId,
                 content: r.content,
-                is_error: !r.success,
-                executed_by: r.executed_by || 'engine'
+                isError: !r.success,
+                executedBy: r.executedBy || 'engine'
               }))
             };
             

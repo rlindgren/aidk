@@ -63,10 +63,10 @@ export class AgentController {
 The interceptor extracts context from:
 
 1. **Request Body:**
-   - `body.thread_id`
-   - `body.user_id`
-   - `body.tenant_id`
-   - `body.session_id`
+   - `body.threadId`
+   - `body.userId`
+   - `body.tenantId`
+   - `body.sessionId`
 
 2. **Request Headers:**
    - `x-thread-id` or `thread-id`
@@ -85,8 +85,8 @@ import { Context } from 'aidk';
 export class MyService {
   async doSomething() {
     const ctx = Context.get();
-    const threadId = ctx.metadata.thread_id;
-    const userId = ctx.metadata.user_id;
+    const threadId = ctx.metadata.threadId;
+    const userId = ctx.metadata.userId;
     // ...
   }
 }
@@ -133,8 +133,8 @@ export class CustomContextInterceptor extends EngineContextInterceptor {
     // Custom extraction logic
     const customContext = Context.create({
       metadata: {
-        thread_id: request.headers['custom-thread-id'],
-        user_id: request.user?.id, // From auth guard
+        threadId: request.headers['custom-thread-id'],
+        userId: request.user?.id, // From auth guard
         // ...
       },
     });

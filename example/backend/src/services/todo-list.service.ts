@@ -12,17 +12,17 @@ import { type UserActionBlock, createEventMessage } from 'aidk';
 /**
  * Nil UUID (RFC 4122) used for user-global events.
  * 
- * Event messages with this thread_id are user-scoped, not thread-scoped.
+ * Event messages with this threadId are user-scoped, not thread-scoped.
  * They represent actions that happened "outside" any specific conversation
  * (e.g., UI-initiated task completion, external system events).
  * 
  * When loading conversation history, query:
- *   WHERE user_id = ? AND (thread_id = ? OR thread_id = GLOBAL_THREAD_ID)
+ *   WHERE userId = ? AND (threadId = ? OR threadId = GLOBAL_THREAD_ID)
  * 
  * This ensures all threads for a user see global events, properly ordered
  * by timestamp alongside thread-specific messages.
  * 
- * Why not nullable thread_id?
+ * Why not nullable threadId?
  * - Works with UUID-typed columns (no schema change needed)
  * - Avoids NULL handling complexity in ORMs
  * - Clear semantic: nil UUID = "belongs to user, not to any specific thread"
@@ -82,7 +82,7 @@ export class TodoListService {
   }
   
   /**
-   * Load tasks from persistence (scoped by user_id)
+   * Load tasks from persistence (scoped by userId)
    */
   static async getTasks(userId: string): Promise<TodoTask[]> {
     const state = await toolStateRepo().findByToolAndThread('todo_list', userId);
@@ -96,7 +96,7 @@ export class TodoListService {
   }
 
   /**
-   * Save tasks to persistence (scoped by user_id)
+   * Save tasks to persistence (scoped by userId)
    */
   private static async saveTasks(userId: string, tasks: TodoTask[]): Promise<void> {
     await toolStateRepo().upsert({
@@ -170,7 +170,7 @@ export class TodoListService {
       details: {
         description: details,
         timestamp: new Date().toISOString(),
-        user_id: userId,
+        userId: userId,
       },
       // Human-readable text for model consumption
       text: `User ${action} on todo list: ${details}`,
@@ -179,7 +179,7 @@ export class TodoListService {
     const eventMessage = createEventMessage(
       [block],
       'user_action',
-      { ui_action: true, action_type: action, user_id: userId }
+      { ui_action: true, action_type: action, userId: userId }
     );
 
     await messageRepo().create({

@@ -10,7 +10,7 @@ export interface ScratchpadNote {
   id: string;
   text: string;
   source: 'model' | 'user';
-  created_at?: string;
+  createdAt?: string;
 }
 
 interface ScratchpadResponse {
@@ -24,12 +24,12 @@ const API_URL = import.meta.env.VITE_API_URL || '';
 // Define the scratchpad channel contract
 const ScratchpadChannel = defineChannel<
   // Incoming events (from server)
-  { state_changed: { notes: ScratchpadNote[]; thread_id?: string } },
+  { state_changed: { notes: ScratchpadNote[]; threadId?: string } },
   // Outgoing events (to server)
   { 
-    add_note: { text: string; thread_id: string };
-    remove_note: { note_id: string; thread_id: string };
-    clear_notes: { thread_id: string };
+    add_note: { text: string; threadId: string };
+    remove_note: { note_id: string; threadId: string };
+    clear_notes: { threadId: string };
   }
 >('scratchpad');
 
@@ -48,9 +48,9 @@ export function useScratchpad(client: EngineClient, threadId: string | null = nu
 
   // Subscribe to state changes
   useEffect(() => {
-    return channel.on('state_changed', ({ notes, thread_id }) => {
+    return channel.on('state_changed', ({ notes, threadId }) => {
       // Only update if it's for our thread
-      if (!thread_id || thread_id === effectiveThreadId) {
+      if (!threadId || threadId === effectiveThreadId) {
         setNotes(notes);
       }
     });
@@ -61,7 +61,7 @@ export function useScratchpad(client: EngineClient, threadId: string | null = nu
     const fetchNotes = async () => {
       try {
         const params = new URLSearchParams();
-        params.set('thread_id', effectiveThreadId);
+        params.set('threadId', effectiveThreadId);
         
         const response = await fetch(`${API_URL}/api/notes?${params}`);
         if (response.ok) {
@@ -86,7 +86,7 @@ export function useScratchpad(client: EngineClient, threadId: string | null = nu
       try {
         const response = await channel.send('add_note', { 
           text,
-          thread_id: effectiveThreadId,
+          threadId: effectiveThreadId,
         }) as ScratchpadResponse;
         
         if (response?.notes) {
@@ -106,7 +106,7 @@ export function useScratchpad(client: EngineClient, threadId: string | null = nu
 
       const response = await channel.send('remove_note', { 
         note_id: noteId,
-        thread_id: effectiveThreadId,
+        threadId: effectiveThreadId,
       }) as ScratchpadResponse;
       
       if (response?.notes) {
@@ -122,7 +122,7 @@ export function useScratchpad(client: EngineClient, threadId: string | null = nu
       setNotes([]);
 
       const response = await channel.send('clear_notes', { 
-        thread_id: effectiveThreadId,
+        threadId: effectiveThreadId,
       }) as ScratchpadResponse;
       
       if (response?.notes) {

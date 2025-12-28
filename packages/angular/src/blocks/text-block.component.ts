@@ -1,38 +1,72 @@
-import { Component, Input } from '@angular/core';
-import type { OnChanges, SimpleChanges } from '@angular/core';
-import { DomSanitizer } from '@angular/platform-browser';
-import type { SafeHtml } from '@angular/platform-browser';
-import { marked } from 'marked';
-import type { TextBlock, ReasoningBlock } from 'aidk-client';
+import { Component, Input } from "@angular/core";
+import type { TextBlock, ReasoningBlock } from "aidk-client";
 
 /**
- * TextBlock component - renders markdown text content.
- * 
- * This is a style-less component. To add styling, either:
- * 1. Import the provided CSS: `@import 'aidk-angular/dist/markdown.css'`
- * 2. Add your own styles targeting `.aidk-markdown` class
- * 3. Use ViewEncapsulation.None and add global styles
+ * TextBlock component - displays text content from AI responses.
+ *
+ * This component provides the raw text and lets you handle rendering.
+ * For markdown rendering, provide your rendered content via ng-content
+ * or use the `renderedHtml` input for pre-rendered HTML.
+ *
+ * This decoupled approach gives you control over:
+ * - Which markdown library to use (ngx-markdown, marked, etc.)
+ * - Sanitization (DOMPurify, Angular's built-in, etc.)
+ * - Custom styling and components
+ *
+ * @example Plain text (default)
+ * ```html
+ * <aidk-text-block [block]="block"></aidk-text-block>
+ * ```
+ *
+ * @example With ngx-markdown
+ * ```html
+ * <aidk-text-block [block]="block">
+ *   <markdown [data]="block.text"></markdown>
+ * </aidk-text-block>
+ * ```
+ *
+ * @example With pre-rendered HTML (sanitize first!)
+ * ```html
+ * <aidk-text-block [block]="block" [renderedHtml]="sanitizedHtml">
+ * </aidk-text-block>
+ * ```
+ *
+ * @example Access raw text in parent
+ * ```typescript
+ * // In your component
+ * renderMarkdown(text: string): SafeHtml {
+ *   const html = marked.parse(text);
+ *   return this.sanitizer.bypassSecurityTrustHtml(DOMPurify.sanitize(html));
+ * }
+ * ```
  */
 @Component({
-  selector: 'aidk-text-block',
+  selector: "aidk-text-block",
   standalone: true,
-  template: `<div class="aidk-markdown" [innerHTML]="renderedHtml"></div>`,
+  template: `
+    <div [class]="className">
+      <ng-content></ng-content>
+      @if (renderedHtml) {
+        <div [innerHTML]="renderedHtml"></div>
+      } @else if (!hasProjectedContent) {
+        {{ block.text }}
+      }
+    </div>
+  `,
 })
-export class TextBlockComponent implements OnChanges {
+export class TextBlockComponent {
   @Input() block!: TextBlock | ReasoningBlock;
-  
-  renderedHtml: SafeHtml = '';
+  @Input() className?: string;
 
-  constructor(private sanitizer: DomSanitizer) {}
+  /**
+   * Pre-rendered HTML content. If provided, renders this instead of plain text.
+   * IMPORTANT: Ensure this is sanitized before passing (e.g., via DOMPurify).
+   */
+  @Input() renderedHtml?: string;
 
-  ngOnChanges(changes: SimpleChanges): void {
-    if (changes['block'] && this.block) {
-      // marked.parse() is synchronous in v17
-      const html = typeof marked.parse === 'function' 
-        ? marked.parse(this.block.text, { breaks: true, gfm: true })
-        : marked(this.block.text, { breaks: true, gfm: true });
-      
-      this.renderedHtml = this.sanitizer.bypassSecurityTrustHtml(html as string);
-    }
-  }
+  /**
+   * Set to true if you're providing content via ng-content.
+   * This prevents the plain text fallback from showing.
+   */
+  @Input() hasProjectedContent = false;
 }

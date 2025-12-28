@@ -112,7 +112,7 @@ describe('language-model transformers', () => {
               content: [
                 {
                   type: 'tool_use',
-                  tool_use_id: 'tool_1',
+                  toolUseId: 'tool_1',
                   name: 'get_weather',
                   input: { city: 'NYC' },
                 } as any,
@@ -141,7 +141,7 @@ describe('language-model transformers', () => {
               content: [
                 {
                   type: 'tool_use',
-                  tool_use_id: 'tool_1',
+                  toolUseId: 'tool_1',
                   name: 'get_weather',
                   input: { city: 'NYC' },
                 } as any,
@@ -152,10 +152,10 @@ describe('language-model transformers', () => {
               content: [
                 {
                   type: 'tool_result',
-                  tool_use_id: 'tool_1',
+                  toolUseId: 'tool_1',
                   name: 'get_weather',
                   content: [{ type: 'text', text: 'Sunny, 72°F' }],
-                  is_error: false,
+                  isError: false,
                 } as any,
               ],
             },
@@ -174,11 +174,11 @@ describe('language-model transformers', () => {
         // Should have executed tool result
         expect(result.executedToolResults).toHaveLength(1);
         expect(result.executedToolResults![0]).toMatchObject({
-          tool_use_id: 'tool_1',
+          toolUseId: 'tool_1',
           name: 'get_weather',
           content: [{ type: 'text', text: 'Sunny, 72°F' }],
           success: true,
-          executed_by: 'adapter',
+          executedBy: 'adapter',
         });
       });
 
@@ -191,9 +191,9 @@ describe('language-model transformers', () => {
               role: 'assistant',
               content: [
                 // This was executed
-                { type: 'tool_use', tool_use_id: 'tool_1', name: 'search', input: { q: 'test' } } as any,
+                { type: 'tool_use', toolUseId: 'tool_1', name: 'search', input: { q: 'test' } } as any,
                 // This is pending
-                { type: 'tool_use', tool_use_id: 'tool_2', name: 'calculate', input: { x: 5 } } as any,
+                { type: 'tool_use', toolUseId: 'tool_2', name: 'calculate', input: { x: 5 } } as any,
               ],
             },
             {
@@ -201,7 +201,7 @@ describe('language-model transformers', () => {
               content: [
                 {
                   type: 'tool_result',
-                  tool_use_id: 'tool_1',
+                  toolUseId: 'tool_1',
                   name: 'search',
                   content: [{ type: 'text', text: 'Found results' }],
                 } as any,
@@ -218,17 +218,17 @@ describe('language-model transformers', () => {
 
         // tool_1 should be in executed
         expect(result.executedToolResults).toHaveLength(1);
-        expect(result.executedToolResults![0].tool_use_id).toBe('tool_1');
+        expect(result.executedToolResults![0].toolUseId).toBe('tool_1');
       });
 
-      it('should handle tool results with is_error flag', async () => {
+      it('should handle tool results with isError flag', async () => {
         const output: ModelOutput = {
           ...baseOutput,
           messages: [
             {
               role: 'assistant',
               content: [
-                { type: 'tool_use', tool_use_id: 'tool_1', name: 'risky_op', input: {} } as any,
+                { type: 'tool_use', toolUseId: 'tool_1', name: 'risky_op', input: {} } as any,
               ],
             },
             {
@@ -236,10 +236,10 @@ describe('language-model transformers', () => {
               content: [
                 {
                   type: 'tool_result',
-                  tool_use_id: 'tool_1',
+                  toolUseId: 'tool_1',
                   name: 'risky_op',
                   content: [{ type: 'text', text: 'Operation failed' }],
-                  is_error: true,
+                  isError: true,
                 } as any,
               ],
             },
@@ -294,7 +294,7 @@ describe('language-model transformers', () => {
           ...baseOutput,
           messages: [
             { role: 'assistant', content: [{ type: 'text', text: 'Hello' }] },
-            { role: 'tool', content: [{ type: 'tool_result', tool_use_id: '1', name: 'test', content: [] } as any] },
+            { role: 'tool', content: [{ type: 'tool_result', toolUseId: '1', name: 'test', content: [] } as any] },
             { role: 'assistant', content: [{ type: 'text', text: 'Goodbye' }] },
           ],
         };
@@ -335,7 +335,7 @@ describe('language-model transformers', () => {
             {
               role: 'assistant',
               content: [
-                { type: 'tool_use', tool_use_id: 'same_id', name: 'tool_a', input: { from: 'messages' } } as any,
+                { type: 'tool_use', toolUseId: 'same_id', name: 'tool_a', input: { from: 'messages' } } as any,
               ],
             },
           ],
@@ -376,7 +376,7 @@ describe('language-model transformers', () => {
             {
               role: 'assistant',
               content: [
-                { type: 'tool_use', tool_use_id: 'pending', name: 'tool', input: {} } as any,
+                { type: 'tool_use', toolUseId: 'pending', name: 'tool', input: {} } as any,
               ],
             },
           ],

@@ -106,7 +106,6 @@ class ChannelImpl<
     public readonly name: string,
     client: EngineClient
   ) {
-    console.log(`[ChannelImpl] Constructor called for: ${name}`);
     this.client = client;
     // Don't auto-connect - wait for first handler registration
     // This prevents the race condition where events arrive before handlers are set up
@@ -122,7 +121,7 @@ class ChannelImpl<
     this.unsubscribe = this.client.subscribe(this.name, (event) => {
       // Debug logging
       if (this.name === 'todo-list') {
-        console.log(`[Channel:${this.name}] Received event:`, event.type, 'handlers:', this.handlers.get(event.type)?.size || 0);
+        console.debug(`[Channel:${this.name}] Received event:`, event.type, 'handlers:', this.handlers.get(event.type)?.size || 0);
       }
       
       // Call type-specific handlers
@@ -136,10 +135,6 @@ class ChannelImpl<
     });
     
     this._connected = true;
-    
-    if (this.name === 'todo-list') {
-      console.log(`[Channel:${this.name}] Connected, registered handlers:`, Array.from(this.handlers.keys()));
-    }
   }
   
   on<K extends keyof TIncoming>(
@@ -147,11 +142,7 @@ class ChannelImpl<
     handler: (payload: TIncoming[K], event: ChannelEvent) => void
   ): () => void {
     const key = eventType as string;
-    
-    if (this.name === 'todo-list') {
-      console.log(`[Channel:${this.name}] Registering handler for:`, key);
-    }
-    
+
     if (!this.handlers.has(key)) {
       this.handlers.set(key, new Set());
     }
@@ -160,15 +151,8 @@ class ChannelImpl<
     // Connect lazily - only when we have handlers
     this.ensureConnected();
     
-    if (this.name === 'todo-list') {
-      console.log(`[Channel:${this.name}] Handler registered, total handlers:`, this.handlers.get(key)?.size);
-    }
-    
     return () => {
       this.handlers.get(key)?.delete(handler as any);
-      if (this.name === 'todo-list') {
-        console.log(`[Channel:${this.name}] Handler unregistered for:`, key);
-      }
     };
   }
   
@@ -225,11 +209,11 @@ export function defineChannel<
   TIncoming extends Record<string, unknown> = Record<string, unknown>,
   TOutgoing extends Record<string, unknown> = Record<string, unknown>
 >(name: string): ChannelDefinition<TIncoming, TOutgoing> {
-  console.log(`[defineChannel] Creating channel definition: ${name}`);
+  console.debug(`[defineChannel] Creating channel definition: ${name}`);
   return {
     name,
     connect(client: EngineClient): Channel<TIncoming, TOutgoing> {
-      console.log(`[defineChannel.connect] Connecting channel: ${name}`);
+      console.debug(`[defineChannel.connect] Connecting channel: ${name}`);
       return new ChannelImpl<TIncoming, TOutgoing>(name, client);
     },
   };

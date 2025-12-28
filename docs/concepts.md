@@ -187,7 +187,7 @@ type ContentBlock =
   | { type: 'text'; text: string }
   | { type: 'image'; source: MediaSource }
   | { type: 'tool_use'; id: string; name: string; input: any }
-  | { type: 'tool_result'; tool_use_id: string; content: ContentBlock[] }
+  | { type: 'tool_result'; toolUseId: string; content: ContentBlock[] }
   // ... more block types
 ```
 

@@ -9,30 +9,11 @@ import {
   TickState
 } from 'aidk';
 
-import { createAiSdkModel } from 'aidk-ai-sdk';
-import { createOpenAI } from '@ai-sdk/openai';
-import { createVertex } from '@ai-sdk/google-vertex';
+import { aisdk, openai, vertex } from '../models/models';
 
 import { UserContextComponent } from '../components';
 import { SlidingWindowTimeline } from '../components/timeline/sliding-window.function';
 import { CalculatorTool, ScratchpadTool, TodoListTool } from '../tools';
-
-const GOOGLE_CREDENTIALS = JSON.parse(process.env['GCP_CREDENTIALS'] 
-  ? Buffer.from(process.env['GCP_CREDENTIALS'], 'base64').toString('utf8') 
-  : 'null');
-
-const openai = createOpenAI({
-  apiKey: process.env['OPENAI_API_KEY'],
-  baseURL: process.env['OPENAI_BASE_URL'],
-});
-
-const vertex = createVertex({
-  project: process.env['GCP_PROJECT_ID'],
-  location: process.env['GCP_LOCATION'] || 'us-central1',
-  googleAuthOptions: {
-    credentials: GOOGLE_CREDENTIALS,
-  }
-});
 
 type ReasoningOptions = {
   enabled: boolean;
@@ -59,7 +40,7 @@ export class TaskAssistantAgent {
   private model = computed(() =>
     this.useGoogle() ? vertex(this.googleModel()) : openai.chat(this.openaiModel())
   );
-  private executionModel = computed(() => createAiSdkModel({
+  private executionModel = computed(() => aisdk({
     model: this.model(),
     providerOptions: this.getModelProviderOptions({
       reasoning: this.reasoning()
@@ -100,7 +81,7 @@ export class TaskAssistantAgent {
       google: {
         thinkingConfig: {
           includeThoughts: reasoning.enabled,
-          thinkingBudget: reasoning.effort === 'low' ? 1024 : reasoning.effort === 'medium' ? 2048 : 8192,
+          thinkingBudget: reasoning.effort === 'low' ? 1024 : reasoning.effort === 'medium' ? 2048 : 4096,
         },
       },
       openai: {

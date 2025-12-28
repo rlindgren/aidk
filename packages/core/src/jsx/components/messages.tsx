@@ -142,7 +142,7 @@ export function ToolResult(props: ToolResultProps) {
       ...rest.metadata,
       tool_call_id: toolCallId,
       tool_name: name,
-      is_error: isError,
+      isError: isError,
     },
     ...rest,
   } as MessageProps);

@@ -11,7 +11,7 @@ interface Props {
 export function ReasoningBlock({ block, className, defaultExpanded = false }: Props) {
   const [expanded, setExpanded] = useState(defaultExpanded);
 
-  if (block.is_redacted) {
+  if (block.isRedacted) {
     return (
       <div className={className} style={{ color: '#666', fontStyle: 'italic' }}>
         [Reasoning redacted]

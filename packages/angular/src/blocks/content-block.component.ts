@@ -51,10 +51,10 @@ import { PlaceholderBlockComponent } from './placeholder-block.component';
       }
       @case ('code_execution_result') {
         <div>
-          <div [style.font-size]="'0.75rem'" [style.color]="$any(block).is_error ? '#c00' : '#666'" style="margin-bottom: 4px;">
-            {{ $any(block).is_error ? '❌ Execution Error' : '✅ Output' }}
+          <div [style.font-size]="'0.75rem'" [style.color]="$any(block).isError ? '#c00' : '#666'" style="margin-bottom: 4px;">
+            {{ $any(block).isError ? '❌ Execution Error' : '✅ Output' }}
           </div>
-          <pre [style.background-color]="'#1e1e1e'" [style.color]="$any(block).is_error ? '#f88' : '#d4d4d4'" style="padding: 12px; border-radius: 4px; overflow: auto; font-size: 0.875rem; margin: 0;">{{ $any(block).output }}</pre>
+          <pre [style.background-color]="'#1e1e1e'" [style.color]="$any(block).isError ? '#f88' : '#d4d4d4'" style="padding: 12px; border-radius: 4px; overflow: auto; font-size: 0.875rem; margin: 0;">{{ $any(block).output }}</pre>
         </div>
       }
       @default {

@@ -13,6 +13,8 @@
     }
   },
   "references": [
+    { "path": "../../shared" },
+    { "path": "../../kernel" },
     { "path": "../../core" },
     { "path": "./tsconfig.build.json" },
     { "path": "./tsconfig.spec.json" }

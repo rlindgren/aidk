@@ -33,7 +33,6 @@ function createEngineProviders(config: EngineClientConfig) {
     {
       provide: EngineService,
       useFactory: (ngZone: NgZone, config: EngineClientConfig) => {
-        console.log('Creating EngineService with config:', config);
         const service = new EngineService(ngZone, config);
         return service;
       },

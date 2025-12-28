@@ -65,15 +65,15 @@ export function initializeContentBlockMappers(
   register(Image, (el) => ({
     type: 'image',
     source: el.props.source,
-    mime_type: el.props.mime_type,
-    alt_text: el.props.alt_text,
+    mimeType: el.props.mimeType,
+    altText: el.props.altText,
   } as ContentBlock), 'image');
 
   // Document block
   register(Document, (el) => ({
     type: 'document',
     source: el.props.source,
-    mime_type: el.props.mime_type,
+    mimeType: el.props.mimeType,
     title: el.props.title,
   } as ContentBlock), 'document');
 
@@ -81,7 +81,7 @@ export function initializeContentBlockMappers(
   register(Audio, (el) => ({
     type: 'audio',
     source: el.props.source,
-    mime_type: el.props.mime_type,
+    mimeType: el.props.mimeType,
     transcript: el.props.transcript,
   } as ContentBlock), 'audio');
 
@@ -89,7 +89,7 @@ export function initializeContentBlockMappers(
   register(Video, (el) => ({
     type: 'video',
     source: el.props.source,
-    mime_type: el.props.mime_type,
+    mimeType: el.props.mimeType,
     transcript: el.props.transcript
   } as ContentBlock), 'video');
 

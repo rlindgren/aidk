@@ -22,7 +22,7 @@ export class FormattedTextBlock extends Component<FormattedTextBlockProps> {
     // Don't mutate block.text - render timestamp separately
     return (
       <Text {...this.block()}>
-        {(showTimestamp && `[${new Date(this.message().created_at).toLocaleString()}] `) || ''}
+        {(showTimestamp && `[${new Date(this.message().createdAt).toLocaleString()}] `) || ''}
         {this.block().text}
       </Text>
     );

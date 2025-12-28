@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "type": "module",
   "main": "src/index.ts",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "test": "jest",
@@ -15,6 +17,9 @@
   "dependencies": {
     "aidk": "workspace:*",
     "aidk-shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.14"
   },
   "peerDependencies": {
     "ai": "^5.0.0",

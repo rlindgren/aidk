@@ -218,7 +218,7 @@ describe('Semantic-first compilation and rendering', () => {
       const imageBlock: SemanticContentBlock = {
         type: 'image',
         source: { type: 'url', url: 'https://example.com/photo.jpg' },
-        alt_text: 'A photo'
+        altText: 'A photo'
       };
 
       const markdownResult = markdownRenderer.format([imageBlock]);

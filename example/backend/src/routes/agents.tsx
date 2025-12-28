@@ -7,7 +7,7 @@
 
 import { Router } from 'express';
 import { getEngine } from '../setup';
-import { TaskAssistantAgent } from '../agents/task-assistant';
+import { agents } from '../agents';
 import {
   withEngine,
   withTransport,
@@ -22,14 +22,6 @@ import { Logger } from 'aidk';
 const logger = Logger.for('AgentRoutes');
 
 const router: Router = Router();
-
-// =============================================================================
-// Agent Registry
-// =============================================================================
-
-const agents: Record<string, any> = {
-  'task-assistant': TaskAssistantAgent,
-};
 
 // =============================================================================
 // Middleware Setup
@@ -57,15 +49,15 @@ router.post('/:agentId/execute', ...engineMiddleware, async (req, res) => {
       return res.status(404).json({ error: `Agent ${req.params.agentId} not found` });
     }
 
-    const { engine, input, execution_id, thread_id, session_id, withContext } = engineReq.engineContext;
+    const { engine, input, executionId, threadId, sessionId, withContext } = engineReq.engineContext;
     
     const result = await engine.execute.withContext(withContext).run(input, <Agent />);
 
     res.json({ 
-      execution_id, 
+      executionId, 
       result,
-      thread_id,
-      session_id,
+      threadId,
+      sessionId,
     });
   } catch (error: any) {
     console.error('Agent execution error:', error);
@@ -93,11 +85,11 @@ router.post('/:agentId/stream', ...engineMiddleware, async (req, res) => {
     // Set up streaming response
     setupStreamingResponse(res);
 
-    const { engine, input, execution_id, thread_id, session_id, withContext } = engineReq.engineContext;
+    const { engine, input, executionId, threadId, sessionId, withContext } = engineReq.engineContext;
     
-    console.log('Execution ID:', execution_id);
-    console.log('Thread ID:', thread_id);
-    console.log('Session ID:', session_id);
+    console.log('Execution ID:', executionId);
+    console.log('Thread ID:', threadId);
+    console.log('Session ID:', sessionId);
 
     console.log('🚀 Starting engine.stream...');
     
@@ -108,9 +100,9 @@ router.post('/:agentId/stream', ...engineMiddleware, async (req, res) => {
     // Send execution info first
     writeSSEEvent(res, { 
       type: 'execution_start', 
-      execution_id, 
-      thread_id, 
-      session_id,
+      executionId, 
+      threadId, 
+      sessionId,
       timestamp: new Date().toISOString(),
     });
 
@@ -130,9 +122,9 @@ router.post('/:agentId/stream', ...engineMiddleware, async (req, res) => {
     // Send execution info first
     writeSSEEvent(res, { 
       type: 'execution_end', 
-      execution_id, 
-      thread_id, 
-      session_id,
+      executionId, 
+      threadId, 
+      sessionId,
       timestamp: new Date().toISOString(),
     });
 

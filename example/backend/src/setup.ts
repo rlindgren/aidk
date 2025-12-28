@@ -19,10 +19,10 @@ export function setupEngine() {
     level: process.env['LOG_LEVEL'] as 'debug' | 'info' | 'warn' | 'error' || 'info',
     contextFields: (ctx: EngineContext) => ({
       // App-specific fields (defaults like request_id, trace_id are auto-included)
-      user_id: ctx.user?.id,
-      tenant_id: ctx.user?.tenantId,
-      thread_id: ctx.metadata?.thread_id,
-      execution_id: ctx.metadata?.execution_id,
+      userId: ctx.user?.id,
+      tenantId: ctx.user?.tenantId,
+      threadId: ctx.metadata?.threadId,
+      executionId: ctx.metadata?.executionId,
       tick: ctx.metadata?.tick,
       agent: ctx.metadata?.agent,
     }),

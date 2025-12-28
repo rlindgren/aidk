@@ -11,7 +11,7 @@ export interface ScratchpadNote {
   id: string;
   text: string;
   source: 'model' | 'user';
-  created_at: Date;
+  createdAt: Date;
 }
 
 export interface ScratchpadActionResult {
@@ -52,7 +52,7 @@ export class ScratchpadService {
     const notes = JSON.parse(state.state_data);
     return notes.map((n: any) => ({
       ...n,
-      created_at: typeof n.created_at === 'string' ? new Date(n.created_at) : n.created_at
+      createdAt: typeof n.createdAt === 'string' ? new Date(n.createdAt) : n.createdAt
     }));
   }
 
@@ -82,7 +82,7 @@ export class ScratchpadService {
     notes: ScratchpadNote[], 
     options: { excludeSender?: boolean }
   ): void {
-    const event = { type: 'state_changed', payload: { notes, thread_id: threadId } };
+    const event = { type: 'state_changed', payload: { notes, threadId: threadId } };
     const target = ScratchpadService.channel?.publisher().to(threadId);
 
     if (!target) {
@@ -116,7 +116,7 @@ export class ScratchpadService {
       id: generateUUID(),
       text: text.trim(),
       source,
-      created_at: new Date(),
+      createdAt: new Date(),
     };
     
     notes.push(newNote);

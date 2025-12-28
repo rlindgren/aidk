@@ -14,7 +14,7 @@ export function ImageBlock({ block, className }: Props) {
     if (block.source.type === 'url') {
       src = block.source.url;
     } else if (block.source.type === 'base64') {
-      const mimeType = block.mime_type || 'image/png';
+      const mimeType = block.mimeType || 'image/png';
       src = `data:${mimeType};base64,${block.source.data}`;
     }
   }
@@ -26,7 +26,7 @@ export function ImageBlock({ block, className }: Props) {
   return (
     <img
       src={src}
-      alt={block.alt_text || 'Image'}
+      alt={block.altText || 'Image'}
       className={className}
       style={{ maxWidth: '100%', height: 'auto', borderRadius: '4px' }}
     />

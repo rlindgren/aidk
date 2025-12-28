@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "type": "module",
   "main": "src/index.ts",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "exports": {
     ".": "./src/index.ts",
     "./blocks": "./src/blocks.ts",
@@ -13,7 +15,10 @@
     "./messages": "./src/messages.ts",
     "./streaming": "./src/streaming.ts",
     "./models": "./src/models.ts",
-    "./timeline": "./src/timeline.ts"
+    "./timeline": "./src/timeline.ts",
+    "./errors": "./src/errors.ts",
+    "./identity": "./src/identity.ts",
+    "./testing": "./src/testing/index.ts"
   },
   "publishConfig": {
     "access": "public",
@@ -55,12 +60,24 @@
       "./timeline": {
         "types": "./dist/timeline.d.ts",
         "import": "./dist/timeline.js"
+      },
+      "./errors": {
+        "types": "./dist/errors.d.ts",
+        "import": "./dist/errors.js"
+      },
+      "./identity": {
+        "types": "./dist/identity.d.ts",
+        "import": "./dist/identity.js"
+      },
+      "./testing": {
+        "types": "./dist/testing/index.d.ts",
+        "import": "./dist/testing/index.js"
       }
     }
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "test": "jest",
+    "test": "jest --passWithNoTests",
     "typecheck": "tsc -p tsconfig.build.json --noEmit",
     "clean": "rm -rf dist",
     "prepublishOnly": "pnpm build",

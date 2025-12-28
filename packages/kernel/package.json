@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "type": "module",
   "main": "src/index.ts",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "exports": {
     ".": "./src/index.ts",
     "./execution-helpers": "./src/execution-helpers.ts",
@@ -37,6 +39,7 @@
     "dev": "tsc --watch"
   },
   "dependencies": {
+    "aidk-shared": "workspace:*",
     "pino": "^9.6.0"
   },
   "devDependencies": {

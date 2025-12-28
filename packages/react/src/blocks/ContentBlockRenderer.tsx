@@ -21,7 +21,6 @@ export function ContentBlockRenderer({ block, className }: ContentBlockRendererP
       return <TextBlock block={block} className={className} />;
     
     case 'reasoning':
-      console.log('reasoning', JSON.stringify(block, null, 2));
       return <ReasoningBlock block={block} className={className} />;
     
     case 'tool_use':
@@ -65,14 +64,14 @@ export function ContentBlockRenderer({ block, className }: ContentBlockRendererP
         <div className={className}>
           <div style={{ 
             fontSize: '0.75rem', 
-            color: block.is_error ? '#c00' : '#666',
+            color: block.isError ? '#c00' : '#666',
             marginBottom: '4px' 
           }}>
-            {block.is_error ? '❌ Execution Error' : '✅ Output'}
+            {block.isError ? '❌ Execution Error' : '✅ Output'}
           </div>
           <pre style={{
             backgroundColor: '#1e1e1e',
-            color: block.is_error ? '#f88' : '#d4d4d4',
+            color: block.isError ? '#f88' : '#d4d4d4',
             padding: '12px',
             borderRadius: '4px',
             overflow: 'auto',

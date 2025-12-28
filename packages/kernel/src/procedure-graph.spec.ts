@@ -47,46 +47,46 @@ describe('ProcedureGraph', () => {
     it('should add metrics to a node', () => {
       const node = graph.register('proc-1', undefined, 'test');
       
-      node.addMetric('usage.input_tokens', 100);
-      node.addMetric('usage.output_tokens', 50);
+      node.addMetric('usage.inputTokens', 100);
+      node.addMetric('usage.outputTokens', 50);
       
-      expect(node.getMetric('usage.input_tokens')).toBe(100);
-      expect(node.getMetric('usage.output_tokens')).toBe(50);
+      expect(node.getMetric('usage.inputTokens')).toBe(100);
+      expect(node.getMetric('usage.outputTokens')).toBe(50);
     });
     
     it('should accumulate metrics when adding multiple times', () => {
       const node = graph.register('proc-1', undefined, 'test');
       
-      node.addMetric('usage.input_tokens', 100);
-      node.addMetric('usage.input_tokens', 50);
+      node.addMetric('usage.inputTokens', 100);
+      node.addMetric('usage.inputTokens', 50);
       
-      expect(node.getMetric('usage.input_tokens')).toBe(150);
+      expect(node.getMetric('usage.inputTokens')).toBe(150);
     });
     
     it('should propagate metrics from child to parent on completion', () => {
       const parent = graph.register('proc-1', undefined, 'parent');
       const child = graph.register('proc-2', 'proc-1', 'child');
       
-      child.addMetric('usage.input_tokens', 100);
-      child.addMetric('usage.output_tokens', 50);
+      child.addMetric('usage.inputTokens', 100);
+      child.addMetric('usage.outputTokens', 50);
       
       graph.updateStatus('proc-2', 'completed');
       
       // Parent should have accumulated child's metrics
-      expect(parent.getMetric('usage.input_tokens')).toBe(100);
-      expect(parent.getMetric('usage.output_tokens')).toBe(50);
+      expect(parent.getMetric('usage.inputTokens')).toBe(100);
+      expect(parent.getMetric('usage.outputTokens')).toBe(50);
     });
     
     it('should propagate metrics even on failure', () => {
       const parent = graph.register('proc-1', undefined, 'parent');
       const child = graph.register('proc-2', 'proc-1', 'child');
       
-      child.addMetric('usage.input_tokens', 100);
+      child.addMetric('usage.inputTokens', 100);
       
       graph.updateStatus('proc-2', 'failed', new Error('Test error'));
       
       // Parent should still have metrics
-      expect(parent.getMetric('usage.input_tokens')).toBe(100);
+      expect(parent.getMetric('usage.inputTokens')).toBe(100);
     });
     
     it('should merge metrics from multiple children', () => {
@@ -94,14 +94,14 @@ describe('ProcedureGraph', () => {
       const child1 = graph.register('proc-2', 'proc-1', 'child1');
       const child2 = graph.register('proc-3', 'proc-1', 'child2');
       
-      child1.addMetric('usage.input_tokens', 100);
-      child2.addMetric('usage.input_tokens', 50);
+      child1.addMetric('usage.inputTokens', 100);
+      child2.addMetric('usage.inputTokens', 50);
       
       graph.updateStatus('proc-2', 'completed');
       graph.updateStatus('proc-3', 'completed');
       
       // Parent should have sum of both children
-      expect(parent.getMetric('usage.input_tokens')).toBe(150);
+      expect(parent.getMetric('usage.inputTokens')).toBe(150);
     });
   });
   
@@ -167,11 +167,11 @@ describe('ProcedureGraph', () => {
     it('should merge metrics from another source', () => {
       const node = graph.register('proc-1', undefined, 'test');
       
-      node.addMetric('usage.input_tokens', 100);
-      node.mergeMetrics({ 'usage.output_tokens': 50, 'usage.input_tokens': 25 });
+      node.addMetric('usage.inputTokens', 100);
+      node.mergeMetrics({ 'usage.outputTokens': 50, 'usage.inputTokens': 25 });
       
-      expect(node.getMetric('usage.input_tokens')).toBe(125); // Accumulated
-      expect(node.getMetric('usage.output_tokens')).toBe(50);
+      expect(node.getMetric('usage.inputTokens')).toBe(125); // Accumulated
+      expect(node.getMetric('usage.outputTokens')).toBe(50);
     });
   });
   

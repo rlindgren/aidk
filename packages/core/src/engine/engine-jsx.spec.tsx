@@ -277,7 +277,7 @@ describe('Engine React Architecture', () => {
       return <Fragment>
         <Message role="user">
           <Text>Hello</Text>
-          <Image source={{ type: 'url', url: 'https://example.com/image.jpg' }} alt_text="Example" />
+          <Image source={{ type: 'url', url: 'https://example.com/image.jpg' }} altText="Example" />
           <Code language="typescript">const x = 1;</Code>
         </Message>
       </Fragment>
@@ -295,7 +295,7 @@ describe('Engine React Architecture', () => {
     expect(userMsg?.message.content[1]).toEqual({
       type: 'image',
       source: { type: 'url', url: 'https://example.com/image.jpg' },
-      alt_text: 'Example'
+      altText: 'Example'
     });
     expect(userMsg?.message.content[2]).toEqual({
       type: 'code',

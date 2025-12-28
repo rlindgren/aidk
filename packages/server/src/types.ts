@@ -51,7 +51,7 @@ export interface MessageEntity {
   execution_id: string;
   interaction_id?: string;
   thread_id: string;
-  user_id?: string;  // For user-global events (thread_id = nil UUID)
+  user_id?: string;  // For user-global events (threadId = nil UUID)
   role: MessageRoles;
   content: string; // JSON string
   source?: string;
@@ -65,7 +65,7 @@ export interface MessageBlockEntity {
   block_index: number;
   block_type: string;
   block_data: string; // JSON string
-  created_at: Date;
+  createdAt: Date;
 }
 
 export interface InteractionEntity {
@@ -75,7 +75,7 @@ export interface InteractionEntity {
   app_origin: string;
   agent_id?: string;
   thread_id: string;
-  root_execution_id?: string;
+  root_executionId?: string;
   user_id?: string;
   tenant_id: string;
   status?: string;
@@ -98,7 +98,7 @@ export interface ToolStateEntity {
 // =============================================================================
 
 export interface ExecutionRepository {
-  create(data: Omit<ExecutionEntity, 'started_at'> & { started_at?: Date }): Promise<ExecutionEntity>;
+  create(data: Omit<ExecutionEntity, 'startedAt'> & { startedAt?: Date }): Promise<ExecutionEntity>;
   update(id: string, updates: Partial<ExecutionEntity>): Promise<ExecutionEntity | null>;
   findById(id: string): Promise<ExecutionEntity | null>;
   findByThreadId(threadId: string, limit?: number): Promise<ExecutionEntity[]>;
@@ -131,24 +131,24 @@ export interface MetricsRepository {
 export const GLOBAL_THREAD_ID = '00000000-0000-0000-0000-000000000000';
 
 export interface MessageRepository {
-  create(data: Omit<MessageEntity, 'created_at'> & { created_at?: Date }): Promise<MessageEntity>;
+  create(data: Omit<MessageEntity, 'createdAt'> & { createdAt?: Date }): Promise<MessageEntity>;
   findByThreadId(threadId: string, limit?: number): Promise<MessageEntity[]>;
   findByExecutionId(executionId: string): Promise<MessageEntity[]>;
   /**
    * Find messages for a thread, including user-global events.
-   * Returns thread-specific messages + any events with thread_id = GLOBAL_THREAD_ID for this user.
-   * Results are ordered by created_at for proper interleaving.
+   * Returns thread-specific messages + any events with threadId = GLOBAL_THREAD_ID for this user.
+   * Results are ordered by createdAt for proper interleaving.
    */
   findByThreadIdWithGlobalEvents(threadId: string, userId: string, limit?: number): Promise<MessageEntity[]>;
 }
 
 export interface MessageBlockRepository {
-  create(data: Omit<MessageBlockEntity, 'created_at'> & { created_at?: Date }): Promise<MessageBlockEntity>;
+  create(data: Omit<MessageBlockEntity, 'created_at'> & { createdAt?: Date }): Promise<MessageBlockEntity>;
   findByMessageId(messageId: string): Promise<MessageBlockEntity[]>;
 }
 
 export interface InteractionRepository {
-  create(data: Omit<InteractionEntity, 'created_at'> & { created_at?: Date }): Promise<InteractionEntity>;
+  create(data: Omit<InteractionEntity, 'created_at'> & { createdAt?: Date }): Promise<InteractionEntity>;
   update(id: string, updates: Partial<InteractionEntity>): Promise<InteractionEntity | null>;
   findById(id: string): Promise<InteractionEntity | null>;
   findByThreadId(threadId: string): Promise<InteractionEntity[]>;
@@ -161,14 +161,14 @@ export interface ToolStateRepository {
   }): Promise<ToolStateEntity>;
   update(id: string, updates: Partial<ToolStateEntity>): Promise<ToolStateEntity | null>;
   findByToolAndThread(
-    toolId: string, 
-    threadId: string, 
-    userId?: string, 
-    tenantId?: string
+    tool_id: string, 
+    thread_id: string, 
+    user_id?: string, 
+    tenant_id?: string
   ): Promise<ToolStateEntity | null>;
   findByToolAndUser(toolId: string, userId: string): Promise<ToolStateEntity[]>;
-  /** Create or update tool state by tool_id + thread_id */
-  upsert(data: Omit<ToolStateEntity, 'id' | 'created_at' | 'updated_at'> & { 
+  /** Create or update tool state by tool_id + threadId */
+  upsert(data: Omit<ToolStateEntity, 'id' | 'created_it' | 'updated_at'> & { 
     updated_at?: Date;
   }): Promise<ToolStateEntity>;
 }

@@ -222,7 +222,7 @@ export class InMemoryMessageRepository implements MessageRepository {
   /**
    * Find messages for a thread, including user-global events.
    * 
-   * User-global events (thread_id = nil UUID) are interleaved with thread-specific
+   * User-global events (threadId = nil UUID) are interleaved with thread-specific
    * messages by timestamp, providing the agent with full context of what happened
    * across all the user's conversations.
    */
@@ -242,10 +242,10 @@ export class InMemoryMessageRepository implements MessageRepository {
 export class InMemoryMessageBlockRepository implements MessageBlockRepository {
   constructor(private store: InMemoryStore) {}
 
-  async create(data: Omit<MessageBlockEntity, 'created_at'> & { created_at?: Date }): Promise<MessageBlockEntity> {
+  async create(data: Omit<MessageBlockEntity, 'createdAt'> & { createdAt?: Date }): Promise<MessageBlockEntity> {
     const entity: MessageBlockEntity = {
       ...data,
-      created_at: data.created_at || new Date(),
+      createdAt: data.createdAt || new Date(),
     };
     this.store.messageBlocks.set(entity.id, entity);
     return entity;
@@ -309,7 +309,7 @@ export class InMemoryToolStateRepository implements ToolStateRepository {
   async update(id: string, updates: Partial<ToolStateEntity>): Promise<ToolStateEntity | null> {
     const existing = this.store.toolState.get(id);
     if (!existing) return null;
-    const updated = { ...existing, ...updates, updated_at: new Date() };
+    const updated = { ...existing, ...updates, updatedAt: new Date() };
     this.store.toolState.set(id, updated);
     return updated;
   }
@@ -337,7 +337,7 @@ export class InMemoryToolStateRepository implements ToolStateRepository {
   async upsert(data: Omit<ToolStateEntity, 'id' | 'created_at' | 'updated_at'> & { 
     updated_at?: Date;
   }): Promise<ToolStateEntity> {
-    // Find existing by tool_id + thread_id
+    // Find existing by tool_id + threadId
     const existing = await this.findByToolAndThread(data.tool_id, data.thread_id);
     const now = new Date();
     

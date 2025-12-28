@@ -109,7 +109,7 @@ export class ExecutionService implements OnDestroy {
     // Build engine input
     const engineInput = {
       messages: inputMessages,
-      thread_id: threadId || this.threadId || undefined,
+      threadId: threadId || this.threadId || undefined,
       sessionId: this.engineService.sessionId,
       userId: this.engineService.userId,
     };

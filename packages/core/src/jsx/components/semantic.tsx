@@ -1,14 +1,13 @@
-import { createElement, type JSX } from '../jsx-runtime';
+import { createElement, type JSX } from "../jsx-runtime";
 
 /**
  * Semantic content primitives for expressive rendering.
  * These provide semantic meaning to renderers beyond plain text.
  */
 
-import type { ComponentBaseProps } from '../jsx-types';
+import type { ComponentBaseProps } from "../jsx-types";
 
-interface BaseProps extends ComponentBaseProps {
-}
+interface BaseProps extends ComponentBaseProps {}
 
 /**
  * Generic heading component
@@ -64,9 +63,34 @@ export function Paragraph(props: ParagraphProps): JSX.Element {
 
 /**
  * List component
+ *
+ * @example
+ * ```tsx
+ * // Unordered list
+ * <List>
+ *   <ListItem>Item 1</ListItem>
+ *   <ListItem>Item 2</ListItem>
+ * </List>
+ *
+ * // Ordered list
+ * <List ordered>
+ *   <ListItem>First</ListItem>
+ *   <ListItem>Second</ListItem>
+ * </List>
+ *
+ * // Task list (checkboxes)
+ * <List task>
+ *   <ListItem checked>Done</ListItem>
+ *   <ListItem checked={false}>Not done</ListItem>
+ *   <ListItem>Also not done</ListItem>
+ * </List>
+ * ```
  */
 export interface ListProps extends BaseProps {
+  /** Render as ordered (numbered) list */
   ordered?: boolean;
+  /** Render as task list with checkboxes */
+  task?: boolean;
   children?: any;
 }
 export function List(props: ListProps): JSX.Element {
@@ -75,8 +99,18 @@ export function List(props: ListProps): JSX.Element {
 
 /**
  * List item component
+ *
+ * When used inside a task list (`<List task>`), the `checked` prop
+ * controls the checkbox state.
  */
 export interface ListItemProps extends BaseProps {
+  /**
+   * Checkbox state for task list items.
+   * - `true`: checked (`[x]`)
+   * - `false`: unchecked (`[ ]`)
+   * - `undefined`: no checkbox (only valid if parent List doesn't have `task` prop)
+   */
+  checked?: boolean;
   children?: any;
 }
 export function ListItem(props: ListItemProps): JSX.Element {
@@ -137,10 +171,10 @@ export function Row(props: RowProps): JSX.Element {
  */
 export interface ColumnProps extends BaseProps {
   children?: any;
-  align?: 'left' | 'center' | 'right';
+  align?: "left" | "center" | "right";
 }
 export function Column(props: ColumnProps): JSX.Element {
-  props.align ??= 'left';
+  props.align ??= "left";
   return createElement(Column, props);
 }
 
@@ -183,4 +217,3 @@ export interface MarkProps extends BaseProps {
 export function Mark(props: MarkProps): JSX.Element {
   return createElement(Mark, props);
 }
-

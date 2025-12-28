@@ -27,9 +27,9 @@ export const ScratchpadTool = createTool({
   handler: async (input: ScratchpadInput): Promise<ContentBlock[]> => {
     // Get context during execution
     const ctx = Context.get();
-    const threadId = ctx.metadata.thread_id 
+    const threadId = ctx.metadata.threadId 
       || GLOBAL_THREAD_ID;
-    const sourceConnectionId = ctx.metadata.session_id;
+    const sourceConnectionId = ctx.metadata.sessionId;
     
     const options: ScratchpadActionOptions = { 
       sourceConnectionId,
@@ -62,11 +62,11 @@ export const ScratchpadTool = createTool({
     // Resolve threadId from context
     const ctx = Context.get();
     const userInput = com.getUserInput() as any;
-    const threadId = ctx?.metadata?.['thread_id'] as string 
+    const threadId = ctx?.metadata?.['threadId'] as string 
       || ctx?.metadata?.['threadId'] as string
-      || userInput?.thread_id 
+      || userInput?.threadId 
       || userInput?.threadId
-      || userInput?.metadata?.thread_id
+      || userInput?.metadata?.threadId
       || userInput?.metadata?.threadId
       || '00000000-0000-0000-0000-000000000000';
     

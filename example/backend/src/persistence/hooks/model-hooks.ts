@@ -48,7 +48,7 @@ export function createModelGenerateHook(config: ModelHooksConfig): ModelHookMidd
         app_origin: 'example-app',
         agent_id: 'model-standalone',
         thread_id: effectiveThreadId,
-        root_execution_id: generateUUID(),
+        root_executionId: generateUUID(),
         user_id: userId,
         tenant_id: tenantId,
       });
@@ -58,7 +58,7 @@ export function createModelGenerateHook(config: ModelHooksConfig): ModelHookMidd
       parentId = undefined;
     } else {
       // Nested inside engine - link to parent
-      effectiveThreadId = parentExecution.thread_id || threadId;
+      effectiveThreadId = parentExecution.threadId || threadId;
       modelExecutionId = generateUUID();
       rootId = parentExecution.root_id;
       parentId = parentExecution.id;
@@ -145,7 +145,7 @@ export function createModelStreamHook(config: ModelHooksConfig): ModelHookMiddle
       rootId = modelExecutionId;
       parentId = undefined;
     } else {
-      effectiveThreadId = parentExecution.thread_id || threadId;
+      effectiveThreadId = parentExecution.threadId || threadId;
       modelExecutionId = generateUUID();
       rootId = parentExecution.root_id;
       parentId = parentExecution.id;

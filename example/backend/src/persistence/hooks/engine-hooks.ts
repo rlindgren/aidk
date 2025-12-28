@@ -49,7 +49,7 @@ export function createExecuteHook(config: EngineHooksConfig): EngineHookMiddlewa
       app_origin: 'example-app',
       agent_id: agentId,
       thread_id: threadId,
-      root_execution_id: executionId,
+      root_executionId: executionId,
       user_id: userId,
       tenant_id: tenantId,
     });
@@ -137,7 +137,7 @@ export function createStreamHook(config: EngineHooksConfig): EngineHookMiddlewar
       app_origin: 'example-app',
       agent_id: agentId,
       thread_id: threadId,
-      root_execution_id: executionId,
+      root_executionId: executionId,
       user_id: userId,
       tenant_id: tenantId,
     });
@@ -267,11 +267,11 @@ export function createStreamHook(config: EngineHooksConfig): EngineHookMiddlewar
                 role: 'tool',
                 content: toolResultsForTick.map(r => ({
                   type: 'tool_result' as const,
-                  tool_use_id: r.tool_use_id,
+                  toolUseId: r.toolUseId,
                   id: r.id,
                   name: r.name,
                   content: r.content || [],
-                  is_error: !r.success,
+                  isError: !r.success,
                 })),
               };
               

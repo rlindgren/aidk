@@ -48,8 +48,8 @@ export class StreamController {
     await this.transport.connect(connectionId, {
       res,
       metadata: {
-        user_id: 'user-123',
-        thread_id: 'thread-456',
+        userId: 'user-123',
+        threadId: 'thread-456',
       },
       channels: ['updates', 'notifications'],
     });
@@ -216,13 +216,13 @@ export class StreamController {
       res,
       channels: channelList,
       metadata: {
-        user_id: req.headers['x-user-id'] as string,
-        thread_id: req.query.threadId as string,
+        userId: req.headers['x-user-id'] as string,
+        threadId: req.query.threadId as string,
         ip: req.ip,
       },
     });
 
-    // Auto-join room based on thread_id
+    // Auto-join room based on threadId
     if (req.query.threadId) {
       await this.transport.join(connectionId, `thread:${req.query.threadId}`);
     }

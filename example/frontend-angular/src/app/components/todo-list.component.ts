@@ -9,9 +9,9 @@ interface Task {
   title: string;
   description?: string;
   completed: boolean;
-  created_at?: string;
-  updated_at?: string;
-  user_id?: string; /* Tasks are scoped to users */
+  createdAt?: string;
+  updatedAt?: string;
+  userId?: string; /* Tasks are scoped to users */
 }
 
 interface TaskResponse {
@@ -304,7 +304,7 @@ export class TodoListComponent implements OnInit {
       const params = new URLSearchParams();
       // Tasks are scoped by userId (not threadId)
       const userId = this.engineService.userId || 'anonymous';
-      params.set('user_id', userId);
+      params.set('userId', userId);
       
       // Use relative URL (proxied by Angular dev server)
       const response = await fetch(`/api/tasks?${params}`);
@@ -330,7 +330,7 @@ export class TodoListComponent implements OnInit {
       title: this.newTaskTitle.trim(),
       description: this.newTaskDesc.trim() || undefined,
       completed: false,
-      created_at: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
     };
     this.tasks = [...this.tasks, tempTask];
 

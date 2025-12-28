@@ -1,23 +1,19 @@
 import { 
   Component, 
   ContextObjectModel, 
-  Context, 
+  context, 
   Logger,
-  Message,
-  MessageRole,
   Timeline,
   type TickState,
   type COMTimelineEntry,
-  Paragraph,
   // State management
   signal,
   comState,
   computed,
-  COMInput,
 } from 'aidk';
 import { getMessageRepository, type MessageEntity } from '../../persistence/repositories/messages';
-import { Text } from 'aidk/jsx/components/content';
 import { input } from 'aidk/state/use-state';
+import { FormattedMessage } from '../messages/formatted-message.component';
 
 export interface SlidingWindowTimelineProps {
   windowSize: number;
@@ -38,31 +34,24 @@ export class SlidingWindowTimeline extends Component<SlidingWindowTimelineProps>
   private log = Logger.for(this);
 
   // bind to the windowSize prop
-  windowSize = input<number>(100);
-  
-  // Component-local signal - NOT shared, NOT persisted
-  private startedAt = signal<Date>(new Date());
+  windowSize = input(100);
   
   // COM-bound signal - shared across components, persisted
   // Automatically bound to COM in onMount
   private timeline = comState<COMTimelineEntry[]>('timeline', []);
   
   // Computed signal - derived, memoized
-  private windowMessages = computed(() => {
-    this.log.info({ windowSize: this.windowSize() }, 'Calculating window messages');
-    return this.timeline()?.slice(-this.windowSize());
-  });
+  private windowMessages = computed(() => this.timeline().slice(-this.windowSize()));
 
   async onMount(com: ContextObjectModel): Promise<void> {
     // COM signals are automatically bound here by base class
     // No manual binding needed!
-    const ctx = Context.get();
     const userInput = com.getUserInput();
-    const { thread_id, user_id } = { ...(userInput.metadata || {}), ...ctx.metadata };
+    const { threadId, userId } = { ...(userInput.metadata || {}), ...context().metadata };
 
     let history: COMTimelineEntry[] = [];
-    if (thread_id && thread_id !== '00000000-0000-0000-0000-000000000000' && user_id) {
-      history = await this.loadConversationHistory(user_id as string, thread_id as string);
+    if (threadId && threadId !== '00000000-0000-0000-0000-000000000000' && userId) {
+      history = await this.loadConversationHistory(userId as string, threadId as string);
     }
 
     this.timeline.set([...history, ...(userInput.timeline || [])]);
@@ -71,76 +60,17 @@ export class SlidingWindowTimeline extends Component<SlidingWindowTimelineProps>
   onTickStart(_com: ContextObjectModel, { currentState }: TickState): void {
     // Update timeline with new entries
     // on tick 1 this holds user input (timeline, metadata)
-    this.timeline.update((t) => [...t, ...(currentState.timeline || [])]);
+    this.timeline.update(curr => [...curr, ...(currentState.timeline || [])]);
   }
 
   async render() {
     this.log.info({ windowSize: this.windowSize() }, 'Rendering SlidingWindowTimeline');
 
-    // Read from signals - clean, reactive API
-    const startedAt = this.startedAt();
-
     return (
       <Timeline>
-        {this.windowMessages().map((entry, index) => {
-          const message = entry.message;
-          const isHistorical = message.created_at && message.created_at < startedAt;
-          const isUserMessage = message.role === MessageRole.USER;
-
-          return <Message id={`msg-${index}`} {...message}>
-            {[
-              ...(
-                (isHistorical && isUserMessage) ?
-                  [<Text><strong>[{message.created_at.toLocaleString()}]</strong></Text>] :
-                  []
-              ),
-              ...message.content.map((block, i) => {
-                if (!isHistorical) {
-                  return block;
-                }
-  
-                const blockId = block.id || `msg_${message.id}_${i}`;
-  
-                if (block.type === 'image') {
-                  return (
-                    <Text id={blockId}>
-                      [Summarized image content]: {block.alt_text}
-                      {block.source.type === 'url' && (
-                        <Paragraph>[Image url]: {block.source.url}</Paragraph>
-                      )}
-                    </Text>
-                  );
-                } else if (block.type === 'audio') {
-                  return (
-                    <Text id={blockId}>
-                      [Audio transcript]: {block.transcript}
-                    </Text>
-                  );
-                } else if (block.type === 'video') {
-                  return (
-                    <Text id={blockId}>
-                      [Summarized video content]: {block.transcript}
-                      {block.source.type === 'url' && (
-                        <Paragraph>[Video url]: {block.source.url}</Paragraph>
-                      )}
-                    </Text>
-                  );
-                } else if (block.type === 'document') {
-                  return (
-                    <Text id={blockId}>
-                      [Document title]: <strong>{block.title}</strong>
-                      {block.source.type === 'url' && (
-                        <Paragraph>[Document url]: {block.source.url}</Paragraph>
-                      )}
-                    </Text>
-                  );
-                }
-  
-                return block;
-              })
-            ]}
-          </Message>;
-        })}
+        {this.windowMessages().map((entry, index) => 
+          <FormattedMessage key={`msg-${index}`} message={entry.message} />
+        )}
       </Timeline>
     );
   }
@@ -160,7 +90,7 @@ export class SlidingWindowTimeline extends Component<SlidingWindowTimelineProps>
       message: {
         role: msg.role,
         content: JSON.parse(msg.content),
-        created_at: msg.created_at,
+        createdAt: msg.created_at,
         id: msg.id,
         metadata: msg.metadata ? JSON.parse(msg.metadata || '{}') : undefined,
       }

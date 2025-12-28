@@ -9,8 +9,8 @@ import type { ToolUseBlock } from 'aidk-client';
       <span>🔧</span>
       <span style="font-weight: 500;">{{ block.name }}</span>
       <span style="color: #888;">— {{ inputSummary }}</span>
-      @if (block.tool_result) {
-        <span style="display: flex; flex: 1; justify-content: flex-end;">{{ block.tool_result.is_error ? '❌' : '✅' }}</span>
+      @if (block.toolResult) {
+        <span style="display: flex; flex: 1; justify-content: flex-end;">{{ block.toolResult.isError ? '❌' : '✅' }}</span>
       } @else {
         <span style="display: flex; flex: 1; justify-content: flex-end;">⏳</span>
       }

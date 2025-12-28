@@ -140,9 +140,9 @@ export class EngineService implements OnDestroy {
    * Get execution history
    */
   getExecutions(params?: {
-    thread_id?: string;
-    user_id?: string;
-    tenant_id?: string;
+    threadId?: string;
+    userId?: string;
+    tenantId?: string;
     limit?: number;
     offset?: number;
   }): Observable<unknown[]> {

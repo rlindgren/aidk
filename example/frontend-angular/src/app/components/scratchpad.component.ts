@@ -8,7 +8,7 @@ interface ScratchpadNote {
   id: string;
   text: string;
   source: 'model' | 'user';
-  created_at?: string;
+  createdAt?: string;
 }
 
 interface ScratchpadResponse {
@@ -286,10 +286,10 @@ export class ScratchpadComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((event: ChannelEvent) => {
         if (event.type === 'state_changed') {
-          const payload = event.payload as { notes?: ScratchpadNote[]; thread_id?: string };
+          const payload = event.payload as { notes?: ScratchpadNote[]; threadId?: string };
           // Only update if it's for our thread
           if (payload?.notes) {
-            const eventThreadId = payload.thread_id;
+            const eventThreadId = payload.threadId;
             if (!eventThreadId || eventThreadId === this.executionService.threadId) {
               this.notes = payload.notes;
             }
@@ -303,7 +303,7 @@ export class ScratchpadComponent implements OnInit {
       const threadId = this.executionService.threadId;
       if (!threadId) return;
       const params = new URLSearchParams();
-      params.set('thread_id', threadId);
+      params.set('threadId', threadId);
       
       const response = await fetch(`/api/notes?${params}`);
       if (response.ok) {
@@ -331,7 +331,7 @@ export class ScratchpadComponent implements OnInit {
     this.channelsService
       .publish<ScratchpadResponse>('scratchpad', 'add_note', {
         text,
-        thread_id: this.executionService.threadId,
+        threadId: this.executionService.threadId,
       })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
@@ -354,7 +354,7 @@ export class ScratchpadComponent implements OnInit {
     this.channelsService
       .publish<ScratchpadResponse>('scratchpad', 'remove_note', {
         note_id: note.id,
-        thread_id: this.executionService.threadId,
+        threadId: this.executionService.threadId,
       })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
@@ -377,7 +377,7 @@ export class ScratchpadComponent implements OnInit {
 
     this.channelsService
       .publish<ScratchpadResponse>('scratchpad', 'clear_notes', {
-        thread_id: this.executionService.threadId,
+        threadId: this.executionService.threadId,
       })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({

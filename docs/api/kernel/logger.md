@@ -36,9 +36,9 @@ Logger.configure({
   level: 'debug',
   contextFields: (ctx) => ({
     // Add your application-specific fields
-    tenant_id: ctx.user?.tenantId,
-    thread_id: ctx.metadata?.thread_id,
-    execution_id: ctx.metadata?.execution_id,
+    tenantId: ctx.user?.tenantId,
+    threadId: ctx.metadata?.threadId,
+    executionId: ctx.metadata?.executionId,
     tick: ctx.metadata?.tick,
   }),
 });
@@ -165,9 +165,9 @@ Your `contextFields` extractor is composed with defaults:
 Logger.configure({
   contextFields: (ctx) => ({
     // These are ADDED to defaults, not replacing them
-    tenant_id: ctx.user?.tenantId,
-    user_id: ctx.user?.id,
-    thread_id: ctx.metadata?.thread_id,
+    tenantId: ctx.user?.tenantId,
+    userId: ctx.user?.id,
+    threadId: ctx.metadata?.threadId,
     agent: ctx.metadata?.agent,
   }),
 });

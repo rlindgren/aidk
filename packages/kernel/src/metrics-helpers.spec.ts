@@ -10,16 +10,16 @@ describe('Metrics Helpers', () => {
   
   describe('addMetric', () => {
     it('should add a metric value', () => {
-      addMetric(ctx, 'usage.input_tokens', 100);
+      addMetric(ctx, 'usage.inputTokens', 100);
       
-      expect(ctx.metrics!['usage.input_tokens']).toBe(100);
+      expect(ctx.metrics!['usage.inputTokens']).toBe(100);
     });
     
     it('should accumulate metric values', () => {
-      addMetric(ctx, 'usage.input_tokens', 100);
-      addMetric(ctx, 'usage.input_tokens', 50);
+      addMetric(ctx, 'usage.inputTokens', 100);
+      addMetric(ctx, 'usage.inputTokens', 50);
       
-      expect(ctx.metrics!['usage.input_tokens']).toBe(150);
+      expect(ctx.metrics!['usage.inputTokens']).toBe(150);
     });
     
     it('should initialize metrics if not present', () => {
@@ -34,24 +34,24 @@ describe('Metrics Helpers', () => {
   
   describe('setMetric', () => {
     it('should set a metric value', () => {
-      setMetric(ctx, 'usage.input_tokens', 100);
+      setMetric(ctx, 'usage.inputTokens', 100);
       
-      expect(ctx.metrics!['usage.input_tokens']).toBe(100);
+      expect(ctx.metrics!['usage.inputTokens']).toBe(100);
     });
     
     it('should overwrite existing metric value', () => {
-      setMetric(ctx, 'usage.input_tokens', 100);
-      setMetric(ctx, 'usage.input_tokens', 200);
+      setMetric(ctx, 'usage.inputTokens', 100);
+      setMetric(ctx, 'usage.inputTokens', 200);
       
-      expect(ctx.metrics!['usage.input_tokens']).toBe(200);
+      expect(ctx.metrics!['usage.inputTokens']).toBe(200);
     });
   });
   
   describe('getMetric', () => {
     it('should get a metric value', () => {
-      ctx.metrics!['usage.input_tokens'] = 100;
+      ctx.metrics!['usage.inputTokens'] = 100;
       
-      expect(getMetric(ctx, 'usage.input_tokens')).toBe(100);
+      expect(getMetric(ctx, 'usage.inputTokens')).toBe(100);
     });
     
     it('should return 0 for non-existent metric', () => {
@@ -62,35 +62,35 @@ describe('Metrics Helpers', () => {
   describe('addUsageMetrics', () => {
     it('should add usage metrics with dot notation', () => {
       addUsageMetrics(ctx, {
-        input_tokens: 100,
-        output_tokens: 50,
+        inputTokens: 100,
+        outputTokens: 50,
         total_tokens: 150,
       });
       
-      expect(ctx.metrics!['usage.input_tokens']).toBe(100);
-      expect(ctx.metrics!['usage.output_tokens']).toBe(50);
+      expect(ctx.metrics!['usage.inputTokens']).toBe(100);
+      expect(ctx.metrics!['usage.outputTokens']).toBe(50);
       expect(ctx.metrics!['usage.total_tokens']).toBe(150);
     });
     
     it('should accumulate usage metrics', () => {
-      addUsageMetrics(ctx, { input_tokens: 100 });
-      addUsageMetrics(ctx, { input_tokens: 50 });
+      addUsageMetrics(ctx, { inputTokens: 100 });
+      addUsageMetrics(ctx, { inputTokens: 50 });
       
-      expect(ctx.metrics!['usage.input_tokens']).toBe(150);
+      expect(ctx.metrics!['usage.inputTokens']).toBe(150);
     });
   });
   
   describe('getUsageMetrics', () => {
     it('should get usage metrics as nested object', () => {
-      ctx.metrics!['usage.input_tokens'] = 100;
-      ctx.metrics!['usage.output_tokens'] = 50;
+      ctx.metrics!['usage.inputTokens'] = 100;
+      ctx.metrics!['usage.outputTokens'] = 50;
       ctx.metrics!['usage.total_tokens'] = 150;
       
       const usage = getUsageMetrics(ctx);
       
       expect(usage).toEqual({
-        input_tokens: 100,
-        output_tokens: 50,
+        inputTokens: 100,
+        outputTokens: 50,
         total_tokens: 150,
       });
     });
@@ -100,35 +100,35 @@ describe('Metrics Helpers', () => {
     });
     
     it('should only return usage.* metrics', () => {
-      ctx.metrics!['usage.input_tokens'] = 100;
+      ctx.metrics!['usage.inputTokens'] = 100;
       ctx.metrics!['other.metric'] = 50;
       
       const usage = getUsageMetrics(ctx);
       
-      expect(usage).toEqual({ input_tokens: 100 });
+      expect(usage).toEqual({ inputTokens: 100 });
       expect(usage).not.toHaveProperty('other');
     });
   });
   
   describe('dot notation support', () => {
     it('should support flat keys', () => {
-      addMetric(ctx, 'input_tokens', 100);
+      addMetric(ctx, 'inputTokens', 100);
       
-      expect(getMetric(ctx, 'input_tokens')).toBe(100);
+      expect(getMetric(ctx, 'inputTokens')).toBe(100);
     });
     
     it('should support nested keys via dot notation', () => {
-      addMetric(ctx, 'usage.input_tokens', 100);
-      addMetric(ctx, 'usage.output_tokens', 50);
+      addMetric(ctx, 'usage.inputTokens', 100);
+      addMetric(ctx, 'usage.outputTokens', 50);
       
-      expect(getMetric(ctx, 'usage.input_tokens')).toBe(100);
-      expect(getMetric(ctx, 'usage.output_tokens')).toBe(50);
+      expect(getMetric(ctx, 'usage.inputTokens')).toBe(100);
+      expect(getMetric(ctx, 'usage.outputTokens')).toBe(50);
     });
     
     it('should support deeply nested keys', () => {
-      addMetric(ctx, 'model.gpt4.usage.input_tokens', 100);
+      addMetric(ctx, 'model.gpt4.usage.inputTokens', 100);
       
-      expect(getMetric(ctx, 'model.gpt4.usage.input_tokens')).toBe(100);
+      expect(getMetric(ctx, 'model.gpt4.usage.inputTokens')).toBe(100);
     });
   });
 });

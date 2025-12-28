@@ -79,7 +79,7 @@ export class RequireUserIdGuard implements CanActivate {
     const ctx = Context.tryGet();
     if (!ctx) return false;
     
-    const userId = ctx.metadata.user_id;
+    const userId = ctx.metadata.userId;
     return !!userId;
   }
 }

@@ -1,12 +1,12 @@
-import { EventEmitter } from 'node:events';
-import type { KernelContext } from './context';
-import { Context } from './context';
-import { Telemetry } from './telemetry';
+import { EventEmitter } from "node:events";
+import type { KernelContext } from "./context";
+import { Context } from "./context";
+import { Telemetry } from "./telemetry";
 
 /**
  * Target specification for event routing.
  * Used by transports to determine which connections receive the event.
- * 
+ *
  * Inspired by Socket.io patterns:
  * - emit: send to target (may include sender)
  * - broadcast: send to target excluding sender
@@ -16,18 +16,18 @@ export interface ChannelTarget {
    * Send to specific connection by ID.
    */
   connectionId?: string;
-  
+
   /**
    * Send to all connections in these rooms.
    * Rooms are arbitrary strings - application decides naming convention.
    * Examples: 'user:123', 'tenant:abc', 'thread:xyz'
    */
   rooms?: string[];
-  
+
   /**
    * Broadcast mode: exclude the source connection from delivery.
    * Requires metadata.sourceConnectionId to be set.
-   * 
+   *
    * Mimics Socket.io's socket.broadcast.emit() pattern:
    * - false (default): emit to all targets including sender
    * - true: broadcast to all targets except sender
@@ -44,22 +44,22 @@ export interface ChannelEvent {
    * Event type (normalized patterns: 'request', 'response', 'progress', 'status', 'error')
    */
   type: string;
-  
+
   /**
    * Request/response correlation ID (for bidirectional communication)
    */
   id?: string;
-  
+
   /**
    * Channel name (e.g., 'ui:progress', 'ui:user-input', 'tool:status')
    */
   channel: string;
-  
+
   /**
    * Flexible event payload
    */
   payload: any;
-  
+
   /**
    * Optional metadata
    */
@@ -71,7 +71,7 @@ export interface ChannelEvent {
     sourceConnectionId?: string; // Connection that originated this event
     [key: string]: unknown;
   };
-  
+
   /**
    * Optional routing target.
    * If not specified, event is broadcast to all channel subscribers.
@@ -87,11 +87,14 @@ export interface ChannelEvent {
  */
 export class Channel {
   private emitter = new EventEmitter();
-  private pendingRequests = new Map<string, {
-    resolve: (event: ChannelEvent) => void;
-    reject: (error: Error) => void;
-    timeout: NodeJS.Timeout;
-  }>();
+  private pendingRequests = new Map<
+    string,
+    {
+      resolve: (event: ChannelEvent) => void;
+      reject: (error: Error) => void;
+      timeout: NodeJS.Timeout;
+    }
+  >();
   // Store recent responses to handle race conditions (response before wait)
   private recentResponses = new Map<string, ChannelEvent>();
 
@@ -118,27 +121,28 @@ export class Channel {
       if (node) {
         // Track as metric in node
         node.addMetric(`channel.${this.name}.events`, 1);
-        
+
         // Also track in context metrics (for consistency)
         if (ctx.metrics) {
-          ctx.metrics[`channel.${this.name}.events`] = (ctx.metrics[`channel.${this.name}.events`] || 0) + 1;
+          ctx.metrics[`channel.${this.name}.events`] =
+            (ctx.metrics[`channel.${this.name}.events`] || 0) + 1;
         }
-        
+
         // Send to telemetry immediately
         Telemetry.getCounter(`channel.${this.name}.events`).add(1, {
           channel: this.name,
           event_type: normalizedEvent.type,
-          procedure: node.name || 'anonymous',
+          procedure: node.name || "anonymous",
           procedure_pid: node.pid,
         });
       }
     }
 
     // Emit to all subscribers
-    this.emitter.emit('event', normalizedEvent);
+    this.emitter.emit("event", normalizedEvent);
 
     // If this is a response, resolve any pending requests or store for later
-    if (normalizedEvent.type === 'response' && normalizedEvent.id) {
+    if (normalizedEvent.type === "response" && normalizedEvent.id) {
       const responseId = normalizedEvent.id; // Type guard
       const pending = this.pendingRequests.get(responseId);
       if (pending) {
@@ -161,22 +165,25 @@ export class Channel {
    * @returns Unsubscribe function
    */
   subscribe(handler: (event: ChannelEvent) => void): () => void {
-    this.emitter.on('event', handler);
-    
+    this.emitter.on("event", handler);
+
     return () => {
-      this.emitter.off('event', handler);
+      this.emitter.off("event", handler);
     };
   }
 
   /**
    * Wait for a response to a specific request.
    * Used by tools/components for bidirectional communication.
-   * 
+   *
    * @param requestId The request ID to wait for
    * @param timeoutMs Timeout in milliseconds (default: 30000)
    * @returns Promise that resolves when response is received
    */
-  waitForResponse(requestId: string, timeoutMs: number = 30000): Promise<ChannelEvent> {
+  waitForResponse(
+    requestId: string,
+    timeoutMs: number = 30000,
+  ): Promise<ChannelEvent> {
     return new Promise((resolve, reject) => {
       // Check if response was already received (race condition: response before wait)
       const cachedResponse = this.recentResponses.get(requestId);
@@ -188,7 +195,11 @@ export class Channel {
 
       const timeout = setTimeout(() => {
         this.pendingRequests.delete(requestId);
-        reject(new Error(`Channel "${this.name}": Request "${requestId}" timed out after ${timeoutMs}ms`));
+        reject(
+          new Error(
+            `Channel "${this.name}": Request "${requestId}" timed out after ${timeoutMs}ms`,
+          ),
+        );
       }, timeoutMs);
 
       this.pendingRequests.set(requestId, {
@@ -199,7 +210,7 @@ export class Channel {
 
       // Subscribe to catch responses that arrive after we set up the pending request
       const unsubscribe = this.subscribe((event) => {
-        if (event.type === 'response' && event.id === requestId) {
+        if (event.type === "response" && event.id === requestId) {
           unsubscribe();
           clearTimeout(timeout);
           this.pendingRequests.delete(requestId);
@@ -213,7 +224,7 @@ export class Channel {
    * Get the number of active subscribers.
    */
   getSubscriberCount(): number {
-    return this.emitter.listenerCount('event');
+    return this.emitter.listenerCount("event");
   }
 
   /**
@@ -223,9 +234,16 @@ export class Channel {
     // Reject all pending requests
     for (const [requestId, pending] of this.pendingRequests.entries()) {
       clearTimeout(pending.timeout);
-      pending.reject(new Error(`Channel "${this.name}" destroyed while waiting for request "${requestId}"`));
+      pending.reject(
+        new Error(
+          `Channel "${this.name}" destroyed while waiting for request "${requestId}"`,
+        ),
+      );
     }
     this.pendingRequests.clear();
+
+    // Clear cached responses
+    this.recentResponses.clear();
 
     // Remove all listeners
     this.emitter.removeAllListeners();
@@ -274,11 +292,12 @@ export class ChannelSession {
    * Users can override this via ChannelService config.
    */
   static generateId(ctx: KernelContext): string {
-    const userId = ctx.user?.id || 'anonymous';
+    const userId = ctx.user?.id || "anonymous";
     // Use conversationId if present and not 'na', otherwise fall back to traceId
-    const conversationId = (ctx.metadata['conversationId'] && ctx.metadata['conversationId'] !== 'na') 
-      ? ctx.metadata['conversationId'] 
-      : ctx.traceId;
+    const conversationId =
+      ctx.metadata["conversationId"] && ctx.metadata["conversationId"] !== "na"
+        ? ctx.metadata["conversationId"]
+        : ctx.traceId;
     return `${userId}-${conversationId}`;
   }
 
@@ -297,7 +316,7 @@ export class ChannelSession {
  * Kernel-level interface for channel service access.
  * This allows KernelContext to reference channels without creating
  * a circular dependency between kernel and engine packages.
- * 
+ *
  * Engine's ChannelService implements this interface.
  */
 export interface ChannelServiceInterface {
@@ -310,16 +329,29 @@ export interface ChannelServiceInterface {
   /**
    * Publish an event to a channel.
    */
-  publish(ctx: KernelContext, channelName: string, event: Omit<ChannelEvent, 'channel'>): void;
+  publish(
+    ctx: KernelContext,
+    channelName: string,
+    event: Omit<ChannelEvent, "channel">,
+  ): void;
 
   /**
    * Subscribe to events on a channel.
    * @returns Unsubscribe function
    */
-  subscribe(ctx: KernelContext, channelName: string, handler: (event: ChannelEvent) => void): () => void;
+  subscribe(
+    ctx: KernelContext,
+    channelName: string,
+    handler: (event: ChannelEvent) => void,
+  ): () => void;
 
   /**
    * Wait for a response on a channel (for bidirectional communication).
    */
-  waitForResponse(ctx: KernelContext, channelName: string, requestId: string, timeoutMs?: number): Promise<ChannelEvent>;
+  waitForResponse(
+    ctx: KernelContext,
+    channelName: string,
+    requestId: string,
+    timeoutMs?: number,
+  ): Promise<ChannelEvent>;
 }

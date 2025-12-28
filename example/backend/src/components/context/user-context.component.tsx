@@ -8,7 +8,7 @@ export function UserContextComponent() {
     </Section>
     <Section audience="model" id="user-context" title="User Context">
       <Paragraph>[User ID: {ctx.user.id}]</Paragraph>
-      <Paragraph>[Thread ID: {ctx.metadata.thread_id}]</Paragraph>
+      <Paragraph>[Thread ID: {ctx.metadata.threadId}]</Paragraph>
     </Section>
   </>;
 }

@@ -9,7 +9,7 @@ import { TextBlockComponent } from './text-block.component';
     TextBlockComponent,
   ],
   template: `
-    @if (block.is_redacted) {
+    @if (block.isRedacted) {
       <div style="color: #666; font-style: italic;">[Reasoning redacted]</div>
     } @else {
       <div>

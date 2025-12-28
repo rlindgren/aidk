@@ -162,8 +162,8 @@ describe('Compilation Integration Tests', () => {
         <Message role="user">
           <Image 
             source={{ type: 'url', url: 'https://example.com/photo.jpg' }}
-            alt_text="A photo"
-            mime_type="image/jpeg"
+            altText="A photo"
+            mimeType="image/jpeg"
           />
         </Message>
       );
@@ -173,8 +173,8 @@ describe('Compilation Integration Tests', () => {
       
       expect(content.type).toBe('image');
       expect((content as any).source.url).toBe('https://example.com/photo.jpg');
-      expect((content as any).alt_text).toBe('A photo');
-      expect((content as any).mime_type).toBe('image/jpeg');
+      expect((content as any).altText).toBe('A photo');
+      expect((content as any).mimeType).toBe('image/jpeg');
     });
 
     it('should create native AudioBlock from <Audio> component', async () => {
@@ -331,7 +331,7 @@ describe('Compilation Integration Tests', () => {
       const jsx = (
         <Message role="user">
           <Text>Here is an image:</Text>
-          <Image source={{ type: 'url', url: 'photo.jpg' }} alt_text="Photo" />
+          <Image source={{ type: 'url', url: 'photo.jpg' }} altText="Photo" />
         </Message>
       );
 
@@ -340,7 +340,7 @@ describe('Compilation Integration Tests', () => {
       expect(result.timeline[0].message.content).toHaveLength(2);
       expect(result.timeline[0].message.content[0].type).toBe('text');
       expect(result.timeline[0].message.content[1].type).toBe('image');
-      expect((result.timeline[0].message.content[1] as any).alt_text).toBe('Photo');
+      expect((result.timeline[0].message.content[1] as any).altText).toBe('Photo');
     });
 
     it('should convert semantic <img> to inline markdown', async () => {
@@ -762,7 +762,7 @@ describe('Compilation Integration Tests', () => {
     it('should pass through tool_use blocks', async () => {
       const toolUseBlock = {
         type: 'tool_use' as const,
-        tool_use_id: 'test-id',
+        toolUseId: 'test-id',
         name: 'calculator',
         input: { expression: '2+2' }
       };
@@ -782,7 +782,7 @@ describe('Compilation Integration Tests', () => {
     it('should pass through tool_result blocks', async () => {
       const toolResultBlock = {
         type: 'tool_result' as const,
-        tool_use_id: 'test-id',
+        toolUseId: 'test-id',
         content: [{ type: 'text' as const, text: 'Result: 4' }]
       };
 
@@ -813,11 +813,11 @@ describe('Compilation Integration Tests', () => {
           
           <Message role="assistant">
             <Text>Let me calculate that.</Text>
-            {{ type: 'tool_use' as const, tool_use_id: 'calc1', name: 'calculator', input: { expr: '2+2' } }}
+            {{ type: 'tool_use' as const, toolUseId: 'calc1', name: 'calculator', input: { expr: '2+2' } }}
           </Message>
           
           <Message role="user">
-            {{ type: 'tool_result' as const, tool_use_id: 'calc1', content: [{ type: 'text' as const, text: '4' }] }}
+            {{ type: 'tool_result' as const, toolUseId: 'calc1', content: [{ type: 'text' as const, text: '4' }] }}
           </Message>
           
           <Message role="assistant">
@@ -854,7 +854,7 @@ describe('Compilation Integration Tests', () => {
       const jsx = (
         <Message role="user">
           <Text>Check out:</Text>
-          <Image source={{ type: 'url', url: 'photo.jpg' }} alt_text="Photo" />
+          <Image source={{ type: 'url', url: 'photo.jpg' }} altText="Photo" />
           <Text>And listen to:</Text>
           <Audio source={{ type: 'url', url: 'sound.mp3' }} transcript="Hello" />
           <Text>Final text</Text>

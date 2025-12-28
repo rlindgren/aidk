@@ -41,7 +41,7 @@ export function createToolRunHook(config: ToolHooksConfig): ToolHookMiddleware<'
       rootId = toolExecutionId;
       parentId = undefined;
     } else {
-      effectiveThreadId = parentExecution.thread_id || threadId;
+      effectiveThreadId = parentExecution.threadId || threadId;
       toolExecutionId = generateUUID();
       rootId = parentExecution.root_id;
       parentId = parentExecution.id;

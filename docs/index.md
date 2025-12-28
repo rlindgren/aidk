@@ -126,7 +126,7 @@ class OrderService {
     const ctx = Context.get();  // Still there
     return await db.orders.create({
       userId: ctx.user.id,
-      tenantId: ctx.metadata.tenant_id,
+      tenantId: ctx.metadata.tenantId,
       items,
     });
   }
@@ -183,7 +183,7 @@ class Scratchpad extends Component {
   
   async onMount(com: ContextObjectModel) {
     const ctx = Context.get();
-    const loaded = await loadNotes(ctx.metadata.thread_id);
+    const loaded = await loadNotes(ctx.metadata.threadId);
     this.notes.set(loaded);
   }
   
@@ -264,7 +264,7 @@ render(com: ContextObjectModel, state: TickState) {
       {/* Multimodal content */}
       <Message role="user">
         <Text>What do you think of this product?</Text>
-        <Image source={{ type: 'url', url: productImageUrl }} alt_text="Product photo" />
+        <Image source={{ type: 'url', url: productImageUrl }} altText="Product photo" />
       </Message>
       
       {/* Code examples for the model */}
@@ -694,7 +694,7 @@ Sometimes you want both: subscribe to events AND get the final result. Use `.wit
 
 ```typescript
 const { handle, result } = await engine.execute
-  .withContext({ user, tenant_id, metadata })
+  .withContext({ user, tenantId, metadata })
   .withHandle()
   .run(input, <Agent />);
 
@@ -718,9 +718,9 @@ const { handle, result } = await engine.execute
   .use(loggingMiddleware)           // Per-call middleware
   .use(rateLimitMiddleware)         // Stack them
   .withContext({                    // Execution context
-    user_id: user.id,
-    tenant_id: tenant.id,
-    thread_id: thread.id,
+    userId: user.id,
+    tenantId: tenant.id,
+    threadId: thread.id,
     metadata: { source: 'api' },
   })
   .withHandle()                     // Return handle + result
@@ -739,7 +739,7 @@ const model = createAiSdkModel({ model: openai('gpt-4o') });
 
 // Direct model call with handle
 const { handle, result } = model.generate
-  .withContext({ user_id })
+  .withContext({ userId })
   .withHandle()
   .run({
     messages: [{ role: 'user', content: [{ type: 'text', text: 'Hello' }] }],
@@ -750,7 +750,7 @@ const response = await result;
 
 // Direct tool call with the same pattern
 const { handle: toolHandle, result: toolResult } = Calculator.run
-  .withContext({ user_id })
+  .withContext({ userId })
   .withHandle()
   .run({ expression: '2 + 2' });
 
@@ -790,7 +790,7 @@ const output = await result;
 
 // With context
 const response = await gpt4.generate
-  .withContext({ user_id: 'user-123' })
+  .withContext({ userId: 'user-123' })
   .run({ messages });
 
 // Stream directly

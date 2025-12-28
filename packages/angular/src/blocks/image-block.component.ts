@@ -6,7 +6,7 @@ import type { GeneratedImageBlock, ImageBlock } from 'aidk-client';
   standalone: true,
   template: `
     @if (src) {
-      <img [src]="src" [alt]="block.alt_text || 'Image'" style="max-width: 100%; height: auto; border-radius: 4px;" />
+      <img [src]="src" [alt]="block.altText || 'Image'" style="max-width: 100%; height: auto; border-radius: 4px;" />
     } @else {
       <div>[Image: unsupported source type]</div>
     }
@@ -23,7 +23,7 @@ export class ImageBlockComponent {
       return this.block.source.url;
     }
     if (this.block.source.type === 'base64') {
-      const mimeType = this.block.mime_type || 'image/png';
+      const mimeType = this.block.mimeType || 'image/png';
       return `data:${mimeType};base64,${this.block.source.data}`;
     }
     return undefined;

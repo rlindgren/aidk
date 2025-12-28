@@ -247,44 +247,210 @@ class MyComponent extends Component {
 }
 ```
 
-## Important: Class Components Only
+## State in Class Components
 
-> ⚠️ **Signals only work in class components (`EngineComponent`), not pure function components.**
-
-### Why?
-
-Pure function components are re-executed on every render. Signals created inside them would be recreated each time, losing their state:
+Class components use `signal()`, `comState()`, and `watch()` as class properties:
 
 ```typescript
-// ❌ WRONG - Creates new signal every render!
-function BadComponent(props) {
-  const count = signal(0);  // New signal each render
-  return <div>{count()}</div>;
+class MyAgent extends Component {
+  // Local state
+  private count = signal(0);
+  
+  // Shared state
+  private timeline = comState<Message[]>('timeline', []);
+  
+  // Watch state from another component
+  private status = watch<string>('agentStatus');
+  
+  render() {
+    return <Text>Count: {this.count()}, Messages: {this.timeline().length}</Text>;
+  }
 }
 ```
 
-### The Correct Patterns
+### Props in Class Components
+
+Use `input()` to create reactive props:
 
 ```typescript
-// ✅ Use EngineComponent for stateful components
-class GoodComponent extends Component {
-  private count = signal(0);  // Stored on instance, persists
+interface AgentProps {
+  title?: string;
+  model: string;  // Required
+}
+
+class ConfigurableAgent extends Component<AgentProps> {
+  // Reactive props
+  title = input<string>('Default Title');
+  model = input<string>();  // Required from props interface
   
   render() {
-    return <div>{this.count()}</div>;
+    return (
+      <>
+        <H1>{this.title()}</H1>
+        <AiSdkModel model={openai(this.model())} />
+      </>
+    );
   }
 }
 
-// ✅ Pure function components should be stateless
-function PureComponent(props: { count: number }) {
-  return <div>{props.count}</div>;  // Receive state as props
-}
+// Usage
+<ConfigurableAgent model="gpt-4o" title="My Agent" />
+```
 
-// ✅ Or use COM state passed down
-function TimelineView(props: { entries: COMTimelineEntry[] }) {
-  return <Timeline>{props.entries.map(...)}</Timeline>;
+## State in Function Components
+
+Function components use **hooks** (React-inspired, async-first):
+
+```typescript
+function Counter() {
+  // Local state
+  const count = useSignal(0);
+  
+  // Shared state
+  const timeline = useComState<Message[]>('timeline', []);
+  
+  // Watch state
+  const status = useWatch<string>('agentStatus');
+  
+  // Computed value
+  const doubled = useComputed(() => count() * 2, []);
+  
+  return <Text>Count: {count()}, Doubled: {doubled()}</Text>;
 }
 ```
+
+### Props in Function Components
+
+Use `useInput()` to access props:
+
+```typescript
+interface MessageCardProps {
+  message: string;
+  author?: string;
+}
+
+function MessageCard(props: MessageCardProps) {
+  const message = useInput<string>('message');
+  const author = useInput<string>('author', 'Anonymous');
+  
+  return (
+    <Section>
+      <Paragraph>{message()}</Paragraph>
+      <Text><em>— {author()}</em></Text>
+    </Section>
+  );
+}
+
+// Usage
+<MessageCard message="Hello!" author="Alice" />
+```
+
+## Lifecycle Hooks (Function Components)
+
+Function components have full lifecycle support via hooks:
+
+### Initialization
+
+```typescript
+function DataLoader() {
+  const data = useComState('data', []);
+  
+  // Runs once on mount, blocks render until complete
+  await useInit(async (com, state) => {
+    const initialData = await fetchData();
+    data.set(initialData);
+  });
+  
+  return <List>{data().map(item => <ListItem>{item}</ListItem>)}</List>;
+}
+```
+
+### Mount/Unmount
+
+```typescript
+function Logger() {
+  useOnMount((com) => {
+    console.log('Component mounted');
+  });
+  
+  useOnUnmount((com) => {
+    console.log('Component unmounting');
+  });
+  
+  return <Text>Hello</Text>;
+}
+```
+
+### Tick Lifecycle
+
+```typescript
+function TickTracker() {
+  const timeline = useComState<any[]>('timeline', []);
+  
+  // Before each tick
+  useTickStart((com, state) => {
+    if (state.currentState?.timeline) {
+      timeline.update(t => [...t, ...state.currentState.timeline]);
+    }
+  });
+  
+  // After each tick
+  useTickEnd((com, state) => {
+    console.log(`Tick ${state.tick} complete`);
+  });
+  
+  return <Timeline>{timeline().map(...)}</Timeline>;
+}
+```
+
+### Effects
+
+```typescript
+function SyncToServer() {
+  const message = useComState('message', '');
+  
+  // Runs after render when dependencies change
+  useEffect(async () => {
+    await logToServer(message());
+    return () => console.log('cleanup');
+  }, [message]);  // Signal auto-unwrapped for comparison
+  
+  return <Text>{message()}</Text>;
+}
+```
+
+## Complete Hooks Reference
+
+### State Hooks
+- `useSignal(initialValue)` - Local component state
+- `useComState(key, initialValue)` - Shared COM state
+- `useWatch(key, defaultValue)` - Read-only COM state
+- `useInput(propKey, defaultValue)` - Reactive prop access
+
+### Computed & Memoization
+- `useComputed(computation, deps)` - Reactive computed value
+- `useMemo(factory, deps)` - Memoized value
+- `useCallback(callback, deps)` - Memoized function
+
+### Lifecycle Hooks
+- `useInit(callback)` - Initialize once (blocking, runs during render)
+- `useOnMount(callback)` - Run once after mount (non-blocking)
+- `useOnUnmount(callback)` - Run once before unmount
+- `useTickStart(callback)` - Run before each tick
+- `useTickEnd(callback)` - Run after each tick
+- `useAfterCompile(callback)` - Run after compilation
+- `useEffect(callback, deps)` - Side effect after commit
+
+### Refs & Async
+- `useRef(initialValue)` - Mutable ref
+- `useCOMRef(refName)` - Get component ref from COM
+- `useAsync(asyncFn, deps)` - Async data fetching with loading/error states
+
+### Utilities
+- `usePrevious(value)` - Track previous value
+- `useToggle(initial)` - Boolean toggle state
+- `useCounter(initial)` - Numeric counter with helpers
+- `useAbortSignal()` - Get abort signal for current execution
 
 ## API Reference
 

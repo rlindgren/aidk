@@ -20,7 +20,7 @@ export function mergeAbortSignals(signals: AbortSignal[]): AbortSignal {
       mergedController.abort();
       // Clean up listeners (they'll be removed when signals abort anyway, but be explicit)
       for (const signal of signals) {
-        signal.removeEventListener('abort', abortHandler);
+        signal.removeEventListener("abort", abortHandler);
       }
     }
   };
@@ -32,17 +32,26 @@ export function mergeAbortSignals(signals: AbortSignal[]): AbortSignal {
       abortHandler();
       return mergedController.signal;
     }
-    signal.addEventListener('abort', abortHandler);
+    signal.addEventListener("abort", abortHandler);
   }
 
   return mergedController.signal;
 }
 
+import { AbortError, isAbortError as isSharedAbortError } from "aidk-shared";
+
+export { AbortError };
 
 export function isAbortError(error: any): boolean {
   if (!error) return false;
-  if (error.name === 'AbortError') return true;
-  if (error.name === 'DOMException' && error.code === 20) return true; // AbortError DOMException code
+  // Check for our AbortError class first
+  if (isSharedAbortError(error)) return true;
+  // Legacy checks for compatibility
+  if (error.name === "AbortError") return true;
+  if (error.name === "DOMException" && error.code === 20) return true; // AbortError DOMException code
   const message = String(error.message || error);
-  return message.toLowerCase().includes('abort') || message.toLowerCase().includes('cancelled');
+  return (
+    message.toLowerCase().includes("abort") ||
+    message.toLowerCase().includes("cancelled")
+  );
 }

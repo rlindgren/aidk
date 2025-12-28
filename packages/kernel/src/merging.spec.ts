@@ -1,5 +1,5 @@
 import { Context } from './context';
-import { mergeStreams, StreamTag } from './stream';
+import { mergeStreams, type StreamTag } from './stream';
 
 describe('Kernel Stream Merging', () => {
   // Helper to create a delayed stream

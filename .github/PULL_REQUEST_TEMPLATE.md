@@ -22,6 +22,7 @@ Fixes #(issue number)
 - [ ] All new and existing tests pass
 - [ ] I have updated documentation as needed
 - [ ] I have added an entry to CHANGELOG.md (if applicable)
+- [ ] I have updated relevant documentation (ARCHITECTURE.md, CLAUDE.md) if APIs or behavior changed
 
 ## Testing
 
@@ -30,4 +31,3 @@ Describe how you tested these changes.
 ## Screenshots (if applicable)
 
 Add screenshots for UI changes.
-

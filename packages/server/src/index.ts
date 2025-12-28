@@ -1,6 +1,6 @@
 /**
  * Shared Server Utilities
- * 
+ *
  * Framework-agnostic utilities for engine backend implementations.
  * Works with Express, NestJS, Fastify, or any Node.js server framework.
  */
@@ -23,7 +23,7 @@ export type {
   ToolStateRepository,
   // Config
   PersistenceRepositories,
-} from './types';
+} from "./types";
 
 // In-Memory Store (for development/testing)
 export {
@@ -37,11 +37,11 @@ export {
   InMemoryMessageBlockRepository,
   InMemoryInteractionRepository,
   InMemoryToolStateRepository,
-} from './persistence/in-memory';
-export type { InMemoryStore } from './persistence/in-memory';
+} from "./persistence/in-memory";
+export type { InMemoryStore } from "./persistence/in-memory";
 
 // Utility
-export { generateUUID } from './utils';
+export { generateUUID } from "./utils";
 
 // Execution Context (framework-agnostic core)
 export {
@@ -59,15 +59,20 @@ export {
   // Helpers
   buildEngineContext,
   resolveConfig,
-} from './execution-context';
+  // Request Context Attachment
+  AIDK_CONTEXT_KEY,
+  attachContext,
+  getContext,
+  requireContext,
+} from "./execution-context";
 
 export type {
   IdGenerator,
   ContextExtractor,
   InputTransformer,
   RequestContext,
+  RequestWithContext,
   ExecutionContext,
   ExecutionContextConfig,
   StandardRequestBody,
-} from './execution-context';
-
+} from "./execution-context";

@@ -398,7 +398,7 @@ describe('Fork Component', () => {
               message: {
                 role: 'user' as const,
                 content: [{ type: 'text' as const, text: 'Parent message' }],
-                created_at: new Date().toISOString(),
+                createdAt: new Date().toISOString(),
               }
             }
           ]

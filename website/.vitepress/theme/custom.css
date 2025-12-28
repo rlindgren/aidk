@@ -1,0 +1,157 @@
+:root {
+  --vp-c-brand-1: #3b9eff;
+  --vp-c-brand-2: #74bfff;
+  --vp-c-brand-3: #1a8cff;
+  --vp-c-brand-soft: rgba(116, 191, 255, 0.14);
+
+  --vp-home-hero-name-color: transparent;
+  --vp-home-hero-name-background: linear-gradient(
+    135deg,
+    #3b9eff 0%,
+    #74bfff 100%
+  );
+
+  --vp-code-block-bg: rgba(125, 125, 125, 0.04);
+}
+
+.dark {
+  --vp-c-brand-1: #74bfff;
+  --vp-c-brand-2: #3b9eff;
+  --vp-c-brand-3: #1a8cff;
+  --vp-c-brand-soft: rgba(116, 191, 255, 0.16);
+
+  --vp-code-block-bg: rgba(0, 0, 0, 0.2);
+}
+
+/* Hero section styling */
+.VPHome .VPHero {
+  padding-top: 4rem;
+  padding-bottom: 4rem;
+}
+
+/* Code blocks */
+.vp-code-group {
+  margin: 1.5rem 0;
+}
+
+/* Ensure code blocks don't overflow containers */
+.custom-home pre {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.custom-home div[class*="language-"] {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+/* Features grid */
+.VPFeatures {
+  padding: 3rem 0;
+}
+
+/* Custom animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #3b9eff 0%, #74bfff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Feature cards */
+.feature-card {
+  padding: 2rem;
+  border-radius: 12px;
+  border: 1px solid var(--vp-c-divider);
+  background: var(--vp-c-bg-soft);
+  transition: all 0.3s ease;
+}
+
+.feature-card:hover {
+  border-color: var(--vp-c-brand-1);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(59, 158, 255, 0.15);
+}
+
+/* Code comparison */
+.code-comparison {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin: 2rem 0;
+}
+
+@media (max-width: 768px) {
+  .code-comparison {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Adoption levels */
+.adoption-level {
+  border-left: 4px solid var(--vp-c-brand-1);
+  padding-left: 1.5rem;
+  margin: 1.5rem 0;
+}
+
+.adoption-level h3 {
+  color: var(--vp-c-brand-1);
+  margin-top: 0;
+}
+
+/* Interactive examples */
+.interactive-example {
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 8px;
+  overflow: hidden;
+  margin: 2rem 0;
+}
+
+.example-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--vp-c-divider);
+  background: var(--vp-c-bg-soft);
+}
+
+.example-tab {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-weight: 500;
+  color: var(--vp-c-text-2);
+  transition: all 0.2s;
+}
+
+.example-tab:hover {
+  color: var(--vp-c-text-1);
+}
+
+.example-tab.active {
+  color: var(--vp-c-brand-1);
+  border-bottom: 2px solid var(--vp-c-brand-1);
+}
+
+.example-content {
+  padding: 1.5rem;
+}
+
+.vp-doc div[class*="language-"] {
+  margin: 0;
+}

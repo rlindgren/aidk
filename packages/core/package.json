@@ -17,6 +17,10 @@
     "./utils": "./src/utils/index.ts",
     "./state/*": "./src/state/*.ts",
     "./state": "./src/state/index.ts",
+    "./engine": "./src/engine/index.ts",
+    "./engine/*": "./src/engine/*.ts",
+    "./com": "./src/com/index.ts",
+    "./com/*": "./src/com/*.ts",
     "./*": "./src/*.ts"
   },
   "publishConfig": {
@@ -67,6 +71,22 @@
       "./state": {
         "types": "./dist/state/index.d.ts",
         "import": "./dist/state/index.js"
+      },
+      "./engine": {
+        "types": "./dist/engine/index.d.ts",
+        "import": "./dist/engine/index.js"
+      },
+      "./engine/*": {
+        "types": "./dist/engine/*.d.ts",
+        "import": "./dist/engine/*.js"
+      },
+      "./com": {
+        "types": "./dist/com/index.d.ts",
+        "import": "./dist/com/index.js"
+      },
+      "./com/*": {
+        "types": "./dist/com/*.d.ts",
+        "import": "./dist/com/*.js"
       },
       "./*": {
         "types": "./dist/*.d.ts",

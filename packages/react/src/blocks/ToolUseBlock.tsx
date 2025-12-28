@@ -28,8 +28,8 @@ export function ToolUseBlock({ block, className }: Props) {
       <span>🔧</span>
       <span style={{ fontWeight: 500 }}>{block.name}</span>
       <span style={{ color: '#888' }}>— {inputSummary}</span>
-      {block.tool_result ? (
-        <span style={{ display: 'flex', flex: 1, justifyContent: 'flex-end' }}>{block.tool_result.is_error ? '❌' : '✅'}</span>
+      {block.toolResult ? (
+        <span style={{ display: 'flex', flex: 1, justifyContent: 'flex-end' }}>{block.toolResult.isError ? '❌' : '✅'}</span>
       ) : (
         <span style={{ display: 'flex', flex: 1, justifyContent: 'flex-end' }}>⏳</span>
       )}

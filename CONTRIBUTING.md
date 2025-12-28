@@ -2,6 +2,32 @@
 
 Thank you for your interest in contributing to AIDK! This document provides guidelines and instructions for contributing.
 
+## AI-Assisted Development
+
+We welcome contributions made with the help of AI coding assistants. When using AI tools:
+
+### Guidelines
+
+- **Quality standards apply equally** - AI-assisted code must meet the same quality bar as human-written code
+- **Review AI output carefully** - Verify correctness, test thoroughly, and ensure the code follows our conventions
+- **Understand what you submit** - Be able to explain and maintain any code you contribute
+- **Run the full test suite** - AI-generated code must pass all tests: `pnpm test`
+
+### AI Agent Resources
+
+If you're an AI agent or using one:
+
+- **Read `CLAUDE.md`** - Overview of the codebase for AI agents
+- **Check `ARCHITECTURE.md` files** - Each package has detailed architecture docs
+- **Use `CONVENTIONS.md`** - Naming and coding standards
+- **Use testing utilities** - `aidk-shared/testing` provides fixtures and helpers
+
+### Attribution
+
+No special attribution is required for AI-assisted contributions. The standard commit and PR process applies.
+
+---
+
 ## Development Setup
 
 ### Prerequisites
@@ -194,15 +220,15 @@ test: add integration tests for hooks
 ### Test Structure
 
 ```typescript
-describe('FeatureName', () => {
-  describe('methodName', () => {
-    it('should do something specific', () => {
+describe("FeatureName", () => {
+  describe("methodName", () => {
+    it("should do something specific", () => {
       // Arrange
       const input = createTestInput();
-      
+
       // Act
       const result = methodName(input);
-      
+
       // Assert
       expect(result).toBe(expected);
     });
@@ -233,15 +259,41 @@ describe('FeatureName', () => {
 ### Package READMEs
 
 Each package should have a README with:
+
 - Package description
 - Installation instructions
 - Basic usage example
 - API reference (or link to docs)
 
+## Testing Utilities
+
+Use the testing utilities from `aidk-shared/testing` for consistent test patterns:
+
+```typescript
+import {
+  createUserMessage,
+  createAssistantMessage,
+  createToolUseBlock,
+  createTextStreamSequence,
+  captureAsyncGenerator,
+  waitFor,
+} from "aidk-shared/testing";
+
+describe("MyFeature", () => {
+  it("should handle messages", async () => {
+    const message = createUserMessage("Hello");
+    const result = await processMessage(message);
+    expect(result).toBeDefined();
+  });
+});
+```
+
+See `packages/shared/ARCHITECTURE.md` for the full list of available utilities.
+
 ## Questions?
 
 - Open an issue for bugs or feature requests
 - Use discussions for questions and ideas
+- Check `CLAUDE.md` for codebase overview (helpful for AI agents too!)
 
-Thank you for contributing! 🎉
-
+Thank you for contributing!

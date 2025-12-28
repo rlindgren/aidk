@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "type": "module",
   "main": "src/index.ts",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "test": "jest",
@@ -18,7 +20,8 @@
   },
   "devDependencies": {
     "@types/node": "^24.10.0",
-    "@types/express": "^5.0.0"
+    "@types/express": "^5.0.0",
+    "@types/jest": "^29.5.14"
   },
   "peerDependencies": {
     "@nestjs/common": "^10.0.0",
@@ -33,4 +36,3 @@
     "types": "./dist/index.d.ts"
   }
 }
-

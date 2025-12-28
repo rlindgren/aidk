@@ -62,3 +62,6 @@ export class Context {
   }
 }
 
+export function context() {
+  return Context.get();
+}

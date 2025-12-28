@@ -4,16 +4,16 @@ import 'aidk';
 
 declare module "aidk" {
   interface UserContext {
-    user_id: string;
-    tenant_id: string;
+    userId: string;
+    tenantId: string;
     request_id: string;
     auth_token?: string;
     ip_address?: string;
   }
 
   interface EngineContextMetadata {
-    thread_id?: string;
-    user_id?: string;
+    threadId?: string;
+    userId?: string;
   }
 
 }

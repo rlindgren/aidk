@@ -11,9 +11,9 @@ export interface Task {
   title: string;
   description?: string;
   completed: boolean;
-  created_at?: string;
-  updated_at?: string;
-  user_id?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  userId?: string;
 }
 
 interface TaskResponse {
@@ -76,7 +76,7 @@ export function useTodoList(client: EngineClient, userId: string | null = null) 
     const fetchTasks = async () => {
       try {
         const params = new URLSearchParams();
-        if (userId) params.set('user_id', userId);
+        if (userId) params.set('userId', userId);
         
         const response = await fetch(`${API_URL}/api/tasks?${params}`);
         if (response.ok) {

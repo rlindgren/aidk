@@ -1,6 +1,11 @@
-import { GoogleGenAI, GenerateContentResponse, type GenerateContentParameters, FinishReason } from '@google/genai';
+import {
+  GoogleGenAI,
+  GenerateContentResponse,
+  type GenerateContentParameters,
+  FinishReason,
+} from "@google/genai";
 
-import { type EngineModel, Logger, createLanguageModel } from 'aidk';
+import { type EngineModel, Logger, createLanguageModel } from "aidk";
 
 import {
   type ModelInput,
@@ -8,19 +13,22 @@ import {
   type StreamChunk,
   type ToolDefinition,
   StopReason,
-} from 'aidk';
-import type { ContentBlock, Message, TextBlock } from 'aidk/content';
-import { normalizeModelInput } from 'aidk/normalization';
-import { type GoogleAdapterConfig, STOP_REASON_MAP } from './types';
+} from "aidk";
+import type { ContentBlock, Message, TextBlock } from "aidk/content";
+import { normalizeModelInput } from "aidk/normalization";
+import { type GoogleAdapterConfig, STOP_REASON_MAP } from "./types";
+import { AdapterError, ValidationError } from "aidk-shared";
 
 export type GoogleAdapter = EngineModel<ModelInput, ModelOutput>;
 
-const logger = Logger.for('GoogleAdapter');
+const logger = Logger.for("GoogleAdapter");
 
 /**
  * Factory function for creating Google model adapter using createModel
  */
-export function createGoogleModel(config: GoogleAdapterConfig = {}): GoogleAdapter {
+export function createGoogleModel(
+  config: GoogleAdapterConfig = {},
+): GoogleAdapter {
   const client = config.client ?? new GoogleGenAI(buildClientOptions(config));
 
   return createLanguageModel<
@@ -31,28 +39,28 @@ export function createGoogleModel(config: GoogleAdapterConfig = {}): GoogleAdapt
     GenerateContentResponse
   >({
     metadata: {
-      id: 'google',
-      provider: 'google',
+      id: "google",
+      provider: "google",
       model: config.model,
-      type: 'language' as const,
+      type: "language" as const,
       capabilities: [
-        { stream: true, toolCalls: true, provider: 'google' },
+        { stream: true, toolCalls: true, provider: "google" },
         {
           // Google models work best with markdown and user role
           messageTransformation: (modelId: string, provider?: string) => ({
-            preferredRenderer: 'markdown',
+            preferredRenderer: "markdown",
             roleMapping: {
-              event: 'user',
-              ephemeral: 'user',
+              event: "user",
+              ephemeral: "user",
             },
             delimiters: {
               useDelimiters: true,
-              event: '[Event]',
-              ephemeral: '[Context]',
+              event: "[Event]",
+              ephemeral: "[Context]",
             },
-            ephemeralPosition: 'flow',
-          })
-        }
+            ephemeralPosition: "flow",
+          }),
+        },
       ],
     },
     transformers: {
@@ -64,7 +72,7 @@ export function createGoogleModel(config: GoogleAdapterConfig = {}): GoogleAdapt
     executors: {
       execute: (params) => execute(client, params),
       executeStream: (params) => executeStream(client, params),
-    }
+    },
   });
 }
 
@@ -76,10 +84,10 @@ export function google(config?: GoogleAdapterConfig): GoogleAdapter {
 }
 
 // ============================================================================
-// Helper Functions
+// Helper Functions (exported for testing)
 // ============================================================================
 
-function buildClientOptions(config: GoogleAdapterConfig): any {
+export function buildClientOptions(config: GoogleAdapterConfig): any {
   const options: any = {};
 
   // Authentication
@@ -115,41 +123,45 @@ function buildClientOptions(config: GoogleAdapterConfig): any {
 /**
  * Map Google FinishReason to normalized StopReason
  */
-function mapGoogleFinishReason(finishReason: FinishReason | undefined): StopReason {
-  return finishReason ? STOP_REASON_MAP[finishReason] || StopReason.STOP : StopReason.STOP;
+export function mapGoogleFinishReason(
+  finishReason: FinishReason | undefined,
+): StopReason {
+  return finishReason
+    ? STOP_REASON_MAP[finishReason] || StopReason.STOP
+    : StopReason.STOP;
 }
 
 /**
  * Convert ContentBlocks to Google GenAI parts
  */
-function convertBlocksToGoogleParts(blocks: ContentBlock[]): any[] {
+export function convertBlocksToGoogleParts(blocks: ContentBlock[]): any[] {
   const parts: any[] = [];
 
   for (const block of blocks) {
     switch (block.type) {
-      case 'text':
+      case "text":
         parts.push({ text: block.text });
         break;
 
-      case 'image':
-        if (block.source.type === 'url') {
+      case "image":
+        if (block.source.type === "url") {
           parts.push({
             fileData: {
-              mimeType: block.source.mime_type || 'image/jpeg',
+              mimeType: block.source.mimeType || "image/jpeg",
               fileUri: block.source.url,
             },
           });
-        } else if (block.source.type === 'base64') {
+        } else if (block.source.type === "base64") {
           parts.push({
             inlineData: {
-              mimeType: block.source.mime_type || 'image/jpeg',
+              mimeType: block.source.mimeType || "image/jpeg",
               data: block.source.data,
             },
           });
         }
         break;
 
-      case 'tool_use':
+      case "tool_use":
         parts.push({
           functionCall: {
             name: block.name,
@@ -158,17 +170,19 @@ function convertBlocksToGoogleParts(blocks: ContentBlock[]): any[] {
         });
         break;
 
-      case 'tool_result':
+      case "tool_result":
         // Google expects functionResponse for tool results
         // The content is an array of ContentBlocks, extract text from them
-        const resultText = block.content
-          ?.filter((c: any) => c.type === 'text')
-          .map((c: any) => c.text)
-          .join('\n') || JSON.stringify(block.content);
-        
+        const resultText =
+          block.content
+            ?.filter((c: any) => c.type === "text")
+            .map((c: any) => c.text)
+            .join("\n") || JSON.stringify(block.content);
+
         parts.push({
           functionResponse: {
-            name: block.tool_use_id, // In our format, tool_use_id is the function name
+            id: block.toolUseId, // The unique call ID to match the function call
+            name: block.name, // The function name (matches FunctionDeclaration.name)
             response: { result: resultText },
           },
         });
@@ -178,9 +192,11 @@ function convertBlocksToGoogleParts(blocks: ContentBlock[]): any[] {
         // Unexpected block type - convert to text as fallback
         // This should rarely happen if fromEngineState is working correctly,
         // but provides graceful degradation for unexpected types
-        const blockType = (block as any).type || 'unknown';
+        const blockType = (block as any).type || "unknown";
         const blockText = (block as any).text || JSON.stringify(block, null, 2);
-        logger.warn(`[Google Adapter] Unexpected block type "${blockType}" - converting to text. This should have been converted by fromEngineState.`);
+        logger.warn(
+          `[Google Adapter] Unexpected block type "${blockType}" - converting to text. This should have been converted by fromEngineState.`,
+        );
         parts.push({ text: blockText });
         break;
     }
@@ -192,26 +208,26 @@ function convertBlocksToGoogleParts(blocks: ContentBlock[]): any[] {
 /**
  * Map tool definition to Google format
  */
-function mapToolDefinition(tool: any): any {
-  if (typeof tool === 'string') {
+export function mapToolDefinition(tool: any): any {
+  if (typeof tool === "string") {
     return {
       functionDeclarations: [
         {
           name: tool,
-          description: '',
+          description: "",
           parameters: {},
         },
       ],
     };
   }
 
-  if ('name' in tool && 'parameters' in tool) {
+  if ("name" in tool && "parameters" in tool) {
     const toolDef = tool as ToolDefinition;
     const baseTool = {
       functionDeclarations: [
         {
           name: toolDef.name,
-          description: toolDef.description || '',
+          description: toolDef.description || "",
           parameters: toolDef.parameters || {},
         },
       ],
@@ -222,7 +238,8 @@ function mapToolDefinition(tool: any): any {
       return {
         ...baseTool,
         ...googleConfig,
-        functionDeclarations: googleConfig.functionDeclarations || baseTool.functionDeclarations,
+        functionDeclarations:
+          googleConfig.functionDeclarations || baseTool.functionDeclarations,
       };
     }
 
@@ -234,8 +251,8 @@ function mapToolDefinition(tool: any): any {
   return {
     functionDeclarations: [
       {
-        name: metadata?.id || metadata?.name || 'unknown',
-        description: metadata?.description || '',
+        name: metadata?.id || metadata?.name || "unknown",
+        description: metadata?.description || "",
         parameters: metadata?.inputSchema || {},
       },
     ],
@@ -244,7 +261,7 @@ function mapToolDefinition(tool: any): any {
 
 /**
  * Convert ModelInput to Google GenerateContentParameters
- * 
+ *
  * Note: The @google/genai SDK uses a flat structure:
  * {
  *   model: string,
@@ -262,25 +279,27 @@ async function prepareInput(
   let systemInstruction: string | undefined;
 
   for (const message of normalizedInput.messages) {
-    if (message.role === 'system') {
+    if (message.role === "system") {
       // Google handles system messages separately via config.systemInstruction
       systemInstruction = message.content
-        .filter((block) => block.type === 'text')
+        .filter((block) => block.type === "text")
         .map((block) => (block as TextBlock).text)
-        .join('\n\n');
+        .join("\n\n");
       continue;
     }
 
     const parts = convertBlocksToGoogleParts(message.content);
-    
+
     // Skip messages with no parts (would cause Google API error)
     if (parts.length === 0) {
-      logger.warn(`🔧 [Google] Skipping message with empty parts: role=${message.role}, content types=${message.content.map((c: any) => c.type).join(',')}`);
+      logger.warn(
+        `🔧 [Google] Skipping message with empty parts: role=${message.role}, content types=${message.content.map((c: any) => c.type).join(",")}`,
+      );
       continue;
     }
-    
+
     contents.push({
-      role: message.role === 'assistant' ? 'model' : 'user',
+      role: message.role === "assistant" ? "model" : "user",
       parts,
     });
   }
@@ -305,10 +324,12 @@ async function prepareInput(
       const mapped = mapToolDefinition(tool.metadata);
       return mapped.functionDeclarations || [];
     });
-    
-    generateConfig.tools = [{
-      functionDeclarations: allFunctionDeclarations,
-    }];
+
+    generateConfig.tools = [
+      {
+        functionDeclarations: allFunctionDeclarations,
+      },
+    ];
   }
 
   // Clean undefined values from config
@@ -321,10 +342,11 @@ async function prepareInput(
   // Merge provider-specific options if available
   // providerOptions.google can contain any GenerateContentConfig options
   const googleOptions = normalizedInput.providerOptions?.google || {};
-  
+
   // Extract model override if provided in providerOptions
-  const { model: providerModel, ...providerConfigOptions } = googleOptions as any;
-  
+  const { model: providerModel, ...providerConfigOptions } =
+    googleOptions as any;
+
   // Merge provider config options into generateConfig
   const finalConfig = {
     ...generateConfig,
@@ -333,12 +355,19 @@ async function prepareInput(
 
   // Validate contents before building request
   if (contents.length === 0) {
-    throw new Error('No valid contents to send to Google. All messages were either system messages or had empty parts.');
+    throw new ValidationError(
+      "contents",
+      "No valid contents to send to Google. All messages were either system messages or had empty parts.",
+    );
   }
 
   // Build request parameters with new SDK structure
   const requestParams: any = {
-    model: providerModel || normalizedInput.model || config.model || 'gemini-2.5-flash',
+    model:
+      providerModel ||
+      normalizedInput.model ||
+      config.model ||
+      "gemini-2.5-flash",
     contents,
     config: finalConfig,
   };
@@ -349,10 +378,16 @@ async function prepareInput(
 /**
  * Convert Google GenerateContentResponse to ModelOutput
  */
-async function processOutput(output: GenerateContentResponse): Promise<ModelOutput> {
+async function processOutput(
+  output: GenerateContentResponse,
+): Promise<ModelOutput> {
   const candidate = output.candidates?.[0];
   if (!candidate) {
-    throw new Error('No candidates in Google response');
+    throw new AdapterError(
+      "google",
+      "No candidates in Google response",
+      "ADAPTER_RESPONSE",
+    );
   }
 
   const content: ContentBlock[] = [];
@@ -362,15 +397,15 @@ async function processOutput(output: GenerateContentResponse): Promise<ModelOutp
     if (part.text) {
       // Regular text content
       content.push({
-        type: 'text',
-        text: part.text || '',
+        type: "text",
+        text: part.text || "",
       });
     } else if (part.functionCall) {
       // Function calls
       content.push({
-        type: 'tool_use',
-        tool_use_id: part.functionCall.name || '',
-        name: part.functionCall.name || '',
+        type: "tool_use",
+        toolUseId: part.functionCall.name || "",
+        name: part.functionCall.name || "",
         input: part.functionCall.args || {},
       });
     }
@@ -378,24 +413,26 @@ async function processOutput(output: GenerateContentResponse): Promise<ModelOutp
   }
 
   const toolCalls = content
-    .filter((block) => block.type === 'tool_use')
+    .filter((block) => block.type === "tool_use")
     .map((block: any) => ({
-      id: block.tool_use_id,
+      id: block.toolUseId,
       name: block.name,
       input: block.input,
     }));
 
-  const messages: Message[] = [{
-    role: 'assistant',
-    content,
-  }];
+  const messages: Message[] = [
+    {
+      role: "assistant",
+      content,
+    },
+  ];
 
   return {
-    model: output.modelVersion || 'unknown',
+    model: output.modelVersion || "unknown",
     createdAt: new Date().toISOString(),
     messages: messages,
     get message() {
-      return messages.filter(message => message.role === 'assistant').at(-1);
+      return messages.filter((message) => message.role === "assistant").at(-1);
     },
     stopReason: mapGoogleFinishReason(candidate.finishReason),
     toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
@@ -425,8 +462,8 @@ function processChunk(chunk: any): StreamChunk {
   const candidate = chunk.candidates?.[0];
   if (!candidate) {
     return {
-      type: 'content_delta',
-      delta: '',
+      type: "content_delta",
+      delta: "",
       raw: chunk,
     };
   }
@@ -434,8 +471,8 @@ function processChunk(chunk: any): StreamChunk {
   const delta = candidate.content?.parts?.[0];
   if (!delta) {
     return {
-      type: 'content_delta',
-      delta: '',
+      type: "content_delta",
+      delta: "",
       raw: chunk,
     };
   }
@@ -443,8 +480,8 @@ function processChunk(chunk: any): StreamChunk {
   // Skip finish_reason chunks (handled in processStream)
   if (candidate.finishReason) {
     return {
-      type: 'content_delta',
-      delta: '',
+      type: "content_delta",
+      delta: "",
       raw: chunk,
     };
   }
@@ -452,7 +489,7 @@ function processChunk(chunk: any): StreamChunk {
   // Content delta
   if (delta.text) {
     return {
-      type: 'content_delta',
+      type: "content_delta",
       delta: delta.text,
       model: chunk.modelVersion,
       createdAt: new Date().toISOString(),
@@ -461,8 +498,8 @@ function processChunk(chunk: any): StreamChunk {
   }
 
   return {
-    type: 'content_delta',
-    delta: '',
+    type: "content_delta",
+    delta: "",
     raw: chunk,
   };
 }
@@ -470,24 +507,39 @@ function processChunk(chunk: any): StreamChunk {
 /**
  * Aggregate stream chunks into final ModelOutput
  */
-async function processStreamChunks(chunks: any[] | StreamChunk[]): Promise<ModelOutput> {
+async function processStreamChunks(
+  chunks: any[] | StreamChunk[],
+): Promise<ModelOutput> {
   if (chunks.length === 0) {
-    throw new Error('No chunks to process');
+    throw new AdapterError(
+      "google",
+      "No chunks to process",
+      "ADAPTER_RESPONSE",
+    );
   }
 
   // Check if chunks are StreamChunks (from engine) or raw Google chunks
   const isStreamChunk = (chunk: any): chunk is StreamChunk => {
-    return chunk && typeof chunk === 'object' && 'type' in chunk && !('candidates' in chunk);
+    return (
+      chunk &&
+      typeof chunk === "object" &&
+      "type" in chunk &&
+      !("candidates" in chunk)
+    );
   };
 
   // If StreamChunks, we need to reconstruct from raw data
   if (isStreamChunk(chunks[0])) {
     const googleChunks = chunks
       .map((c) => (c as StreamChunk).raw)
-      .filter((c) => c && typeof c === 'object' && 'candidates' in c);
+      .filter((c) => c && typeof c === "object" && "candidates" in c);
 
     if (googleChunks.length === 0) {
-      throw new Error('No valid Google chunks found in stream chunks');
+      throw new AdapterError(
+        "google",
+        "No valid Google chunks found in stream chunks",
+        "ADAPTER_RESPONSE",
+      );
     }
 
     return processStreamChunks(googleChunks);
@@ -499,10 +551,11 @@ async function processStreamChunks(chunks: any[] | StreamChunk[]): Promise<Model
   const lastChunk = googleChunks[googleChunks.length - 1];
 
   // Find chunk with usage information
-  const usageChunk = googleChunks.find((chunk) => chunk.usageMetadata) || lastChunk;
+  const usageChunk =
+    googleChunks.find((chunk) => chunk.usageMetadata) || lastChunk;
 
   // Accumulate content
-  let accumulatedContent = '';
+  let accumulatedContent = "";
   const toolCalls: any[] = [];
   let finishReason: FinishReason | undefined;
 
@@ -516,8 +569,8 @@ async function processStreamChunks(chunks: any[] | StreamChunk[]): Promise<Model
         accumulatedContent += part.text;
       } else if (part.functionCall) {
         toolCalls.push({
-          id: part.functionCall.name || '',
-          name: part.functionCall.name || '',
+          id: part.functionCall.name || "",
+          name: part.functionCall.name || "",
           input: part.functionCall.args || {},
         });
       }
@@ -531,32 +584,36 @@ async function processStreamChunks(chunks: any[] | StreamChunk[]): Promise<Model
   // Build message content
   const content: ContentBlock[] = [];
   if (accumulatedContent) {
-    content.push({ type: 'text', text: accumulatedContent });
+    content.push({ type: "text", text: accumulatedContent });
   }
 
   // Add tool calls to content
   for (const tc of toolCalls) {
     content.push({
-      type: 'tool_use',
-      tool_use_id: tc.id,
+      type: "tool_use",
+      toolUseId: tc.id,
       name: tc.name,
       input: tc.input,
     });
   }
 
-  const messages: Message[] = [{
-    role: 'assistant',
-    content,
-  }];
+  const messages: Message[] = [
+    {
+      role: "assistant",
+      content,
+    },
+  ];
 
   return {
-    model: firstChunk.modelVersion || 'unknown',
+    model: firstChunk.modelVersion || "unknown",
     createdAt: new Date().toISOString(),
     messages: messages,
     get message() {
-      return messages.filter(message => message.role === 'assistant').at(-1);
+      return messages.filter((message) => message.role === "assistant").at(-1);
     },
-    stopReason: finishReason ? mapGoogleFinishReason(finishReason) : StopReason.UNSPECIFIED,
+    stopReason: finishReason
+      ? mapGoogleFinishReason(finishReason)
+      : StopReason.UNSPECIFIED,
     toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
     usage: usageChunk.usageMetadata
       ? {
@@ -564,7 +621,8 @@ async function processStreamChunks(chunks: any[] | StreamChunk[]): Promise<Model
           outputTokens: usageChunk.usageMetadata.candidatesTokenCount || 0,
           totalTokens: usageChunk.usageMetadata.totalTokenCount || 0,
           reasoningTokens: usageChunk.usageMetadata.thoughtsTokenCount || 0,
-          cachedInputTokens: usageChunk.usageMetadata.cachedContentTokenCount || 0,
+          cachedInputTokens:
+            usageChunk.usageMetadata.cachedContentTokenCount || 0,
         }
       : {
           inputTokens: 0,
@@ -586,10 +644,10 @@ async function processStreamChunks(chunks: any[] | StreamChunk[]): Promise<Model
  */
 async function execute(
   client: GoogleGenAI,
-  params: GenerateContentParameters
+  params: GenerateContentParameters,
 ): Promise<GenerateContentResponse> {
   // Extract model from params if present, otherwise use default
-  const model = (params as any).model || 'gemini-1.5-flash';
+  const model = (params as any).model || "gemini-1.5-flash";
   const { model: _, ...requestParams } = params as any;
 
   return await client.models.generateContent({
@@ -603,15 +661,18 @@ async function execute(
  */
 async function* executeStream(
   client: GoogleGenAI,
-  params: GenerateContentParameters
+  params: GenerateContentParameters,
 ): AsyncIterable<any> {
   // Extract model from params if present, otherwise use default
-  const model = (params as any).model || 'gemini-1.5-flash';
+  const model = (params as any).model || "gemini-1.5-flash";
   const { model: _, ...requestParams } = params as any;
 
-  logger.debug('🔧 [Google] executeStream - model:', model);
-  const toolNames = requestParams.config?.tools?.[0]?.functionDeclarations?.map((f: any) => f.name) || [];
-  logger.debug('🔧 [Google] executeStream - tools:', toolNames);
+  logger.debug("🔧 [Google] executeStream - model:", model);
+  const toolNames =
+    requestParams.config?.tools?.[0]?.functionDeclarations?.map(
+      (f: any) => f.name,
+    ) || [];
+  logger.debug("🔧 [Google] executeStream - tools:", toolNames);
   // logger.debug('🔧 [Google] executeStream - full request:', JSON.stringify({ model, ...requestParams }, null, 2));
 
   try {
@@ -619,7 +680,7 @@ async function* executeStream(
       model,
       ...requestParams,
     });
-  
+
     let hasToolCalls = false;
     for await (const chunk of stream) {
       // Debug: Check for function calls in response
@@ -627,17 +688,24 @@ async function* executeStream(
       for (const part of parts) {
         if (part.functionCall) {
           hasToolCalls = true;
-          logger.debug('🔧 [Google] FUNCTION CALL:', JSON.stringify(part.functionCall, null, 2));
+          logger.debug(
+            "🔧 [Google] FUNCTION CALL:",
+            JSON.stringify(part.functionCall, null, 2),
+          );
         }
       }
       if (chunk.candidates?.[0]?.finishReason) {
-        logger.debug('🔧 [Google] finishReason:', chunk.candidates[0].finishReason, 'hasToolCalls:', hasToolCalls);
+        logger.debug(
+          "🔧 [Google] finishReason:",
+          chunk.candidates[0].finishReason,
+          "hasToolCalls:",
+          hasToolCalls,
+        );
       }
       yield chunk;
     }
   } catch (error) {
-    logger.error('🔧 [Google] Error executing stream:', error);
+    logger.error("🔧 [Google] Error executing stream:", error);
     throw error;
   }
-  
 }

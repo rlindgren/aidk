@@ -49,9 +49,9 @@ export function tryGetExecutionContext(input?: any): ExecutionContext | undefine
   return {
     ctx,
     handle,
-    userId: (ctx.metadata['user_id'] as string) || ctx.user?.id || (input as any)?.user_id || 'anonymous',
-    tenantId: (ctx.metadata['tenant_id'] as string) || (input as any)?.tenant_id || 'default',
-    threadId: (ctx.metadata['thread_id'] as string) || (input as any)?.thread_id || generateUUID(),
+    userId: (ctx.metadata['userId'] as string) || ctx.user?.id || (input as any)?.userId || 'anonymous',
+    tenantId: (ctx.metadata['tenantId'] as string) || (input as any)?.tenantId || 'default',
+    threadId: (ctx.metadata['threadId'] as string) || (input as any)?.threadId || generateUUID(),
   };
 }
 

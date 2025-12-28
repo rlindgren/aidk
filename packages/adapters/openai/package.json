@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "type": "module",
   "main": "src/index.ts",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "test": "jest",
@@ -13,7 +15,11 @@
     "dev": "tsc --watch"
   },
   "dependencies": {
-    "aidk": "workspace:*"
+    "aidk": "workspace:*",
+    "aidk-shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.14"
   },
   "peerDependencies": {
     "openai": "^6.0.0"

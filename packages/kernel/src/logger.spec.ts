@@ -99,8 +99,8 @@ describe('Logger', () => {
         traceId: 'trace-456',
         user: { id: 'user-789', tenantId: 'tenant-abc' },
         metadata: {
-          thread_id: 'thread-xyz',
-          execution_id: 'exec-000',
+          threadId: 'thread-xyz',
+          executionId: 'exec-000',
           tick: 3,
         },
         metrics: {},
@@ -158,8 +158,8 @@ describe('Logger', () => {
       const composed = composeContextFields(
         defaultContextFields,
         (c) => ({
-          user_id: c.user?.id,
-          tenant_id: c.user?.tenantId,
+          userId: c.user?.id,
+          tenantId: c.user?.tenantId,
         }),
         (c) => ({
           custom: c.metadata?.custom_field,
@@ -170,8 +170,8 @@ describe('Logger', () => {
       
       expect(fields.request_id).toBe('req-123');
       expect(fields.trace_id).toBe('trace-456');
-      expect(fields.user_id).toBe('user-789');
-      expect(fields.tenant_id).toBe('tenant-abc');
+      expect(fields.userId).toBe('user-789');
+      expect(fields.tenantId).toBe('tenant-abc');
       expect(fields.custom).toBe('custom_value');
     });
 

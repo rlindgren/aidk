@@ -119,12 +119,12 @@ export namespace JSX {
     };
     image: {
       source: any; // MediaSource
-      mime_type?: string;
-      alt_text?: string;
+      mimeType?: string;
+      altText?: string;
     };
     document: {
       source: any; // MediaSource
-      mime_type?: string;
+      mimeType?: string;
       title?: string;
     };
     // Note: audio and video are defined below as native HTML elements

@@ -66,8 +66,8 @@ export class StreamController {
     await this.transport.connect(connectionId, {
       res,
       metadata: {
-        user_id: 'user-123',
-        thread_id: 'thread-456',
+        userId: 'user-123',
+        threadId: 'thread-456',
       },
     });
   }

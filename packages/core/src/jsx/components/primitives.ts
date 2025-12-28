@@ -1,14 +1,20 @@
-import type { ContentBlock, Message, MessageRoles } from 'aidk-shared';
-import { createElement, type JSX, Fragment } from '../jsx-runtime';
-import type { AgentStreamEvent, EngineStreamEvent } from '../../engine/engine-events';
-import type { ComponentBaseProps } from '../jsx-types';
+import type { ContentBlock, Message, MessageRoles } from "aidk-shared";
+import { markAsHostPrimitive } from "aidk-shared";
+import { createElement, type JSX, Fragment } from "../jsx-runtime";
+import type {
+  AgentStreamEvent,
+  EngineStreamEvent,
+} from "../../engine/engine-events";
+import type { ComponentBaseProps } from "../jsx-types";
 
 /**
  * Timeline primitive component.
  * Wraps Message components to explicitly declare timeline entries.
  * When used in JSX: <Timeline><Message role="user" content="..." /></Timeline>
  */
-export function Timeline(props: JSX.IntrinsicElements['timeline']): JSX.Element {
+export function Timeline(
+  props: JSX.IntrinsicElements["timeline"],
+): JSX.Element {
   // Timeline is just a Fragment - it doesn't render anything itself
   // The renderer processes its Message children
   return createElement(Fragment, props);
@@ -18,15 +24,15 @@ export function Timeline(props: JSX.IntrinsicElements['timeline']): JSX.Element 
  * Entry primitive component.
  * Foundational structural primitive for timeline entries only.
  * Uses discriminated union based on kind to determine data structure.
- * 
- * Usage: 
+ *
+ * Usage:
  *   <Entry kind="message" message={{ role: 'user', content: [...] }} />
  *   <Entry kind="event" event={{ type: 'user_action', data: {...} }} />
  */
 /**
  * Map of entry kinds to their specific data structures.
  * This can be extended via module augmentation:
- * 
+ *
  * declare module './primitives' {
  *   interface EntryKindMap {
  *     customKind: { customProp: string };
@@ -49,7 +55,7 @@ export type EntryKind = keyof EntryKindMap;
  */
 export interface EntryCommonProps {
   id?: string;
-  visibility?: 'model' | 'observer' | 'log';
+  visibility?: "model" | "observer" | "log";
   tags?: string[];
   metadata?: Record<string, unknown>;
   children?: any;
@@ -59,15 +65,15 @@ export interface EntryCommonProps {
 /**
  * Entry primitive component props.
  * Uses mapped type to create discriminated union from EntryKindMap.
- * 
+ *
  * The structure ensures that:
  * - kind="message" requires a `message` property with message-specific data
  * - kind="event" requires an `event` property with event-specific data
- * 
- * Usage: 
+ *
+ * Usage:
  *   <Entry kind="message" message={{ role: 'user', content: [...] }} />
  *   <Entry kind="event" event={{ type: 'user_action', data: {...} }} />
- * 
+ *
  * TypeScript will enforce type safety based on the `kind` discriminator.
  */
 export type EntryProps = {
@@ -88,7 +94,7 @@ export function Entry(props: EntryProps): JSX.Element {
  * The JSX transformer calls createElement(Section, props), which stores Section as the type.
  * The renderer recognizes Section as a host component and processes it accordingly.
  */
-export function Section(props: JSX.IntrinsicElements['section']): JSX.Element {
+export function Section(props: JSX.IntrinsicElements["section"]): JSX.Element {
   // Use self-reference so it works both in JSX and when called directly
   return createElement(Section, props);
 }
@@ -96,48 +102,59 @@ export function Section(props: JSX.IntrinsicElements['section']): JSX.Element {
 /**
  * Message primitive component props.
  * Allows spreading Message objects directly, plus JSX-specific props.
- * 
+ *
  * Uses intersection to accept both Message shape and JSX convenience props.
- * 
+ *
  * Usage:
  *   <Message role="user">Hello</Message>
  *   <Message {...messageObject} tags={['important']} />
  */
-export type MessageProps = Partial<Omit<Message, 'content' | 'role'>> & {
+export type MessageProps = Partial<Omit<Message, "content" | "role">> & {
   role: MessageRoles; // Required - NO 'grounding' (ephemeral is not a message)
-  content?: string | any[] | Message['content']; // Accepts ContentBlock[] from Message or string/any[] from JSX
+  content?: string | any[] | Message["content"]; // Accepts ContentBlock[] from Message or string/any[] from JSX
   tags?: string[]; // Entry-level props (not part of Message)
-  visibility?: 'model' | 'observer' | 'log'; // Entry-level props (not part of Message)
+  visibility?: "model" | "observer" | "log"; // Entry-level props (not part of Message)
   children?: any; // JSX children, will be collected into content
 } & ComponentBaseProps;
 
 /**
  * Message primitive component.
  * Semantic sugar wrapper that wraps Entry with kind="message" for intuitive API.
- * 
+ *
  * Accepts Message objects via spreading, converts to Entry structure.
- * 
- * Usage: 
+ *
+ * Usage:
  *   <Message role="user">Hello</Message>
  *   <Message {...messageFromTimeline} tags={['important']} />
  * Compiles to: <Entry kind="message" message={{ role: 'user', content: [...] }} />
  */
 export function Message(props: MessageProps): JSX.Element {
-  const { role, content, children, id, metadata, tags, visibility, created_at, updated_at, ...rest } = props;
-  
+  const {
+    role,
+    content,
+    children,
+    id,
+    metadata,
+    tags,
+    visibility,
+    createdAt,
+    updatedAt,
+    ...rest
+  } = props;
+
   // Convert MessageProps to Message structure for EntryKindMap
   // If content is already ContentBlock[], use it; otherwise renderer will convert children
   const message: Message = {
     role,
-    content: (content as Message['content']) || [], // Will be converted to ContentBlock[] by renderer if needed
+    content: (content as Message["content"]) || [], // Will be converted to ContentBlock[] by renderer if needed
     id,
     metadata,
-    created_at,
-    updated_at,
+    createdAt,
+    updatedAt,
   };
-  
+
   return createElement(Entry, {
-    kind: 'message',
+    kind: "message",
     message,
     tags, // Entry-level props
     visibility, // Entry-level props
@@ -150,42 +167,60 @@ export function Message(props: MessageProps): JSX.Element {
  * Tool primitive component.
  * When used in JSX: <Tool definition={myTool} />
  */
-export function Tool(props: JSX.IntrinsicElements['tool']): JSX.Element {
+export function Tool(props: JSX.IntrinsicElements["tool"]): JSX.Element {
   // Use self-reference so it works both in JSX and when called directly
   return createElement(Tool, props);
 }
 
 // Re-export Model components
-export { Model, ModelOptions } from './model';
-export type { ModelComponentProps, ModelOptionsProps } from './model';
+export { Model, ModelOptions } from "./model";
+export type { ModelComponentProps, ModelOptionsProps } from "./model";
 
 // Re-export Markdown component
-export { Markdown } from './markdown';
+export { Markdown } from "./markdown";
 
 // Re-export semantic primitives
-export { H1, H2, H3, Header, Paragraph, List, ListItem, Table, Row, Column } from './semantic';
+export {
+  H1,
+  H2,
+  H3,
+  Header,
+  Paragraph,
+  List,
+  ListItem,
+  Table,
+  Row,
+  Column,
+} from "./semantic";
 
 // Re-export message role components
-export { User, Assistant, System, ToolResult, Event, Ephemeral, Grounding } from './messages';
-export type { 
-  UserProps, 
-  AssistantProps, 
-  SystemProps, 
-  ToolResultProps, 
+export {
+  User,
+  Assistant,
+  System,
+  ToolResult,
+  Event,
+  Ephemeral,
+  Grounding,
+} from "./messages";
+export type {
+  UserProps,
+  AssistantProps,
+  SystemProps,
+  ToolResultProps,
   EventProps,
   EphemeralProps,
   GroundingProps,
   EphemeralPosition,
   RoleMessageBaseProps,
-} from './messages';
+} from "./messages";
 
 // Re-export event block components
-export { UserAction, SystemEvent, StateChange } from './messages';
+export { UserAction, SystemEvent, StateChange } from "./messages";
 export type {
   UserActionProps,
   SystemEventProps,
   StateChangeProps,
-} from './messages';
+} from "./messages";
 
 // Fragment is already exported from jsx-runtime but we can re-export or use <>
-

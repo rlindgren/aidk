@@ -1,12 +1,12 @@
 /**
  * Execution Context Types and Utilities
- * 
+ *
  * Framework-agnostic types and defaults for execution context management.
  * Can be used with Express, NestJS, Fastify, Koa, Elysia, or any server framework.
  */
 
-import type { Engine, EngineInput, COMTimelineEntry } from 'aidk';
-import { generateUUID } from './utils';
+import type { Engine, EngineInput, COMTimelineEntry } from "aidk";
+import { generateUUID } from "./utils";
 
 // =============================================================================
 // Core Types
@@ -18,13 +18,13 @@ import { generateUUID } from './utils';
  */
 export interface RequestContext {
   /** Thread/conversation ID */
-  thread_id: string;
+  threadId: string;
   /** Session ID for real-time channel routing */
-  session_id?: string;
+  sessionId?: string;
   /** User ID from auth */
-  user_id: string;
+  userId: string;
   /** Tenant ID for multi-tenant apps */
-  tenant_id?: string;
+  tenantId?: string;
   /** Additional metadata */
   metadata?: Record<string, unknown>;
 }
@@ -35,7 +35,7 @@ export interface RequestContext {
  */
 export interface ExecutionContext extends RequestContext {
   /** Unique ID for this execution */
-  execution_id: string;
+  executionId: string;
   /** Engine instance */
   engine: Engine;
   /** Transformed input ready for engine */
@@ -52,16 +52,15 @@ export interface StandardRequestBody {
     content: Array<{
       type?: string;
       text?: string;
-      image_url?: string;
+      imageUrl?: string;
       [key: string]: unknown;
     }>;
     metadata?: Record<string, unknown>;
   }>;
-  thread_id?: string;
+  threadId?: string;
   sessionId?: string;
-  user_id?: string;
   userId?: string;
-  tenant_id?: string;
+  tenantId?: string;
   metadata?: Record<string, unknown>;
 }
 
@@ -96,46 +95,55 @@ export function createIdGenerator(fn: () => string): IdGenerator {
 // Context Extractors
 // =============================================================================
 
-export type ContextExtractor<TBody = StandardRequestBody, THeaders = Record<string, string | undefined>> = (
-  body: TBody,
-  headers?: THeaders
-) => RequestContext;
+export type ContextExtractor<
+  TBody = StandardRequestBody,
+  THeaders = Record<string, string | undefined>,
+> = (body: TBody, headers?: THeaders) => RequestContext;
 
 /**
  * Default context extractor following our conventions.
  * Override this for apps with different field names or auth patterns.
  */
 export const defaultContextExtractor: ContextExtractor = (body, headers) => ({
-  thread_id: body.thread_id || generateUUID(),
-  session_id: body.sessionId || headers?.['x-session-id'],
-  user_id: body.user_id || body.userId || 'anonymous',
-  tenant_id: body.tenant_id || 'default',
+  threadId: body.threadId || generateUUID(),
+  sessionId: body.sessionId || headers?.["x-session-id"],
+  userId: body.userId || body.userId || "anonymous",
+  tenantId: body.tenantId || "default",
   metadata: body.metadata,
 });
 
 /**
  * Create a context extractor with custom field mappings
  */
-export function createContextExtractor<TBody>(
-  config: {
-    threadId?: keyof TBody | ((body: TBody) => string);
-    sessionId?: keyof TBody | ((body: TBody, headers?: Record<string, string | undefined>) => string | undefined);
-    userId?: keyof TBody | ((body: TBody) => string);
-    tenantId?: keyof TBody | ((body: TBody) => string);
-    metadata?: keyof TBody | ((body: TBody) => Record<string, unknown> | undefined);
-  }
-): ContextExtractor<TBody> {
-  const get = <T>(body: TBody, key: keyof TBody | ((body: TBody, ...args: any[]) => T) | undefined, ...args: any[]): T | undefined => {
+export function createContextExtractor<TBody>(config: {
+  threadId?: keyof TBody | ((body: TBody) => string);
+  sessionId?:
+    | keyof TBody
+    | ((
+        body: TBody,
+        headers?: Record<string, string | undefined>,
+      ) => string | undefined);
+  userId?: keyof TBody | ((body: TBody) => string);
+  tenantId?: keyof TBody | ((body: TBody) => string);
+  metadata?:
+    | keyof TBody
+    | ((body: TBody) => Record<string, unknown> | undefined);
+}): ContextExtractor<TBody> {
+  const get = <T>(
+    body: TBody,
+    key: keyof TBody | ((body: TBody, ...args: any[]) => T) | undefined,
+    ...args: any[]
+  ): T | undefined => {
     if (!key) return undefined;
-    if (typeof key === 'function') return key(body, ...args);
+    if (typeof key === "function") return key(body, ...args);
     return body[key] as T;
   };
 
   return (body, headers) => ({
-    thread_id: get(body, config.threadId) || generateUUID(),
-    session_id: get(body, config.sessionId, headers),
-    user_id: get(body, config.userId) || 'anonymous',
-    tenant_id: get(body, config.tenantId) || 'default',
+    threadId: get(body, config.threadId) || generateUUID(),
+    sessionId: get(body, config.sessionId, headers),
+    userId: get(body, config.userId) || "anonymous",
+    tenantId: get(body, config.tenantId) || "default",
     metadata: get(body, config.metadata),
   });
 }
@@ -146,27 +154,29 @@ export function createContextExtractor<TBody>(
 
 export type InputTransformer<TBody = StandardRequestBody> = (
   body: TBody,
-  context: RequestContext
+  context: RequestContext,
 ) => EngineInput;
 
 /**
  * Transform standard message format to Engine timeline.
  * Uses loose typing to handle various frontend message formats.
  */
-export function messagesToTimeline(messages: StandardRequestBody['messages']): COMTimelineEntry[] {
+export function messagesToTimeline(
+  messages: StandardRequestBody["messages"],
+): COMTimelineEntry[] {
   if (!messages || !Array.isArray(messages)) {
     return [];
   }
 
   // Use loose typing for content transformation - frontends send various formats
   return messages.map((msg) => ({
-    kind: 'message' as const,
+    kind: "message" as const,
     message: {
       role: msg.role,
       content: msg.content.map((c: any) => ({
-        type: c.type || 'text',
-        text: c.text || '',
-        ...(c.image_url ? { image_url: c.image_url } : {}),
+        type: c.type || "text",
+        text: c.text || "",
+        ...(c.imageUrl ? { imageUrl: c.imageUrl } : {}),
       })),
     },
     metadata: msg.metadata || {},
@@ -180,7 +190,7 @@ export function messagesToTimeline(messages: StandardRequestBody['messages']): C
 export const defaultInputTransformer: InputTransformer = (body, context) => ({
   timeline: messagesToTimeline(body.messages),
   metadata: {
-    thread_id: context.thread_id,
+    threadId: context.threadId,
     ...context.metadata,
   },
 });
@@ -189,7 +199,7 @@ export const defaultInputTransformer: InputTransformer = (body, context) => ({
  * Create an input transformer with custom transformation logic
  */
 export function createInputTransformer<TBody>(
-  transform: (body: TBody, context: RequestContext) => EngineInput
+  transform: (body: TBody, context: RequestContext) => EngineInput,
 ): InputTransformer<TBody> {
   return transform;
 }
@@ -201,15 +211,17 @@ export function createInputTransformer<TBody>(
 /**
  * Build the withContext options for engine execution
  */
-export function buildEngineContext(ctx: RequestContext & { execution_id: string }) {
+export function buildEngineContext(
+  ctx: RequestContext & { executionId: string },
+) {
   return {
-    user: { id: ctx.user_id },
+    user: { id: ctx.userId },
     metadata: {
-      user_id: ctx.user_id,
-      tenant_id: ctx.tenant_id,
-      thread_id: ctx.thread_id,
-      session_id: ctx.session_id,
-      execution_id: ctx.execution_id,
+      userId: ctx.userId,
+      tenantId: ctx.tenantId,
+      threadId: ctx.threadId,
+      sessionId: ctx.sessionId,
+      executionId: ctx.executionId,
       ...ctx.metadata,
     },
   };
@@ -238,13 +250,109 @@ export interface ExecutionContextConfig<TBody = StandardRequestBody> {
  * Resolved config with defaults applied
  */
 export function resolveConfig<TBody = StandardRequestBody>(
-  config: ExecutionContextConfig<TBody>
+  config: ExecutionContextConfig<TBody>,
 ): Required<ExecutionContextConfig<TBody>> {
   return {
     engine: config.engine,
     generateId: config.generateId || uuidV4Generator,
-    extractContext: config.extractContext || (defaultContextExtractor as ContextExtractor<TBody>),
-    transformInput: config.transformInput || (defaultInputTransformer as InputTransformer<TBody>),
+    extractContext:
+      config.extractContext ||
+      (defaultContextExtractor as ContextExtractor<TBody>),
+    transformInput:
+      config.transformInput ||
+      (defaultInputTransformer as InputTransformer<TBody>),
   };
 }
 
+// =============================================================================
+// Request Context Attachment
+// =============================================================================
+
+/**
+ * Symbol key for storing AIDK context on request objects.
+ * Using a symbol prevents collisions with other properties.
+ */
+export const AIDK_CONTEXT_KEY = Symbol.for("aidk.context");
+
+/**
+ * Generic request-like object that can have context attached.
+ * Works with Express, Fastify, Koa, NestJS, etc.
+ */
+export interface RequestWithContext {
+  [AIDK_CONTEXT_KEY]?: RequestContext;
+}
+
+/**
+ * Attach AIDK context to a request object.
+ * Call this in your framework's middleware/interceptor after extracting context.
+ *
+ * @param request - The request object (Express req, Fastify request, etc.)
+ * @param context - The extracted request context
+ *
+ * @example Express middleware
+ * ```typescript
+ * app.use((req, res, next) => {
+ *   const ctx = extractContext(req.body, req.headers);
+ *   attachContext(req, ctx);
+ *   next();
+ * });
+ * ```
+ *
+ * @example NestJS interceptor
+ * ```typescript
+ * const request = context.switchToHttp().getRequest();
+ * const ctx = extractContext(request.body, request.headers);
+ * attachContext(request, ctx);
+ * ```
+ */
+export function attachContext(request: any, context: RequestContext): void {
+  (request as RequestWithContext)[AIDK_CONTEXT_KEY] = context;
+}
+
+/**
+ * Get AIDK context from a request object.
+ * Returns undefined if no context has been attached.
+ *
+ * @param request - The request object
+ * @returns The attached context, or undefined
+ *
+ * @example Express route handler
+ * ```typescript
+ * app.get('/api/user', (req, res) => {
+ *   const ctx = getContext(req);
+ *   if (!ctx?.userId) {
+ *     return res.status(401).json({ error: 'Unauthorized' });
+ *   }
+ *   // ... use ctx.userId, ctx.tenantId, etc.
+ * });
+ * ```
+ *
+ * @example NestJS guard
+ * ```typescript
+ * canActivate(context: ExecutionContext): boolean {
+ *   const request = context.switchToHttp().getRequest();
+ *   const ctx = getContext(request);
+ *   return ctx?.userId != null;
+ * }
+ * ```
+ */
+export function getContext(request: any): RequestContext | undefined {
+  return (request as RequestWithContext)[AIDK_CONTEXT_KEY];
+}
+
+/**
+ * Get AIDK context from a request object, throwing if not present.
+ *
+ * @param request - The request object
+ * @returns The attached context
+ * @throws Error if no context is attached
+ */
+export function requireContext(request: any): RequestContext {
+  const ctx = getContext(request);
+  if (!ctx) {
+    throw new Error(
+      "AIDK context not found on request. Ensure context middleware/interceptor is applied.",
+    );
+  }
+  return ctx;
+}

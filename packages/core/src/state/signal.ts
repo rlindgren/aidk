@@ -35,7 +35,7 @@
  */
 
 // Import for render phase detection
-import { isCompilerRendering, getActiveCompiler } from '../compiler/fiber-compiler';
+import { isCompilerRendering, shouldSkipRecompile, getActiveCompiler } from '../compiler/fiber-compiler';
 
 // ============================================================================
 // Types
@@ -650,7 +650,8 @@ export function createCOMStateSignal<T>(
         
         // AUTOMATIC RECOMPILATION: If COM state changes during render phase,
         // request recompile to ensure consistency across sibling components
-        if (isCompilerRendering()) {
+        // BUT: Skip in phases where recompile is unnecessary
+        if (isCompilerRendering() && !shouldSkipRecompile()) {
           const compiler = getActiveCompiler();
           if (compiler) {
             const comObj = com as any;
@@ -708,9 +709,20 @@ export function createCOMStateSignal<T>(
     
     // AUTOMATIC RECOMPILATION: Request recompile after state change
     // This ensures useComState behaves like useState for triggering re-renders
-    const comObj = com as any;
-    if (comObj.requestRecompile) {
-      comObj.requestRecompile(`comState '${key}' updated`);
+    // BUT: Skip recompile in certain phases where it's unnecessary:
+    // - tickStart: Render is about to happen anyway
+    // - tickEnd: Current tick is done, next tick will see the update
+    // - complete: Execution is complete, no more renders
+    // - unmount: Component is being removed
+    // - render (class onMount): Class component onMount runs during render, before render() is called
+    // 
+    // ALLOW recompile in:
+    // - mount (useOnMount): Function component useOnMount runs after first render, can trigger recompile
+    if (!shouldSkipRecompile()) {
+      const comObj = com as any;
+      if (comObj.requestRecompile) {
+        comObj.requestRecompile(`comState '${key}' updated`);
+      }
     }
   };
   
@@ -760,7 +772,8 @@ export function createReadonlyCOMStateSignal<T>(
       
       // AUTOMATIC RECOMPILATION: If watched COM state changes during render,
       // request recompile to ensure consistency across sibling components
-      if (isCompilerRendering()) {
+      // BUT: Skip in phases where recompile is unnecessary
+      if (isCompilerRendering() && !shouldSkipRecompile()) {
         const compiler = getActiveCompiler();
         if (compiler) {
           const comObj = com as any;

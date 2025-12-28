@@ -56,8 +56,8 @@ export function Text(props: TextProps): JSX.Element {
  */
 export interface ImageProps extends ContentBlockProps {
   source: MediaSource;
-  mime_type?: string;
-  alt_text?: string;
+  mimeType?: string;
+  altText?: string;
 }
 export function Image(props: ImageProps): JSX.Element {
   return createContentBlock<ImageProps>(Image, props);
@@ -69,7 +69,7 @@ export function Image(props: ImageProps): JSX.Element {
  */
 export interface DocumentProps extends ContentBlockProps {
   source: MediaSource;
-  mime_type?: string;
+  mimeType?: string;
   title?: string;
 }
 export function Document(props: DocumentProps): JSX.Element {
@@ -82,7 +82,7 @@ export function Document(props: DocumentProps): JSX.Element {
  */
 export interface AudioProps extends ContentBlockProps {
   source: MediaSource;
-  mime_type?: string;
+  mimeType?: string;
   transcript?: string;
 }
 export function Audio(props: AudioProps): JSX.Element {
@@ -95,7 +95,7 @@ export function Audio(props: AudioProps): JSX.Element {
  */
 export interface VideoProps extends ContentBlockProps {
   source: MediaSource;
-  mime_type?: string;
+  mimeType?: string;
   transcript?: string;
 }
 export function Video(props: VideoProps): JSX.Element {

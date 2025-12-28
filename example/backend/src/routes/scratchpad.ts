@@ -6,11 +6,11 @@ const router: Router = Router();
 export const GLOBAL_THREAD_ID = '00000000-0000-0000-0000-000000000000';
 
 /**
- * GET endpoint to fetch scratchpad notes (scoped by thread_id).
+ * GET endpoint to fetch scratchpad notes (scoped by threadId).
  * Used by frontends on initial load to sync state.
  */
 router.get('/', async (req: Request, res: Response) => {
-  const threadId = (req.query.thread_id as string) || (req.query.threadId as string) || GLOBAL_THREAD_ID;
+  const threadId = (req.query.threadId as string) || (req.query.threadId as string) || GLOBAL_THREAD_ID;
   
   try {
     const result = await ScratchpadService.listNotes(threadId);
@@ -22,7 +22,7 @@ router.get('/', async (req: Request, res: Response) => {
 });
 
 router.post('/', async (req: Request, res: Response) => {
-  const threadId = (req.query.thread_id as string) || (req.query.threadId as string) || GLOBAL_THREAD_ID;
+  const threadId = (req.query.threadId as string) || (req.query.threadId as string) || GLOBAL_THREAD_ID;
   const { text } = req.body;
   const result = await ScratchpadService.addNote(threadId, text, 'user', {
     broadcast: true,
@@ -32,7 +32,7 @@ router.post('/', async (req: Request, res: Response) => {
 });
 
 // router.put('/:noteId', async (req: Request, res: Response) => {
-//   const userId = (req.query.user_id as string) || (req.query.userId as string) || 'anonymous';
+//   const userId = (req.query.userId as string) || (req.query.userId as string) || 'anonymous';
 //   const { noteId } = req.params;
 //   const { text } = req.body;
 //   const result = await ScratchpadService.updateNote(threadId, noteId, text, 'user', {
@@ -43,7 +43,7 @@ router.post('/', async (req: Request, res: Response) => {
 // });
 
 router.delete('/:taskId', async (req: Request, res: Response) => {
-  const threadId = (req.query.thread_id as string) || (req.query.threadId as string) || GLOBAL_THREAD_ID;
+  const threadId = (req.query.threadId as string) || (req.query.threadId as string) || GLOBAL_THREAD_ID;
   const { noteId } = req.params;
   const result = await ScratchpadService.removeNote(threadId, noteId, {
     broadcast: true,

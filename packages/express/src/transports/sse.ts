@@ -1,18 +1,23 @@
 /**
  * SSE Transport for Engine ChannelService
- * 
+ *
  * Bridges HTTP Server-Sent Events with Engine's channel system.
  * This implements the ChannelTransport interface with room-based routing,
  * allowing the Engine's channel service to communicate with HTTP clients.
- * 
+ *
  * Room-based routing (inspired by Socket.io):
  * - Connections can join/leave rooms
  * - Events can target specific rooms via event.target.rooms
  * - excludeSender provides "broadcast" semantics (send to others)
  * - Auto-join rooms based on connection metadata (e.g., userId)
  */
-import { type Response } from 'express';
-import { type ChannelTransport, type ChannelEvent, type ConnectionMetadata, type ChannelTransportConfig } from 'aidk';
+import { type Response } from "express";
+import {
+  type ChannelTransport,
+  type ChannelEvent,
+  type ConnectionMetadata,
+  type ChannelTransportConfig,
+} from "aidk";
 
 interface SSEConnection {
   res: Response;
@@ -27,11 +32,17 @@ export interface SSETransportConfig extends ChannelTransportConfig {
   heartbeatInterval?: number;
   /** Enable debug logging */
   debug?: boolean;
+  /** Auto-join rooms based on metadata */
+  autoJoinRooms?: (metadata: ConnectionMetadata) => string[];
+  /** Maximum total connections (default: unlimited). New connections rejected when limit reached. */
+  maxConnections?: number;
+  /** Maximum connections per user based on metadata.userId (default: unlimited) */
+  maxConnectionsPerUser?: number;
 }
 
 export class SSETransport implements ChannelTransport {
-  name = 'sse';
-  
+  name = "sse";
+
   private connections = new Map<string, SSEConnection>();
   private roomConnections = new Map<string, Set<string>>();
   private receiveHandler?: (event: ChannelEvent) => void;
@@ -43,7 +54,7 @@ export class SSETransport implements ChannelTransport {
 
   private log(...args: unknown[]): void {
     if (this.config.debug) {
-      console.log('📡 [SSE]', ...args);
+      console.log("📡 [SSE]", ...args);
     }
   }
 
@@ -52,28 +63,65 @@ export class SSETransport implements ChannelTransport {
    */
   applyConfig(config: Partial<SSETransportConfig>): void {
     this.config = { ...this.config, ...config };
-    this.log('Config applied');
+    this.log("Config applied");
   }
 
   /**
    * Connect a new SSE client with optional metadata.
+   * Connection may be rejected if limits are exceeded (response is sent automatically).
    */
   async connect(
-    connectionId: string, 
-    metadata?: ConnectionMetadata & { res?: Response; channels?: string[] }
+    connectionId: string,
+    metadata?: ConnectionMetadata & { res?: Response; channels?: string[] },
   ): Promise<void> {
     if (!metadata?.res) {
-      console.warn(`SSE connect called without Response object for connection ${connectionId}`);
+      console.warn(
+        `SSE connect called without Response object for connection ${connectionId}`,
+      );
       return;
     }
 
     const { res, channels = [], ...restMetadata } = metadata;
 
+    // Check global connection limit
+    if (
+      this.config.maxConnections &&
+      this.connections.size >= this.config.maxConnections
+    ) {
+      this.log(
+        `Connection rejected: max connections (${this.config.maxConnections}) reached`,
+      );
+      res.status(503).json({
+        error: "Too many connections",
+        message: "Server connection limit reached. Please try again later.",
+      });
+      return;
+    }
+
+    // Check per-user connection limit
+    if (this.config.maxConnectionsPerUser && restMetadata.userId) {
+      const userConnections = this.countUserConnections(
+        restMetadata.userId as string,
+      );
+      if (userConnections >= this.config.maxConnectionsPerUser) {
+        this.log(
+          `Connection rejected: user ${restMetadata.userId} at max connections (${this.config.maxConnectionsPerUser})`,
+        );
+        res.status(429).json({
+          error: "Too many connections",
+          message:
+            "You have too many active connections. Please close some and try again.",
+        });
+        return;
+      }
+    }
+
     // Set SSE headers
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    // Note: CORS should be handled by middleware (e.g., cors package) before this point
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.setHeader("X-Accel-Buffering", "no"); // Disable nginx proxy buffering
     res.flushHeaders();
 
     // Store connection
@@ -83,6 +131,13 @@ export class SSETransport implements ChannelTransport {
       rooms: new Set(),
       channels: new Set(channels),
     };
+
+    // Listen for client disconnect - this is the proper way to detect when
+    // the client closes the connection (browser tab closed, network disconnect, etc.)
+    res.on("close", () => {
+      this.log(`Client closed connection: ${connectionId}`);
+      this.disconnect(connectionId);
+    });
 
     // Start heartbeat
     const heartbeatMs = this.config.heartbeatInterval ?? 30000;
@@ -99,7 +154,7 @@ export class SSETransport implements ChannelTransport {
     // Auto-join rooms based on metadata
     if (this.config.autoJoinRooms) {
       const autoRooms = this.config.autoJoinRooms(restMetadata);
-      this.log(`Auto-joining rooms: ${autoRooms.join(', ')}`);
+      this.log(`Auto-joining rooms: ${autoRooms.join(", ")}`);
       for (const room of autoRooms) {
         if (room) {
           await this.join(connectionId, room);
@@ -108,13 +163,30 @@ export class SSETransport implements ChannelTransport {
     }
 
     // Send connected event
-    res.write(`data: ${JSON.stringify({ 
-      type: 'connected', 
-      connectionId,
-      rooms: Array.from(connection.rooms),
-    })}\n\n`);
-    
-    this.log(`Connected: ${connectionId}, rooms: [${Array.from(connection.rooms).join(', ')}]`);
+    res.write(
+      `data: ${JSON.stringify({
+        type: "connected",
+        connectionId,
+        rooms: Array.from(connection.rooms),
+      })}\n\n`,
+    );
+
+    this.log(
+      `Connected: ${connectionId}, rooms: [${Array.from(connection.rooms).join(", ")}], total: ${this.connections.size}`,
+    );
+  }
+
+  /**
+   * Count connections for a specific user.
+   */
+  private countUserConnections(userId: string): number {
+    let count = 0;
+    for (const connection of this.connections.values()) {
+      if (connection.metadata.userId === userId) {
+        count++;
+      }
+    }
+    return count;
   }
 
   /**
@@ -127,17 +199,17 @@ export class SSETransport implements ChannelTransport {
         if (connection.heartbeatInterval) {
           clearInterval(connection.heartbeatInterval);
         }
-        
+
         for (const room of connection.rooms) {
           await this.leave(connectionId, room);
         }
-        
+
         try {
           connection.res.end();
         } catch {
           // Connection already closed
         }
-        
+
         this.connections.delete(connectionId);
         this.log(`Disconnected: ${connectionId}`);
       }
@@ -154,34 +226,36 @@ export class SSETransport implements ChannelTransport {
    */
   closeAll(): void {
     console.log(`📡 [SSE] Closing ${this.connections.size} connections...`);
-    
+
     for (const [connectionId, connection] of this.connections) {
       try {
         // Clear heartbeat
         if (connection.heartbeatInterval) {
           clearInterval(connection.heartbeatInterval);
         }
-        
+
         // Send close event to client
-        connection.res.write(`data: ${JSON.stringify({ 
-          type: 'server_shutdown', 
-          message: 'Server is shutting down',
-        })}\n\n`);
-        
+        connection.res.write(
+          `data: ${JSON.stringify({
+            type: "server_shutdown",
+            message: "Server is shutting down",
+          })}\n\n`,
+        );
+
         // End the response
         connection.res.end();
-        
+
         this.log(`Closed: ${connectionId}`);
       } catch {
         // Connection already closed
       }
     }
-    
+
     // Clear all state
     this.connections.clear();
     this.roomConnections.clear();
-    
-    console.log('📡 [SSE] All connections closed');
+
+    console.log("📡 [SSE] All connections closed");
   }
 
   /**
@@ -240,7 +314,7 @@ export class SSETransport implements ChannelTransport {
 
   /**
    * Send an event to SSE clients.
-   * 
+   *
    * Routing is determined by event.target:
    * - No target: broadcast to all
    * - target.connectionId: send to specific connection
@@ -249,10 +323,12 @@ export class SSETransport implements ChannelTransport {
    */
   async send(event: ChannelEvent): Promise<void> {
     const target = event.target;
-    const sourceConnectionId = event.metadata?.['sourceConnectionId'] as string | undefined;
-    
+    const sourceConnectionId = event.metadata?.["sourceConnectionId"] as
+      | string
+      | undefined;
+
     let targetConnections: Set<string>;
-    
+
     if (target?.connectionId) {
       targetConnections = new Set([target.connectionId]);
     } else if (target?.rooms && target.rooms.length > 0) {
@@ -273,15 +349,20 @@ export class SSETransport implements ChannelTransport {
       targetConnections.delete(sourceConnectionId);
     }
 
-    this.log(`Send: channel=${event.channel}, type=${event.type}, targets=${targetConnections.size}`);
-    
+    this.log(
+      `Send: channel=${event.channel}, type=${event.type}, targets=${targetConnections.size}`,
+    );
+
     let sentCount = 0;
-    
+
     for (const connectionId of targetConnections) {
       const connection = this.connections.get(connectionId);
       if (!connection) continue;
 
-      if (connection.channels.size > 0 && !connection.channels.has(event.channel)) {
+      if (
+        connection.channels.size > 0 &&
+        !connection.channels.has(event.channel)
+      ) {
         continue;
       }
 
@@ -293,7 +374,7 @@ export class SSETransport implements ChannelTransport {
         await this.disconnect(connectionId);
       }
     }
-    
+
     if (sentCount === 0 && targetConnections.size > 0) {
       this.log(`Warning: No clients received event (filtered or disconnected)`);
     }
@@ -319,12 +400,12 @@ export class SSETransport implements ChannelTransport {
    * Add a new SSE connection (convenience method for HTTP routes).
    */
   addConnection(
-    connectionId: string, 
-    res: Response, 
-    options?: { channels?: string[]; metadata?: ConnectionMetadata }
+    connectionId: string,
+    res: Response,
+    options?: { channels?: string[]; metadata?: ConnectionMetadata },
   ): void {
-    this.connect(connectionId, { 
-      res, 
+    this.connect(connectionId, {
+      res,
       channels: options?.channels,
       ...options?.metadata,
     });
@@ -391,4 +472,3 @@ export function resetSSETransport(): void {
     sseTransportSingleton = null;
   }
 }
-

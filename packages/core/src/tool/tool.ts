@@ -1,33 +1,47 @@
 /**
  * Tool Creation
- * 
+ *
  * createTool() returns a ToolClass that can be:
  * 1. Passed directly to models: engine.execute({ tools: [MyTool] })
  * 2. Run directly: await MyTool.run(input)
  * 3. Used in JSX: <MyTool />
- * 
- * Core tool types (ToolMetadata, ToolDefinition, ExecutableTool, etc.) 
+ *
+ * Core tool types (ToolMetadata, ToolDefinition, ExecutableTool, etc.)
  * are defined in types.ts to keep them centralized.
  */
 
-import { z } from 'zod';
-import { createEngineProcedure, isProcedure } from '../procedure';
-import type { ExtractArgs, Middleware, Procedure } from 'aidk-kernel';
-import type {
-  ProviderToolOptions,
-  LibraryToolOptions,
-} from '../types';
-import { ToolExecutionType, ToolIntent, type ClientToolDefinition, type ToolDefinition as BaseToolDefinition } from 'aidk-shared/tools';
-import type { ContentBlock } from 'aidk-shared/blocks';
-import { type EngineComponent, Component, type RecoveryAction, type TickState } from '../component/component';
-import { ContextObjectModel } from '../com/object-model';
-import type { COMInput } from '../com/types';
-import type { JSX } from '../jsx/jsx-runtime';
-import type { ComponentBaseProps } from '../jsx/jsx-types';
-import type { CompiledStructure } from '../compiler/types';
+import { z } from "zod";
+import { createEngineProcedure, isProcedure } from "../procedure";
+import type { ExtractArgs, Middleware, Procedure } from "aidk-kernel";
+import type { ProviderToolOptions, LibraryToolOptions } from "../types";
+import {
+  ToolExecutionType,
+  ToolIntent,
+  type ClientToolDefinition,
+  type ToolDefinition as BaseToolDefinition,
+} from "aidk-shared/tools";
+import type { ContentBlock } from "aidk-shared/blocks";
+import {
+  type EngineComponent,
+  Component,
+  type RecoveryAction,
+  type TickState,
+} from "../component/component";
+import { ContextObjectModel } from "../com/object-model";
+import type { COMInput } from "../com/types";
+import type { JSX } from "../jsx/jsx-runtime";
+import type { ComponentBaseProps } from "../jsx/jsx-types";
+import type { CompiledStructure } from "../compiler/types";
 
 // Re-export for convenience
-export { ToolIntent, ToolExecutionType, type AgentToolCall, type AgentToolResult } from 'aidk-shared/tools';
+export {
+  ToolIntent,
+  ToolExecutionType,
+  type AgentToolCall,
+  type AgentToolResult,
+  type ToolConfirmationResponse,
+  type ToolConfirmationResult,
+} from "aidk-shared/tools";
 export type { BaseToolDefinition, ClientToolDefinition };
 
 // ============================================================================
@@ -38,49 +52,51 @@ export type { BaseToolDefinition, ClientToolDefinition };
  * Tool handler function signature.
  * Takes typed input and returns ContentBlock[].
  */
-export type ToolHandler<TInput = any> = (input: TInput) => ContentBlock[] | Promise<ContentBlock[]>;
+export type ToolHandler<TInput = any> = (
+  input: TInput,
+) => ContentBlock[] | Promise<ContentBlock[]>;
 
 /**
  * Options for createTool().
- * 
+ *
  * Mirrors ToolMetadata but with additional creation-time options
  * (handler, middleware, component lifecycle hooks).
  */
 export interface CreateToolOptions<TInput = any> {
   // === Core Metadata ===
-  
+
   /** Tool name (used by model to call the tool) */
   name: string;
-  
+
   /** Description shown to the model */
   description: string;
-  
+
   /** Zod schema for input validation */
   parameters: z.ZodSchema<TInput>;
-  
+
   // === Execution Configuration ===
-  
-  /** 
+
+  /**
    * Handler function that executes the tool.
    * Optional for CLIENT and PROVIDER tools (no server-side execution).
    */
   handler?: ToolHandler<TInput>;
-  
-  /** 
+
+  /**
    * Execution type (SERVER, CLIENT, MCP, PROVIDER).
    * Default: SERVER
    */
   type?: ToolExecutionType;
-  
+
   /**
    * Tool intent (RENDER, ACTION, COMPUTE).
    * Helps clients decide how to handle/render tool calls.
    * Default: COMPUTE
    */
   intent?: ToolIntent;
-  
+
   // === Client Tool Configuration ===
-  
+
   /**
    * Whether execution should wait for client response.
    * Only applicable for CLIENT type tools.
@@ -89,63 +105,122 @@ export interface CreateToolOptions<TInput = any> {
    * Default: false
    */
   requiresResponse?: boolean;
-  
+
   /**
    * Timeout in ms when waiting for client response.
    * Only applicable when requiresResponse is true.
    * Default: 30000
    */
   timeout?: number;
-  
+
   /**
    * Default result when requiresResponse is false.
    * Returned immediately for render tools.
    * Default: [{ type: 'text', text: '[{name} rendered on client]' }]
    */
   defaultResult?: ContentBlock[];
-  
+
+  // === Confirmation Configuration ===
+
+  /**
+   * Whether execution requires user confirmation before running.
+   * Applies to any tool type (SERVER, CLIENT, MCP).
+   *
+   * - boolean: Always require (true) or never require (false)
+   * - function: Conditional - receives input, returns whether confirmation needed.
+   *   Can be async to check persisted "always allow" state.
+   *   Use Context.get() inside the function to access execution context.
+   *
+   * Default: false
+   *
+   * @example
+   * ```typescript
+   * // Always require confirmation
+   * requiresConfirmation: true,
+   *
+   * // Conditional - check persisted preferences
+   * requiresConfirmation: async (input) => {
+   *   const ctx = context();
+   *   const prefs = await getPrefs(ctx.user?.id);
+   *   return !prefs.alwaysAllow.includes('my_tool');
+   * },
+   * ```
+   */
+  requiresConfirmation?:
+    | boolean
+    | ((input: TInput) => boolean | Promise<boolean>);
+
+  /**
+   * Message to show user when requesting confirmation.
+   * Can be a string or a function that receives the input.
+   * Default: "Allow {tool_name} to execute?"
+   *
+   * @example
+   * ```typescript
+   * confirmationMessage: (input) => `Delete file "${input.path}"?`,
+   * ```
+   */
+  confirmationMessage?: string | ((input: TInput) => string);
+
   // === Provider Configuration ===
-  
+
   /**
    * Provider-specific tool options.
    * Keyed by provider name (openai, google, anthropic, etc.).
    * Used by adapters when converting tools.
    */
   providerOptions?: ProviderToolOptions;
-  
+
   /**
    * MCP server configuration (for MCP tools).
    */
   mcpConfig?: {
     serverUrl?: string;
     serverName?: string;
-    transport?: 'stdio' | 'sse' | 'websocket';
+    transport?: "stdio" | "sse" | "websocket";
     [key: string]: any;
   };
-  
+
   // === Middleware ===
-  
+
   /** Middleware applied to handler execution */
   middleware?: Middleware[];
-  
+
   // === Component Lifecycle Hooks (for JSX usage) ===
-  
+
   onMount?: (com: ContextObjectModel) => void | Promise<void>;
   onUnmount?: (com: ContextObjectModel) => void | Promise<void>;
   onStart?: (com: ContextObjectModel) => void | Promise<void>;
-  onTickStart?: (com: ContextObjectModel, state: TickState) => void | Promise<void>;
-  onTickEnd?: (com: ContextObjectModel, state: TickState) => void | Promise<void>;
-  onComplete?: (com: ContextObjectModel, finalState: COMInput) => void | Promise<void>;
-  onError?: (com: ContextObjectModel, state: TickState) => RecoveryAction | void;
+  onTickStart?: (
+    com: ContextObjectModel,
+    state: TickState,
+  ) => void | Promise<void>;
+  onTickEnd?: (
+    com: ContextObjectModel,
+    state: TickState,
+  ) => void | Promise<void>;
+  onComplete?: (
+    com: ContextObjectModel,
+    finalState: COMInput,
+  ) => void | Promise<void>;
+  onError?: (
+    com: ContextObjectModel,
+    state: TickState,
+  ) => RecoveryAction | void;
   render?: (com: ContextObjectModel, state: TickState) => JSX.Element | null;
-  onAfterCompile?: (com: ContextObjectModel, compiled: CompiledStructure, state: TickState, ctx: any) => void | Promise<void>;
+  onAfterCompile?: (
+    com: ContextObjectModel,
+    compiled: CompiledStructure,
+    state: TickState,
+    ctx: any,
+  ) => void | Promise<void>;
 }
 
 /**
  * A ToolClass is both:
  * - An ExecutableTool (via static metadata/run) - can be passed to models
  * - A Component constructor - can be used in JSX
- * 
+ *
  * This enables the three usage patterns:
  * - engine.execute({ tools: [MyTool] })  -- passes static metadata/run
  * - await MyTool.run(input)              -- calls static run procedure
@@ -154,10 +229,10 @@ export interface CreateToolOptions<TInput = any> {
 export interface ToolClass<TInput = any> {
   /** Tool metadata (static property) */
   metadata: ToolMetadata<TInput>;
-  
+
   /** Run procedure (static property). Undefined for client-only tools. */
   run?: Procedure<ToolHandler<TInput>>;
-  
+
   /** Creates a component instance that registers the tool on mount */
   new (props?: ComponentBaseProps): EngineComponent;
 }
@@ -175,16 +250,16 @@ export interface RunnableToolClass<TInput = any> extends ToolClass<TInput> {
 
 /**
  * Creates a tool that can be passed to models, run directly, or used in JSX.
- * 
+ *
  * The returned class has static `metadata` and `run` properties making it
  * a valid ExecutableTool, while also being instantiable as a Component.
- * 
+ *
  * @example
  * ```typescript
  * const Calculator = createTool({
  *   name: 'calculator',
  *   description: 'Performs mathematical calculations',
- *   parameters: z.object({ 
+ *   parameters: z.object({
  *     expression: z.string().describe('Math expression to evaluate')
  *   }),
  *   handler: async ({ expression }) => {
@@ -192,16 +267,16 @@ export interface RunnableToolClass<TInput = any> extends ToolClass<TInput> {
  *     return [{ type: 'text', text: String(result) }];
  *   },
  * });
- * 
+ *
  * // Pattern 1: Pass to model
- * engine.execute({ 
+ * engine.execute({
  *   messages: [...],
  *   tools: [Calculator],
  * });
- * 
+ *
  * // Pattern 2: Run directly
  * const result = await Calculator.run({ expression: '2 + 2' });
- * 
+ *
  * // Pattern 3: Use in JSX (registers tool when component mounts)
  * function MyAgent() {
  *   return (
@@ -212,7 +287,7 @@ export interface RunnableToolClass<TInput = any> extends ToolClass<TInput> {
  *   );
  * }
  * ```
- * 
+ *
  * @example Client tool (no handler)
  * ```typescript
  * const RenderChart = createTool({
@@ -231,17 +306,17 @@ export interface RunnableToolClass<TInput = any> extends ToolClass<TInput> {
  */
 // Overload: handler provided → run is defined
 export function createTool<TInput = any>(
-  options: CreateToolOptions<TInput> & { handler: ToolHandler<TInput> }
+  options: CreateToolOptions<TInput> & { handler: ToolHandler<TInput> },
 ): RunnableToolClass<TInput>;
 
-// Overload: handler not provided → run is undefined  
+// Overload: handler not provided → run is undefined
 export function createTool<TInput = any>(
-  options: CreateToolOptions<TInput> & { handler?: undefined }
+  options: CreateToolOptions<TInput> & { handler?: undefined },
 ): ToolClass<TInput>;
 
 // Implementation
 export function createTool<TInput = any>(
-  options: CreateToolOptions<TInput>
+  options: CreateToolOptions<TInput>,
 ): ToolClass<TInput> {
   // Build metadata from options
   const metadata: ToolMetadata<TInput> = {
@@ -253,24 +328,28 @@ export function createTool<TInput = any>(
     requiresResponse: options.requiresResponse,
     timeout: options.timeout,
     defaultResult: options.defaultResult,
+    requiresConfirmation: options.requiresConfirmation,
+    confirmationMessage: options.confirmationMessage,
     providerOptions: options.providerOptions,
     mcpConfig: options.mcpConfig,
   };
 
   // Create run procedure if handler is provided
   const run = options.handler
-    ? isProcedure(options.handler) ? options.handler : createEngineProcedure<ToolHandler<TInput>>(
-        { 
-          name: 'tool:run', // Low cardinality span name
-          metadata: {
-            type: 'tool',
-            id: options.name,
-            operation: 'run',
+    ? isProcedure(options.handler)
+      ? options.handler
+      : createEngineProcedure<ToolHandler<TInput>>(
+          {
+            name: "tool:run", // Low cardinality span name
+            metadata: {
+              type: "tool",
+              id: options.name,
+              operation: "run",
+            },
+            middleware: options.middleware || [],
           },
-          middleware: options.middleware || [],
-        },
-        options.handler
-      )
+          options.handler,
+        )
     : undefined;
 
   // Create component class with static tool properties
@@ -295,7 +374,10 @@ export function createTool<TInput = any>(
       if (options.onStart) await options.onStart(com);
     }
 
-    async onTickStart(com: ContextObjectModel, state: TickState): Promise<void> {
+    async onTickStart(
+      com: ContextObjectModel,
+      state: TickState,
+    ): Promise<void> {
       if (options.onTickStart) await options.onTickStart(com, state);
     }
 
@@ -303,7 +385,10 @@ export function createTool<TInput = any>(
       if (options.onTickEnd) await options.onTickEnd(com, state);
     }
 
-    async onComplete(com: ContextObjectModel, finalState: COMInput): Promise<void> {
+    async onComplete(
+      com: ContextObjectModel,
+      finalState: COMInput,
+    ): Promise<void> {
       if (options.onComplete) await options.onComplete(com, finalState);
     }
 
@@ -316,19 +401,24 @@ export function createTool<TInput = any>(
       return null;
     }
 
-    async onAfterCompile(com: ContextObjectModel, compiled: CompiledStructure, state: TickState, ctx: any): Promise<void> {
-      if (options.onAfterCompile) await options.onAfterCompile(com, compiled, state, ctx);
+    async onAfterCompile(
+      com: ContextObjectModel,
+      compiled: CompiledStructure,
+      state: TickState,
+      ctx: any,
+    ): Promise<void> {
+      if (options.onAfterCompile)
+        await options.onAfterCompile(com, compiled, state, ctx);
     }
   }
 
   return ToolComponentClass as unknown as ToolClass<TInput>;
 }
 
-
 /**
  * Tool definition in provider-compatible format (JSON Schema).
  * This is what gets passed to model adapters.
- * 
+ *
  * Extends the base ToolDefinition from aidk-shared with backend-specific fields.
  */
 export interface ToolDefinition extends BaseToolDefinition {
@@ -353,7 +443,7 @@ export interface ToolDefinition extends BaseToolDefinition {
   mcpConfig?: {
     serverUrl?: string;
     serverName?: string;
-    transport?: 'stdio' | 'sse' | 'websocket';
+    transport?: "stdio" | "sse" | "websocket";
     [key: string]: any;
   };
 }
@@ -394,6 +484,24 @@ export interface ToolMetadata<TInput = any> {
    */
   defaultResult?: ContentBlock[];
   /**
+   * Whether execution requires user confirmation before running.
+   * Applies to any tool type (SERVER, CLIENT, MCP).
+   *
+   * - boolean: Always require (true) or never require (false)
+   * - function: Conditional - receives input, returns whether confirmation needed.
+   *   Can be async to check persisted "always allow" state.
+   *   Use Context.get() inside the function to access execution context.
+   *
+   * Default: false
+   */
+  requiresConfirmation?: boolean | ((input: any) => boolean | Promise<boolean>);
+  /**
+   * Message to show user when requesting confirmation.
+   * Can be a string or a function that receives the input.
+   * Default: "Allow {tool_name} to execute?"
+   */
+  confirmationMessage?: string | ((input: any) => string);
+  /**
    * Provider-specific tool configurations.
    * Keyed by provider name (e.g., 'openai', 'google', 'anthropic').
    * Preserved when converting to ToolDefinition.
@@ -414,12 +522,16 @@ export interface ToolMetadata<TInput = any> {
   mcpConfig?: {
     serverUrl?: string;
     serverName?: string;
-    transport?: 'stdio' | 'sse' | 'websocket';
+    transport?: "stdio" | "sse" | "websocket";
     [key: string]: any;
   };
 }
 
-export interface ExecutableTool<THandler extends (input: any) => ContentBlock[] | Promise<ContentBlock[]> = (input: any) => ContentBlock[] | Promise<ContentBlock[]>> {
+export interface ExecutableTool<
+  THandler extends (input: any) => ContentBlock[] | Promise<ContentBlock[]> = (
+    input: any,
+  ) => ContentBlock[] | Promise<ContentBlock[]>,
+> {
   metadata: ToolMetadata<ExtractArgs<THandler>[0]>;
   run?: Procedure<THandler>; // Optional - tools without handlers (e.g., client tools) don't need run
 }
@@ -429,17 +541,19 @@ export interface ExecutableTool<THandler extends (input: any) => ContentBlock[] 
 /**
  * Convert ClientToolDefinition to ToolDefinition for engine use.
  */
-export function clientToolToDefinition(clientTool: ClientToolDefinition): ToolDefinition {
+export function clientToolToDefinition(
+  clientTool: ClientToolDefinition,
+): ToolDefinition {
   return {
     name: clientTool.name,
     description: clientTool.description,
     parameters: clientTool.parameters,
     type: ToolExecutionType.CLIENT,
     intent: clientTool.intent ?? ToolIntent.RENDER,
-    requires_response: clientTool.requires_response ?? false,
+    requiresResponse: clientTool.requiresResponse ?? false,
     timeout: clientTool.timeout ?? 30000,
-    default_result: clientTool.default_result ?? [
-      { type: 'text', text: `[${clientTool.name} rendered on client]` }
+    defaultResult: clientTool.defaultResult ?? [
+      { type: "text", text: `[${clientTool.name} rendered on client]` },
     ],
   };
 }
@@ -454,8 +568,8 @@ export function clientToolToDefinition(clientTool: ClientToolDefinition): ToolDe
 export function isToolClass(value: any): value is ToolClass {
   return (
     value &&
-    typeof value === 'function' &&
-    'metadata' in value &&
+    typeof value === "function" &&
+    "metadata" in value &&
     value.metadata?.name
   );
 }
@@ -477,8 +591,8 @@ export function toExecutableTool(toolClass: ToolClass): ExecutableTool {
 export function isExecutableTool(value: any): value is ExecutableTool {
   return (
     value &&
-    typeof value === 'object' &&
-    'metadata' in value &&
+    typeof value === "object" &&
+    "metadata" in value &&
     value.metadata?.name &&
     value.metadata?.description &&
     value.metadata?.parameters

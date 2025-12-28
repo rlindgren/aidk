@@ -1,10 +1,15 @@
-import type { COMSection, COMTimelineEntry, EphemeralPosition } from '../com/types';
-import type { ExecutableTool } from '../tool/tool';
-import type { SemanticContentBlock, ContentRenderer } from '../renderers';
-import type { ContentBlock, MessageRoles } from 'aidk-shared';
-import { Fragment, type JSX } from 'aidk/jsx-runtime';
-import type { ContextObjectModel } from '../com/object-model';
-import type { TickState } from '../component/component';
+import type {
+  COMSection,
+  COMTimelineEntry,
+  EphemeralPosition,
+} from "../com/types";
+import type { ExecutableTool } from "../tool/tool";
+import type { SemanticContentBlock, ContentRenderer } from "../renderers";
+import type { ContentBlock, MessageRoles } from "aidk-shared";
+import { Fragment, type JSX } from "aidk/jsx-runtime";
+import type { ContextObjectModel } from "../com/object-model";
+import type { TickState } from "../component/component";
+import type { ExecutionMessage } from "../engine/execution-types";
 
 /**
  * Compiled structure from JSX tree traversal.
@@ -43,8 +48,8 @@ export interface CompiledSection {
   title?: string;
   content: SemanticContentBlock[] | string | unknown;
   renderer?: ContentRenderer; // Renderer context from JSX (<Markdown> wrapper)
-  visibility?: 'model' | 'observer' | 'log';
-  audience?: 'model' | 'human' | 'system';
+  visibility?: "model" | "observer" | "log";
+  audience?: "model" | "human" | "system";
   tags?: string[];
   metadata?: Record<string, unknown>;
 }
@@ -54,19 +59,19 @@ export interface CompiledSection {
  * Contains raw SemanticContentBlocks and optional renderer context.
  */
 export interface CompiledTimelineEntry {
-  kind: 'message' | 'event';
+  kind: "message" | "event";
   message?: {
     role: MessageRoles;
     content: SemanticContentBlock[];
     id?: string;
     metadata?: Record<string, unknown>;
-    created_at?: string | Date;
-    updated_at?: string | Date;
+    createdAt?: string | Date;
+    updatedAt?: string | Date;
   };
   event?: any; // EngineStreamEvent
   renderer?: ContentRenderer; // Only if explicitly wrapped in renderer tag
   id?: string;
-  visibility?: 'model' | 'observer' | 'log';
+  visibility?: "model" | "observer" | "log";
   tags?: string[];
   metadata?: Record<string, unknown>;
 }
@@ -75,7 +80,7 @@ export interface CompiledTimelineEntry {
  * System message item (for consolidation).
  */
 export interface SystemMessageItem {
-  type: 'section' | 'message' | 'loose';
+  type: "section" | "message" | "loose";
   sectionId?: string;
   content?: SemanticContentBlock[];
   index: number;
@@ -108,7 +113,7 @@ export interface CompileStabilizationResult {
 
 // Fragment symbol for cross-module identity comparison
 // Using Symbol.for ensures we get the same symbol even across different module loads
-const FragmentSymbol = Symbol.for('aidk.fragment');
+const FragmentSymbol = Symbol.for("aidk.fragment");
 
 /**
  * Check if a type is a Fragment (works across module boundaries)
@@ -118,8 +123,8 @@ export function isFragment(type: any): boolean {
   return (
     type === Fragment ||
     type === FragmentSymbol ||
-    (typeof type === 'symbol' && type.description === 'aidk.fragment') ||
-    type?.name === 'Fragment'
+    (typeof type === "symbol" && type.description === "aidk.fragment") ||
+    type?.name === "Fragment"
   );
 }
 
@@ -132,19 +137,18 @@ export interface Fiber {
   ref?: string; // Reference name for component instance access
 }
 
-
 // ============================================================================
 // Fiber Flags
 // ============================================================================
 
 export const FiberFlags = {
   NoFlags: 0b00000000,
-  Placement: 0b00000001,      // New fiber, needs mount
-  Update: 0b00000010,         // Props/state changed
-  Deletion: 0b00000100,       // Needs unmount
-  ChildDeletion: 0b00001000,  // Has children to unmount
-  HasEffect: 0b00010000,      // Has effects to run
-  Ref: 0b00100000,            // Has ref to update
+  Placement: 0b00000001, // New fiber, needs mount
+  Update: 0b00000010, // Props/state changed
+  Deletion: 0b00000100, // Needs unmount
+  ChildDeletion: 0b00001000, // Has children to unmount
+  HasEffect: 0b00010000, // Has effects to run
+  Ref: 0b00100000, // Has ref to update
 } as const;
 
 export type FiberFlags = (typeof FiberFlags)[keyof typeof FiberFlags];
@@ -160,7 +164,7 @@ export const HookTag = {
   ComState: 2,
   WatchState: 3,
   Signal: 4,
-  
+
   // Effect hooks
   Effect: 10,
   TickStart: 11,
@@ -168,15 +172,16 @@ export const HookTag = {
   AfterCompile: 13,
   Mount: 14,
   Unmount: 15,
-  
+  OnMessage: 16,
+
   // Memoization hooks
   Memo: 20,
   Callback: 21,
-  
+
   // Ref hooks
   Ref: 30,
   COMRef: 31,
-  
+
   // Async hooks
   Async: 40,
   CachedAsync: 41,
@@ -193,17 +198,19 @@ export type HookTag = (typeof HookTag)[keyof typeof HookTag];
  */
 export const EffectPhase = {
   /** Runs at tick start, before render */
-  TickStart: 'tick-start',
+  TickStart: "tick-start",
   /** Runs after compile, can request recompile */
-  AfterCompile: 'after-compile',
+  AfterCompile: "after-compile",
   /** Runs at tick end, after model execution */
-  TickEnd: 'tick-end',
+  TickEnd: "tick-end",
   /** General effect, runs after commit */
-  Commit: 'commit',
+  Commit: "commit",
   /** Runs once when component mounts */
-  Mount: 'mount',
+  Mount: "mount",
   /** Runs once when component unmounts */
-  Unmount: 'unmount',
+  Unmount: "unmount",
+  /** Runs immediately when a message is received */
+  OnMessage: "on-message",
 } as const;
 
 export type EffectPhase = (typeof EffectPhase)[keyof typeof EffectPhase];
@@ -214,27 +221,30 @@ export type EffectPhase = (typeof EffectPhase)[keyof typeof EffectPhase];
 export interface Effect {
   /** When this effect runs */
   phase: EffectPhase;
-  
+
   /** Effect creation function (can be async) */
   create: EffectCallback;
-  
+
   /** Cleanup function from previous run */
   destroy: EffectCleanup | null;
-  
+
   /** Dependency array for conditional execution */
   deps: unknown[] | null;
-  
+
   /** Whether effect needs to run this tick */
   pending: boolean;
-  
+
   /** Next effect in linked list */
   next: Effect | null;
-  
+
   /** Debug tag */
   debugLabel?: string;
 }
 
-export type EffectCallback = () => void | EffectCleanup | Promise<void | EffectCleanup>;
+export type EffectCallback = () =>
+  | void
+  | EffectCleanup
+  | Promise<void | EffectCleanup>;
 export type EffectCleanup = () => void | Promise<void>;
 
 // ============================================================================
@@ -242,14 +252,18 @@ export type EffectCleanup = () => void | Promise<void>;
 // ============================================================================
 
 export interface UpdateQueue<S = unknown> {
-  pending: Update<S> | null;
+  /**
+   * Array of pending updates. Using an array instead of a circular linked list
+   * to avoid race conditions when multiple async operations dispatch concurrently.
+   * Array.push is atomic in JavaScript's single-threaded model.
+   */
+  pending: Update<S>[];
   dispatch: Dispatch<S> | null;
   lastRenderedState: S;
 }
 
 export interface Update<S = unknown> {
   action: S | ((prev: S) => S);
-  next: Update<S> | null;
 }
 
 export type Dispatch<S> = (action: S | ((prev: S) => S)) => void;
@@ -261,19 +275,19 @@ export type Dispatch<S> = (action: S | ((prev: S) => S)) => void;
 export interface HookState<S = unknown> {
   /** Memoized value */
   memoizedState: S;
-  
+
   /** Base state for reducers */
   baseState?: S;
-  
+
   /** Update queue for state hooks */
   queue: UpdateQueue<S> | null;
-  
+
   /** Effect for effect hooks */
   effect: Effect | null;
-  
+
   /** Next hook in linked list */
   next: HookState | null;
-  
+
   /** Hook type */
   tag: HookTag;
 }
@@ -286,37 +300,37 @@ export interface FiberNode {
   // ============ Identity ============
   type: ComponentType;
   key: string | number | null;
-  
+
   // ============ Props ============
   props: Record<string, unknown>;
   pendingProps: Record<string, unknown> | null;
-  
+
   // ============ State ============
   /** Component instance (class components) */
   stateNode: ComponentInstance | null;
   /** Hook state linked list (function components) */
   memoizedState: HookState | null;
-  
+
   // ============ Tree Structure ============
   parent: FiberNode | null;
   child: FiberNode | null;
   sibling: FiberNode | null;
   index: number;
-  
+
   // ============ Refs ============
   ref: string | null;
-  
+
   // ============ Work Tracking ============
   flags: number;
   subtreeFlags: number;
   deletions: FiberNode[] | null;
-  
+
   // ============ Double Buffering ============
   alternate: FiberNode | null;
-  
+
   // ============ Rendering Context ============
   renderer: ContentRenderer | null;
-  
+
   // ============ Debug ============
   debugName?: string;
 }
@@ -332,13 +346,18 @@ export interface FiberNode {
 export type FunctionComponent<P = Record<string, unknown>> =
   | ((props: P) => FiberChild | Promise<FiberChild>)
   | ((props: P, com: ContextObjectModel) => FiberChild | Promise<FiberChild>)
-  | ((props: P, com: ContextObjectModel, state: TickState) => FiberChild | Promise<FiberChild>);
+  | ((
+      props: P,
+      com: ContextObjectModel,
+      state: TickState,
+    ) => FiberChild | Promise<FiberChild>);
 
 /**
  * Class component constructor.
  */
-export type ClassComponent<P = Record<string, unknown>> =
-  new (props: P) => ComponentInstance;
+export type ClassComponent<P = Record<string, unknown>> = new (
+  props: P,
+) => ComponentInstance;
 
 /**
  * Any component type.
@@ -346,34 +365,48 @@ export type ClassComponent<P = Record<string, unknown>> =
 export type ComponentType =
   | FunctionComponent
   | ClassComponent
-  | string    // Intrinsic (Section, Message, etc.)
-  | symbol;   // Fragment
+  | string // Intrinsic (Section, Message, etc.)
+  | symbol; // Fragment
 
 /**
  * Component instance (class component).
  */
 export interface ComponentInstance {
   props: Record<string, unknown>;
-  
+
   // Lifecycle
   onMount?: (com: ContextObjectModel) => void | Promise<void>;
   onUnmount?: (com: ContextObjectModel) => void | Promise<void>;
   onStart?: (com: ContextObjectModel) => void | Promise<void>;
-  onTickStart?: (com: ContextObjectModel, state: TickState) => void | Promise<void>;
-  onTickEnd?: (com: ContextObjectModel, state: TickState) => void | Promise<void>;
+  onTickStart?: (
+    com: ContextObjectModel,
+    state: TickState,
+  ) => void | Promise<void>;
+  onTickEnd?: (
+    com: ContextObjectModel,
+    state: TickState,
+  ) => void | Promise<void>;
   onAfterCompile?: (
     com: ContextObjectModel,
     compiled: unknown,
     state: TickState,
-    ctx: unknown
+    ctx: unknown,
   ) => void | Promise<void>;
-  onComplete?: (com: ContextObjectModel, finalState: unknown) => void | Promise<void>;
+  onComplete?: (
+    com: ContextObjectModel,
+    finalState: unknown,
+  ) => void | Promise<void>;
   onError?: (com: ContextObjectModel, state: TickState) => unknown;
-  
+  onMessage?: (
+    com: ContextObjectModel,
+    state: TickState,
+    message: ExecutionMessage,
+  ) => void | Promise<void>;
+
   // Render
   render?: (
     com: ContextObjectModel,
-    state: TickState
+    state: TickState,
   ) => FiberChild | Promise<FiberChild>;
 }
 
@@ -399,9 +432,9 @@ export type FiberChild =
  * Normalized child after processing.
  */
 export type NormalizedChild =
-  | { kind: 'element'; element: JSX.Element }
-  | { kind: 'content-block'; block: ContentBlock }
-  | { kind: 'text'; text: string };
+  | { kind: "element"; element: JSX.Element }
+  | { kind: "content-block"; block: ContentBlock }
+  | { kind: "text"; text: string };
 
 // ============================================================================
 // Render Context
@@ -414,19 +447,19 @@ export type NormalizedChild =
 export interface RenderContext {
   /** Current fiber being rendered */
   fiber: FiberNode;
-  
+
   /** Context Object Model */
   com: ContextObjectModel;
-  
+
   /** Current tick state */
   tickState: TickState;
-  
+
   /** Current hook being processed (from previous render) */
   currentHook: HookState | null;
-  
+
   /** Work-in-progress hook chain being built */
   workInProgressHook: HookState | null;
-  
+
   /** Abort signal for this execution */
   abortSignal?: AbortSignal;
 }
@@ -448,16 +481,16 @@ export interface AsyncResult<T> {
 export interface FiberCompilerConfig {
   /** Enable development mode warnings */
   dev?: boolean;
-  
+
   /** Max compile stabilization iterations */
   maxCompileIterations?: number;
-  
+
   /** Enable async effect execution */
   asyncEffects?: boolean;
-  
+
   /** Custom content block type detector */
   isContentBlock?: (value: unknown) => boolean;
-  
+
   /** Default renderer for content blocks */
   defaultRenderer?: ContentRenderer;
 }
@@ -469,13 +502,13 @@ export interface FiberCompilerConfig {
 export interface CompileResult {
   /** The compiled structure */
   compiled: CompiledStructure;
-  
+
   /** Number of stabilization iterations */
   iterations: number;
-  
+
   /** Whether max iterations was hit */
   forcedStable: boolean;
-  
+
   /** Reasons for recompilations */
   recompileReasons: string[];
 }
@@ -485,19 +518,19 @@ export interface CompileResult {
 // ============================================================================
 
 export const CONTENT_BLOCK_TYPES = [
-  'text',
-  'image', 
-  'document',
-  'audio',
-  'video',
-  'code',
-  'json',
-  'tool_use',
-  'tool_result',
-  'reasoning',
-  'user_action',
-  'system_event',
-  'state_change',
+  "text",
+  "image",
+  "document",
+  "audio",
+  "video",
+  "code",
+  "json",
+  "tool_use",
+  "tool_result",
+  "reasoning",
+  "user_action",
+  "system_event",
+  "state_change",
 ] as const;
 
 export type ContentBlockType = (typeof CONTENT_BLOCK_TYPES)[number];
@@ -508,11 +541,11 @@ export type ContentBlockType = (typeof CONTENT_BLOCK_TYPES)[number];
 export function isContentBlock(value: unknown): value is ContentBlock {
   return (
     value !== null &&
-    typeof value === 'object' &&
-    'type' in value &&
-    typeof (value as { type: unknown }).type === 'string' &&
+    typeof value === "object" &&
+    "type" in value &&
+    typeof (value as { type: unknown }).type === "string" &&
     CONTENT_BLOCK_TYPES.includes(
-      (value as { type: string }).type as ContentBlockType
+      (value as { type: string }).type as ContentBlockType,
     )
   );
 }

@@ -69,7 +69,7 @@ export interface StreamChunk {
   reasoning?: string; // reasoning delta for reasoning types
   reasoningId?: string; // ID for reasoning block (from AI SDK)
   id?: string; // refers to message.id for message types and content.id for content types
-  toolCallId?: string; // tool_use_id for tool_result chunks
+  toolCallId?: string; // toolUseId for tool_result chunks
   toolName?: string; // tool name for tool_result chunks
   toolResult?: any; // tool result content for tool_result chunks
   isToolError?: boolean; // whether tool_result is an error

@@ -658,7 +658,7 @@ function extractToolCallsAndResults(messages: Message[]): {
   pendingToolCalls: AgentToolCall[];
   executedToolResults: AgentToolResult[];
 } {
-  // First pass: collect all tool_use_ids that have tool_result messages
+  // First pass: collect all toolUseIds that have tool_result messages
   const executedToolIds = new Set<string>();
   const executedResults: AgentToolResult[] = [];
   
@@ -667,19 +667,19 @@ function extractToolCallsAndResults(messages: Message[]): {
       for (const block of msg.content) {
         if (block.type === 'tool_result') {
           const toolResultBlock = block as ContentBlock & { 
-            tool_use_id: string; 
+            toolUseId: string; 
             name?: string;
             content?: ContentBlock[];
-            is_error?: boolean;
+            isError?: boolean;
           };
-          executedToolIds.add(toolResultBlock.tool_use_id);
+          executedToolIds.add(toolResultBlock.toolUseId);
           executedResults.push({
             id: toolResultBlock.id,
-            tool_use_id: toolResultBlock.tool_use_id,
+            toolUseId: toolResultBlock.toolUseId,
             name: toolResultBlock.name || 'unknown',
             content: toolResultBlock.content || [],
-            success: !toolResultBlock.is_error,
-            executed_by: 'adapter', // or 'provider' - could be refined based on metadata
+            success: !toolResultBlock.isError,
+            executedBy: 'adapter', // or 'provider' - could be refined based on metadata
           });
         }
       }
@@ -695,12 +695,12 @@ function extractToolCallsAndResults(messages: Message[]): {
         if (block.type === 'tool_use') {
           const toolUseBlock = block as ContentBlock & {
             id?: string;
-            tool_use_id?: string;
+            toolUseId?: string;
             name: string;
             input: unknown;
           };
-          // Support both `tool_use_id` (standard) and `id` (some providers)
-          const toolId = toolUseBlock.tool_use_id || toolUseBlock.id || '';
+          // Support both `toolUseId` (standard) and `id` (some providers)
+          const toolId = toolUseBlock.toolUseId || toolUseBlock.id || '';
           
           // Only include if not already executed
           if (!executedToolIds.has(toolId)) {

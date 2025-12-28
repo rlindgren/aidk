@@ -1,30 +1,34 @@
-import OpenAI, { type ClientOptions } from 'openai';
+import OpenAI, { type ClientOptions } from "openai";
 import type {
   ChatCompletion,
   ChatCompletionChunk,
   ChatCompletionMessageParam,
-} from 'openai/resources/chat/completions';
+  ChatCompletionFunctionTool,
+} from "openai/resources/chat/completions";
 
-import { createLanguageModel, Logger, type EngineModel } from 'aidk';
+import { createLanguageModel, Logger, type EngineModel } from "aidk";
 import {
   type ModelInput,
   type ModelOutput,
   type StreamChunk,
   StopReason,
   type ToolDefinition,
-} from 'aidk';
-import { type Message, type ContentBlock, type TextBlock } from 'aidk/content';
-import { normalizeModelInput } from 'aidk/normalization';
-import { type OpenAIAdapterConfig, STOP_REASON_MAP } from './types';
+} from "aidk";
+import { type Message, type ContentBlock, type TextBlock } from "aidk/content";
+import { normalizeModelInput } from "aidk/normalization";
+import { type OpenAIAdapterConfig, STOP_REASON_MAP } from "./types";
+import { AdapterError } from "aidk-shared";
 
 export type OpenAIAdapter = EngineModel<ModelInput, ModelOutput>;
 
-const logger = Logger.for('OpenAIAdapter');
+const logger = Logger.for("OpenAIAdapter");
 
 /**
  * Factory function for creating OpenAI model adapter using createModel
  */
-export function createOpenAIModel(config: OpenAIAdapterConfig = {}): OpenAIAdapter {
+export function createOpenAIModel(
+  config: OpenAIAdapterConfig = {},
+): OpenAIAdapter {
   const client = config.client ?? new OpenAI(buildClientOptions(config));
 
   return createLanguageModel<
@@ -35,33 +39,33 @@ export function createOpenAIModel(config: OpenAIAdapterConfig = {}): OpenAIAdapt
     ChatCompletionChunk
   >({
     metadata: {
-      id: 'openai',
-      provider: 'openai',
+      id: "openai",
+      provider: "openai",
       model: config.model,
-      type: 'language' as const,
+      type: "language" as const,
       capabilities: [
-        { stream: true, toolCalls: true, provider: 'openai' },
+        { stream: true, toolCalls: true, provider: "openai" },
         {
           // Use function to inspect actual model and make intelligent decisions
           messageTransformation: (modelId: string, provider?: string) => {
-            const isGPT4 = modelId.includes('gpt-4') || modelId.includes('o1');
+            const isGPT4 = modelId.includes("gpt-4") || modelId.includes("o1");
             const supportsDeveloper = isGPT4; // GPT-4 and newer support developer role
-            
+
             return {
-              preferredRenderer: 'markdown', // OpenAI models work best with markdown
+              preferredRenderer: "markdown", // OpenAI models work best with markdown
               roleMapping: {
-                event: supportsDeveloper ? 'developer' : 'user',
-                ephemeral: supportsDeveloper ? 'developer' : 'user',
+                event: supportsDeveloper ? "developer" : "user",
+                ephemeral: supportsDeveloper ? "developer" : "user",
               },
               delimiters: {
                 useDelimiters: !supportsDeveloper, // Only use delimiters if no developer role
-                event: '[Event]',
-                ephemeral: '[Context]',
+                event: "[Event]",
+                ephemeral: "[Context]",
               },
-              ephemeralPosition: 'flow',
+              ephemeralPosition: "flow",
             };
-          }
-        }
+          },
+        },
       ],
     },
     transformers: {
@@ -73,7 +77,7 @@ export function createOpenAIModel(config: OpenAIAdapterConfig = {}): OpenAIAdapt
     executors: {
       execute: (params) => execute(client, params),
       executeStream: (params) => executeStream(client, params),
-    }
+    },
   });
 }
 
@@ -85,14 +89,14 @@ export function openai(config?: OpenAIAdapterConfig): OpenAIAdapter {
 }
 
 // ============================================================================
-// Helper Functions
+// Helper Functions (exported for testing)
 // ============================================================================
 
-function buildClientOptions(config: OpenAIAdapterConfig): ClientOptions {
+export function buildClientOptions(config: OpenAIAdapterConfig): ClientOptions {
   const options: ClientOptions = {
-    apiKey: config.apiKey ?? process.env['OPENAI_API_KEY'],
-    baseURL: config.baseURL ?? process.env['OPENAI_BASE_URL'],
-    organization: config.organization ?? process.env['OPENAI_ORGANIZATION'],
+    apiKey: config.apiKey ?? process.env["OPENAI_API_KEY"],
+    baseURL: config.baseURL ?? process.env["OPENAI_BASE_URL"],
+    organization: config.organization ?? process.env["OPENAI_ORGANIZATION"],
     defaultHeaders: config.headers,
     ...(config.providerOptions?.openai || {}),
   };
@@ -109,42 +113,44 @@ function buildClientOptions(config: OpenAIAdapterConfig): ClientOptions {
 
 /**
  * Convert Message to OpenAI ChatCompletionMessageParam(s)
- * 
+ *
  * Note: Messages with tool_result blocks are expanded into multiple
  * OpenAI messages (one per tool result), as OpenAI requires separate
  * role='tool' messages for each tool call response.
  */
-function toOpenAIMessages(message: Message): ChatCompletionMessageParam[] {
+export function toOpenAIMessages(
+  message: Message,
+): ChatCompletionMessageParam[] {
   const content: any[] = [];
   const tool_calls: any[] = [];
   const toolResultMessages: ChatCompletionMessageParam[] = [];
 
   for (const block of message.content) {
     switch (block.type) {
-      case 'text':
-        content.push({ type: 'text', text: block.text });
+      case "text":
+        content.push({ type: "text", text: block.text });
         break;
 
-      case 'image':
-        if (block.source.type === 'url') {
+      case "image":
+        if (block.source.type === "url") {
           content.push({
-            type: 'image_url',
+            type: "image_url",
             image_url: { url: block.source.url },
           });
-        } else if (block.source.type === 'base64') {
+        } else if (block.source.type === "base64") {
           content.push({
-            type: 'image_url',
+            type: "image_url",
             image_url: {
-              url: `data:${block.source.mime_type};base64,${block.source.data}`,
+              url: `data:${block.source.mimeType};base64,${block.source.data}`,
             },
           });
         }
         break;
 
-      case 'tool_use':
+      case "tool_use":
         tool_calls.push({
-          id: block.tool_use_id,
-          type: 'function',
+          id: block.toolUseId,
+          type: "function",
           function: {
             name: block.name,
             arguments: JSON.stringify(block.input),
@@ -152,18 +158,18 @@ function toOpenAIMessages(message: Message): ChatCompletionMessageParam[] {
         });
         break;
 
-      case 'tool_result':
+      case "tool_result":
         // Each tool_result becomes a separate OpenAI message
         const resultContent = block.content || [];
         const resultText = resultContent
-          .filter((c: any) => c.type === 'text')
+          .filter((c: any) => c.type === "text")
           .map((c: any) => (c as TextBlock).text)
-          .join('\n');
+          .join("\n");
 
         toolResultMessages.push({
-          role: 'tool',
-          tool_call_id: block.tool_use_id,
-          content: resultText || 'Done',
+          role: "tool",
+          tool_call_id: block.toolUseId,
+          content: resultText || "Done",
         } as any);
         break;
 
@@ -171,16 +177,22 @@ function toOpenAIMessages(message: Message): ChatCompletionMessageParam[] {
         // Unexpected block type - convert to text as fallback
         // This should rarely happen if fromEngineState is working correctly,
         // but provides graceful degradation for unexpected types
-        const blockType = (block as any).type || 'unknown';
+        const blockType = (block as any).type || "unknown";
         const blockText = (block as any).text || JSON.stringify(block, null, 2);
-        logger.warn(`[OpenAI Adapter] Unexpected block type "${blockType}" - converting to text. This should have been converted by fromEngineState.`);
-        content.push({ type: 'text', text: blockText });
+        logger.warn(
+          `[OpenAI Adapter] Unexpected block type "${blockType}" - converting to text. This should have been converted by fromEngineState.`,
+        );
+        content.push({ type: "text", text: blockText });
         break;
     }
   }
 
   // If this message only contains tool_results, return those
-  if (toolResultMessages.length > 0 && content.length === 0 && tool_calls.length === 0) {
+  if (
+    toolResultMessages.length > 0 &&
+    content.length === 0 &&
+    tool_calls.length === 0
+  ) {
     return toolResultMessages;
   }
 
@@ -205,26 +217,29 @@ function toOpenAIMessages(message: Message): ChatCompletionMessageParam[] {
 
 /**
  * Map tool definition to OpenAI format
+ *
+ * We only support function tools (not custom tools), so we return
+ * ChatCompletionFunctionTool explicitly for proper type safety.
  */
-function mapToolDefinition(tool: any): OpenAI.Chat.Completions.ChatCompletionTool {
-  if (typeof tool === 'string') {
+export function mapToolDefinition(tool: any): ChatCompletionFunctionTool {
+  if (typeof tool === "string") {
     return {
-      type: 'function',
+      type: "function",
       function: {
         name: tool,
-        description: '',
+        description: "",
         parameters: {},
       },
-    } as OpenAI.Chat.Completions.ChatCompletionTool;
+    };
   }
 
-  if ('name' in tool && 'parameters' in tool) {
+  if ("name" in tool && "parameters" in tool) {
     const toolDef = tool as ToolDefinition;
-    const baseTool: OpenAI.Chat.Completions.ChatCompletionTool = {
-      type: 'function',
+    const baseTool: ChatCompletionFunctionTool = {
+      type: "function",
       function: {
         name: toolDef.name,
-        description: toolDef.description || '',
+        description: toolDef.description || "",
         parameters: toolDef.parameters || {},
       },
     };
@@ -238,7 +253,7 @@ function mapToolDefinition(tool: any): OpenAI.Chat.Completions.ChatCompletionToo
           ...baseTool.function,
           ...(openAIConfig.function || {}), // Merge function-specific options
         },
-      } as OpenAI.Chat.Completions.ChatCompletionTool;
+      } as ChatCompletionFunctionTool;
     }
 
     return baseTool;
@@ -247,23 +262,21 @@ function mapToolDefinition(tool: any): OpenAI.Chat.Completions.ChatCompletionToo
   // ModelToolReference shape (with metadata)
   const metadata = (tool as any).metadata || tool;
   return {
-    type: 'function',
+    type: "function",
     function: {
-      name: metadata?.id || metadata?.name || 'unknown',
-      description: metadata?.description || '',
+      name: metadata?.id || metadata?.name || "unknown",
+      description: metadata?.description || "",
       parameters: metadata?.inputSchema || {},
     },
-  } as OpenAI.Chat.Completions.ChatCompletionTool;
+  };
 }
-
-
 
 /**
  * Convert ModelInput to OpenAI ChatCompletionCreateParams
  */
 async function prepareInput(
   input: ModelInput,
-  config: OpenAIAdapterConfig
+  config: OpenAIAdapterConfig,
 ): Promise<OpenAI.Chat.Completions.ChatCompletionCreateParams> {
   // Normalize input (handles message normalization, tool resolution, config merging)
   const normalizedInput = normalizeModelInput(input, config);
@@ -277,9 +290,10 @@ async function prepareInput(
   }
 
   // Convert tools to OpenAI format (using normalized tools)
-  const openAITools = normalizedInput.tools.length > 0
-    ? normalizedInput.tools.map((tool) => mapToolDefinition(tool.metadata))
-    : undefined;
+  const openAITools =
+    normalizedInput.tools.length > 0
+      ? normalizedInput.tools.map((tool) => mapToolDefinition(tool.metadata))
+      : undefined;
 
   const baseParams: OpenAI.Chat.Completions.ChatCompletionCreateParams = {
     model: normalizedInput.model as string,
@@ -292,7 +306,7 @@ async function prepareInput(
     stop: normalizedInput.stop,
     tools: openAITools && openAITools.length > 0 ? openAITools : undefined,
     // Explicitly set tool_choice to auto when tools are available
-    tool_choice: openAITools && openAITools.length > 0 ? 'auto' : undefined,
+    tool_choice: openAITools && openAITools.length > 0 ? "auto" : undefined, // TODO: this is common and we should maybe support it in out normaized model input
   };
 
   // Clean undefined values
@@ -321,7 +335,11 @@ async function processOutput(output: ChatCompletion): Promise<ModelOutput> {
   const openaiMessage = choice?.message;
 
   if (!openaiMessage) {
-    throw new Error('No message in OpenAI response');
+    throw new AdapterError(
+      "openai",
+      "No message in OpenAI response",
+      "ADAPTER_RESPONSE",
+    );
   }
 
   const content: ContentBlock[] = [];
@@ -329,7 +347,7 @@ async function processOutput(output: ChatCompletion): Promise<ModelOutput> {
   // Add text content
   if (openaiMessage.content) {
     content.push({
-      type: 'text',
+      type: "text",
       text: openaiMessage.content,
     });
   }
@@ -338,7 +356,7 @@ async function processOutput(output: ChatCompletion): Promise<ModelOutput> {
   const toolCalls: any[] = [];
   if (openaiMessage.tool_calls) {
     for (const toolCall of openaiMessage.tool_calls) {
-      if (toolCall.type === 'function' && 'function' in toolCall) {
+      if (toolCall.type === "function" && "function" in toolCall) {
         let parsedInput: any;
         try {
           parsedInput = JSON.parse(toolCall.function.arguments);
@@ -354,8 +372,8 @@ async function processOutput(output: ChatCompletion): Promise<ModelOutput> {
 
         // Add tool_use block to content
         content.push({
-          type: 'tool_use',
-          tool_use_id: toolCall.id,
+          type: "tool_use",
+          toolUseId: toolCall.id,
           name: toolCall.function.name,
           input: parsedInput,
         });
@@ -363,20 +381,22 @@ async function processOutput(output: ChatCompletion): Promise<ModelOutput> {
     }
   }
 
-  const messages: Message[] = [{
-    role: 'assistant',
-    content,
-  }];
+  const messages: Message[] = [
+    {
+      role: "assistant",
+      content,
+    },
+  ];
 
   return {
     model: output.model,
     createdAt: output.created.toString(),
     messages: messages,
     get message() {
-      return messages.filter(message => message.role === 'assistant').at(-1);
+      return messages.filter((message) => message.role === "assistant").at(-1);
     },
     stopReason: choice?.finish_reason
-      ? STOP_REASON_MAP[choice.finish_reason] ?? StopReason.OTHER
+      ? (STOP_REASON_MAP[choice.finish_reason] ?? StopReason.OTHER)
       : StopReason.UNSPECIFIED,
     toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
     usage: {
@@ -384,7 +404,8 @@ async function processOutput(output: ChatCompletion): Promise<ModelOutput> {
       outputTokens: output.usage?.completion_tokens ?? 0,
       totalTokens: output.usage?.total_tokens ?? 0,
       reasoningTokens: 0,
-      cachedInputTokens: output.usage?.prompt_tokens_details?.cached_tokens ?? 0,
+      cachedInputTokens:
+        output.usage?.prompt_tokens_details?.cached_tokens ?? 0,
     },
     raw: output,
   };
@@ -397,8 +418,8 @@ function processChunk(chunk: ChatCompletionChunk): StreamChunk {
   const choice = chunk.choices[0];
   if (!choice) {
     return {
-      type: 'content_delta',
-      delta: '',
+      type: "content_delta",
+      delta: "",
       raw: chunk,
     };
   }
@@ -406,8 +427,8 @@ function processChunk(chunk: ChatCompletionChunk): StreamChunk {
   const delta = choice.delta;
   if (!delta) {
     return {
-      type: 'content_delta',
-      delta: '',
+      type: "content_delta",
+      delta: "",
       raw: chunk,
     };
   }
@@ -415,8 +436,8 @@ function processChunk(chunk: ChatCompletionChunk): StreamChunk {
   // Skip finish_reason chunks (handled in processStream)
   if (choice.finish_reason) {
     return {
-      type: 'content_delta',
-      delta: '',
+      type: "content_delta",
+      delta: "",
       raw: chunk,
     };
   }
@@ -424,7 +445,7 @@ function processChunk(chunk: ChatCompletionChunk): StreamChunk {
   // Content delta
   if (delta.content !== undefined && delta.content) {
     return {
-      type: 'content_delta',
+      type: "content_delta",
       delta: delta.content,
       model: chunk.model,
       createdAt: chunk.created.toString(),
@@ -435,8 +456,8 @@ function processChunk(chunk: ChatCompletionChunk): StreamChunk {
   // Tool calls are handled in processStream, not streamed incrementally
   // Return empty delta for now
   return {
-    type: 'content_delta',
-    delta: '',
+    type: "content_delta",
+    delta: "",
     raw: chunk,
   };
 }
@@ -444,14 +465,25 @@ function processChunk(chunk: ChatCompletionChunk): StreamChunk {
 /**
  * Aggregate stream chunks into final ModelOutput
  */
-async function processStreamChunks(chunks: ChatCompletionChunk[] | StreamChunk[]): Promise<ModelOutput> {
+async function processStreamChunks(
+  chunks: ChatCompletionChunk[] | StreamChunk[],
+): Promise<ModelOutput> {
   if (chunks.length === 0) {
-    throw new Error('No chunks to process');
+    throw new AdapterError(
+      "openai",
+      "No chunks to process",
+      "ADAPTER_RESPONSE",
+    );
   }
 
   // Check if chunks are StreamChunks (from engine) or ChatCompletionChunks (raw from provider)
   const isStreamChunk = (chunk: any): chunk is StreamChunk => {
-    return chunk && typeof chunk === 'object' && 'type' in chunk && !('choices' in chunk);
+    return (
+      chunk &&
+      typeof chunk === "object" &&
+      "type" in chunk &&
+      !("choices" in chunk)
+    );
   };
 
   // If StreamChunks, we need to reconstruct from raw data
@@ -459,10 +491,16 @@ async function processStreamChunks(chunks: ChatCompletionChunk[] | StreamChunk[]
     // Chunks are StreamChunks - extract raw ChatCompletionChunk from raw property
     const openaiChunks = chunks
       .map((c) => (c as StreamChunk).raw)
-      .filter((c) => c && typeof c === 'object' && 'choices' in c) as ChatCompletionChunk[];
+      .filter(
+        (c) => c && typeof c === "object" && "choices" in c,
+      ) as ChatCompletionChunk[];
 
     if (openaiChunks.length === 0) {
-      throw new Error('No valid OpenAI chunks found in stream chunks');
+      throw new AdapterError(
+        "openai",
+        "No valid OpenAI chunks found in stream chunks",
+        "ADAPTER_RESPONSE",
+      );
     }
 
     return processStreamChunks(openaiChunks); // Recursively process as ChatCompletionChunks
@@ -477,7 +515,7 @@ async function processStreamChunks(chunks: ChatCompletionChunk[] | StreamChunk[]
   const usageChunk = openaiChunks.find((chunk) => chunk.usage) || lastChunk;
 
   // Accumulate content
-  let accumulatedContent = '';
+  let accumulatedContent = "";
   const toolCallsMap = new Map<number, any>();
   let finishReason: string | null = null;
 
@@ -502,7 +540,9 @@ async function processStreamChunks(chunks: ChatCompletionChunk[] | StreamChunk[]
             ? {
                 ...existing.function,
                 ...toolCallDelta.function,
-                arguments: (existing.function?.arguments || '') + (toolCallDelta.function.arguments || ''),
+                arguments:
+                  (existing.function?.arguments || "") +
+                  (toolCallDelta.function.arguments || ""),
               }
             : existing.function,
         });
@@ -519,7 +559,7 @@ async function processStreamChunks(chunks: ChatCompletionChunk[] | StreamChunk[]
   const content: ContentBlock[] = [];
   const trimmedContent = accumulatedContent.trimEnd();
   if (trimmedContent) {
-    content.push({ type: 'text', text: trimmedContent });
+    content.push({ type: "text", text: trimmedContent });
   }
 
   // Convert tool calls
@@ -540,34 +580,39 @@ async function processStreamChunks(chunks: ChatCompletionChunk[] | StreamChunk[]
       });
 
       content.push({
-        type: 'tool_use',
-        tool_use_id: tc.id,
+        type: "tool_use",
+        toolUseId: tc.id,
         name: tc.function.name,
         input: parsedInput,
       });
     }
   }
 
-  const messages: Message[] = [{
-    role: 'assistant',
-    content,
-  }];
+  const messages: Message[] = [
+    {
+      role: "assistant",
+      content,
+    },
+  ];
 
   return {
     model: firstChunk.model,
     createdAt: firstChunk.created.toString(),
     messages: messages,
     get message() {
-      return messages.filter(message => message.role === 'assistant').at(-1);
+      return messages.filter((message) => message.role === "assistant").at(-1);
     },
-    stopReason: finishReason ? (STOP_REASON_MAP[finishReason] ?? StopReason.OTHER) : StopReason.UNSPECIFIED,
+    stopReason: finishReason
+      ? (STOP_REASON_MAP[finishReason] ?? StopReason.OTHER)
+      : StopReason.UNSPECIFIED,
     toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
     usage: {
       inputTokens: usageChunk.usage?.prompt_tokens ?? 0,
       outputTokens: usageChunk.usage?.completion_tokens ?? 0,
       totalTokens: usageChunk.usage?.total_tokens ?? 0,
       reasoningTokens: 0,
-      cachedInputTokens: usageChunk.usage?.prompt_tokens_details?.cached_tokens ?? 0,
+      cachedInputTokens:
+        usageChunk.usage?.prompt_tokens_details?.cached_tokens ?? 0,
     },
     raw: openaiChunks,
   };
@@ -582,11 +627,12 @@ async function processStreamChunks(chunks: ChatCompletionChunk[] | StreamChunk[]
  */
 async function execute(
   client: OpenAI,
-  input: OpenAI.Chat.Completions.ChatCompletionCreateParams
+  input: OpenAI.Chat.Completions.ChatCompletionCreateParams,
 ): Promise<ChatCompletion> {
-  return await client.chat.completions.create(
-    { ...input, stream: false } as OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming
-  );
+  return await client.chat.completions.create({
+    ...input,
+    stream: false,
+  } as OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming);
 }
 
 /**
@@ -594,26 +640,45 @@ async function execute(
  */
 async function* executeStream(
   client: OpenAI,
-  input: OpenAI.Chat.Completions.ChatCompletionCreateParams
+  input: OpenAI.Chat.Completions.ChatCompletionCreateParams,
 ): AsyncIterable<ChatCompletionChunk> {
   // DEBUG: Log what we're sending to OpenAI
-  logger.debug('\n🔧 [OpenAI] executeStream - tools:', input.tools?.map((t: any) => t.function.name));
-  logger.debug('🔧 [OpenAI] executeStream - message count:', input.messages.length);
-  logger.debug('🔧 [OpenAI] executeStream - full request:', JSON.stringify(input, null, 2));
-  
-  const stream = await client.chat.completions.create(
-    { ...input, stream: true, stream_options: { include_usage: true } } as OpenAI.Chat.Completions.ChatCompletionCreateParamsStreaming
+  logger.debug(
+    "\n🔧 [OpenAI] executeStream - tools:",
+    input.tools?.map((t: any) => t.function.name),
   );
+  logger.debug(
+    "🔧 [OpenAI] executeStream - message count:",
+    input.messages.length,
+  );
+  logger.debug(
+    "🔧 [OpenAI] executeStream - full request:",
+    JSON.stringify(input, null, 2),
+  );
+
+  const stream = await client.chat.completions.create({
+    ...input,
+    stream: true,
+    stream_options: { include_usage: true },
+  } as OpenAI.Chat.Completions.ChatCompletionCreateParamsStreaming);
 
   let hasToolCalls = false;
   for await (const chunk of stream) {
     // DEBUG: Check if any chunk has tool_calls
     if (chunk.choices?.[0]?.delta?.tool_calls) {
       hasToolCalls = true;
-      logger.debug('🔧 [OpenAI] TOOL CALL CHUNK:', JSON.stringify(chunk.choices[0].delta.tool_calls, null, 2));
+      logger.debug(
+        "🔧 [OpenAI] TOOL CALL CHUNK:",
+        JSON.stringify(chunk.choices[0].delta.tool_calls, null, 2),
+      );
     }
     if (chunk.choices?.[0]?.finish_reason) {
-      logger.debug('🔧 [OpenAI] finish_reason:', chunk.choices[0].finish_reason, 'hasToolCalls:', hasToolCalls);
+      logger.debug(
+        "🔧 [OpenAI] finish_reason:",
+        chunk.choices[0].finish_reason,
+        "hasToolCalls:",
+        hasToolCalls,
+      );
     }
     yield chunk;
   }

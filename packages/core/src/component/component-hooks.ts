@@ -1,25 +1,32 @@
-import type { Middleware } from 'aidk-kernel';
-import type { EngineComponent, TickState, RecoveryAction, AfterCompileContext } from './component';
-import { ContextObjectModel } from '../com/object-model';
-import type { COMInput } from '../com/types';
-import type { JSX } from '../jsx/jsx-runtime';
-import { HookRegistry } from '../hooks/hook-registry';
-import { BaseHookRegistry } from '../hooks/base-hook-registry';
-import type { CompiledStructure } from '../compiler/types';
+import type { Middleware } from "aidk-kernel";
+import type {
+  EngineComponent,
+  TickState,
+  RecoveryAction,
+  AfterCompileContext,
+} from "./component";
+import { ContextObjectModel } from "../com/object-model";
+import type { COMInput } from "../com/types";
+import type { JSX } from "../jsx/jsx-runtime";
+import { HookRegistry } from "../hooks/hook-registry";
+import { BaseHookRegistry } from "../hooks/base-hook-registry";
+import type { CompiledStructure } from "../compiler/types";
+import type { ExecutionMessage } from "../engine/execution-types";
 
 /**
  * Component lifecycle method names.
  */
 export type ComponentHookName =
-  | 'onMount'
-  | 'onUnmount'
-  | 'onStart'
-  | 'onTickStart'
-  | 'render'
-  | 'onAfterCompile'
-  | 'onTickEnd'
-  | 'onComplete'
-  | 'onError';
+  | "onMount"
+  | "onUnmount"
+  | "onStart"
+  | "onTickStart"
+  | "render"
+  | "onAfterCompile"
+  | "onTickEnd"
+  | "onMessage"
+  | "onComplete"
+  | "onError";
 
 /**
  * Component selector for hook registration.
@@ -34,53 +41,69 @@ export type ComponentSelector =
  * Hook middleware type for component lifecycle methods.
  * Note: Component lifecycle "hooks" are actually callbacks (side effects only), not transformation middleware.
  */
-export type ComponentHookMiddleware<T extends ComponentHookName> = Middleware<ComponentHookArgs<T>>;
+export type ComponentHookMiddleware<T extends ComponentHookName> = Middleware<
+  ComponentHookArgs<T>
+>;
 
 /**
  * Arguments for each component hook.
  */
-export type ComponentHookArgs<T extends ComponentHookName> = T extends 'onMount'
+export type ComponentHookArgs<T extends ComponentHookName> = T extends "onMount"
   ? [com: ContextObjectModel]
-  : T extends 'onUnmount'
-  ? [com: ContextObjectModel]
-  : T extends 'onStart'
-  ? [com: ContextObjectModel]
-  : T extends 'onTickStart'
-  ? [state: TickState]
-  : T extends 'render'
-  ? [com: ContextObjectModel, state: TickState]
-  : T extends 'onAfterCompile'
-  ? [com: ContextObjectModel, compiled: CompiledStructure, state: TickState, ctx: AfterCompileContext]
-  : T extends 'onTickEnd'
-  ? [com: ContextObjectModel, state: TickState]
-  : T extends 'onComplete'
-  ? [com: ContextObjectModel, finalState: COMInput]
-  : T extends 'onError'
-  ? [com: ContextObjectModel, state: TickState]
-  : never;
+  : T extends "onUnmount"
+    ? [com: ContextObjectModel]
+    : T extends "onStart"
+      ? [com: ContextObjectModel]
+      : T extends "onTickStart"
+        ? [state: TickState]
+        : T extends "render"
+          ? [com: ContextObjectModel, state: TickState]
+          : T extends "onAfterCompile"
+            ? [
+                com: ContextObjectModel,
+                compiled: CompiledStructure,
+                state: TickState,
+                ctx: AfterCompileContext,
+              ]
+            : T extends "onTickEnd"
+              ? [com: ContextObjectModel, state: TickState]
+              : T extends "onMessage"
+                ? [
+                    com: ContextObjectModel,
+                    message: ExecutionMessage,
+                    state: TickState,
+                  ]
+                : T extends "onComplete"
+                  ? [com: ContextObjectModel, finalState: COMInput]
+                  : T extends "onError"
+                    ? [com: ContextObjectModel, state: TickState]
+                    : never;
 
 /**
  * Return type for each component hook.
  */
-export type ComponentHookReturn<T extends ComponentHookName> = T extends 'onMount'
-  ? void | Promise<void>
-  : T extends 'onUnmount'
-  ? void | Promise<void>
-  : T extends 'onStart'
-  ? void | Promise<void>
-  : T extends 'onTickStart'
-  ? void | Promise<void>
-  : T extends 'render'
-  ? JSX.Element | null | Promise<JSX.Element | null>
-  : T extends 'onAfterCompile'
-  ? void | Promise<void>
-  : T extends 'onTickEnd'
-  ? void | Promise<void>
-  : T extends 'onComplete'
-  ? JSX.Element | null | Promise<JSX.Element | null>
-  : T extends 'onError'
-  ? RecoveryAction | void | Promise<RecoveryAction | void>
-  : never;
+export type ComponentHookReturn<T extends ComponentHookName> =
+  T extends "onMount"
+    ? void | Promise<void>
+    : T extends "onUnmount"
+      ? void | Promise<void>
+      : T extends "onStart"
+        ? void | Promise<void>
+        : T extends "onTickStart"
+          ? void | Promise<void>
+          : T extends "render"
+            ? JSX.Element | null | Promise<JSX.Element | null>
+            : T extends "onAfterCompile"
+              ? void | Promise<void>
+              : T extends "onTickEnd"
+                ? void | Promise<void>
+                : T extends "onMessage"
+                  ? void | Promise<void>
+                  : T extends "onComplete"
+                    ? JSX.Element | null | Promise<JSX.Element | null>
+                    : T extends "onError"
+                      ? RecoveryAction | void | Promise<RecoveryAction | void>
+                      : never;
 
 /**
  * Component-specific hook registry.
@@ -93,15 +116,15 @@ export class ComponentHookRegistry extends BaseHookRegistry<
 > {
   protected getAllHookNames(): readonly ComponentHookName[] {
     return [
-      'onMount',
-      'onUnmount',
-      'onStart',
-      'onTickStart',
-      'render',
-      'onAfterCompile',
-      'onTickEnd',
-      'onComplete',
-      'onError',
+      "onMount",
+      "onUnmount",
+      "onStart",
+      "onTickStart",
+      "render",
+      "onAfterCompile",
+      "onTickEnd",
+      "onComplete",
+      "onError",
     ] as const;
   }
 
@@ -113,10 +136,13 @@ export class ComponentHookRegistry extends BaseHookRegistry<
     hookName: T,
     componentClass: any,
     componentName: string,
-    componentTags: string[]
+    componentTags: string[],
   ): ComponentHookMiddleware<T>[] {
     // 1. Get component-defined hooks (from ComponentClass.hooks or ComponentFunction.hooks)
-    const componentDefinedHooks = this.getComponentDefinedHooks(hookName, componentClass);
+    const componentDefinedHooks = this.getComponentDefinedHooks(
+      hookName,
+      componentClass,
+    );
 
     // 2. Get middleware from registry using component-specific resolution
     const registryMiddleware = this.registry.getMiddleware(
@@ -133,13 +159,13 @@ export class ComponentHookRegistry extends BaseHookRegistry<
         for (const selector of hookMap.keys()) {
           if (
             selector &&
-            typeof selector === 'object' &&
+            typeof selector === "object" &&
             !Array.isArray(selector) &&
-            'tags' in selector &&
+            "tags" in selector &&
             selector.tags
           ) {
             const requiredTags = selector.tags;
-            if (requiredTags.some(tag => componentTags.includes(tag))) {
+            if (requiredTags.some((tag) => componentTags.includes(tag))) {
               selectors.push(selector);
             }
           }
@@ -151,11 +177,14 @@ export class ComponentHookRegistry extends BaseHookRegistry<
         }
 
         return selectors;
-      }
+      },
     );
 
     // Combine: component-defined hooks first, then registry middleware
-    return [...componentDefinedHooks, ...registryMiddleware] as ComponentHookMiddleware<T>[];
+    return [
+      ...componentDefinedHooks,
+      ...registryMiddleware,
+    ] as ComponentHookMiddleware<T>[];
   }
 
   /**
@@ -164,7 +193,7 @@ export class ComponentHookRegistry extends BaseHookRegistry<
    */
   private getComponentDefinedHooks<T extends ComponentHookName>(
     hookName: T,
-    componentClass: any
+    componentClass: any,
   ): ComponentHookMiddleware<T>[] {
     // Check for static hooks (classes) or .hooks property (functions)
     // These should be middleware, not callbacks
@@ -184,7 +213,7 @@ export class ComponentHookRegistry extends BaseHookRegistry<
  * Splits camelCase into lowercase tags.
  */
 export function autoGenerateTags(componentClass: any): string[] {
-  const name = componentClass.name || '';
+  const name = componentClass.name || "";
   if (!name) {
     return [];
   }
@@ -207,7 +236,11 @@ export function getComponentTags(componentClass: any): string[] {
   }
 
   // Functions: .tags property
-  if (typeof componentClass === 'function' && componentClass.tags && Array.isArray(componentClass.tags)) {
+  if (
+    typeof componentClass === "function" &&
+    componentClass.tags &&
+    Array.isArray(componentClass.tags)
+  ) {
     return componentClass.tags;
   }
 
@@ -218,6 +251,9 @@ export function getComponentTags(componentClass: any): string[] {
 /**
  * Get component name from instance or class.
  */
-export function getComponentName(instance: EngineComponent, componentClass: any): string {
-  return instance.name || componentClass.name || '';
+export function getComponentName(
+  instance: EngineComponent,
+  componentClass: any,
+): string {
+  return instance.name || componentClass.name || "";
 }
