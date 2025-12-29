@@ -1,11 +1,30 @@
 {
   "name": "aidk-google",
   "version": "0.1.0",
+  "description": "Google AI adapter for AIDK",
   "type": "module",
   "main": "src/index.ts",
   "files": [
     "dist"
   ],
+  "keywords": [
+    "ai",
+    "agent",
+    "google",
+    "gemini",
+    "adapter"
+  ],
+  "author": "Ryan Lindgren",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rlindgren/aidk.git",
+    "directory": "packages/adapters/google"
+  },
+  "bugs": {
+    "url": "https://github.com/rlindgren/aidk/issues"
+  },
+  "homepage": "https://github.com/rlindgren/aidk#readme",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "test": "jest",

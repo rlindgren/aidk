@@ -1,11 +1,29 @@
 {
   "name": "aidk-express",
   "version": "0.1.0",
+  "description": "Express middleware for AIDK agents",
   "type": "module",
   "main": "src/index.ts",
   "files": [
     "dist"
   ],
+  "keywords": [
+    "ai",
+    "agent",
+    "express",
+    "middleware"
+  ],
+  "author": "Ryan Lindgren",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rlindgren/aidk.git",
+    "directory": "packages/express"
+  },
+  "bugs": {
+    "url": "https://github.com/rlindgren/aidk/issues"
+  },
+  "homepage": "https://github.com/rlindgren/aidk#readme",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "test": "jest",

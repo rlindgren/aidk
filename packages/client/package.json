@@ -1,9 +1,29 @@
 {
   "name": "aidk-client",
   "version": "0.1.0",
+  "description": "Browser client for AIDK agents",
   "type": "module",
   "main": "src/index.ts",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "ai",
+    "agent",
+    "client",
+    "browser"
+  ],
+  "author": "Ryan Lindgren",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rlindgren/aidk.git",
+    "directory": "packages/client"
+  },
+  "bugs": {
+    "url": "https://github.com/rlindgren/aidk/issues"
+  },
+  "homepage": "https://github.com/rlindgren/aidk#readme",
   "dependencies": {
     "aidk-shared": "workspace:*"
   },

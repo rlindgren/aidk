@@ -1,13 +1,33 @@
 {
   "name": "aidk-angular",
   "version": "0.1.0",
+  "description": "Angular bindings for AIDK agents",
   "type": "module",
   "main": "src/index.ts",
+  "keywords": [
+    "ai",
+    "agent",
+    "angular",
+    "signals"
+  ],
+  "author": "Ryan Lindgren",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rlindgren/aidk.git",
+    "directory": "packages/angular"
+  },
+  "bugs": {
+    "url": "https://github.com/rlindgren/aidk/issues"
+  },
+  "homepage": "https://github.com/rlindgren/aidk#readme",
   "exports": {
     ".": "./src/index.ts",
     "./markdown.css": "./src/markdown.css"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json && cp src/markdown.css dist/markdown.css",
     "test": "jest --passWithNoTests",

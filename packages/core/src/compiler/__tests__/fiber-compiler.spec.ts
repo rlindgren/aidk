@@ -23,7 +23,8 @@ describe('FiberCompiler', () => {
     tickState = {
       tick: 1,
       stop: jest.fn(),
-    } as TickState;
+      queuedMessages: [],
+    } as unknown as TickState;
   });
 
   describe('Basic Compilation', () => {

@@ -10,6 +10,7 @@ import { Fragment, type JSX } from "aidk/jsx-runtime";
 import type { ContextObjectModel } from "../com/object-model";
 import type { TickState } from "../component/component";
 import type { ExecutionMessage } from "../engine/execution-types";
+import { isContentBlock } from "aidk-shared";
 
 /**
  * Compiled structure from JSX tree traversal.
@@ -534,21 +535,6 @@ export const CONTENT_BLOCK_TYPES = [
 ] as const;
 
 export type ContentBlockType = (typeof CONTENT_BLOCK_TYPES)[number];
-
-/**
- * Check if a value is a content block by shape.
- */
-export function isContentBlock(value: unknown): value is ContentBlock {
-  return (
-    value !== null &&
-    typeof value === "object" &&
-    "type" in value &&
-    typeof (value as { type: unknown }).type === "string" &&
-    CONTENT_BLOCK_TYPES.includes(
-      (value as { type: string }).type as ContentBlockType,
-    )
-  );
-}
 
 // ============================================================================
 // Hook Result Types

@@ -1,11 +1,29 @@
 {
   "name": "aidk-nestjs",
   "version": "0.1.0",
+  "description": "NestJS module for AIDK agents",
   "type": "module",
   "main": "src/index.ts",
   "files": [
     "dist"
   ],
+  "keywords": [
+    "ai",
+    "agent",
+    "nestjs",
+    "module"
+  ],
+  "author": "Ryan Lindgren",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rlindgren/aidk.git",
+    "directory": "packages/nestjs"
+  },
+  "bugs": {
+    "url": "https://github.com/rlindgren/aidk/issues"
+  },
+  "homepage": "https://github.com/rlindgren/aidk#readme",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "test": "jest",

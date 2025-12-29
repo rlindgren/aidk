@@ -1,11 +1,30 @@
 {
   "name": "aidk-openai",
   "version": "0.1.0",
+  "description": "OpenAI adapter for AIDK",
   "type": "module",
   "main": "src/index.ts",
   "files": [
     "dist"
   ],
+  "keywords": [
+    "ai",
+    "agent",
+    "openai",
+    "gpt",
+    "adapter"
+  ],
+  "author": "Ryan Lindgren",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rlindgren/aidk.git",
+    "directory": "packages/adapters/openai"
+  },
+  "bugs": {
+    "url": "https://github.com/rlindgren/aidk/issues"
+  },
+  "homepage": "https://github.com/rlindgren/aidk#readme",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "test": "jest",

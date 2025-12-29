@@ -1,12 +1,28 @@
 {
   "name": "aidk-workspace",
   "version": "0.0.1",
-  "description": "",
+  "description": "React-inspired JSX framework for building AI agents",
   "main": "index.ts",
   "types": "index.ts",
-  "keywords": [],
+  "keywords": [
+    "ai",
+    "agent",
+    "jsx",
+    "llm",
+    "openai",
+    "anthropic",
+    "google"
+  ],
   "author": "Ryan Lindgren",
   "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rlindgren/aidk.git"
+  },
+  "bugs": {
+    "url": "https://github.com/rlindgren/aidk/issues"
+  },
+  "homepage": "https://github.com/rlindgren/aidk#readme",
   "packageManager": "pnpm@10.25.0",
   "scripts": {
     "build": "turbo build",

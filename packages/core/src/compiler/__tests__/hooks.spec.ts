@@ -24,6 +24,7 @@ describe('V2 Hooks', () => {
     tickState = {
       tick: 1,
       stop: jest.fn(),
+      queuedMessages: [],
     } as TickState;
     
     fiber = createFiber(() => null, {}, null);

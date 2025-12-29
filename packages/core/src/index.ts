@@ -63,6 +63,7 @@ export * from "./compiler";
 export * from "./mcp";
 export * from "./channels";
 export * from "./renderers";
+export * from "./utils/compile-jsx-service";
 export * from "./client";
 // Re-export Context from Engine (returns EngineContext, not KernelContext)
 export { Context, context } from "./context";

@@ -1,11 +1,28 @@
 {
   "name": "aidk-kernel",
   "version": "0.1.0",
+  "description": "Low-level execution primitives for AIDK",
   "type": "module",
   "main": "src/index.ts",
   "files": [
     "dist"
   ],
+  "keywords": [
+    "ai",
+    "agent",
+    "kernel"
+  ],
+  "author": "Ryan Lindgren",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rlindgren/aidk.git",
+    "directory": "packages/kernel"
+  },
+  "bugs": {
+    "url": "https://github.com/rlindgren/aidk/issues"
+  },
+  "homepage": "https://github.com/rlindgren/aidk#readme",
   "exports": {
     ".": "./src/index.ts",
     "./execution-helpers": "./src/execution-helpers.ts",

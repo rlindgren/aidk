@@ -1,8 +1,26 @@
 {
   "name": "aidk-react",
   "version": "0.1.0",
+  "description": "React bindings for AIDK agents",
   "type": "module",
   "main": "src/index.ts",
+  "keywords": [
+    "ai",
+    "agent",
+    "react",
+    "hooks"
+  ],
+  "author": "Ryan Lindgren",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rlindgren/aidk.git",
+    "directory": "packages/react"
+  },
+  "bugs": {
+    "url": "https://github.com/rlindgren/aidk/issues"
+  },
+  "homepage": "https://github.com/rlindgren/aidk#readme",
   "exports": {
     ".": "./src/index.ts",
     "./markdown.css": "./src/markdown.css"

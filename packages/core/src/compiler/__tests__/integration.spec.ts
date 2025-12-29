@@ -12,7 +12,7 @@ import { Section, Message, Timeline } from '../../jsx/components/primitives';
 import { Text } from '../../jsx/components/content';
 import { createElement } from '../../jsx/jsx-runtime';
 import { useState, useComState, useTickStart, useTickEnd, useOnMount, useEffect } from '../../state/hooks';
-import { signal, comState } from '../../state/use-state';
+import { signal, comState } from '../../state';
 
 describe('Compiler Integration', () => {
   let com: ContextObjectModel;
@@ -25,6 +25,7 @@ describe('Compiler Integration', () => {
     tickState = {
       tick: 1,
       stop: jest.fn(),
+      queuedMessages: [],
       current: {
         timeline: [],
       },
