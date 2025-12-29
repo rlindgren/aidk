@@ -39,7 +39,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Disable Turbo Telemetry
-        run: turbo telemetry disable
+        run: pnpm turbo telemetry disable
 
       - name: Build packages
         run: pnpm build
