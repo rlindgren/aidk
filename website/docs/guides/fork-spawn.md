@@ -403,7 +403,7 @@ class ResearchCoordinator extends Component {
   private sources = signal<SourceResult[]>([]);
 
   render(com, state) {
-    const ctx = Context.get();
+    const ctx = context();
 
     return (
       <>

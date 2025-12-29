@@ -15,36 +15,9 @@ AIDK provides two complementary state systems:
 
 The Context Object Model (COM) is a shared state tree that all components can read and write.
 
-### Basic Usage
+### Using `comState` (Recommended)
 
-```tsx
-class MyAgent extends Component {
-  async onMount(com) {
-    // Write state
-    com.setState("user", { name: "Alice", role: "admin" });
-    com.setState("tasks", []);
-  }
-
-  render(com) {
-    // Read state
-    const user = com.getState("user");
-    const tasks = com.getState("tasks");
-
-    return (
-      <>
-        <System>User: {user?.name} ({user?.role})</System>
-        <Grounding title="Tasks">
-          {tasks?.map(t => <Text key={t.id}>{t.text}</Text>)}
-        </Grounding>
-      </>
-    );
-  }
-}
-```
-
-### State Scoping with `comState`
-
-The `comState` helper creates a scoped accessor for cleaner code:
+The `comState` helper creates a reactive accessor that syncs with the COM:
 
 ```tsx
 class TaskAgent extends Component {
@@ -144,23 +117,24 @@ import { signal, watch } from "aidk";
 
 class MonitoringAgent extends Component {
   private errorCount = signal(0);
+  private alert = comState<string | null>("alert", null);
 
   async onMount(com) {
     // Watch for changes and react
     watch(this.errorCount, (count, prevCount) => {
       if (count > 5 && prevCount <= 5) {
         // Alert when errors exceed threshold
-        com.setState("alert", "High error rate detected");
+        this.alert.set("High error rate detected");
       }
     });
   }
 
   render(com) {
-    const alert = com.getState("alert");
+    const alertMsg = this.alert();
 
     return (
       <>
-        {alert && <System priority="high">{alert}</System>}
+        {alertMsg && <System priority="high">{alertMsg}</System>}
         <System>Error count: {this.errorCount()}</System>
       </>
     );

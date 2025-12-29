@@ -76,7 +76,7 @@ Content inside `<Grounding>` is **NOT persisted**. It provides current-state con
 ```tsx
 class SupportAgent extends Component {
   render() {
-    const ctx = Context.get();
+    const ctx = context();
     const account = ctx.metadata.account;
 
     return (

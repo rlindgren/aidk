@@ -115,14 +115,14 @@ Instead of stuffing state into the system prompt, tools render their own context
 ```tsx
 // Before: Everything in the agent
 class TaskAgent extends Component {
-  render(com, state) {
-    const tasks = com.getState("tasks");
+  private tasks = comState<Task[]>("tasks", []);
 
+  render(com, state) {
     return (
       <>
         <System>
           You manage tasks. Current tasks:
-          {tasks.map(t => `- ${t.text}`).join("\n")}
+          {this.tasks().map(t => `- ${t.text}`).join("\n")}
         </System>
         <TaskTool />
       </>
@@ -347,7 +347,7 @@ const FileManagerTool = createTool({
 ## Key Takeaways
 
 1. **Tools have lifecycle**: `onMount`, `onTickStart`, `render`, `onTickEnd`, `onUnmount`
-2. **Tools have state**: Use `com.setState()` and `com.getState()`
+2. **Tools have state**: Use `com.setState()`/`com.getState()` for state
 3. **Tools render context**: The model sees what tools render
 4. **Tools are self-contained**: Encapsulate domain logic completely
 5. **Tools participate in ticks**: They're part of the runtime loop, not just callbacks

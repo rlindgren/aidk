@@ -42,38 +42,29 @@ sequenceDiagram
 - Initializing COM state
 
 ```tsx
-async onMount(com: COM) {
-  const ctx = Context.get();
+class MyAgent extends Component {
+  private user = comState<User | null>('user', null);
 
-  // Load data
-  const user = await loadUser(ctx.user.id);
-  com.setState('user', user);
+  async onMount(com: COM) {
+    const ctx = context();
 
-  // Subscribe to channels
-  subscribeChannel('updates', this.handleUpdate);
-}
-```
+    // Load data
+    const user = await loadUser(ctx.user.id);
+    this.user.set(user);
 
-**Note**: This is `async`—you can `await` operations.
+    // Subscribe to channels
+    subscribeChannel('updates', this.handleUpdate);
+  }
 
----
-
-### onStart
-
-**When**: Before the first tick begins (after mount)
-
-**Use for**:
-- One-time setup that needs mounted state
-- Validation before execution starts
-
-```tsx
-onStart(com: COM) {
-  const user = com.getState('user');
-  if (!user) {
-    throw new Error('User not loaded');
+  onStart(com: COM) {
+    if (!this.user()) {
+      throw new Error('User not loaded');
+    }
   }
 }
 ```
+
+**Note**: `onMount` is `async`—you can `await` operations.
 
 ---
 
@@ -128,7 +119,7 @@ onTickStart(com: COM, state: TickState) {
 
 ```tsx
 render(com: COM, state: TickState) {
-  const ctx = Context.get();
+  const ctx = context();
 
   return (
     <>
@@ -236,7 +227,7 @@ onTickEnd(com: COM, state: TickState) {
 
 ```tsx
 async onComplete(com: COM, finalState: TickState) {
-  const ctx = Context.get();
+  const ctx = context();
 
   // Save conversation
   await saveConversation(ctx.user.id, this.timeline());
@@ -289,25 +280,27 @@ onUnmount(com: COM) {
 - Error logging
 
 ```tsx
-onError(com: COM, state: TickState) {
-  const error = state.error;
+class MyAgent extends Component {
+  private toolFailed = comState<boolean>('toolFailed', false);
 
-  // Log error
-  console.error('Execution error:', error);
+  onError(com: COM, state: TickState) {
+    const error = state.error;
 
-  // Decide recovery
-  if (error?.phase === 'tool_execution' && error?.recoverable) {
-    return {
-      continue: true,
-      recoveryMessage: 'Tool failed, continuing without result',
-      modifications: (com) => {
-        com.setState('toolFailed', true);
-      }
-    };
+    // Log error
+    console.error('Execution error:', error);
+
+    // Decide recovery
+    if (error?.phase === 'tool_execution' && error?.recoverable) {
+      this.toolFailed.set(true);
+      return {
+        continue: true,
+        recoveryMessage: 'Tool failed, continuing without result',
+      };
+    }
+
+    // Don't recover—propagate error
+    return { continue: false };
   }
-
-  // Don't recover—propagate error
-  return { continue: false };
 }
 ```
 
@@ -395,14 +388,19 @@ function MyAgent(props, com: COM, state: TickState) {
 Unlike React, AIDK hooks are **async-first**. You can `await` inside any hook:
 
 ```tsx
-async onMount(com: COM) {
-  const data = await fetch('/api/data').then(r => r.json());
-  com.setState('data', data);
-}
+class MyAgent extends Component {
+  private data = comState<any>('data', null);
+  private enriched = comState<any>('enriched', null);
 
-async onTickStart(com: COM, state: TickState) {
-  const enriched = await enrichData(state.current);
-  com.setState('enriched', enriched);
+  async onMount(com: COM) {
+    const data = await fetch('/api/data').then(r => r.json());
+    this.data.set(data);
+  }
+
+  async onTickStart(com: COM, state: TickState) {
+    const enriched = await enrichData(state.current);
+    this.enriched.set(enriched);
+  }
 }
 ```
 

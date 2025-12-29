@@ -237,7 +237,7 @@ describe("EngineClient", () => {
 
       await expect(
         client.execute("unknown-agent", { messages: [] }),
-      ).rejects.toThrow("Not Found");
+      ).rejects.toThrow("Agent not found");
     });
   });
 
@@ -302,7 +302,7 @@ describe("EngineClient", () => {
       );
 
       const gen = client.stream("test-agent", { messages: [] });
-      await expect(gen.next()).rejects.toThrow("Internal Server Error");
+      await expect(gen.next()).rejects.toThrow("Stream failed");
     });
 
     it("should handle stream with no body", async () => {
@@ -465,7 +465,7 @@ describe("EngineClient", () => {
 
       await expect(
         client.sendToolResult("unknown-tool", { data: "value" }),
-      ).rejects.toThrow("Not Found");
+      ).rejects.toThrow("Not found");
     });
   });
 

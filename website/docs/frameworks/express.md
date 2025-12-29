@@ -127,7 +127,7 @@ Access this in your agent:
 ```tsx
 class ChatAgent extends Component {
   render() {
-    const ctx = Context.get();
+    const ctx = context();
 
     return (
       <>
@@ -359,7 +359,7 @@ const Echo = createTool({
 // Define the agent
 class EchoAgent extends Component {
   render(com, state) {
-    const ctx = Context.get();
+    const ctx = context();
 
     return (
       <>

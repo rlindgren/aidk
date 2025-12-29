@@ -75,8 +75,11 @@ class CartDisplay extends Component {
 Components share state through the COM without prop drilling.
 
 ```tsx
+// Component A has state
+private searchResults = comState<SearchResult[]>('searchResults', []);
+
 // Component A writes state
-com.setState('searchResults', results);
+this.searchResults.set(results);
 
 // Component B reads state (reactively)
 const results = watch<SearchResult[]>('searchResults');
@@ -183,29 +186,9 @@ Tell the model about things that happened outside the conversation:
 
 Shared state that persists across ticks and is accessible to all components.
 
-### Writing State
+### State Signals (Preferred)
 
-```tsx
-// Direct write
-com.setState('key', value);
-
-// Functional update
-com.setState('count', prev => prev + 1);
-```
-
-### Reading State
-
-```tsx
-// Direct read (not reactive)
-const value = com.getState<string>('key');
-
-// Reactive read via signal
-const value = watch<string>('key');
-```
-
-### State Signals
-
-The preferred pattern is `comState` signals—they're reactive and automatically synced with the COM.
+The preferred pattern is `comState` (class) or `useComState` (functional)—they're reactive and automatically synced with the COM.
 
 ```tsx
 class MyComponent extends Component {
@@ -222,6 +205,13 @@ class MyComponent extends Component {
     return <CartDisplay items={this.cart()} />;
   }
 }
+```
+
+### Reading State Reactively
+
+```tsx
+// Reactive read via watch (for reading state you don't own)
+const value = watch<string>('key');
 ```
 
 ### Signal Types Comparison
@@ -275,14 +265,19 @@ The COM is available in all lifecycle hooks:
 
 ```tsx
 class MyAgent extends Component {
+  private initialized = comState<boolean>('initialized', false);
+  private timeline = comState<COMTimelineEntry[]>('timeline', []);
+
   onMount(com) {
     // Initialize COM state
-    com.setState('initialized', true);
+    this.initialized.set(true);
   }
 
   onTickStart(com, state) {
-    // Read previous response from state
-    // Update COM based on it
+    // Accumulate timeline from previous response
+    if (state.current?.timeline) {
+      this.timeline.update(t => [...t, ...state.current.timeline]);
+    }
   }
 
   render(com, state) {
@@ -300,7 +295,6 @@ class MyAgent extends Component {
 
   onTickEnd(com, state) {
     // React to model response
-    // Update COM state
   }
 
   onComplete(com, finalState) {
@@ -317,7 +311,7 @@ If you understand the DOM, you understand the COM:
 |-----|-----|
 | HTML elements | Sections, Messages, Tools |
 | Document tree | Context tree |
-| `getElementById` | `com.getState(key)` |
+| `getElementById` | `comState(key)` / `watch(key)` |
 | Event listeners | `com.on(event, handler)` |
 | `innerHTML` | Rendered context |
 | Virtual DOM diffing | Fiber reconciliation |

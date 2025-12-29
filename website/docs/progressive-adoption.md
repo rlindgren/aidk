@@ -439,7 +439,7 @@ const result = useAIDK
 // This component works at ALL levels
 class UserProfile extends Component {
   render(com) {
-    const user = Context.get().user;
+    const user = context().user;
     return (
       <Section audience="model">
         <Paragraph>User: {user.name}</Paragraph>

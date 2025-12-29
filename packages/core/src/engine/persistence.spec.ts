@@ -6,6 +6,7 @@ import type { ExecutionState } from './execution-types';
 import { createModel, type ModelInput, type ModelOutput } from '../model/model';
 import { StopReason, type StreamChunk } from 'aidk-shared';
 import { fromEngineState, toEngineState } from '../model/utils/language-model';
+import { createElement, Fragment } from '../jsx/jsx-runtime';
 
 describe('Execution Persistence', () => {
   let engine: ReturnType<typeof createEngine>;

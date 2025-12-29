@@ -6,6 +6,7 @@ import { createModel, type ModelInput, type ModelOutput } from '../model/model';
 import { StopReason, type StreamChunk } from 'aidk-shared';
 import { type SignalEvent } from './execution-types';
 import { fromEngineState, toEngineState } from '../model/utils/language-model';
+import { createElement, Fragment } from '../jsx/jsx-runtime';
 
 describe('Signal System', () => {
   let engine: ReturnType<typeof createEngine>;

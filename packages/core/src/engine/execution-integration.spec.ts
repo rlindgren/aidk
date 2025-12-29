@@ -5,6 +5,8 @@ import { COM } from '../com/object-model';
 import { createModel, type ModelInput, type ModelOutput } from '../model/model';
 import { StopReason, type StreamChunk } from 'aidk-shared';
 import { fromEngineState, toEngineState } from '../model/utils/language-model';
+import { createElement, Fragment, type JSX } from '../jsx/jsx-runtime';
+import type { ExecutionState } from './execution-types';
 
 /**
  * Comprehensive integration tests for execution graph, fork/spawn, and metrics.
@@ -13,6 +15,7 @@ import { fromEngineState, toEngineState } from '../model/utils/language-model';
 describe('Execution System Integration', () => {
   let engine: ReturnType<typeof createEngine>;
   let mockModel: ReturnType<typeof createModel>;
+  let persistedStates: ExecutionState[] = [];
   
   beforeEach(() => {
     mockModel = createModel<ModelInput, ModelOutput, ModelInput, ModelOutput, StreamChunk>({

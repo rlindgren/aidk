@@ -45,7 +45,7 @@ export const CalculatorTool = createTool({
   
   // Tools can render context
   render(com, state) {
-    const history = com.getState('calc_history') || [];
+    const history = com.getState<CalcEntry[]>('calc_history') || [];
     return (
       <Section audience="model">
         <H3>Calculator History</H3>
@@ -131,7 +131,7 @@ export const ScratchpadTool = createTool({
   
   // Handler - executes when tool is called
   handler: async (input) => {
-    const ctx = Context.get();
+    const ctx = context();
     const notes = await NotesService.perform(
       input.action, 
       input.text, 
@@ -142,13 +142,13 @@ export const ScratchpadTool = createTool({
   
   // Lifecycle: Called when tool is added to agent
   async onMount(com: COM) {
-    const ctx = Context.get();
+    const ctx = context();
     const threadId = ctx.metadata.threadId;
-    
+
     // Load initial state
     const notes = await NotesService.getNotes(threadId);
     com.setState('scratchpad_notes', notes);
-    
+
     // Subscribe to real-time updates
     NotesChannel.registerContext(ctx, { threadId }, (event, result) => {
       if (result?.notes) {
@@ -156,16 +156,16 @@ export const ScratchpadTool = createTool({
       }
     });
   },
-  
+
   // Lifecycle: Called when tool is removed
   async onUnmount() {
-    NotesChannel.unregisterContext(Context.get());
+    NotesChannel.unregisterContext(context());
   },
-  
+
   // Render: Contributes context to the model
   render(com: COM, state: TickState) {
-    const notes = com.getState('scratchpad_notes') || [];
-    
+    const noteList = com.getState<Note[]>('scratchpad_notes') || [];
+
     return (
       <>
         {/* Instructions for the model */}
@@ -175,20 +175,20 @@ export const ScratchpadTool = createTool({
           </Paragraph>
           <Paragraph>Actions: add, remove, clear, list</Paragraph>
         </Section>
-        
+
         {/* Current state */}
         <Grounding position="after-system" audience="model">
-          {notes.length === 0 ? (
+          {noteList.length === 0 ? (
             <Paragraph>
               <strong>Scratchpad:</strong> Empty
             </Paragraph>
           ) : (
             <>
               <Paragraph>
-                <strong>Scratchpad:</strong> {notes.length} note(s)
+                <strong>Scratchpad:</strong> {noteList.length} note(s)
               </Paragraph>
               <List ordered>
-                {notes.map((note, i) => (
+                {noteList.map((note, i) => (
                   <ListItem key={note.id}>
                     {note.text} (ID: {note.id})
                   </ListItem>
@@ -205,7 +205,7 @@ export const ScratchpadTool = createTool({
 
 **What this enables:**
 
-1. **State Management**: Tools maintain their own state via `com.setState`
+1. **State Management**: Tools maintain their own state via `com.setState`/`com.getState`
 2. **Context Rendering**: Tools show their state to the model
 3. **Real-time Updates**: Tools can subscribe to channels and update
 4. **Lifecycle Hooks**: Initialize and cleanup resources
@@ -340,7 +340,7 @@ export const TodoListTool = createTool({
   }),
   
   handler: async (input) => {
-    const ctx = Context.get();
+    const ctx = context();
     const threadId = ctx.metadata.threadId;
     
     let result;
@@ -366,13 +366,13 @@ export const TodoListTool = createTool({
   },
   
   async onMount(com: COM) {
-    const ctx = Context.get();
+    const ctx = context();
     const threadId = ctx.metadata.threadId;
-    
+
     // Load todos
     const todos = await TodoService.list(threadId);
     com.setState('todos', todos.items);
-    
+
     // Subscribe to real-time updates
     TodoChannel.registerContext(ctx, { threadId }, (event, result) => {
       if (result?.todos) {
@@ -380,11 +380,11 @@ export const TodoListTool = createTool({
       }
     });
   },
-  
+
   async onUnmount() {
-    TodoChannel.unregisterContext(Context.get());
+    TodoChannel.unregisterContext(context());
   },
-  
+
   render(com: COM, state: TickState) {
     const todos = com.getState<Todo[]>('todos') || [];
     const pending = todos.filter(t => !t.completed);
@@ -538,7 +538,7 @@ class MyAgent extends Component {
 ```tsx
 class MyAgent extends Component {
   render(com, state) {
-    const ctx = Context.get();
+    const ctx = context();
     
     return (
       <>
@@ -620,7 +620,7 @@ export const ContextAwareTool = createTool({
   
   handler: async (input) => {
     // Access execution context
-    const ctx = Context.get();
+    const ctx = context();
     
     // User information
     const userId = ctx.user.id;
@@ -637,7 +637,7 @@ export const ContextAwareTool = createTool({
   },
   
   render(com) {
-    const ctx = Context.get();
+    const ctx = context();
     
     return (
       <Section audience="model">
@@ -704,7 +704,7 @@ describe('CalculatorTool', () => {
   it('initializes on mount', async () => {
     const com = createMockCOM();
     await CalculatorTool.onMount?.(com);
-    expect(com.getState('initialized')).toBe(true);
+    // Test initialization logic
   });
 });
 ```
@@ -732,8 +732,8 @@ export const MyTool = createTool({
 ### 2. Use State for Tool Data
 
 ```tsx
-// ✅ Good: State in COM
-onMount(com) {
+// ✅ Good: State in COM (tools use com.setState/getState)
+async onMount(com) {
   const data = await loadData();
   com.setState('tool_data', data);
 },

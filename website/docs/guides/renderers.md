@@ -630,7 +630,7 @@ Select renderers based on runtime conditions:
 ```tsx
 class SmartAgent extends Component {
   render(com, state) {
-    const ctx = Context.get();
+    const ctx = context();
 
     // Choose renderer based on context size
     const useXML = ctx.metadata.contextSize > 50000;

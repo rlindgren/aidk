@@ -193,7 +193,7 @@ class ChatAgent extends Component {
 ```tsx
 class UserContext extends Component {
   render(com: COM) {
-    const ctx = Context.get();
+    const ctx = context();
     return (
       <Section audience="model">
         <H3>User Context</H3>
@@ -482,7 +482,7 @@ class ChatContainer extends Component {
 // HOC that adds user context
 function withUserContext<P>(Component: (props: P) => JSX.Element) {
   return (props: P) => {
-    const ctx = Context.get();
+    const ctx = context();
     return (
       <>
         <Section audience="model">

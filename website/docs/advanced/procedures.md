@@ -233,10 +233,10 @@ const output = await result;
 Procedures automatically integrate with AIDK's context system:
 
 ```tsx
-import { Context, createProcedure } from 'aidk-kernel';
+import { context, createProcedure } from 'aidk-kernel';
 
 const myProc = createProcedure(async (input: string) => {
-  const ctx = Context.get(); // Always available inside a procedure
+  const ctx = context(); // Always available inside a procedure
 
   console.log('Request ID:', ctx.requestId);
   console.log('User:', ctx.user?.id);
@@ -336,17 +336,17 @@ const doEverythingMiddleware = async (args, envelope, next) => {
 When scheduling work outside the normal flow:
 
 ```tsx
-const ctx = Context.get();
+const ctx = context();
 
 // Bad: Context lost
 setTimeout(() => {
-  const ctx = Context.get(); // THROWS
+  const ctx = context(); // THROWS
 }, 100);
 
 // Good: Context preserved
 setTimeout(() => {
   Context.run(ctx, async () => {
-    const ctx = Context.get(); // Works
+    const ctx = context(); // Works
   });
 }, 100);
 ```

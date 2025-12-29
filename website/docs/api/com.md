@@ -167,9 +167,16 @@ com.addToolDefinition({
 
 COM-level state shared across all components.
 
+> **State patterns by context**:
+> - **Class components**: Use `comState` (reactive, class property)
+> - **Functional components**: Use `useComState` (reactive, hook)
+> - **Tools via `createTool`**: Use `com.setState`/`com.getState` (direct COM access)
+>
+> See [State Management](/docs/state-management) for details.
+
 ### setState()
 
-Set a state value.
+Set a state value (low-level).
 
 ```tsx
 com.setState('userPreferences', { theme: 'dark' });
@@ -179,7 +186,7 @@ Emits `state:changed` event.
 
 ### getState()
 
-Get a state value.
+Get a state value (low-level).
 
 ```tsx
 const prefs = com.getState<UserPrefs>('userPreferences');

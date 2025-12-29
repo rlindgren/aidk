@@ -226,8 +226,8 @@ Different models for different user tiers:
 ```tsx
 class TieredAgent extends Component {
   render(com) {
-    const user = com.getState("user");
-    const tier = user?.tier || "free";
+    const ctx = context();
+    const tier = ctx.user?.tier || "free";
 
     const model = {
       free: openai("gpt-3.5-turbo"),

@@ -127,7 +127,7 @@ class ChatAgent extends Component {
 
         {/* Send notifications without blocking */}
         {this.shouldNotify(state) && (
-          <Spawn agent={<NotificationSender userId={com.getState("userId")} />} />
+          <Spawn agent={<NotificationSender userId={context().user?.id} />} />
         )}
 
         <Timeline>

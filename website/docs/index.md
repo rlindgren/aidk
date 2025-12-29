@@ -36,7 +36,7 @@ onTickStart(com, state) {
 }
 
 async render(com: COM, state: TickState) {
-  const ctx = Context.get();  // User, auth, metadata—available everywhere
+  const ctx = context();  // User, auth, metadata—available everywhere
   const lastResponse = state.current?.timeline?.[0];
   const tokenCount = await estimateTokens(this.timeline());
 
@@ -119,18 +119,18 @@ class AdaptiveAgent extends Component {
 
 ### Context available everywhere.
 
-No passing context objects through every function. `Context.get()` returns the execution context anywhere in your code—components, tools, services, utilities.
+No passing context objects through every function. `context()` returns the execution context anywhere in your code—components, tools, services, utilities.
 
 ```tsx
 // In your agent
 render(com: COM, state: TickState) {
-  const ctx = Context.get();
+  const ctx = context();
   return <>{ctx.user.isAdmin && <AdminTools />}</>;
 }
 
 // In a tool handler
 async function handleTool(input: ToolInput) {
-  const ctx = Context.get();  // Same context, automatically available
+  const ctx = context();  // Same context, automatically available
   await logAudit(ctx.user.id, 'tool_used', input);
   return result;
 }
@@ -138,7 +138,7 @@ async function handleTool(input: ToolInput) {
 // In a service
 class OrderService {
   async createOrder(items: Item[]) {
-    const ctx = Context.get();  // Still there
+    const ctx = context();  // Still there
     return await db.orders.create({
       userId: ctx.user.id,
       tenantId: ctx.metadata.tenantId,
@@ -197,7 +197,7 @@ class Scratchpad extends Component {
   private notes = comState<Note[]>("notes", []);
 
   async onMount(com: COM) {
-    const ctx = Context.get();
+    const ctx = context();
     const loaded = await loadNotes(ctx.metadata.threadId);
     this.notes.set(loaded);
   }
@@ -245,7 +245,7 @@ onTickStart(com, state) {
 }
 
 render(com: COM, state: TickState) {
-  const user = Context.get().user;
+  const user = context().user;
   const products = this.cart();
 
   return (
@@ -345,7 +345,7 @@ Connect to MCP servers. Choose which tools to expose. Prefix names to avoid conf
   server="github"
   config={{ command: 'npx', args: ['-y', '@modelcontextprotocol/server-github'] }}
   runtimeConfig={{
-    auth: { type: 'bearer', token: Context.get().user.githubToken }
+    auth: { type: 'bearer', token: context().user.githubToken }
   }}
   exclude={['delete_repository']}  // Not this one
 />
@@ -450,6 +450,7 @@ class MyAgent extends Component {
   render(com, state) {} // Build context for model
   onAfterCompile(com, compiled, state, ctx) {} // Inspect/modify compiled output
   onTickEnd(com, state) {} // After model responds
+  onMessage(com, message, state) {} // Handle messages sent to running execution
   onComplete(com, finalState) {} // Execution finished
   onUnmount(com) {} // Component removed
   onError(com, state) {} // Handle errors, optionally recover
@@ -471,15 +472,17 @@ AIDK bridges both. The same components render to users (via your frontend) and t
 ```tsx
 // This component serves both audiences
 class Scratchpad extends Component {
+  private notes = comState<Note[]>("notes", []);
+
   render(com: COM) {
-    const notes = com.getState<Note[]>("notes");
+    const noteList = this.notes();
 
     // For the model: describe the notes in natural language
     return (
       <Section audience="model">
-        <Paragraph>The user has {notes.length} notes:</Paragraph>
+        <Paragraph>The user has {noteList.length} notes:</Paragraph>
         <List>
-          {notes.map((n) => (
+          {noteList.map((n) => (
             <ListItem key={n.id}>{n.text}</ListItem>
           ))}
         </List>
@@ -503,8 +506,11 @@ Your components don't build strings. They mutate a structured object that repres
 
 ```tsx
 // Components mutate the COM, like React components mutate the virtual DOM
+// State is managed via comState (class) or useComState (functional)
+private processingStep = comState<number>('processingStep', 0);
+
 render(com: COM, state: TickState) {
-  com.setState('processingStep', 3);           // State lives in the COM
+  this.processingStep.set(3);                  // State lives in the COM
 
   return (
     <>
@@ -561,7 +567,7 @@ Every component in that tree:
 - Has its own `render()` that contributes to the context
 - Has lifecycle hooks (`onMount`, `onTickStart`, `onComplete`, etc.)
 - Can read and write to the COM
-- Can access `Context.get()` for execution context
+- Can access `context()` for execution context
 - Can respond to state changes and events
 
 Build a tool once, use it in any agent. Build a context section once, compose it anywhere. Build an agent, render it from another agent.
@@ -644,7 +650,7 @@ The same component works everywhere:
 // A reusable context component
 class UserProfile extends Component {
   render(com: COM) {
-    const user = Context.get().user;
+    const user = context().user;
     return (
       <Section id="user-profile" audience="model">
         <Paragraph>Current user: {user.name} ({user.email})</Paragraph>
@@ -1105,7 +1111,7 @@ AIDK: your agent IS the code.
 ```tsx
 class CustomerServiceAgent extends Component {
   render(com: COM, state: TickState) {
-    const ctx = Context.get();
+    const ctx = context();
 
     return (
       <>
@@ -1132,7 +1138,7 @@ No separate config to keep in sync. No runtime loading. No "where is that settin
 | Nested component trees       | Components render components                               |
 | Agent routing                | Render different agent based on state                      |
 | Reusable components          | Same component works in any agent                          |
-| Context everywhere           | `Context.get()`                                            |
+| Context everywhere           | `context()`                                            |
 | Full lifecycle hooks         | `onMount`, `onTickStart`, `onComplete`, etc.               |
 | Execution handles            | `.withHandle()` → `{ handle, result }`                     |
 | Fluent API                   | `.use().withContext().withHandle().run()`                  |

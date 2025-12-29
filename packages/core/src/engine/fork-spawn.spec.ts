@@ -5,6 +5,7 @@ import { COM } from '../com/object-model';
 import { createModel, type ModelInput, type ModelOutput } from '../model/model';
 import { StopReason, type StreamChunk } from 'aidk-shared';
 import { fromEngineState, toEngineState } from '../model/utils/language-model';
+import { createElement, Fragment } from '../jsx/jsx-runtime';
 
 describe('Fork and Spawn', () => {
   let engine: ReturnType<typeof createEngine>;

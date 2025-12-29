@@ -75,7 +75,7 @@ import { addMetric, setMetric, getMetric } from 'aidk-kernel';
 
 class MyAgent extends Component {
   async onTickEnd(com, state) {
-    const ctx = Context.get();
+    const ctx = context();
 
     // Accumulate a metric (adds to existing value)
     addMetric(ctx, 'customApiCalls', 1);
@@ -98,7 +98,7 @@ const MyTool = createTool({
   parameters: z.object({ query: z.string() }),
 
   handler: async (input) => {
-    const ctx = Context.get();
+    const ctx = context();
     const start = Date.now();
 
     const result = await externalApi(input.query);

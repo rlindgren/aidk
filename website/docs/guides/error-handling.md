@@ -62,6 +62,7 @@ Retry transient failures with exponential backoff:
 class RetryingAgent extends Component {
   private retryCount = signal(0);
   private maxRetries = 3;
+  private lastError = comState<string | null>("lastError", null);
 
   async onError(error, com) {
     const count = this.retryCount();
@@ -77,7 +78,7 @@ class RetryingAgent extends Component {
     }
 
     // Don't retry, but continue execution
-    com.setState("lastError", error.message);
+    this.lastError.set(error.message);
     return { continue: true };
   }
 
@@ -87,7 +88,7 @@ class RetryingAgent extends Component {
   }
 
   render(com) {
-    const lastError = com.getState("lastError");
+    const lastError = this.lastError();
 
     return (
       <>
@@ -152,6 +153,7 @@ class DegradingAgent extends Component {
     analysis: true,
     generation: true,
   });
+  private degraded = comState<boolean>("degraded", false);
 
   async onError(error, com) {
     // Disable the feature that failed
@@ -168,7 +170,7 @@ class DegradingAgent extends Component {
       }
 
       this.features.set(features);
-      com.setState("degraded", true);
+      this.degraded.set(true);
     }
 
     return { continue: true };
@@ -176,7 +178,7 @@ class DegradingAgent extends Component {
 
   render(com) {
     const features = this.features();
-    const degraded = com.getState("degraded");
+    const isDegraded = this.degraded();
 
     return (
       <>
@@ -226,16 +228,16 @@ class MonitoredAgent extends Component {
     return { retry: true, retryDelay: 1000 };
   }
 
-  private async logError(error: Error, com: COM) {
+  private async logError(error: Error) {
+    const ctx = context();
     await fetch("/api/errors", {
       method: "POST",
       body: JSON.stringify({
         error: error.message,
         stack: error.stack,
         context: {
-          tick: com.getState("tick"),
-          userId: com.getState("userId"),
-          sessionId: com.getState("sessionId"),
+          userId: ctx.user?.id,
+          sessionId: ctx.metadata?.sessionId,
         },
       }),
     });
@@ -426,27 +428,30 @@ For long-running agents, persist state for crash recovery:
 
 ```tsx
 class PersistentAgent extends Component {
+  private customState = comState<any>("customState", null);
+
   async onMount(com) {
+    const ctx = context();
     // Restore state on startup
-    const savedState = await this.loadState(com.getState("sessionId"));
+    const savedState = await this.loadState(ctx.metadata?.sessionId);
     if (savedState) {
-      Object.entries(savedState).forEach(([key, value]) => {
-        com.setState(key, value);
-      });
+      this.customState.set(savedState.customState);
     }
   }
 
   async onTickEnd(com, state) {
+    const ctx = context();
     // Persist state after each tick
-    await this.saveState(com.getState("sessionId"), {
+    await this.saveState(ctx.metadata?.sessionId, {
       timeline: state.current?.timeline,
-      customState: com.getState("customState"),
+      customState: this.customState(),
     });
   }
 
   async onError(error, com) {
+    const ctx = context();
     // Save error state for debugging
-    await this.saveErrorState(com.getState("sessionId"), error);
+    await this.saveErrorState(ctx.metadata?.sessionId, error);
     return { continue: true };
   }
 

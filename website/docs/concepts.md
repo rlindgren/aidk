@@ -70,7 +70,7 @@ The COM is a structured representation of the current agent state, providing:
 - **User input** - `com.getUserInput()`
 - **Timeline access** - Current conversation history
 - **Tool results** - Results from tool executions
-- **Legacy state** - `com.setState()`, `com.getState()` (prefer signals instead)
+- **State** - Use `comState()` (class) or `useComState()` (functional) for reactive state
 
 ```tsx
 render(com: COM, state: TickState) {

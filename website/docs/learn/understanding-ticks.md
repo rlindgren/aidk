@@ -73,10 +73,18 @@ Each tick has distinct phases where different hooks fire:
 The tick begins. Use this for per-tick setup.
 
 ```tsx
-async onTickStart(com, state) {
-  // Refresh data that might have changed
-  const freshData = await fetchLatestData();
-  com.setState("data", freshData);
+class MyAgent extends Component {
+  private data = comState<DataType>("data", null);
+
+  async onTickStart(com, state) {
+    // Refresh data that might have changed
+    const freshData = await fetchLatestData();
+    this.data.set(freshData);
+  }
+
+  render() {
+    return <>{/* ... */}</>;
+  }
 }
 ```
 

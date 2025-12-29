@@ -56,7 +56,7 @@ The JSX tree renders to a compiled structure:
 
 ```tsx
 render(com: COM, state: TickState) {
-  const ctx = Context.get();
+  const ctx = context();
 
   return (
     <>
