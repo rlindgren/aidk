@@ -99,16 +99,16 @@ export interface TickState {
    * The COMInput from the previous tick (what was sent to model.fromEngineState).
    * This is the compiled state that was passed to the model.
    */
-  previousState?: COMInput;
+  previous?: COMInput;
 
   /**
    * The COMOutput from the last tick (what was produced by model execution and tool execution).
    * Contains new timeline entries, tool calls, and tool results.
    *
    * On tick 1, before model execution, this contains userInput (timeline, sections)
-   * to allow components to render purely from previousState + currentState.
+   * to allow components to render purely from previous + current.
    */
-  currentState?: COMOutput;
+  current?: COMOutput;
 
   /**
    * Stop reason information from the last model execution.
@@ -232,11 +232,11 @@ export interface EngineComponent {
 
   /**
    * Called after model execution completes for this tick.
-   * At this point, currentState is available (contains model outputs from this tick).
+   * At this point, current is available (contains model outputs from this tick).
    * Use this for per-tick processing, validation, or side effects.
-   * Note: Model outputs are automatically included in the next tick's previousState.
+   * Note: Model outputs are automatically included in the next tick's previous.
    * @param com The persistent Context Object Model for this execution.
-   * @param state Current tick state including previousState and currentState.
+   * @param state Current tick state including previous and current.
    */
   onTickEnd?: (
     com: ContextObjectModel,
@@ -415,6 +415,14 @@ export abstract class Component<P = {}, S = {}> implements EngineComponent {
     return undefined;
   }
 
+  onMessage(
+    com: ContextObjectModel,
+    message: ExecutionMessage,
+    state: TickState,
+  ): void | Promise<void> {
+    // Override to handle messages sent to the execution
+  }
+
   // Render is optional - components can just manage state or provide side effects
   render(
     com: ContextObjectModel,
@@ -473,6 +481,14 @@ export interface OnError {
   ) => Promise<RecoveryAction | void> | RecoveryAction | void;
 }
 
+export interface OnMessage {
+  onMessage: (
+    com: ContextObjectModel,
+    message: ExecutionMessage,
+    state: TickState,
+  ) => Promise<void> | void;
+}
+
 export interface Render {
   render: (
     com: ContextObjectModel,
@@ -487,6 +503,7 @@ export interface ComponentLifecycleHooks {
   onTickStart?: OnTickStart;
   onAfterCompile?: OnAfterCompile;
   onTickEnd?: OnTickEnd;
+  onMessage?: OnMessage;
   onComplete?: OnComplete;
   onError?: OnError;
   render?: Render;

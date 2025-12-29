@@ -14,18 +14,18 @@ A declarative, JSX-based framework for building AI agents and applications.
 
 ## Packages
 
-| Package | Description |
-|---------|-------------|
-| `aidk` | Core framework - JSX runtime, engine, components |
-| `aidk-kernel` | Execution primitives, context, telemetry |
-| `aidk-client` | Browser client for connecting to AIDK backends |
-| `aidk-express` | Express.js middleware and SSE transport |
-| `aidk-server` | Server utilities and channel adapters |
-| `aidk-react` | React hooks and components |
-| `aidk-angular` | Angular services and components |
-| `aidk-ai-sdk` | Vercel AI SDK adapter |
-| `aidk-openai` | OpenAI direct adapter |
-| `aidk-google` | Google AI / Vertex AI adapter |
+| Package        | Description                                      |
+| -------------- | ------------------------------------------------ |
+| `aidk`         | Core framework - JSX runtime, engine, components |
+| `aidk-kernel`  | Execution primitives, context, telemetry         |
+| `aidk-client`  | Browser client for connecting to AIDK backends   |
+| `aidk-express` | Express.js middleware and SSE transport          |
+| `aidk-server`  | Server utilities and channel adapters            |
+| `aidk-react`   | React hooks and components                       |
+| `aidk-angular` | Angular services and components                  |
+| `aidk-ai-sdk`  | Vercel AI SDK adapter                            |
+| `aidk-openai`  | OpenAI direct adapter                            |
+| `aidk-google`  | Google AI / Vertex AI adapter                    |
 
 ## Quick Start
 
@@ -54,22 +54,33 @@ pnpm add aidk-angular aidk-client        # Angular
 
 ```tsx
 // agents/assistant.tsx
-import { EngineComponent, ContextObjectModel, TickState, Section, Message, Timeline } from 'aidk';
-import { AiSdkModel } from 'aidk-ai-sdk';
-import { openai } from '@ai-sdk/openai';
+import {
+  EngineComponent,
+  ContextObjectModel,
+  TickState,
+  Section,
+  Message,
+  Timeline,
+} from "aidk";
+import { AiSdkModel } from "aidk-ai-sdk";
+import { openai } from "@ai-sdk/openai";
 
 export class AssistantAgent extends Component {
   render(com: ContextObjectModel, state: TickState) {
     return (
       <>
-        <AiSdkModel model={openai('gpt-4o-mini')} />
-        
+        <AiSdkModel model={openai("gpt-4o-mini")} />
+
         <Timeline>
-          {state.currentState?.timeline?.map((entry, i) => (
-            <Message key={i} role={entry.message?.role} content={entry.message?.content} />
+          {state.current?.timeline?.map((entry, i) => (
+            <Message
+              key={i}
+              role={entry.message?.role}
+              content={entry.message?.content}
+            />
           ))}
         </Timeline>
-        
+
         <Section id="instructions" audience="model">
           You are a helpful assistant.
         </Section>
@@ -82,14 +93,14 @@ export class AssistantAgent extends Component {
 ### Create Tools
 
 ```tsx
-import { createTool } from 'aidk';
-import { z } from 'zod';
+import { createTool } from "aidk";
+import { z } from "zod";
 
 export const calculatorTool = createTool({
-  name: 'calculator',
-  description: 'Perform mathematical calculations',
+  name: "calculator",
+  description: "Perform mathematical calculations",
   parameters: z.object({
-    expression: z.string().describe('Math expression to evaluate'),
+    expression: z.string().describe("Math expression to evaluate"),
   }),
   execute: async ({ expression }) => {
     const result = eval(expression); // Use a proper math parser in production
@@ -121,13 +132,13 @@ app.listen(3000);
 ### Connect from Frontend (React)
 
 ```tsx
-import { useEngineClient, useExecution } from 'aidk-react';
+import { useEngineClient, useExecution } from "aidk-react";
 
 function Chat() {
-  const { client } = useEngineClient({ baseUrl: 'http://localhost:3000' });
-  const { messages, send, isStreaming } = useExecution({ 
-    client, 
-    agentId: 'assistant' 
+  const { client } = useEngineClient({ baseUrl: "http://localhost:3000" });
+  const { messages, send, isStreaming } = useExecution({
+    client,
+    agentId: "assistant",
   });
 
   return (
@@ -135,7 +146,7 @@ function Chat() {
       {messages.map((msg, i) => (
         <div key={i}>{msg.content}</div>
       ))}
-      <input onKeyDown={(e) => e.key === 'Enter' && send(e.target.value)} />
+      <input onKeyDown={(e) => e.key === "Enter" && send(e.target.value)} />
     </div>
   );
 }
@@ -174,9 +185,9 @@ function Chat() {
 
 ## Documentation
 
-- [Getting Started](./docs/getting-started.md)
-- [Core Concepts](./docs/concepts.md)
-- [API Reference](./docs/api/README.md)
+- [Documentation Website](https://rlindgren.github.io/aidk/)
+- [Getting Started](https://rlindgren.github.io/aidk/docs/getting-started)
+- [API Reference](https://rlindgren.github.io/aidk/api/)
 - [Examples](./example/)
 
 ## Development
@@ -208,4 +219,3 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for development setup and guidelines.
 ## License
 
 [LICENSE](./LICENSE)
-

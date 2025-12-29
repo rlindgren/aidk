@@ -1,7 +1,36 @@
 /**
- * Content Blocks
+ * Content Blocks - Type-safe content block definitions using discriminated unions.
  *
- * Type-safe content block definitions using discriminated unions.
+ * Content blocks represent the atomic units of content in messages. They use
+ * discriminated unions (the `type` field) for type-safe handling:
+ *
+ * - **Text** - Plain text content (`TextBlock`)
+ * - **Media** - Images, audio, video, documents (`ImageBlock`, `AudioBlock`, etc.)
+ * - **Tool** - Tool calls and results (`ToolUseBlock`, `ToolResultBlock`)
+ * - **Data** - Structured data (JSON, XML, CSV, HTML, code)
+ * - **Events** - User actions, system events, state changes
+ *
+ * @example Type narrowing with discriminated unions
+ * ```typescript
+ * function processBlock(block: ContentBlock) {
+ *   switch (block.type) {
+ *     case 'text':
+ *       console.log(block.text); // TypeScript knows this is TextBlock
+ *       break;
+ *     case 'tool_use':
+ *       console.log(block.name, block.input); // ToolUseBlock
+ *       break;
+ *     case 'image':
+ *       console.log(block.source); // ImageBlock
+ *       break;
+ *   }
+ * }
+ * ```
+ *
+ * @see {@link ContentBlock} - The union of all content block types
+ * @see {@link BlockType} - Enum of block type discriminators
+ *
+ * @module
  */
 
 import {
@@ -14,14 +43,25 @@ import {
   CodeLanguage,
 } from "./block-types";
 
+/**
+ * Base properties shared by all content blocks.
+ */
 export interface BaseContentBlock {
+  /** Discriminator for type narrowing (e.g., 'text', 'image', 'tool_use') */
   readonly type: string | BlockType;
+  /** Unique identifier for this block */
   readonly id?: string;
+  /** ID of the message containing this block */
   readonly messageId?: string;
+  /** ISO 8601 timestamp when this block was created */
   readonly createdAt?: string;
+  /** MIME type of the content (for media blocks) */
   readonly mimeType?: string;
+  /** Position of this block within the message */
   readonly index?: number;
+  /** Additional metadata */
   readonly metadata?: Record<string, any>;
+  /** Human-readable summary of the content */
   readonly summary?: string;
 }
 
@@ -305,6 +345,24 @@ export interface StateChangeBlock extends BaseContentBlock {
 // Union Types
 // ============================================================================
 
+/**
+ * Union of all content block types.
+ *
+ * Use the `type` discriminator field for type narrowing:
+ *
+ * @example
+ * ```typescript
+ * function handleBlock(block: ContentBlock) {
+ *   if (block.type === 'text') {
+ *     console.log(block.text);
+ *   } else if (block.type === 'tool_use') {
+ *     console.log(block.name, block.input);
+ *   }
+ * }
+ * ```
+ *
+ * @see {@link isTextBlock}, {@link isToolUseBlock}, etc. - Type guard functions
+ */
 export type ContentBlock =
   | TextBlock
   | ImageBlock
@@ -327,9 +385,16 @@ export type ContentBlock =
   | SystemEventBlock
   | StateChangeBlock;
 
+/** Union of media content blocks (image, document, audio, video) */
 export type MediaBlock = ImageBlock | DocumentBlock | AudioBlock | VideoBlock;
+
+/** Union of tool-related blocks (tool call and result) */
 export type ToolBlock = ToolUseBlock | ToolResultBlock;
+
+/** Union of structured data blocks (JSON, XML, CSV, HTML, code) */
 export type DataBlock = JsonBlock | XmlBlock | CsvBlock | HtmlBlock | CodeBlock;
+
+/** Union of event content blocks (user action, system event, state change) */
 export type EventBlock = UserActionBlock | SystemEventBlock | StateChangeBlock;
 
 // Role-specific content block restrictions

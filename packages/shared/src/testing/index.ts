@@ -1,9 +1,18 @@
 /**
- * AIDK Test Utilities
+ * # AIDK Testing Utilities
  *
- * Provides fixtures, mocks, and helpers for testing AIDK applications.
+ * Fixtures, mocks, and helpers for testing AIDK applications.
+ * Import from `aidk-shared/testing` for test utilities.
  *
- * @example
+ * ## Features
+ *
+ * - **Fixtures** - Factory functions for messages, blocks, tools
+ * - **Stream Helpers** - Create and capture async generators
+ * - **SSE Utilities** - Parse and format Server-Sent Events
+ * - **Mock Utilities** - Spies, mocks, and sequences
+ *
+ * ## Quick Start
+ *
  * ```typescript
  * import {
  *   createUserMessage,
@@ -25,6 +34,8 @@
  * // Capture async generator output
  * const items = await captureAsyncGenerator(myStream());
  * ```
+ *
+ * @module aidk-shared/testing
  */
 
 // Fixtures - factory functions for test data

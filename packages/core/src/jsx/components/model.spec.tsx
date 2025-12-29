@@ -5,7 +5,7 @@ import { Model, ModelComponent } from './model';
 import { ContextObjectModel } from '../../com/object-model';
 import { createElement, Fragment } from '../jsx-runtime';
 import { Message } from './primitives';
-import { modelRegistry } from '../../registry';
+import { modelRegistry } from '../../utils/registry';
 import { toEngineState } from '../../model/utils/language-model';
 
 describe('Model Component', () => {

@@ -118,9 +118,14 @@ export function ListItem(props: ListItemProps): JSX.Element {
 }
 
 /**
- * Table content block.
- * Usage: <Table headers={['Name', 'Age']} rows={[['John', 30], ['Jane', 25]]} />
- * or
+ * Table content block for displaying tabular data.
+ *
+ * @example
+ * ```tsx
+ * // Simple table with headers and rows props
+ * <Table headers={['Name', 'Age']} rows={[['John', '30'], ['Jane', '25']]} />
+ *
+ * // Table with headers prop and Row/Column children
  * <Table headers={['Name', 'Age']}>
  *   <Row>
  *     <Column>John</Column>
@@ -131,8 +136,9 @@ export function ListItem(props: ListItemProps): JSX.Element {
  *     <Column align="right">25</Column>
  *   </Row>
  * </Table>
- * or
- * <Table
+ *
+ * // Table with header row defined via Row component
+ * <Table>
  *   <Row header>
  *     <Column>Name</Column>
  *     <Column align="right">Age</Column>
@@ -142,6 +148,7 @@ export function ListItem(props: ListItemProps): JSX.Element {
  *     <Column align="right">30</Column>
  *   </Row>
  * </Table>
+ * ```
  */
 export interface TableProps extends BaseProps {
   children?: any;

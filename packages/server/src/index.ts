@@ -1,8 +1,36 @@
 /**
- * Shared Server Utilities
+ * # AIDK Server
  *
  * Framework-agnostic utilities for engine backend implementations.
  * Works with Express, NestJS, Fastify, or any Node.js server framework.
+ *
+ * ## Features
+ *
+ * - **Persistence Repositories** - Store executions, messages, metrics
+ * - **In-Memory Store** - Development and testing storage
+ * - **Context Utilities** - Extract and manage request context
+ * - **ID Generators** - UUID and prefixed ID generation
+ *
+ * ## Quick Start
+ *
+ * ```typescript
+ * import {
+ *   createInMemoryRepositories,
+ *   defaultContextExtractor,
+ *   buildEngineContext,
+ * } from 'aidk-server';
+ *
+ * // Create persistence layer
+ * const repos = createInMemoryRepositories();
+ *
+ * // Extract context from request
+ * const ctx = defaultContextExtractor(req.body, req.headers);
+ *
+ * // Build engine context
+ * const engineCtx = buildEngineContext({ ...ctx, executionId: 'exec_123' });
+ * ```
+ *
+ * @module aidk-server
  */
 
 // Types and Interfaces

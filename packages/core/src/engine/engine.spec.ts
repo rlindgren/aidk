@@ -414,20 +414,20 @@ describe('Engine v2', () => {
       const TimelineManager: EngineComponent = {
         name: 'timeline-manager',
         render: (com, state) => {
-          const previousState = state.previousState;
-          const currentState = state.currentState;
+          const previous = state.previous;
+          const current = state.current;
           
           // Build timeline entries - include initial timeline from input
           const timelineEntries: any[] = [
-            ...(previousState?.timeline || []),
-            ...(currentState?.timeline || []),
+            ...(previous?.timeline || []),
+            ...(current?.timeline || []),
           ];
           
           // Handle tool results
-          if (currentState?.toolResults && currentState.toolResults.length > 0) {
+          if (current?.toolResults && current.toolResults.length > 0) {
             const resultMessage = {
               role: 'tool' as const,
-              content: currentState.toolResults.map(r => ({
+              content: current.toolResults.map(r => ({
                 type: 'tool_result' as const,
                 id: r.id,
                 name: r.name || 'unknown',

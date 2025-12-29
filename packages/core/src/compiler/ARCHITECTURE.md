@@ -908,8 +908,8 @@ function ChatAgent({ maxTurns }: { maxTurns: number }) {
   const timeline = useComState<Message[]>("timeline", []);
 
   useTickStart((com, state) => {
-    if (state.currentState?.timeline) {
-      timeline.update((t) => [...t, ...state.currentState.timeline]);
+    if (state.current?.timeline) {
+      timeline.update((t) => [...t, ...state.current.timeline]);
       count.update((c) => c + 1);
     }
   });
@@ -958,8 +958,8 @@ class StatefulAgent extends Component<
   }
 
   async onTickStart(com: ContextObjectModel, state: TickState) {
-    if (state.currentState?.timeline) {
-      this.timeline.update((t) => [...t, ...state.currentState.timeline]);
+    if (state.current?.timeline) {
+      this.timeline.update((t) => [...t, ...state.current.timeline]);
     }
   }
 

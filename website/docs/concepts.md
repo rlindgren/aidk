@@ -11,7 +11,7 @@ The Engine is the orchestrator that executes agents. It manages:
 - **Tool execution** - Running tools and returning results
 - **Streaming** - Emitting events as execution progresses
 
-```typescript
+``` tsx
 import { createEngine } from 'aidk';
 
 const engine = createEngine();
@@ -107,8 +107,8 @@ class TimelineComponent extends Component {
 
   onTickStart(com, state) {
     // Append new entries from the current tick
-    if (state.currentState?.timeline?.length) {
-      this.timeline.update(t => [...t, ...state.currentState.timeline]);
+    if (state.current?.timeline?.length) {
+      this.timeline.update(t => [...t, ...state.current.timeline]);
     }
   }
 
@@ -124,10 +124,10 @@ class TimelineComponent extends Component {
 }
 ```
 
-### Understanding previousState vs currentState
+### Understanding previous vs current
 
-- **`state.currentState`** - Output from the *last* model call (new messages, tool calls)
-- **`state.previousState`** - The compiled state from the *previous* tick
+- **`state.current`** - Output from the *last* model call (new messages, tool calls)
+- **`state.previous`** - The compiled state from the *previous* tick
 
 **The correct pattern** is to use signals to accumulate state:
 
@@ -136,9 +136,9 @@ class TimelineComponent extends Component {
 private timeline = comState<COMTimelineEntry[]>('timeline', []);
 
 onTickStart(com, state) {
-  // Append new entries from currentState
-  if (state.currentState?.timeline?.length) {
-    this.timeline.update(t => [...t, ...state.currentState.timeline]);
+  // Append new entries from current
+  if (state.current?.timeline?.length) {
+    this.timeline.update(t => [...t, ...state.current.timeline]);
   }
 }
 
@@ -148,11 +148,11 @@ render() {
 ```
 
 ```tsx
-// ❌ Avoid: Combining previousState + currentState directly
+// ❌ Avoid: Combining previous + current directly
 render(com, state) {
   const timeline = [
-    ...(state.previousState?.timeline || []),
-    ...(state.currentState?.timeline || [])
+    ...(state.previous?.timeline || []),
+    ...(state.current?.timeline || [])
   ];
   // This can lead to duplication issues
 }
@@ -182,7 +182,7 @@ The timeline represents the conversation history:
 
 Content is represented as blocks:
 
-```typescript
+``` tsx
 type ContentBlock = 
   | { type: 'text'; text: string }
   | { type: 'image'; source: MediaSource }
@@ -216,7 +216,7 @@ Sections organize content for different audiences:
 
 Tools give agents capabilities to interact with the world:
 
-```typescript
+``` tsx
 const myTool = createTool({
   name: 'tool_name',
   description: 'What the tool does',
@@ -308,7 +308,7 @@ See the [Renderers Guide](/docs/guides/renderers) for complete documentation.
 
 Hooks provide middleware-style extension points:
 
-```typescript
+``` tsx
 // Engine-level hooks
 engine.hooks.on('execute', async (args, envelope, next) => {
   console.log('Execution starting');
@@ -334,7 +334,7 @@ engine.hooks.on('tool.execute', async (args, envelope, next) => {
 
 Channels enable real-time communication between server and client:
 
-```typescript
+``` tsx
 // Define a channel
 const todoChannel = defineChannel({
   name: 'todos',

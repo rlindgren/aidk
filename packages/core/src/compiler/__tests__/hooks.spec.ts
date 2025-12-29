@@ -2,11 +2,11 @@
  * Tests for V2 Hooks
  */
 
-import { useState, useEffect, useMemo, useComputed, useCallback, useRef } from '../hooks';
-import { useComState, useWatch, useInput } from '../hooks';
-import { useInit, useOnMount, useOnUnmount, useTickStart, useTickEnd, useAfterCompile } from '../hooks';
-import { useAsync, usePrevious, useToggle, useCounter } from '../hooks';
-import { setRenderContext, getCurrentFiber } from '../hooks';
+import { useState, useEffect, useMemo, useComputed, useCallback, useRef } from '../../state/hooks';
+import { useComState, useWatch, useInput } from '../../state/hooks';
+import { useInit, useOnMount, useOnUnmount, useTickStart, useTickEnd, useAfterCompile } from '../../state/hooks';
+import { useAsync, usePrevious, useToggle, useCounter } from '../../state/hooks';
+import { setRenderContext, getCurrentFiber } from '../../state/hooks';
 import type { RenderContext } from '../types';
 import { createFiber } from '../fiber';
 import { ContextObjectModel } from '../../com/object-model';

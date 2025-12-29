@@ -10,8 +10,11 @@ import type {
   COMTimelineEntry,
   EngineInput,
 } from "../com/types";
-import { FiberCompiler, type CompileStabilizationOptions } from "../compiler";
-import { StructureRenderer } from "../structure-renderer/structure-renderer";
+import {
+  FiberCompiler,
+  type CompileStabilizationOptions,
+  StructureRenderer,
+} from "../compiler";
 import {
   MarkdownRenderer,
   XMLRenderer,
@@ -45,7 +48,7 @@ import {
   type MCPConfig,
 } from "../mcp";
 import { ChannelService, type ChannelServiceConfig } from "../channels/service";
-import { toolRegistry } from "../registry";
+import { toolRegistry } from "./registry";
 import { isAsyncIterable, Logger } from "aidk-kernel";
 import { ensureElement } from "../jsx/jsx-runtime";
 import type {
@@ -316,7 +319,7 @@ export interface TickResultOutput {
    * The current state (model output + tool results) for this tick.
    * Engine can use this to yield events.
    */
-  currentState: COMOutput;
+  current: COMOutput;
 }
 
 // ============================================================================
@@ -433,12 +436,12 @@ export interface RunStreamCallbacks<TChunk = unknown> {
  */
 export class CompileSession {
   private _tick = 1;
-  private _previousState?: COMInput;
-  private _currentState?: COMOutput;
+  private _previous?: COMInput;
+  private _current?: COMOutput;
   private _shouldContinue = true;
   private _stopReason?: string;
   private _tickState?: TickState;
-  private _lastCompiledInput?: COMInput; // Captured during compileTick for previousState
+  private _lastCompiledInput?: COMInput; // Captured during compileTick for previous
   private _isComplete = false;
 
   constructor(
@@ -463,15 +466,15 @@ export class CompileSession {
   /**
    * Previous state (what was sent to the model in the last tick).
    */
-  get previousState(): COMInput | undefined {
-    return this._previousState;
+  get previous(): COMInput | undefined {
+    return this._previous;
   }
 
   /**
    * Current state (model output + tool results from the last tick).
    */
-  get currentState(): COMOutput | undefined {
-    return this._currentState;
+  get current(): COMOutput | undefined {
+    return this._current;
   }
 
   /**
@@ -545,8 +548,8 @@ export class CompileSession {
     this._tickState = this.service.prepareTickState(
       this._com,
       this._tick,
-      this._previousState,
-      this._currentState,
+      this._previous,
+      this._current,
     );
 
     // Clear queued messages AFTER prepareTickState snapshots them
@@ -628,7 +631,7 @@ export class CompileSession {
     // Format input
     const formatted = this.structureRenderer.formatInput(this._com.toInput());
 
-    // Capture what was sent to the model (for previousState in next tick)
+    // Capture what was sent to the model (for previous in next tick)
     const rawComInput = this._com.toInput();
     const { system: _sys, ...inputWithoutSystem } = rawComInput;
     this._lastCompiledInput = inputWithoutSystem as COMInput;
@@ -730,7 +733,7 @@ export class CompileSession {
         : [];
 
     // 3. Build COMOutput (model output + tool results)
-    const currentState: COMOutput = {
+    const current: COMOutput = {
       timeline: [...(response.newTimelineEntries || []), ...toolResultEntries],
       toolCalls: response.toolCalls,
       toolResults: toolResults,
@@ -776,9 +779,9 @@ export class CompileSession {
       });
     }
 
-    // 6. Update tickState with currentState and stopReason
+    // 6. Update tickState with current and stopReason
     if (this._tickState) {
-      this._tickState.currentState = currentState;
+      this._tickState.current = current;
       this._tickState.stopReason = response.stopReason;
     }
 
@@ -847,7 +850,7 @@ export class CompileSession {
     );
 
     // 11. Update session state
-    this._currentState = currentState;
+    this._current = current;
 
     if (
       tickControl.status === "aborted" ||
@@ -862,7 +865,7 @@ export class CompileSession {
     return {
       shouldContinue: this._shouldContinue,
       stopReason: this._stopReason,
-      currentState,
+      current,
     };
   }
 
@@ -870,7 +873,7 @@ export class CompileSession {
    * Advance to the next tick.
    * Called by Engine after all tick processing (events, persistence, etc.).
    *
-   * - Updates previousState from last compilation
+   * - Updates previous from last compilation
    * - Increments tick counter
    *
    * Note: Queued messages are NOT cleared here. They are cleared at the START
@@ -879,8 +882,8 @@ export class CompileSession {
    * TickState.queuedMessages.
    */
   advanceTick(): void {
-    // Update previousState to what was sent to the model
-    this._previousState = this._lastCompiledInput;
+    // Update previous to what was sent to the model
+    this._previous = this._lastCompiledInput;
 
     // Reset abort state for next tick
     this._com._resetAbortState();
@@ -980,7 +983,7 @@ export class CompileSession {
       // Try recovery
       const errorState: TickState = {
         tick: this._tick,
-        previousState: finalOutput,
+        previous: finalOutput,
         stop: () => {},
         error: {
           error: error instanceof Error ? error : new Error(String(error)),
@@ -1525,25 +1528,25 @@ export class CompileJSXService {
 
   /**
    * Prepare tick state for a given tick number.
-   * Handles state semantics correctly (previousState, currentState).
+   * Handles state semantics correctly (previous, current).
    *
    * @param com COM instance
    * @param tick Tick number (1-based)
-   * @param previousState Previous tick's state (undefined for tick 1)
-   * @param currentState Current tick's state (userInput for tick 1, model output for tick 2+)
+   * @param previous Previous tick's state (undefined for tick 1)
+   * @param current Current tick's state (userInput for tick 1, model output for tick 2+)
    * @returns TickState ready for compilation
    */
   prepareTickState(
     com: ContextObjectModel,
     tick: number,
-    previousState?: COMInput,
-    currentState?: COMOutput,
+    previous?: COMInput,
+    current?: COMOutput,
   ): TickState {
-    // For tick 1, use userInput if currentState not provided
-    if (tick === 1 && !currentState) {
+    // For tick 1, use userInput if current not provided
+    if (tick === 1 && !current) {
       const userInput = com.getUserInput();
       const sections = userInput?.sections;
-      currentState = {
+      current = {
         timeline: userInput?.timeline || [],
         ...(sections ? { sections } : {}),
       };
@@ -1551,8 +1554,8 @@ export class CompileJSXService {
 
     return {
       tick,
-      previousState,
-      currentState: currentState as COMInput,
+      previous,
+      current: current as COMInput,
       stopReason: undefined,
       stop: (reason: string) => {
         throw new StateError(
@@ -2001,8 +2004,8 @@ export class CompileJSXService {
    * @param structureRenderer StructureRenderer instance
    * @param rootElement Root JSX element
    * @param tick Tick number
-   * @param previousState Previous tick's state (undefined for tick 1)
-   * @param currentState Current tick's state (userInput for tick 1, model output for tick 2+)
+   * @param previous Previous tick's state (undefined for tick 1)
+   * @param current Current tick's state (userInput for tick 1, model output for tick 2+)
    * @param stopReason Stop reason from TickState.stop() callback (if any)
    * @param shouldContinue Whether execution should continue (for tick control resolution)
    * @param handle Optional execution handle
@@ -2014,8 +2017,8 @@ export class CompileJSXService {
     structureRenderer: StructureRenderer,
     rootElement: JSX.Element,
     tick: number,
-    previousState?: COMInput,
-    currentState?: COMOutput,
+    previous?: COMInput,
+    current?: COMOutput,
     stopReason?: string,
     shouldContinue: boolean = true,
     handle?: ExecutionHandle,
@@ -2032,12 +2035,7 @@ export class CompileJSXService {
     this.clearAndReRegisterTools(com);
 
     // Prepare tick state
-    const tickState = this.prepareTickState(
-      com,
-      tick,
-      previousState,
-      currentState,
-    );
+    const tickState = this.prepareTickState(com, tick, previous, current);
     tickState.stop = (reason: string) => {
       // Store stop reason - Engine will check this
       (tickState as any).stopReason = reason;

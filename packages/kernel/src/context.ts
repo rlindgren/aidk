@@ -5,45 +5,168 @@ import { ProcedureGraph } from "./procedure-graph";
 import type { ProcedureNode } from "./procedure-graph";
 import { ContextError } from "aidk-shared";
 
-export interface UserContext {
-  id: string;
-  tenantId?: string;
-  roles?: string[];
-  [key: string]: any;
-}
-
-export interface ExecutionEvent {
-  type: string;
-  payload: any;
-  timestamp: number;
-  source: string; // e.g. 'agent:sales', 'model:openai'
-  traceId: string;
-}
-
-export interface ContextMetadata extends Record<string, any> {}
-
-export interface ContextMetrics extends Record<string, any> {}
-
 /**
- * Base KernelContext interface with core properties.
- * Libraries can extend this interface to add their own properties.
+ * User information associated with the current execution context.
+ *
+ * This is typically populated from authentication/authorization systems
+ * and flows through all operations via the `KernelContext`.
  *
  * @example
  * ```typescript
- * interface EngineContext extends KernelContext {
- *   executionHandle?: ExecutionHandleImpl; // Narrower type than EventEmitter
- * }
+ * const ctx = Context.create({
+ *   user: {
+ *     id: 'user-123',
+ *     tenantId: 'tenant-abc',
+ *     roles: ['admin', 'editor'],
+ *     email: 'user@example.com', // Custom fields allowed
+ *   }
+ * });
+ * ```
+ *
+ * @see {@link KernelContext.user} - Where user context is stored
+ */
+export interface UserContext {
+  /** Unique identifier for the user */
+  id: string;
+  /** Multi-tenant organization identifier */
+  tenantId?: string;
+  /** User's roles for authorization */
+  roles?: string[];
+  /** Additional user properties (extensible) */
+  [key: string]: any;
+}
+
+/**
+ * Event emitted during procedure execution.
+ *
+ * Events are emitted to both the global request bus (`ctx.events`)
+ * and the operation handle (`ctx.executionHandle`) if present.
+ *
+ * @example
+ * ```typescript
+ * ctx.events.on('stream:chunk', (event: ExecutionEvent) => {
+ *   console.log(`[${event.source}] ${event.type}:`, event.payload);
+ * });
+ *
+ * // Listen to all events
+ * ctx.events.on('*', (event: ExecutionEvent) => {
+ *   console.log(`Event: ${event.type}`);
+ * });
+ * ```
+ *
+ * @see {@link Context.emit} - Emit events to the current context
+ */
+export interface ExecutionEvent {
+  /** Event type (e.g., 'stream:chunk', 'procedure:error') */
+  type: string;
+  /** Event payload data */
+  payload: any;
+  /** Unix timestamp when the event occurred */
+  timestamp: number;
+  /** Source of the event (e.g., 'agent:sales', 'model:openai') */
+  source: string;
+  /** Trace ID for correlation */
+  traceId: string;
+}
+
+/**
+ * Extensible metadata storage within the context.
+ *
+ * Use this to store application-specific data that should flow
+ * through the execution context.
+ *
+ * @example
+ * ```typescript
+ * const ctx = Context.create({
+ *   metadata: {
+ *     conversationId: 'conv-123',
+ *     feature_flags: { beta: true },
+ *   }
+ * });
+ *
+ * // Access later
+ * const convId = Context.get().metadata.conversationId;
  * ```
  */
+export interface ContextMetadata extends Record<string, any> {}
+
+/**
+ * Metrics accumulated during procedure execution.
+ *
+ * Metrics are automatically propagated from child procedures to parents
+ * when execution completes.
+ *
+ * @example
+ * ```typescript
+ * // In a procedure
+ * addMetric(ctx, 'tokens.input', 100);
+ * addMetric(ctx, 'api_calls', 1);
+ *
+ * // After execution, parent has accumulated metrics
+ * const totalTokens = ctx.metrics['tokens.input'];
+ * ```
+ *
+ * @see {@link addMetric} - Accumulate a metric value
+ * @see {@link getUsageMetrics} - Get token usage metrics
+ */
+export interface ContextMetrics extends Record<string, any> {}
+
+/**
+ * Execution context that flows through all async operations via AsyncLocalStorage.
+ *
+ * The `KernelContext` contains all state needed during execution:
+ * - Identity and tracing (requestId, traceId, user)
+ * - Event buses (events, executionHandle)
+ * - Cancellation (signal)
+ * - Communication (channels)
+ * - Execution tracking (procedureGraph, procedurePid, origin)
+ * - Extensible storage (metadata, metrics)
+ *
+ * Access the current context with `Context.get()` from anywhere in your code -
+ * no need to pass it explicitly through function calls.
+ *
+ * @example Creating and running with context
+ * ```typescript
+ * const ctx = Context.create({
+ *   user: { id: 'user-1' },
+ *   metadata: { conversationId: 'conv-123' }
+ * });
+ *
+ * await Context.run(ctx, async () => {
+ *   // Context is available here and in all async calls
+ *   const current = Context.get();
+ *   console.log(current.user?.id); // 'user-1'
+ * });
+ * ```
+ *
+ * @example Extending for your application
+ * ```typescript
+ * interface AppContext extends KernelContext {
+ *   customHandle?: MyCustomHandle;
+ *   appMetadata: AppSpecificMetadata;
+ * }
+ * ```
+ *
+ * @see {@link Context} - Static methods to create/access context
+ * @see {@link UserContext} - User information structure
+ */
 export interface KernelContext {
+  /** Unique identifier for this request/execution */
   requestId: string;
+  /** Correlation ID for distributed tracing */
   traceId: string;
+  /** User information (from auth) */
   user?: UserContext;
+  /** Application-specific metadata */
   metadata: ContextMetadata;
+  /** Accumulated execution metrics */
   metrics: ContextMetrics;
-  events: EventEmitter; // The Global Request Bus
-  signal?: AbortSignal; // Cancellation
-  executionHandle?: EventEmitter; // The specific Operation Handle (if any)
+  /** Global request event bus for subscribing to all events */
+  events: EventEmitter;
+  /** Abort signal for cooperative cancellation */
+  signal?: AbortSignal;
+  /** Operation-specific event emitter (from `.withHandle()`) */
+  executionHandle?: EventEmitter;
   /**
    * Channel service for bidirectional communication (optional).
    * Injected by Engine when channels are configured.
@@ -59,6 +182,7 @@ export interface KernelContext {
    * Current procedure PID (for tracking nested procedures).
    */
   procedurePid?: string;
+  /** Current procedure node in the graph */
   procedureNode?: ProcedureNode;
   /**
    * Origin procedure node - the root procedure that initiated this execution chain.
@@ -70,9 +194,57 @@ export interface KernelContext {
 
 const storage = new AsyncLocalStorage<KernelContext>();
 
+/**
+ * Static class for managing execution context via AsyncLocalStorage.
+ *
+ * Context flows automatically through all async operations without explicit passing.
+ * Use `Context.run()` to establish context, and `Context.get()` to access it.
+ *
+ * @example Basic usage
+ * ```typescript
+ * // Create and run with context
+ * const ctx = Context.create({ user: { id: 'user-1' } });
+ * await Context.run(ctx, async () => {
+ *   const current = Context.get();
+ *   console.log(current.user?.id); // 'user-1'
+ *
+ *   // Context flows to nested calls
+ *   await someAsyncFunction(); // Can access Context.get() inside
+ * });
+ * ```
+ *
+ * @example Parallel execution with child contexts
+ * ```typescript
+ * // Each parallel task gets its own context to avoid races
+ * const [a, b] = await Promise.all([
+ *   Context.fork({ procedurePid: 'task-1' }, () => doTask1()),
+ *   Context.fork({ procedurePid: 'task-2' }, () => doTask2()),
+ * ]);
+ * ```
+ *
+ * @example Emitting events
+ * ```typescript
+ * // Events go to both global bus and operation handle
+ * Context.emit('progress', { percent: 50 }, 'my-tool');
+ * ```
+ *
+ * @see {@link KernelContext} - The context interface
+ * @see {@link context} - Brand an object as context for procedure detection
+ */
 export class Context {
   /**
-   * Creates a new context object with defaults.
+   * Creates a new root context with default values.
+   *
+   * @param overrides - Partial context to merge with defaults
+   * @returns A new KernelContext
+   *
+   * @example
+   * ```typescript
+   * const ctx = Context.create({
+   *   user: { id: 'user-1' },
+   *   metadata: { feature: 'chat' }
+   * });
+   * ```
    */
   static create(
     overrides: Partial<Omit<KernelContext, "events">> = {},
@@ -91,6 +263,11 @@ export class Context {
 
   /**
    * Runs a function within the given context.
+   * All async operations within `fn` will have access to this context.
+   *
+   * @param context - The context to run within
+   * @param fn - Async function to execute
+   * @returns The result of the function
    */
   static run<T>(context: KernelContext, fn: () => Promise<T>): Promise<T> {
     return storage.run(context, fn);

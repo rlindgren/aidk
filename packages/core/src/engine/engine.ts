@@ -17,7 +17,7 @@ import { EventEmitter } from "node:events";
 import { randomUUID } from "node:crypto";
 import type { ModelInstance, ModelInput, ModelOutput } from "../model/model";
 import { type ToolClass, isToolClass } from "../tool/tool";
-import { toolRegistry, modelRegistry } from "../registry";
+import { toolRegistry, modelRegistry } from "../utils/registry";
 import type {
   Component,
   TickState,
@@ -50,7 +50,7 @@ import {
   isElement,
   ensureElement,
 } from "../jsx/jsx-runtime";
-import { StructureRenderer } from "../structure-renderer/structure-renderer";
+import { StructureRenderer } from "../compiler/structure-renderer";
 import { MarkdownRenderer, XMLRenderer } from "../renderers";
 import { type EngineStreamEvent } from "./engine-events";
 import { type EngineResponse } from "./engine-response";
@@ -1372,7 +1372,7 @@ export class Engine extends EventEmitter {
     tick: number,
     rootElement: JSX.Element,
     input: EngineInput,
-    previousState?: COMInput,
+    previous?: COMInput,
   ): Promise<void> {
     if (!this.config.persistExecutionState || chunks.length === 0) {
       return;
@@ -1592,7 +1592,7 @@ export class Engine extends EventEmitter {
       });
 
       // Create long-lived session (replaces setup + tick loop state management)
-      // Session internally manages: COM, compiler, structureRenderer, tick, previousState, currentState
+      // Session internally manages: COM, compiler, structureRenderer, tick, previous, current
       session = await compileService.createSession({
         input,
         rootElement,
@@ -1663,7 +1663,7 @@ export class Engine extends EventEmitter {
 
       try {
         // === TICK LOOP (Session-based) ===
-        // Session manages: tick, previousState, currentState, COM, compiler
+        // Session manages: tick, previous, current, COM, compiler
         // Engine handles: model execution, tool execution, events, lifecycle hooks
 
         while (session.shouldContinue() && session.tick <= maxTicks) {
@@ -1674,7 +1674,7 @@ export class Engine extends EventEmitter {
               rootElement,
               input,
               session.tick,
-              session.previousState,
+              session.previous,
             );
             throw new AbortError(
               session.com.abortReason || "Operation aborted",
@@ -1781,7 +1781,7 @@ export class Engine extends EventEmitter {
                     session.tick,
                     rootElement,
                     input,
-                    session.previousState,
+                    session.previous,
                   );
                   throw new AbortError(
                     session.com.abortReason ||
@@ -1834,7 +1834,7 @@ export class Engine extends EventEmitter {
                 rootElement,
                 input,
                 session.tick,
-                session.previousState,
+                session.previous,
               );
               throw error;
             }
@@ -2018,7 +2018,7 @@ export class Engine extends EventEmitter {
                   rootElement,
                   input,
                   session.tick,
-                  session.previousState,
+                  session.previous,
                 );
                 throw error;
               }
@@ -2052,7 +2052,7 @@ export class Engine extends EventEmitter {
                 rootElement,
                 input,
                 session.tick,
-                session.previousState,
+                session.previous,
               );
               throw error;
             }
@@ -2086,7 +2086,7 @@ export class Engine extends EventEmitter {
             rootElement,
             input,
             session.tick - 1,
-            session.previousState,
+            session.previous,
           );
 
           if (shouldAbort) {
@@ -2101,7 +2101,7 @@ export class Engine extends EventEmitter {
             rootElement,
             input,
             session.tick,
-            session.previousState,
+            session.previous,
           );
           throw new AbortError();
         }
@@ -2129,7 +2129,7 @@ export class Engine extends EventEmitter {
             rootElement,
             input,
             session.tick,
-            session.previousState,
+            session.previous,
           );
         }
 
@@ -2559,7 +2559,7 @@ export class Engine extends EventEmitter {
     rootElement: JSX.Element,
     input: EngineInput,
     tick: number,
-    previousState?: COMInput,
+    previous?: COMInput,
   ): Promise<void> {
     if (!handle || !this.config.persistExecutionState) {
       return;
@@ -2570,7 +2570,7 @@ export class Engine extends EventEmitter {
         rootElement as ComponentDefinition,
         input,
         tick,
-        previousState,
+        previous,
       );
       await this.config.persistExecutionState(stateToPersist);
     } catch (persistError) {

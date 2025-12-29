@@ -16,24 +16,24 @@ private timeline = comState<COMTimelineEntry[]>('timeline', []);
 
 onTickStart(com, state) {
   // Accumulate new entries from model response
-  if (state.currentState?.timeline?.length) {
-    this.timeline.update(t => [...t, ...state.currentState.timeline]);
+  if (state.current?.timeline?.length) {
+    this.timeline.update(t => [...t, ...state.current.timeline]);
   }
 }
 
 async render(com: ContextObjectModel, state: TickState) {
   const ctx = Context.get();  // User, auth, metadata—available everywhere
-  const lastResponse = state.currentState?.timeline?.[0];
+  const lastResponse = state.current?.timeline?.[0];
   const tokenCount = await estimateTokens(this.timeline());
-  
+
   return (
     <>
       {/* React to response quality—upgrade model if needed */}
       <AiSdkModel model={await selectModel(lastResponse)} />
-      
+
       {/* React to context size—summarize if too large */}
       <Timeline>{tokenCount > 80000 ? await summarize(this.timeline()) : this.timeline()}</Timeline>
-      
+
       {/* React to user tier—enable tools conditionally */}
       <Section audience="model">
         <UserInstructions tier={ctx.user.tier} />
@@ -67,22 +67,22 @@ Your agent isn't a static configuration. It's a component that renders before ev
 ```tsx
 class AdaptiveAgent extends Component {
   // Use comState for timeline - persists across ticks
-  private timeline = comState<COMTimelineEntry[]>('timeline', []);
+  private timeline = comState<COMTimelineEntry[]>("timeline", []);
 
   onTickStart(com, state) {
-    if (state.currentState?.timeline?.length) {
-      this.timeline.update(t => [...t, ...state.currentState.timeline]);
+    if (state.current?.timeline?.length) {
+      this.timeline.update((t) => [...t, ...state.current.timeline]);
     }
   }
 
   render(com: ContextObjectModel, state: TickState) {
-    const responseQuality = analyzeResponse(state.currentState);
-    
+    const responseQuality = analyzeResponse(state.current);
+
     // Change strategy based on what's happening
-    if (responseQuality === 'confused') {
+    if (responseQuality === "confused") {
       return (
         <>
-          <AiSdkModel model={openai('gpt-4o')} />  {/* Upgrade */}
+          <AiSdkModel model={openai("gpt-4o")} /> {/* Upgrade */}
           <Section audience="model">
             Let's slow down. Break this into smaller steps.
           </Section>
@@ -90,10 +90,10 @@ class AdaptiveAgent extends Component {
         </>
       );
     }
-    
+
     return (
       <>
-        <AiSdkModel model={openai('gpt-4o-mini')} />
+        <AiSdkModel model={openai("gpt-4o-mini")} />
         <Timeline>{this.timeline()}</Timeline>
         <Section audience="model">Be concise.</Section>
       </>
@@ -143,17 +143,17 @@ Manage state with signals—a reactive primitive inspired by Angular and SolidJS
 class MyAgent extends Component {
   // Local state - component-only
   private startedAt = signal(new Date());
-  
+
   // COM state - shared across components, persisted across ticks
-  private timeline = comState<COMTimelineEntry[]>('timeline', []);
-  
+  private timeline = comState<COMTimelineEntry[]>("timeline", []);
+
   // Derived state - memoized, auto-updates
   private messageCount = computed(() => this.timeline().length);
 
   onTickStart(com, state) {
     // Append new entries from model response
-    if (state.currentState?.timeline?.length) {
-      this.timeline.update(t => [...t, ...state.currentState.timeline]);
+    if (state.current?.timeline?.length) {
+      this.timeline.update((t) => [...t, ...state.current.timeline]);
     }
   }
 
@@ -176,34 +176,35 @@ A tool isn't just a function that executes. It's a component that can render con
 
 ```tsx
 class Scratchpad extends Component {
-  static tool = scratchpadTool;  // Registered automatically on mount
-  
+  static tool = scratchpadTool; // Registered automatically on mount
+
   // Use comState for notes - persists across ticks
-  private notes = comState<Note[]>('notes', []);
-  
+  private notes = comState<Note[]>("notes", []);
+
   async onMount(com: ContextObjectModel) {
     const ctx = Context.get();
     const loaded = await loadNotes(ctx.metadata.threadId);
     this.notes.set(loaded);
   }
-  
+
   render(com: ContextObjectModel) {
     const notes = this.notes();
-    
+
     return (
       <>
         <Section id="scratchpad" audience="model">
           You have a scratchpad for notes. Current contents:
         </Section>
         <Grounding position="after-system" audience="model">
-          {notes.length === 0 
-            ? <Paragraph>No notes yet.</Paragraph>
-            : (
-              <List ordered>
-                {notes.map(n => (<ListItem key={n.id}>{n.text}</ListItem>))}
-              </List>
-            )
-          }
+          {notes.length === 0 ? (
+            <Paragraph>No notes yet.</Paragraph>
+          ) : (
+            <List ordered>
+              {notes.map((n) => (
+                <ListItem key={n.id}>{n.text}</ListItem>
+              ))}
+            </List>
+          )}
         </Grounding>
       </>
     );
@@ -223,36 +224,36 @@ private timeline = comState<COMTimelineEntry[]>('timeline', []);
 private cart = comState<Product[]>('cart', []);
 
 onTickStart(com, state) {
-  if (state.currentState?.timeline?.length) {
-    this.timeline.update(t => [...t, ...state.currentState.timeline]);
+  if (state.current?.timeline?.length) {
+    this.timeline.update(t => [...t, ...state.current.timeline]);
   }
 }
 
 render(com: ContextObjectModel, state: TickState) {
   const user = Context.get().user;
   const products = this.cart();
-  
+
   return (
     <>
       <AiSdkModel model={openai('gpt-4o')} />
       <Timeline>{this.timeline()}</Timeline>
-      
+
       <Section id="instructions" audience="model">
         <H2>Your Role</H2>
         <Paragraph>
           You are a shopping assistant for <strong>{user.name}</strong>.
         </Paragraph>
-        
+
         <H2>Current Cart</H2>
         {products?.length > 0 ? (
-          <Table 
+          <Table
             headers={['Product', 'Price', 'Qty']}
             rows={products.map(p => [p.name, `$${p.price}`, String(p.qty)])}
           />
         ) : (
           <Paragraph><em>Cart is empty</em></Paragraph>
         )}
-        
+
         <H2>Available Actions</H2>
         <List ordered>
           <ListItem>Add items with <inlineCode>add_to_cart</inlineCode></ListItem>
@@ -260,13 +261,13 @@ render(com: ContextObjectModel, state: TickState) {
           <ListItem>Check out with <inlineCode>checkout</inlineCode></ListItem>
         </List>
       </Section>
-      
+
       {/* Multimodal content */}
       <Message role="user">
         <Text>What do you think of this product?</Text>
         <Image source={{ type: 'url', url: productImageUrl }} altText="Product photo" />
       </Message>
-      
+
       {/* Code examples for the model */}
       <Grounding position="after-system" audience="model">
         <Paragraph>Example API response format:</Paragraph>
@@ -294,8 +295,8 @@ Define tools that execute on the client and wait for the response. True human-in
 ```tsx
 // Define a tool that needs user confirmation
 const confirmTool = createTool({
-  name: 'confirm_action',
-  description: 'Ask the user to confirm',
+  name: "confirm_action",
+  description: "Ask the user to confirm",
   parameters: z.object({ message: z.string() }),
   executionType: ToolExecutionType.CLIENT,
   requiresResponse: true,
@@ -303,8 +304,8 @@ const confirmTool = createTool({
 });
 
 // On the client
-client.on('tool_call', async (call) => {
-  if (call.name === 'confirm_action') {
+client.on("tool_call", async (call) => {
+  if (call.name === "confirm_action") {
     const confirmed = await showDialog(call.input.message);
     await client.sendToolResult(call.id, { confirmed });
   }
@@ -345,8 +346,8 @@ private marketData = comState<any>('market', null);
 private competitorData = comState<any>('competitors', null);
 
 onTickStart(com, state) {
-  if (state.currentState?.timeline?.length) {
-    this.timeline.update(t => [...t, ...state.currentState.timeline]);
+  if (state.current?.timeline?.length) {
+    this.timeline.update(t => [...t, ...state.current.timeline]);
   }
 }
 
@@ -355,19 +356,19 @@ render(com: ContextObjectModel, state: TickState) {
     <>
       <AiSdkModel model={openai('gpt-4o')} />
       <Timeline>{this.timeline()}</Timeline>
-      
+
       {/* Parallel research, wait for both */}
-      <Fork 
+      <Fork
         agent={<ResearchAgent topic="market" />}
         waitUntilComplete={true}
         onComplete={(r) => this.marketData.set(r)}
       />
-      <Fork 
+      <Fork
         agent={<ResearchAgent topic="competitors" />}
         waitUntilComplete={true}
         onComplete={(r) => this.competitorData.set(r)}
       />
-      
+
       {/* Background work, don't wait */}
       <Spawn agent={<AuditLogger />} />
     </>
@@ -383,16 +384,18 @@ See what's about to go to the model. React to it.
 class ContextManager extends Component {
   onAfterCompile(com: ContextObjectModel, compiled: CompiledStructure) {
     const tokens = estimateTokens(compiled);
-    
+
     if (tokens > 80000) {
       const timeline = com.getTimeline();
       const summarized = summarizeOlderMessages(timeline, 20);
       com.setTimeline(summarized);
-      com.requestRecompile('context-reduced');
+      com.requestRecompile("context-reduced");
     }
   }
-  
-  render() { return null; }
+
+  render() {
+    return null;
+  }
 }
 ```
 
@@ -402,14 +405,16 @@ Tell the model what's happening beyond the conversation.
 
 ```tsx
 <Timeline>
-  {messages.map(m => <Message key={m.id} {...m} />)}
-  
+  {messages.map((m) => (
+    <Message key={m.id} {...m} />
+  ))}
+
   <Event eventType="user_action">
     <UserAction action="checkout" actor="user">
       Clicked checkout. Cart total: $149.00
     </UserAction>
   </Event>
-  
+
   <Event eventType="system">
     <SystemEvent event="payment_success" source="stripe">
       Payment confirmed.
@@ -424,15 +429,15 @@ Insert your logic at every stage.
 
 ```tsx
 class MyAgent extends Component {
-  onMount(com) { }           // Component added to tree
-  onStart(com) { }           // Before first tick
-  onTickStart(com, state) { } // Before each render
-  render(com, state) { }     // Build context for model
-  onAfterCompile(com, compiled, state, ctx) { }  // Inspect/modify compiled output
-  onTickEnd(com, state) { }  // After model responds
-  onComplete(com, finalState) { }  // Execution finished
-  onUnmount(com) { }         // Component removed
-  onError(com, state) { }    // Handle errors, optionally recover
+  onMount(com) {} // Component added to tree
+  onStart(com) {} // Before first tick
+  onTickStart(com, state) {} // Before each render
+  render(com, state) {} // Build context for model
+  onAfterCompile(com, compiled, state, ctx) {} // Inspect/modify compiled output
+  onTickEnd(com, state) {} // After model responds
+  onComplete(com, finalState) {} // Execution finished
+  onUnmount(com) {} // Component removed
+  onError(com, state) {} // Handle errors, optionally recover
 }
 ```
 
@@ -452,14 +457,16 @@ AIDK bridges both. The same components render to users (via your frontend) and t
 // This component serves both audiences
 class Scratchpad extends Component {
   render(com: ContextObjectModel) {
-    const notes = com.getState<Note[]>('notes');
-    
+    const notes = com.getState<Note[]>("notes");
+
     // For the model: describe the notes in natural language
     return (
       <Section audience="model">
         <Paragraph>The user has {notes.length} notes:</Paragraph>
         <List>
-          {notes.map(n => <ListItem key={n.id}>{n.text}</ListItem>)}
+          {notes.map((n) => (
+            <ListItem key={n.id}>{n.text}</ListItem>
+          ))}
         </List>
       </Section>
     );
@@ -483,7 +490,7 @@ Your components don't build strings. They mutate a structured object that repres
 // Components mutate the COM, like React components mutate the virtual DOM
 render(com: ContextObjectModel, state: TickState) {
   com.setState('processingStep', 3);           // State lives in the COM
-  
+
   return (
     <>
       <Section audience="model">...</Section>   {/* Adds a section node */}
@@ -503,29 +510,29 @@ Components aren't flat. They nest. They compose. They form trees.
 ```tsx
 // An agent is a component
 class CustomerServiceAgent extends Component {
-  private timeline = comState<COMTimelineEntry[]>('timeline', []);
-  private customer = comState<Customer | null>('customer', null);
+  private timeline = comState<COMTimelineEntry[]>("timeline", []);
+  private customer = comState<Customer | null>("customer", null);
   private needsEscalation = signal(false);
 
   onTickStart(com, state) {
-    if (state.currentState?.timeline?.length) {
-      this.timeline.update(t => [...t, ...state.currentState.timeline]);
+    if (state.current?.timeline?.length) {
+      this.timeline.update((t) => [...t, ...state.current.timeline]);
     }
   }
 
   render(com, state) {
     return (
       <>
-        <AiSdkModel model={openai('gpt-4o')} />
+        <AiSdkModel model={openai("gpt-4o")} />
         <Timeline>{this.timeline()}</Timeline>
-        
+
         {/* Tools are components */}
         <OrderLookup />
         <RefundProcessor />
-        
+
         {/* Sections are components */}
         <CustomerContext customer={this.customer()} />
-        
+
         {/* Other agents are components */}
         {this.needsEscalation() && <EscalationAgent />}
       </>
@@ -535,6 +542,7 @@ class CustomerServiceAgent extends Component {
 ```
 
 Every component in that tree:
+
 - Has its own `render()` that contributes to the context
 - Has lifecycle hooks (`onMount`, `onTickStart`, `onComplete`, etc.)
 - Can read and write to the COM
@@ -549,21 +557,23 @@ Routing isn't configuration. It's rendering.
 
 ```tsx
 class OrchestratorAgent extends Component {
-  private detectedIntent = comState<string | null>('detectedIntent', null);
+  private detectedIntent = comState<string | null>("detectedIntent", null);
 
   render(com: ContextObjectModel, state: TickState) {
     const intent = this.detectedIntent();
-    
+
     // Route by rendering the appropriate agent
     switch (intent) {
-      case 'billing':
+      case "billing":
         return <BillingAgent />;
-      case 'technical':
+      case "technical":
         return <TechnicalSupportAgent />;
-      case 'sales':
+      case "sales":
         return <SalesAgent />;
       default:
-        return <TriageAgent onIntentDetected={(i) => this.detectedIntent.set(i)} />;
+        return (
+          <TriageAgent onIntentDetected={(i) => this.detectedIntent.set(i)} />
+        );
     }
   }
 }
@@ -574,29 +584,38 @@ No router configuration. No intent mapping files. The orchestrator IS the routin
 ```tsx
 // Multi-agent coordination is just rendering
 class ResearchCoordinator extends Component {
-  private phase = comState<string>('phase', 'gather');
-  private webResults = comState<any>('web', null);
-  private dbResults = comState<any>('db', null);
-  private apiResults = comState<any>('api', null);
-  private sources = comState<any>('sources', null);
-  private report = comState<any>('report', null);
+  private phase = comState<string>("phase", "gather");
+  private webResults = comState<any>("web", null);
+  private dbResults = comState<any>("db", null);
+  private apiResults = comState<any>("api", null);
+  private sources = comState<any>("sources", null);
+  private report = comState<any>("report", null);
 
   render(com: ContextObjectModel, state: TickState) {
-    if (this.phase() === 'gather') {
+    if (this.phase() === "gather") {
       return (
         <>
           {/* Parallel research agents */}
-          <Fork agent={<WebResearchAgent />} onComplete={(r) => this.webResults.set(r)} />
-          <Fork agent={<DatabaseAgent />} onComplete={(r) => this.dbResults.set(r)} />
-          <Fork agent={<APIAgent />} onComplete={(r) => this.apiResults.set(r)} />
+          <Fork
+            agent={<WebResearchAgent />}
+            onComplete={(r) => this.webResults.set(r)}
+          />
+          <Fork
+            agent={<DatabaseAgent />}
+            onComplete={(r) => this.dbResults.set(r)}
+          />
+          <Fork
+            agent={<APIAgent />}
+            onComplete={(r) => this.apiResults.set(r)}
+          />
         </>
       );
     }
-    
-    if (this.phase() === 'synthesize') {
+
+    if (this.phase() === "synthesize") {
       return <SynthesisAgent sources={this.sources()} />;
     }
-    
+
     return <DeliveryAgent report={this.report()} />;
   }
 }
@@ -643,6 +662,7 @@ Build once. Compose anywhere. This is the React model applied to AI agents.
 ### No prompt templates
 
 Other frameworks:
+
 ```python
 prompt = PromptTemplate("""
 You are a {role} assistant.
@@ -654,11 +674,15 @@ The user's name is {user_name}.
 ```
 
 AIDK:
+
 ```tsx
 <Section audience="model">
   <Paragraph>You are a {role} assistant.</Paragraph>
   <Paragraph>The user's name is {user.name}.</Paragraph>
-  <Table headers={['Item', 'Price']} rows={cart.map(i => [i.name, `$${i.price}`])} />
+  <Table
+    headers={["Item", "Price"]}
+    rows={cart.map((i) => [i.name, `$${i.price}`])}
+  />
 </Section>
 ```
 
@@ -667,6 +691,7 @@ Templates are strings with holes. Components are typed, composable, testable cod
 ### Streaming is the API
 
 Other frameworks add streaming as an option:
+
 ```python
 # The "normal" way
 result = agent.run(input)
@@ -678,7 +703,7 @@ for chunk in agent.stream(input):
 
 AIDK: streaming is the primitive. Everything flows through it.
 
-```typescript
+``` tsx
 // Pure streaming — iterate events
 for await (const event of engine.stream(input, <Agent />)) {
   // tick_start, content_delta, tool_call, tick_end, complete
@@ -692,7 +717,7 @@ const result = await engine.execute(input, <Agent />);
 
 Sometimes you want both: subscribe to events AND get the final result. Use `.withHandle()`:
 
-```typescript
+``` tsx
 const { handle, result } = await engine.execute
   .withContext({ user, tenantId, metadata })
   .withHandle()
@@ -713,7 +738,7 @@ console.log('Done:', output);
 
 Chain modifiers for full control:
 
-```typescript
+``` tsx
 const { handle, result } = await engine.execute
   .use(loggingMiddleware)           // Per-call middleware
   .use(rateLimitMiddleware)         // Stack them
@@ -731,34 +756,34 @@ const { handle, result } = await engine.execute
 
 Models and tools are Procedures. They have the same fluent API:
 
-```typescript
-import { createAiSdkModel } from 'aidk-ai-sdk';
-import { openai } from '@ai-sdk/openai';
+``` tsx
+import { createAiSdkModel } from "aidk-ai-sdk";
+import { openai } from "@ai-sdk/openai";
 
-const model = createAiSdkModel({ model: openai('gpt-4o') });
+const model = createAiSdkModel({ model: openai("gpt-4o") });
 
 // Direct model call with handle
 const { handle, result } = model.generate
   .withContext({ userId })
   .withHandle()
   .run({
-    messages: [{ role: 'user', content: [{ type: 'text', text: 'Hello' }] }],
+    messages: [{ role: "user", content: [{ type: "text", text: "Hello" }] }],
   });
 
-handle.events.on('chunk', (chunk) => stream.write(chunk.delta));
+handle.events.on("chunk", (chunk) => stream.write(chunk.delta));
 const response = await result;
 
 // Direct tool call with the same pattern
 const { handle: toolHandle, result: toolResult } = Calculator.run
   .withContext({ userId })
   .withHandle()
-  .run({ expression: '2 + 2' });
+  .run({ expression: "2 + 2" });
 
-toolHandle.events.on('complete', () => console.log('Tool finished'));
+toolHandle.events.on("complete", () => console.log("Tool finished"));
 const answer = await toolResult;
 
 // Or just call directly
-const answer = await Calculator.run({ expression: '2 + 2' });
+const answer = await Calculator.run({ expression: "2 + 2" });
 ```
 
 Events flow. Your client connects. Updates stream in real-time. This isn't a feature—it's how the engine works.
@@ -767,7 +792,7 @@ Events flow. Your client connects. Updates stream in real-time. This isn't a fea
 
 Create model instances outside of JSX. Call them directly with the full Procedure API.
 
-```typescript
+``` tsx
 import { createAiSdkModel } from 'aidk-ai-sdk';
 import { openai } from '@ai-sdk/openai';
 
@@ -807,38 +832,27 @@ for await (const chunk of stream) {
 
 Set middleware at the engine level. It runs for every execution, model call, or tool call.
 
-```typescript
+``` tsx
 const engine = createEngine({
   middleware: {
     // Runs on every agent execution
-    execute: [
-      loggingMiddleware,
-      authMiddleware,
-      rateLimitMiddleware,
-    ],
+    execute: [loggingMiddleware, authMiddleware, rateLimitMiddleware],
     // Runs on every model call
-    model: [
-      tokenCountingMiddleware,
-      cacheMiddleware,
-      retryMiddleware,
-    ],
+    model: [tokenCountingMiddleware, cacheMiddleware, retryMiddleware],
     // Runs on every tool call
-    tool: [
-      auditMiddleware,
-      validationMiddleware,
-    ],
+    tool: [auditMiddleware, validationMiddleware],
   },
 });
 
 // Or add middleware after creation
-engine.use('execute', telemetryMiddleware);
-engine.use('model', costTrackingMiddleware);
-engine.use('tool', sandboxMiddleware);
+engine.use("execute", telemetryMiddleware);
+engine.use("model", costTrackingMiddleware);
+engine.use("tool", sandboxMiddleware);
 ```
 
 Per-call middleware stacks on top:
 
-```typescript
+``` tsx
 // Global middleware + per-call middleware
 const result = await engine.execute
   .use(requestSpecificMiddleware)  // Added for this call only
@@ -849,7 +863,7 @@ const result = await engine.execute
 
 Run one engine for your whole application:
 
-```typescript
+``` tsx
 // Singleton engine for your app
 export const engine = createEngine({ middleware: {...} });
 
@@ -861,7 +875,7 @@ app.post('/chat', (req, res) => {
 
 Or create engines for isolated execution:
 
-```typescript
+``` tsx
 // One-off engine for a specific task
 const isolatedEngine = createEngine({
   middleware: { execute: [specialMiddleware] },
@@ -894,63 +908,64 @@ const spawnedHandle = await engine.spawn({
 
 ### Send messages to running executions
 
-> **Coming Soon:** Full message sending API is under development. Current implementation supports signals.
+Send messages to running executions and handle them in your agent:
 
-Executions can receive control signals and will soon support arbitrary messages:
-
-```typescript
+``` tsx
 const { handle } = await engine.execute
   .withHandle()
   .run(input, <InteractiveAgent />);
 
-// Send control signals (available now)
-handle.emitSignal('interrupt', 'User requested pause');
-handle.emitSignal('resume', 'Continue execution');
-
-// Send messages (coming soon)
-// await handle.send({
-//   type: 'user_feedback',
-//   content: 'Focus on security instead of performance',
-// });
-
-// Agent will receive via onMessage lifecycle hook (coming soon)
-// class InteractiveAgent extends Component {
-//   onMessage(com, message, state) {
-//     if (message.type === 'user_feedback') {
-//       com.setState('userFeedback', message.content);
-//     }
-//   }
-// }
-```
-
-**Current workaround** - Use channels for bidirectional communication:
-
-```typescript
-// Client sends message
-await client.send('execution_control', 'feedback', {
-  type: 'user_feedback',
-  content: 'Focus on security'
+// Send a message to the running execution
+await handle.sendMessage({
+  role: 'user',
+  content: [{ type: 'text', text: 'Actually, focus on security instead' }],
 });
 
-// Server handles via channel router
-const executionControlRouter: ChannelRouter = {
-  name: 'execution_control',
-  async handleEvent(event, context) {
-    if (event.event === 'feedback') {
-      // Update COM state
-      context.com?.setState('userFeedback', event.data.content);
-    }
-  }
-};
+// Or send control signals
+handle.emitSignal('interrupt', 'User requested pause');
+handle.emitSignal('resume', 'Continue execution');
 ```
 
-See [Architecture Proposal](/ARCHITECTURE_MESSAGE_SENDING.md) for full design.
+The agent receives messages via the `onMessage` lifecycle hook:
+
+```tsx
+class InteractiveAgent extends Component {
+  private userFeedback = comState<string | null>('userFeedback', null);
+
+  onMessage(com, message, state) {
+    // Handle incoming messages during execution
+    if (message.role === 'user') {
+      const text = message.content.find(b => b.type === 'text')?.text;
+      if (text) {
+        this.userFeedback.set(text);
+      }
+    }
+  }
+
+  render(com, state) {
+    return (
+      <>
+        <Model model={openai('gpt-4o')} />
+        <System>You are a helpful assistant.</System>
+
+        {this.userFeedback() && (
+          <Grounding title="User Feedback">
+            {this.userFeedback()}
+          </Grounding>
+        )}
+
+        <Timeline>{/* ... */}</Timeline>
+      </>
+    );
+  }
+}
+```
 
 ### Trace the execution graph
 
 See how agents, forks, and spawns relate:
 
-```typescript
+``` tsx
 const { handle, result } = await engine.execute
   .withHandle()
   .run(input, <OrchestratorAgent />);
@@ -979,9 +994,9 @@ console.log(graph);
 
 Plug in your OTel provider. Every tick, model call, and tool call becomes a span.
 
-```typescript
-import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node';
-import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
+``` tsx
+import { NodeTracerProvider } from "@opentelemetry/sdk-trace-node";
+import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
 
 const provider = new NodeTracerProvider();
 provider.addSpanProcessor(new BatchSpanProcessor(new OTLPTraceExporter()));
@@ -1004,6 +1019,7 @@ const engine = createEngine({
 ```
 
 Spans include:
+
 - Execution ID, tick number, agent name
 - Model calls with token counts, latency, cost
 - Tool calls with input/output, duration
@@ -1030,21 +1046,22 @@ AIDK: types flow through your entire agent.
 ```tsx
 // Tool parameters are Zod schemas
 const searchTool = createTool({
-  name: 'search',
+  name: "search",
   parameters: z.object({
     query: z.string(),
     limit: z.number().optional().default(10),
   }),
-  handler: async ({ query, limit }) => {  // Inferred types
+  handler: async ({ query, limit }) => {
+    // Inferred types
     // ...
   },
 });
 
 // Content blocks are typed
-const block: TextBlock = { type: 'text', text: 'Hello' };
+const block: TextBlock = { type: "text", text: "Hello" };
 
 // Events are typed
-engine.on('tool_call', (event: ToolCallEvent) => {
+engine.on("tool_call", (event: ToolCallEvent) => {
   // event.name, event.input, event.id — all typed
 });
 ```
@@ -1054,6 +1071,7 @@ Your tools validate input automatically. Your IDE autocompletes everything. Runt
 ### No configuration files
 
 Other frameworks:
+
 ```yaml
 # agent_config.yaml
 name: customer_service_agent
@@ -1073,13 +1091,13 @@ AIDK: your agent IS the code.
 class CustomerServiceAgent extends Component {
   render(com: ContextObjectModel, state: TickState) {
     const ctx = Context.get();
-    
+
     return (
       <>
-        <AiSdkModel model={openai('gpt-4')} temperature={0.7} />
+        <AiSdkModel model={openai("gpt-4")} temperature={0.7} />
         <SearchOrdersTool />
         {ctx.user.canRefund && <RefundTool />}
-        {state.tick > 10 && state.stop('Max iterations reached')}
+        {state.tick > 10 && state.stop("Max iterations reached")}
       </>
     );
   }
@@ -1092,34 +1110,34 @@ No separate config to keep in sync. No runtime loading. No "where is that settin
 
 ## Capabilities
 
-| Capability | How |
-|------------|-----|
-| React to model output | `render()` every tick |
-| Swap models mid-execution | Render different `<Model />` |
-| Nested component trees | Components render components |
-| Agent routing | Render different agent based on state |
-| Reusable components | Same component works in any agent |
-| Context everywhere | `Context.get()` |
-| Full lifecycle hooks | `onMount`, `onTickStart`, `onComplete`, etc. |
-| Execution handles | `.withHandle()` → `{ handle, result }` |
-| Fluent API | `.use().withContext().withHandle().run()` |
-| Programmatic model instances | `createModel()` → call directly or use in JSX |
-| Direct model/tool calls | `engine.model.run()`, `engine.tool.run()` |
-| Global middleware | Engine-level middleware for execute/model/tool |
-| Per-call middleware | `.use(middleware)` on any call |
-| Send messages to executions | `handle.send()` to running forks/spawns |
-| Execution graph tracing | `handle.getExecutionGraph()` |
-| OpenTelemetry integration | Spans for every tick, model call, tool call |
-| JSX content primitives | `<H1>`, `<Paragraph>`, `<List>`, `<Table>`, `<Code>`, etc. |
-| Multimodal content | `<Image>`, `<Audio>`, `<Video>`, `<Document>` |
-| Tools that render state | Tools with `render()` method |
-| Client-executed tools | `ToolExecutionType.CLIENT` |
-| MCP integration | `<MCPTool include={} exclude={} toolPrefix={} />` |
-| Parallel execution | `<Fork />` (JSX) or `engine.fork()` (programmatic) |
-| Background tasks | `<Spawn />` (JSX) or `engine.spawn()` (programmatic) |
-| Context management | `onAfterCompile` + `requestRecompile()` |
-| Real-time sync | Channels (SSE/WebSocket) |
-| Timeline events | `<Event>` component |
+| Capability                   | How                                                        |
+| ---------------------------- | ---------------------------------------------------------- |
+| React to model output        | `render()` every tick                                      |
+| Swap models mid-execution    | Render different `<Model />`                               |
+| Nested component trees       | Components render components                               |
+| Agent routing                | Render different agent based on state                      |
+| Reusable components          | Same component works in any agent                          |
+| Context everywhere           | `Context.get()`                                            |
+| Full lifecycle hooks         | `onMount`, `onTickStart`, `onComplete`, etc.               |
+| Execution handles            | `.withHandle()` → `{ handle, result }`                     |
+| Fluent API                   | `.use().withContext().withHandle().run()`                  |
+| Programmatic model instances | `createModel()` → call directly or use in JSX              |
+| Direct model/tool calls      | `engine.model.run()`, `engine.tool.run()`                  |
+| Global middleware            | Engine-level middleware for execute/model/tool             |
+| Per-call middleware          | `.use(middleware)` on any call                             |
+| Send messages to executions  | `handle.send()` to running forks/spawns                    |
+| Execution graph tracing      | `handle.getExecutionGraph()`                               |
+| OpenTelemetry integration    | Spans for every tick, model call, tool call                |
+| JSX content primitives       | `<H1>`, `<Paragraph>`, `<List>`, `<Table>`, `<Code>`, etc. |
+| Multimodal content           | `<Image>`, `<Audio>`, `<Video>`, `<Document>`              |
+| Tools that render state      | Tools with `render()` method                               |
+| Client-executed tools        | `ToolExecutionType.CLIENT`                                 |
+| MCP integration              | `<MCPTool include={} exclude={} toolPrefix={} />`          |
+| Parallel execution           | `<Fork />` (JSX) or `engine.fork()` (programmatic)         |
+| Background tasks             | `<Spawn />` (JSX) or `engine.spawn()` (programmatic)       |
+| Context management           | `onAfterCompile` + `requestRecompile()`                    |
+| Real-time sync               | Channels (SSE/WebSocket)                                   |
+| Timeline events              | `<Event>` component                                        |
 
 ---
 
@@ -1127,25 +1145,25 @@ No separate config to keep in sync. No runtime loading. No "where is that settin
 
 The landscape is evolving fast. Here's how AIDK's approach differs:
 
-| | Traditional Frameworks | AIDK |
-|---|---|---|
-| **Mental model** | Configure agents, wire workflows | Components render before every model call |
-| **React to output** | Callbacks after completion | Re-render with full state access |
-| **Context building** | Templates, string interpolation | Typed JSX components |
-| **Configuration** | YAML, JSON, Python dicts | Just code—your agent IS the config |
-| **Model swapping** | Reinitialize or reconfigure | Render a different `<Model />` component |
-| **Agent routing** | Graph edges, orchestrator config | Render a different agent component |
-| **Composition** | Chain functions, wire nodes | Nested component trees, shared via import |
-| **Execution control** | Run or stream | Handle + result, fluent `.use().withContext().withHandle()` |
-| **Middleware** | Callbacks at hook points | Typed middleware for engine, model, and tool—global + per-call |
+|                       | Traditional Frameworks           | AIDK                                                           |
+| --------------------- | -------------------------------- | -------------------------------------------------------------- |
+| **Mental model**      | Configure agents, wire workflows | Components render before every model call                      |
+| **React to output**   | Callbacks after completion       | Re-render with full state access                               |
+| **Context building**  | Templates, string interpolation  | Typed JSX components                                           |
+| **Configuration**     | YAML, JSON, Python dicts         | Just code—your agent IS the config                             |
+| **Model swapping**    | Reinitialize or reconfigure      | Render a different `<Model />` component                       |
+| **Agent routing**     | Graph edges, orchestrator config | Render a different agent component                             |
+| **Composition**       | Chain functions, wire nodes      | Nested component trees, shared via import                      |
+| **Execution control** | Run or stream                    | Handle + result, fluent `.use().withContext().withHandle()`    |
+| **Middleware**        | Callbacks at hook points         | Typed middleware for engine, model, and tool—global + per-call |
 
-**Note on the ecosystem:** LangChain, Vercel AI SDK, AutoGen, and CrewAI are excellent tools with OpenTelemetry support, MCP adapters, and streaming. AIDK isn't competing on features—it's offering a different mental model. We think of context as a *Model Interface*, analogous to a User Interface. Components bridge both: the same state renders to users in their native format (UI) and to models in theirs (context). This makes AIDK a **context engineering framework**—a platform for building applications where humans and models collaborate on shared, typed, reactive components.
+**Note on the ecosystem:** LangChain, Vercel AI SDK, AutoGen, and CrewAI are excellent tools with OpenTelemetry support, MCP adapters, and streaming. AIDK isn't competing on features—it's offering a different mental model. We think of context as a _Model Interface_, analogous to a User Interface. Components bridge both: the same state renders to users in their native format (UI) and to models in theirs (context). This makes AIDK a **context engineering framework**—a platform for building applications where humans and models collaborate on shared, typed, reactive components.
 
 ### The core difference
 
-Other frameworks ask: *"How do I configure this agent?"*
+Other frameworks ask: _"How do I configure this agent?"_
 
-AIDK asks: *"What should this agent render right now, given what just happened?"*
+AIDK asks: _"What should this agent render right now, given what just happened?"_
 
 That's the shift. Configuration → Programming. Static → Reactive. Hope → Control.
 
@@ -1174,19 +1192,19 @@ The model adapter is just a component. Swap it. Condition it. The rest of your a
 
 ## Packages
 
-| Package | Purpose |
-|---------|---------|
-| `aidk` | Core framework |
-| `aidk-kernel` | Execution primitives, context |
-| `aidk-server` | Server utilities, channel broadcasting |
-| `aidk-client` | Browser client |
-| `aidk-express` | Express.js integration |
-| `aidk-nestjs` | NestJS integration |
-| `aidk-react` | React hooks and components |
-| `aidk-angular` | Angular services and components |
-| `aidk-ai-sdk` | Vercel AI SDK adapter |
-| `aidk-openai` | OpenAI direct adapter |
-| `aidk-google` | Google AI adapter |
+| Package        | Purpose                                |
+| -------------- | -------------------------------------- |
+| `aidk`         | Core framework                         |
+| `aidk-kernel`  | Execution primitives, context          |
+| `aidk-server`  | Server utilities, channel broadcasting |
+| `aidk-client`  | Browser client                         |
+| `aidk-express` | Express.js integration                 |
+| `aidk-nestjs`  | NestJS integration                     |
+| `aidk-react`   | React hooks and components             |
+| `aidk-angular` | Angular services and components        |
+| `aidk-ai-sdk`  | Vercel AI SDK adapter                  |
+| `aidk-openai`  | OpenAI direct adapter                  |
+| `aidk-google`  | Google AI adapter                      |
 
 ---
 
@@ -1205,7 +1223,7 @@ The model adapter is just a component. Swap it. Condition it. The rest of your a
 ## Coming Soon
 
 - **Soft/Hard Interrupts** — Configurable interruption modes for client-initiated stops
-- **Message Queueing** — Queue messages during execution for ordered processing  
+- **Message Queueing** — Queue messages during execution for ordered processing
 - **Memory Primitives** — Built-in episodic and semantic memory components
 
 ---

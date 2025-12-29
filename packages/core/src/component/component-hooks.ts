@@ -123,6 +123,7 @@ export class ComponentHookRegistry extends BaseHookRegistry<
       "render",
       "onAfterCompile",
       "onTickEnd",
+      "onMessage",
       "onComplete",
       "onError",
     ] as const;

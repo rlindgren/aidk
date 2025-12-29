@@ -13,7 +13,10 @@
     "test": "turbo test",
     "typecheck": "turbo typecheck",
     "clean": "turbo clean",
-    "dev": "turbo dev"
+    "dev": "turbo dev",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "publish-packages": "turbo run test build && changeset publish"
   },
   "publishConfig": {
     "access": "public",

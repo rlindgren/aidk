@@ -229,8 +229,8 @@ graph TB
 │   │  ┌────────────────┐  ┌────────────────┐  ┌────────────────┐              │   │
 │   │  │ Tick Loop      │  │ Tool Executor  │  │ State Manager  │              │   │
 │   │  │ ───────────    │  │ ────────────   │  │ ─────────────  │              │   │
-│   │  │ Compile → Model│  │ Route & Execute│  │ previousState  │              │   │
-│   │  │ → Process →    │  │ Server/Client/ │  │ currentState   │              │   │
+│   │  │ Compile → Model│  │ Route & Execute│  │ previous  │              │   │
+│   │  │ → Process →    │  │ Server/Client/ │  │ current   │              │   │
 │   │  │ Continue/Stop  │  │ Provider/MCP   │  │ finalState     │              │   │
 │   │  └────────────────┘  └────────────────┘  └────────────────┘              │   │
 │   └──────────────────────────────────────────────────────────────────────────┘   │
@@ -602,8 +602,8 @@ class ConversationAgent extends Component {
   private timeline = comState<COMTimelineEntry[]>("timeline", []);
 
   onTickStart(com, state) {
-    if (state.currentState?.timeline) {
-      this.timeline.update((t) => [...t, ...state.currentState.timeline]);
+    if (state.current?.timeline) {
+      this.timeline.update((t) => [...t, ...state.current.timeline]);
     }
   }
 

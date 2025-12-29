@@ -2,7 +2,7 @@ import { createElement, type JSX, Fragment } from '../jsx-runtime';
 import { type EngineComponent, Component } from '../../component/component';
 import { ContextObjectModel } from '../../com/object-model';
 import { ModelAdapter, type ModelInstance } from '../../model/model';
-import { modelRegistry } from '../../registry';
+import { modelRegistry } from '../../utils/registry';
 import type { ComponentBaseProps } from '../jsx-types';
 import type { ProviderGenerationOptions } from '../../types';
 import type { MessageTransformationConfig } from '../../model/model';

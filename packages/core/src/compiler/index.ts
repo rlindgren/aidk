@@ -1,9 +1,9 @@
 /**
  * Compiler - Tick-Based Agent Architecture
- * 
+ *
  * A React-inspired fiber architecture designed specifically for AI agent execution.
  * Unlike React, this compiler is async-first and tick-based - no concurrent mode needed.
- * 
+ *
  * Key Features:
  * - Hooks in function components (useState, useEffect, etc.)
  * - AI-specific hooks (useComState, useTickStart, useAfterCompile)
@@ -11,30 +11,30 @@
  * - Pure content block rendering
  * - Async-first (effects can be async)
  * - Compile stabilization (recompile until stable)
- * 
+ *
  * @example Function component with hooks
  * ```tsx
  * function ChatAgent({ maxTurns }: { maxTurns: number }) {
  *   const [turns, setTurns] = useState(0);
  *   const [timeline, setTimeline] = useComState('timeline', []);
- *   
+ *
  *   useTickStart((com, state) => {
- *     if (state.currentState?.timeline) {
- *       setTimeline(t => [...t, ...state.currentState.timeline]);
+ *     if (state.current?.timeline) {
+ *       setTimeline(t => [...t, ...state.current.timeline]);
  *       setTurns(t => t + 1);
  *     }
  *   });
- *   
+ *
  *   useTickEnd((com, state) => {
  *     if (turns >= maxTurns) {
  *       state.stop('max turns reached');
  *     }
  *   });
- *   
+ *
  *   useEffect(async () => {
  *     await logToServer({ turns, messageCount: timeline.length });
  *   }, [turns]);
- *   
+ *
  *   return (
  *     <>
  *       <Section id="system">
@@ -49,20 +49,20 @@
  *   );
  * }
  * ```
- * 
+ *
  * @example Class component (existing pattern)
  * ```tsx
  * class ChatAgent extends Component {
  *   timeline = comState<Message[]>('timeline', []);
  *   turns = signal(0);
- *   
+ *
  *   async onTickStart(com, state) {
- *     if (state.currentState?.timeline) {
- *       this.timeline.update(t => [...t, ...state.currentState.timeline]);
+ *     if (state.current?.timeline) {
+ *       this.timeline.update(t => [...t, ...state.current.timeline]);
  *       this.turns.update(t => t + 1);
  *     }
  *   }
- *   
+ *
  *   render(com, state) {
  *     return (
  *       <Timeline>
@@ -72,21 +72,21 @@
  *   }
  * }
  * ```
- * 
+ *
  * @example Non-rendering component
  * ```tsx
  * function ExecutionController() {
  *   const [turns, setTurns] = useState(0);
- *   
+ *
  *   useTickEnd((com, state) => {
  *     setTurns(t => t + 1);
  *     if (turns >= 10) state.stop('max turns');
  *   });
- *   
+ *
  *   return null;  // No output - just manages execution
  * }
  * ```
- * 
+ *
  * @example Pure content blocks
  * ```tsx
  * function ContentProvider() {
@@ -94,7 +94,7 @@
  *     { type: 'text', text: 'Block 1' },
  *     { type: 'text', text: 'Block 2' },
  *   ];
- *   
+ *
  *   return (
  *     <Message role="assistant">
  *       <Text>Hello!</Text>
@@ -103,13 +103,15 @@
  *   );
  * }
  * ```
+ *
+ * @module aidk/compiler
  */
 
 // ============================================================================
 // Compiler
 // ============================================================================
 
-export { FiberCompiler } from './fiber-compiler';
+export { FiberCompiler } from "./fiber-compiler";
 
 // ============================================================================
 // Fiber Utilities
@@ -129,7 +131,7 @@ export {
   fiberTreeToDebugString,
   findNearestRenderer,
   setFiberRenderer,
-} from './fiber';
+} from "./fiber";
 
 // ============================================================================
 // Types
@@ -159,37 +161,32 @@ export type {
   RefObject,
   ContentBlockType,
   CompileStabilizationOptions,
-  CompileStabilizationResult
-} from './types';
+  CompileStabilizationResult,
+} from "./types";
 
-export { 
-  FiberFlags, 
-  HookTag, 
+export { StructureRenderer } from "./structure-renderer";
+
+export {
+  FiberFlags,
+  HookTag,
   EffectPhase,
   CONTENT_BLOCK_TYPES,
-  isContentBlock,
   isFragment,
-} from './types';
+} from "./types";
+
+export { isContentBlock } from "aidk-shared";
 
 // ============================================================================
 // State Hooks
 // ============================================================================
 
-export {
-  useState,
-  useReducer,
-  useSignal,
-} from './hooks';
+export { useState, useReducer, useSignal } from "../state/hooks";
 
 // ============================================================================
 // COM State Hooks
 // ============================================================================
 
-export {
-  useComState,
-  useWatch,
-  useInput,
-} from './hooks';
+export { useComState, useWatch, useInput } from "../state/hooks";
 
 // ============================================================================
 // Effect Hooks
@@ -203,34 +200,25 @@ export {
   useTickStart,
   useTickEnd,
   useAfterCompile,
-} from './hooks';
+} from "../state/hooks";
 
 // ============================================================================
 // Async Hooks
 // ============================================================================
 
-export {
-  useAsync,
-} from './hooks';
+export { useAsync } from "../state/hooks";
 
 // ============================================================================
 // Memoization Hooks
 // ============================================================================
 
-export {
-  useMemo,
-  useComputed,
-  useCallback,
-} from './hooks';
+export { useMemo, useComputed, useCallback } from "../state/hooks";
 
 // ============================================================================
 // Ref Hooks
 // ============================================================================
 
-export {
-  useRef,
-  useCOMRef,
-} from './hooks';
+export { useRef, useCOMRef } from "../state/hooks";
 
 // ============================================================================
 // Utility Hooks
@@ -242,7 +230,7 @@ export {
   useCounter,
   useAbortSignal,
   useDebugValue,
-} from './hooks';
+} from "../state/hooks";
 
 // ============================================================================
 // Internal (for advanced use)
@@ -253,4 +241,4 @@ export {
   getCurrentFiber,
   getCurrentContext,
   setScheduleWork,
-} from './hooks';
+} from "../state/hooks";

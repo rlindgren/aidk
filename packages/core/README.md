@@ -37,7 +37,7 @@ class MyAgent extends Component {
     return (
       <>
         <Timeline>
-          {state.currentState?.timeline?.map((entry, i) => (
+          {state.current?.timeline?.map((entry, i) => (
             <Message key={i} role={entry.message?.role} content={entry.message?.content} />
           ))}
         </Timeline>

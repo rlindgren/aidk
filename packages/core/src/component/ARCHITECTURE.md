@@ -128,8 +128,8 @@ interface EngineComponent {
 ```typescript
 interface TickState {
   tick: number; // Current tick number (1-indexed)
-  previousState?: COMInput; // Compiled state from previous tick
-  currentState?: COMOutput; // Model outputs from current tick
+  previous?: COMInput; // Compiled state from previous tick
+  current?: COMOutput; // Model outputs from current tick
   stopReason?: StopReasonInfo; // Why model stopped (if applicable)
   error?: EngineError; // Error info (if applicable)
   stop: (reason: string) => void; // Signal engine to stop
@@ -321,7 +321,7 @@ abstract class Component<P = {}, S = {}> implements EngineComponent {
 │        │                                                                     │
 │        ▼                                                                     │
 │  ┌──────────────┐                                                            │
-│  │ onTickStart  │ ← Before render (react to previousState/currentState)     │
+│  │ onTickStart  │ ← Before render (react to previous/current)     │
 │  └─────┬────────┘                                                            │
 │        │                                                                     │
 │        ▼                                                                     │
@@ -689,8 +689,8 @@ Execution context for each tick:
 ```typescript
 interface TickState {
   tick: number;
-  previousState?: COMInput;
-  currentState?: COMOutput;
+  previous?: COMInput;
+  current?: COMOutput;
   stopReason?: StopReasonInfo;
   error?: EngineError;
   stop: (reason: string) => void;

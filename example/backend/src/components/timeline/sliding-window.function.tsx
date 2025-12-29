@@ -51,8 +51,8 @@ export async function SlidingWindowTimeline(props: SlidingWindowTimelineProps) {
   });
 
   // Append new entries on subsequent ticks (tick 2+)
-  useTickStart((_com, { currentState }) => {
-    timeline.update(curr => [...curr, ...(currentState.timeline || [])]);
+  useTickStart((_com, { current }) => {
+    timeline.update(curr => [...curr, ...(current.timeline || [])]);
   });
   
   // Render

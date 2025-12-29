@@ -574,7 +574,7 @@ export class ExecutionHandleImpl
     agent: any,
     input: any,
     currentTick: number,
-    previousState?: COMInput,
+    previous?: COMInput,
   ): ExecutionState {
     return {
       pid: this.pid,
@@ -585,7 +585,7 @@ export class ExecutionHandleImpl
       input,
       agent,
       currentTick,
-      previousState,
+      previous,
       startedAt: this.startedAt,
       completedAt: this.completedAt,
       error: this.error

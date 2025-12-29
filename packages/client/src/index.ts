@@ -1,36 +1,61 @@
 /**
- * Engine Client Package
- * 
- * Two layers:
- * 1. Core primitives (SSETransport, ChannelClient) - transport-agnostic
- * 2. EngineClient - opinionated layer with our conventions
- * 
- * @example
+ * # AIDK Client
+ *
+ * Browser client for connecting to AIDK agents. Provides real-time streaming,
+ * tool execution coordination, and channel-based communication.
+ *
+ * ## Architecture
+ *
+ * Two layers for progressive adoption:
+ *
+ * 1. **EngineClient** - Opinionated client with AIDK conventions (recommended)
+ * 2. **Core Primitives** - SSETransport, ChannelClient for custom implementations
+ *
+ * ## Quick Start
+ *
  * ```typescript
- * // Use the opinionated client (recommended)
- * import { EngineClient, createEngineClient } from '@example/packages/client';
- * 
+ * import { createEngineClient } from 'aidk-client';
+ *
  * const client = createEngineClient({
  *   baseUrl: 'http://localhost:3001',
  *   userId: 'user-123',
  * });
- * 
- * // Or use core primitives for custom transports
- * import { SSETransport, ChannelClient } from '@example/packages/client/core';
- * 
+ *
+ * // Execute an agent
+ * const execution = await client.execute({ input: 'Hello!' });
+ *
+ * // Stream responses
+ * for await (const event of execution.stream()) {
+ *   if (event.type === 'text') console.log(event.text);
+ * }
+ * ```
+ *
+ * ## Custom Transports
+ *
+ * For custom transport implementations, use the core primitives:
+ *
+ * ```typescript
+ * import { SSETransport, ChannelClient } from 'aidk-client/core';
+ *
  * const transport = new SSETransport({
  *   buildUrl: () => '/my/sse/endpoint',
- *   send: (data) => fetch('/my/publish', { method: 'POST', body: JSON.stringify(data) }),
+ *   send: (data) => fetch('/my/publish', { method: 'POST', body: data }),
  * });
- * 
+ *
  * const channels = new ChannelClient({ transport });
  * ```
+ *
+ * @see {@link EngineClient} - Main client class
+ * @see {@link createEngineClient} - Factory function
+ * @see {@link ExecutionHandler} - Execution lifecycle management
+ *
+ * @module aidk-client
  */
 
 // Opinionated engine client
-export { 
-  EngineClient, 
-  getEngineClient, 
+export {
+  EngineClient,
+  getEngineClient,
   createEngineClient,
   type EngineClientConfig,
   type EngineRoutes,
@@ -40,11 +65,11 @@ export {
   type ExecutionResult,
   type Execution,
   type ExecutionMetrics,
-} from './engine-client';
+} from "./engine-client";
 // Note: EngineStreamEvent and EngineInput are exported from './types'
 
 // Legacy types re-export
-export * from './types';
+export * from "./types";
 
 // Execution handler (framework-agnostic)
 export {
@@ -60,20 +85,20 @@ export {
   type ExecutionHandlerCallbacks,
   type ExecutionHandlerConfig,
   type SendMessageOptions,
-} from './execution-handler';
+} from "./execution-handler";
 
 // Channel abstraction (uses core ChannelClient internally)
-export { 
+export {
   defineChannel,
   type Channel,
   type ChannelDefinition,
   type type,
-} from './channel';
+} from "./channel";
 
 // Re-export ChannelEvent from core
-export type { ChannelEvent } from './core';
+export type { ChannelEvent } from "./core";
 
 // Core primitives (for custom implementations)
-export * from './core';
+export * from "./core";
 
-export * from 'aidk-shared';
+export * from "aidk-shared";

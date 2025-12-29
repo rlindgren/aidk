@@ -1,94 +1,147 @@
-export * from './procedure';
-export * from './hooks/hook';
-export * from './hooks/hook-registry';
-export * from './component/component-hooks';
-export * from './model/model-hooks';
-export * from './tool/tool-hooks';
-export * from './engine/engine-hooks';
-export * from './engine/engine-lifecycle-hooks';
-export * from './model/model';
-export * from './tool/tool';
-export * from './config';
-export * from './content';
-export * from './types';
-export * from './registry';
-export * from './engine/execution-types';
-export * from './engine/execution-graph';
-export * from './engine/execution-handle';
-export { type EngineStreamEvent } from './engine/engine-events';
-export { type EngineResponse } from './engine/engine-response';
-export * from './engine/factory';
-export { Engine } from './engine/engine';
-export type { EngineConfig, EngineLifecycleHooks, EngineStaticHooks } from './engine/engine';
-export * from './com/types';
-export * from './com/object-model';
-export * from './component/component';
-// State management
-export { 
-  signal, 
-  comState, 
-  watchComState,
-  watch,
-  computed, 
-  effect, 
-  batch, 
-  untracked,
-  isSignal,
-  isComputed,
-  isEffect,
-  disposeSignal,
-} from './state/use-state';
-export type { Signal, ComputedSignal, ReadonlySignal, EffectRef, SignalOptions } from './state/signal';
-export type { CompileStabilizationOptions, CompileStabilizationResult } from './compiler';
-export * from './mcp';
-export * from './channels';
-export * from './renderers';
-export * from './utils/compile-jsx-service';
-export * from './client';
+/**
+ * # AIDK Core
+ *
+ * The complete AI agent development framework. Build agents using React-inspired
+ * JSX components with declarative state management and type-safe tools.
+ *
+ * ## Key Features
+ *
+ * - **Engine** - Orchestrates agent execution with tick-based model interactions
+ * - **JSX Components** - React-style components for declarative agent definition
+ * - **Hooks** - `useState`, `useEffect`, `useSignal` and more for state management
+ * - **Tools** - Type-safe tool definition with Zod schemas and multiple execution modes
+ * - **Channels** - Real-time bidirectional streaming communication
+ * - **MCP Support** - Model Context Protocol integration for external tools
+ *
+ * ## Quick Start
+ *
+ * ```tsx
+ * import { Engine, createModel, User, System, Tool } from 'aidk';
+ *
+ * const MyAgent = () => (
+ *   <>
+ *     <System>You are a helpful assistant.</System>
+ *     <User>{userInput}</User>
+ *     <Tool tool={myTool} />
+ *   </>
+ * );
+ *
+ * const engine = new Engine({ model: createModel(...) });
+ * const result = await engine.execute(<MyAgent />);
+ * ```
+ *
+ * ## Architecture
+ *
+ * AIDK uses a layered architecture:
+ *
+ * 1. **Components** render to the Context Object Model (COM)
+ * 2. **COM** is compiled into model input format
+ * 3. **Engine** orchestrates the tick loop: compile → model call → tool execution
+ * 4. **Hooks** provide cross-cutting concerns (logging, telemetry, validation)
+ *
+ * @see {@link Engine} - The main execution orchestrator
+ * @see {@link Component} - Base class for stateful components
+ * @see {@link createTool} - Create type-safe tools
+ * @see {@link createModel} - Create model adapters
+ *
+ * @module aidk
+ */
+
+export * from "./procedure";
+export * from "./hooks";
+export * from "./model";
+export * from "./tool";
+export * from "./config";
+export * from "./content";
+export * from "./types";
+export * from "./utils";
+export * from "./com";
+export * from "./component";
+export * from "./engine";
+export * from "./state";
+export * from "./compiler";
+export * from "./mcp";
+export * from "./channels";
+export * from "./renderers";
+export * from "./client";
 // Re-export Context from Engine (returns EngineContext, not KernelContext)
-export { Context, context } from './context';
+export { Context, context } from "./context";
 // Re-export commonly used Kernel types and utilities so Engine users don't need to import from Kernel
-export type { KernelContext, Procedure, Middleware, MiddlewarePipeline, HandleFactory } from 'aidk-kernel';
-export type { ExtractArgs, ExtractReturn } from 'aidk-kernel';
 export {
   Telemetry,
   Logger,
+  composeContextFields,
+  defaultContextFields,
+  type KernelContext,
+  type Procedure,
+  type Middleware,
+  type MiddlewarePipeline,
+  type HandleFactory,
   type LogLevel,
   type LoggerConfig,
   type LogMethod,
   type KernelLogger as LoggerType,
-} from 'aidk-kernel';
-export { composeContextFields, defaultContextFields, type ContextFieldsExtractor } from 'aidk-kernel';
-export * from 'aidk-kernel/execution-helpers';
+  type ExtractArgs,
+  type ExtractReturn,
+  type ContextFieldsExtractor,
+} from "aidk-kernel";
+export * from "aidk-kernel/execution-helpers";
 // Note: Components are exported individually to avoid conflicts
-export { Timeline, Section, Model, Markdown } from './jsx/components/primitives';
-export { H1, H2, H3, Header, Paragraph, List, ListItem, Table, Row, Column, Strong, Em, InlineCode, Mark } from './jsx/components/semantic';
+export {
+  Timeline,
+  Section,
+  Model,
+  Markdown,
+} from "./jsx/components/primitives";
+export {
+  H1,
+  H2,
+  H3,
+  Header,
+  Paragraph,
+  List,
+  ListItem,
+  Table,
+  Row,
+  Column,
+  Strong,
+  Em,
+  InlineCode,
+  Mark,
+} from "./jsx/components/semantic";
 // Message role components
-export { User, Assistant, System, ToolResult, Grounding, Message } from './jsx/components/messages';
-export type { 
-  UserProps, 
-  AssistantProps, 
-  SystemProps, 
-  ToolResultProps, 
+export {
+  User,
+  Assistant,
+  System,
+  ToolResult,
+  Grounding,
+  Message,
+} from "./jsx/components/messages";
+export type {
+  UserProps,
+  AssistantProps,
+  SystemProps,
+  ToolResultProps,
   GroundingProps,
   EphemeralPosition,
-} from './jsx/components/messages';
-export { Fork, ForkComponent } from './jsx/components/fork';
-export { Spawn, SpawnComponent } from './jsx/components/spawn';
-export type { ForkProps } from './jsx/components/fork';
-export type { SpawnProps } from './jsx/components/spawn';
-export { 
-  createForkHandle, 
-  createSpawnHandle, 
-  registerWaitHandle, 
-  getWaitHandles 
-} from './jsx/components/fork-spawn-helpers';
-export type { 
-  CreateForkOptions, 
-  CreateSpawnOptions 
-} from './jsx/components/fork-spawn-helpers';
+} from "./jsx/components/messages";
+export { Fork, ForkComponent } from "./jsx/components/fork";
+export { Spawn, SpawnComponent } from "./jsx/components/spawn";
+export type { ForkProps } from "./jsx/components/fork";
+export type { SpawnProps } from "./jsx/components/spawn";
+export {
+  createForkHandle,
+  createSpawnHandle,
+  registerWaitHandle,
+  getWaitHandles,
+} from "./jsx/components/fork-spawn-helpers";
+export type {
+  CreateForkOptions,
+  CreateSpawnOptions,
+} from "./jsx/components/fork-spawn-helpers";
 // Export JSX namespace and runtime for tsconfig jsxImportSource
-export { type JSX } from './jsx/jsx-runtime';
-export * from './jsx/jsx-runtime';
+export { type JSX } from "./jsx/jsx-runtime";
+export * from "./jsx/jsx-runtime";
 // Re-export for jsxImportSource: "aidk/jsx-runtime"
-export * from './jsx/jsx-runtime';
+export * from "./jsx/jsx-runtime";

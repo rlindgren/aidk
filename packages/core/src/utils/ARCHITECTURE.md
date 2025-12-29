@@ -101,7 +101,7 @@ class CompileJSXService {
     rootElement,
     handle?,
   ): Promise<{ com; compiler; structureRenderer }>;
-  prepareTickState(com, tick, previousState?, currentState?): TickState;
+  prepareTickState(com, tick, previous?, current?): TickState;
   clearAndReRegisterTools(com: ContextObjectModel): void;
   checkAbort(): void;
   callLifecycleHooks<T>(hookName: T, args): Promise<void>;
@@ -140,8 +140,8 @@ A long-lived compilation session for multi-tick execution:
 class CompileSession {
   // State accessors
   readonly tick: number;
-  readonly previousState: COMInput | undefined;
-  readonly currentState: COMOutput | undefined;
+  readonly previous: COMInput | undefined;
+  readonly current: COMOutput | undefined;
   readonly tickState: TickState | undefined;
   readonly stopReason: string | undefined;
   readonly com: ContextObjectModel;

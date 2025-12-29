@@ -15,16 +15,16 @@
  * @example
  * ```typescript
  * // Framework-agnostic
- * import { EngineClient, createEngineClient } from '@example/packages/client';
+ * import { EngineClient, createEngineClient } from 'aidk-client';
  * 
  * // React
- * import { useEngineClient, useExecution } from '@example/packages/react';
+ * import { useEngineClient, useExecution } from 'aidk-react';
  * 
  * // Angular
- * import { EngineModule, EngineService, ExecutionService } from '@example/packages/angular';
+ * import { EngineModule, EngineService, ExecutionService } from 'aidk-angular';
  * 
  * // Express (TODO)
- * import { createChannelRoutes, SSETransport } from '@example/packages/express';
+ * import { createChannelRoutes, SSETransport } from 'aidk-express';
  * ```
  */
 

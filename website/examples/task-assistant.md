@@ -58,8 +58,8 @@ export class TaskAssistant extends Component {
 
   onTickStart(com, state) {
     // Accumulate entries from model responses
-    if (state.currentState?.timeline) {
-      this.timeline.update((t) => [...t, ...state.currentState.timeline]);
+    if (state.current?.timeline) {
+      this.timeline.update((t) => [...t, ...state.current.timeline]);
     }
   }
 
@@ -476,4 +476,4 @@ The backend extracts user info from headers and makes it available via `Context.
 - Add task sharing between users
 - Persist data to a real database
 
-See the full source in the [example directory](https://github.com/lindgrengroup/aidk/tree/main/example).
+See the full source in the [example directory](https://github.com/rlindgren/aidk/tree/main/example).

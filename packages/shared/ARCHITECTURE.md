@@ -783,7 +783,7 @@ ValidationError.required(field: string): ValidationError
 ValidationError.type(field: string, expected: string, received?: string): ValidationError
 
 // StateError
-StateError.notReady(component: string, currentState: string): StateError
+StateError.notReady(component: string, current: string): StateError
 StateError.alreadyComplete(operation: string): StateError
 
 // TransportError

@@ -1,9 +1,18 @@
 /**
- * NestJS Integration for AIDK
+ * # AIDK NestJS
  *
- * Provides NestJS modules, controllers, guards, and interceptors for engine integration.
+ * NestJS integration for AIDK agents. Provides modules, controllers,
+ * guards, and interceptors for seamless engine integration.
  *
- * @example
+ * ## Features
+ *
+ * - **EngineModule** - Configure engine as a NestJS module
+ * - **ChannelModule** - Real-time channel communication
+ * - **Guards & Interceptors** - Context extraction and validation
+ * - **Decorators** - Inject engine context into handlers
+ *
+ * ## Quick Start
+ *
  * ```typescript
  * // app.module.ts
  * import { EngineModule } from 'aidk-nestjs';
@@ -29,6 +38,8 @@
  *   }
  * }
  * ```
+ *
+ * @module aidk-nestjs
  */
 
 // Module

@@ -431,7 +431,7 @@ The tick loop is the core execution model. Each tick:
 │  ┌─────────────────────────────────────────────────────────────────────────┐│
 │  │ PHASE 4: STATE INJECTION (via CompileSession)                           ││
 │  ├─────────────────────────────────────────────────────────────────────────┤│
-│  │ 1. Build currentState from response + toolResults                       ││
+│  │ 1. Build current from response + toolResults                       ││
 │  │ 2. Notify component onTickEnd hooks                                     ││
 │  │ 3. Resolve tick control (stop/continue from components)                 ││
 │  │ 4. Call onTickEnd lifecycle hooks                                       ││
@@ -465,15 +465,15 @@ The tick loop is the core execution model. Each tick:
 ```mermaid
 graph LR
     subgraph "Tick N"
-        PS[previousState<br/>from Tick N-1]
+        PS[previous<br/>from Tick N-1]
         COMP[Compile]
         MODEL[Model]
         TOOLS[Tools]
-        CS[currentState<br/>from model output]
+        CS[current<br/>from model output]
     end
 
     subgraph "Tick N+1"
-        PS2[previousState<br/>= currentState from N]
+        PS2[previous<br/>= current from N]
     end
 
     PS --> COMP
@@ -651,7 +651,7 @@ class OrchestratorAgent extends Component {
 
     // Fork with inherited state
     const forkHandle = com.process?.fork(
-      { timeline: state.previousState?.timeline ?? [] },
+      { timeline: state.previous?.timeline ?? [] },
       SummarizerAgent,
       { inherit: { timeline: true, context: true } }
     );
@@ -987,7 +987,7 @@ const engine = createEngine({
       pid: state.pid,
       status: state.status,
       tick: state.currentTick,
-      previousState: state.previousState,
+      previous: state.previous,
       input: state.input,
       agent: serialize(state.agent),
       error: state.error,
@@ -1002,7 +1002,7 @@ const engine = createEngine({
       pid: record.pid,
       status: record.status,
       currentTick: record.tick,
-      previousState: record.previousState,
+      previous: record.previous,
       input: record.input,
       agent: deserialize(record.agent),
     };

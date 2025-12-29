@@ -162,7 +162,7 @@ describe('Execution Persistence', () => {
       }
     });
     
-    it('should persist state with previousState when available', async () => {
+    it('should persist state with previous when available', async () => {
       const persistFn = jest.fn(async (state: ExecutionState) => {
         persistedStates.push(state);
       });
@@ -186,8 +186,8 @@ describe('Execution Persistence', () => {
         createElement(SimpleAgent, {})
       );
       
-      // After first tick, previousState should be available
-      const statesWithPreviousState = persistedStates.filter(s => s.previousState !== undefined);
+      // After first tick, previous should be available
+      const statesWithPreviousState = persistedStates.filter(s => s.previous !== undefined);
       expect(statesWithPreviousState.length).toBeGreaterThan(0);
     });
   });

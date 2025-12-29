@@ -1,38 +1,52 @@
 /**
- * Angular bindings for Engine Client
- * 
- * @example
+ * # AIDK Angular
+ *
+ * Angular services and utilities for AIDK client integration.
+ * Provides injectable services for engine communication, execution management,
+ * and real-time channels.
+ *
+ * ## Features
+ *
+ * - **EngineService** - Core client for agent execution
+ * - **ExecutionService** - Message and streaming management
+ * - **ChannelsService** - Real-time pub/sub channels
+ * - **Providers** - Easy dependency injection setup
+ *
+ * ## Quick Start
+ *
  * ```typescript
  * // main.ts
- * import { provideEngine } from '@shared/angular';
- * 
+ * import { provideEngine } from 'aidk-angular';
+ *
  * bootstrapApplication(AppComponent, {
  *   providers: [
- *     provideEngine(),
+ *     provideEngine({ baseUrl: 'http://localhost:3001' }),
  *   ],
  * });
- * 
+ *
  * // app.component.ts
- * import { EngineService, ExecutionService, ChannelsService } from '@shared/angular';
- * 
+ * import { EngineService, ExecutionService, ChannelsService } from 'aidk-angular';
+ *
  * @Component({ ... })
  * export class AppComponent implements OnInit {
  *   constructor(
  *     private engineService: EngineService,
  *     private ngZone: NgZone,
  *   ) {}
- *   
+ *
  *   ngOnInit() {
  *     this.engineService.updateConfig({ userId: 'user-123' });
  *   }
  * }
  * ```
+ *
+ * @module aidk-angular
  */
 
-export { provideEngine } from './engine.module';
-export { EngineService } from './engine.service';
-export { ExecutionService } from './execution.service';
-export { ChannelsService } from './channels.service';
+export { provideEngine } from "./engine.module";
+export { EngineService } from "./engine.service";
+export { ExecutionService } from "./execution.service";
+export { ChannelsService } from "./channels.service";
 
 // Content block components
 export {
@@ -44,7 +58,7 @@ export {
   ImageBlockComponent,
   CodeBlockComponent,
   PlaceholderBlockComponent,
-} from './blocks';
+} from "./blocks";
 
 // Re-export types from client for convenience
 export type {
@@ -56,4 +70,4 @@ export type {
   ContentBlock,
   TimelineEntry,
   EngineClientConfig,
-} from 'aidk-client';
+} from "aidk-client";

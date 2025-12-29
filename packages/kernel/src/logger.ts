@@ -43,6 +43,27 @@ import { Context, type KernelContext } from "./context";
 // Types
 // =============================================================================
 
+/**
+ * Log levels supported by the kernel logger.
+ *
+ * Levels in order of severity (least to most):
+ * - `trace` - Very detailed debugging information
+ * - `debug` - Debugging information
+ * - `info` - Normal operational messages
+ * - `warn` - Warning conditions
+ * - `error` - Error conditions
+ * - `fatal` - Severe errors causing shutdown
+ * - `silent` - Disable all logging
+ *
+ * @example
+ * ```typescript
+ * Logger.configure({ level: 'debug' });
+ * Logger.setLevel('warn'); // Runtime change
+ * if (Logger.isLevelEnabled('trace')) {
+ *   // Expensive debug operation
+ * }
+ * ```
+ */
 export type LogLevel =
   | "trace"
   | "debug"
@@ -55,6 +76,19 @@ export type LogLevel =
 /**
  * Function to extract fields from KernelContext for logging.
  * Return an object with fields to include in every log entry.
+ *
+ * @typeParam TContext - The context type (extends KernelContext)
+ *
+ * @example
+ * ```typescript
+ * const myExtractor: ContextFieldsExtractor = (ctx) => ({
+ *   userId: ctx.user?.id,
+ *   tenantId: ctx.user?.tenantId,
+ *   requestId: ctx.requestId,
+ * });
+ * ```
+ *
+ * @see {@link composeContextFields} - Combine multiple extractors
  */
 export type ContextFieldsExtractor<
   TContext extends KernelContext = KernelContext,
@@ -101,17 +135,68 @@ export interface LoggerConfig<TContext extends KernelContext = KernelContext> {
   replace?: boolean;
 }
 
+/**
+ * Log method signature supporting both message-first and object-first forms.
+ *
+ * @example Message-first (simple logging)
+ * ```typescript
+ * log.info('User logged in');
+ * log.info('Processed %d items', count);
+ * ```
+ *
+ * @example Object-first (structured logging)
+ * ```typescript
+ * log.info({ userId, action: 'login' }, 'User logged in');
+ * log.error({ err, requestId }, 'Request failed');
+ * ```
+ */
 export interface LogMethod {
+  /** Log a message with optional printf-style args */
   (msg: string, ...args: unknown[]): void;
+  /** Log structured data with optional message */
   (obj: Record<string, unknown>, msg?: string, ...args: unknown[]): void;
 }
 
+/**
+ * Kernel logger interface with structured logging and context injection.
+ *
+ * Loggers automatically inject execution context (requestId, traceId, etc.)
+ * from the current `KernelContext` via AsyncLocalStorage.
+ *
+ * @example
+ * ```typescript
+ * const log = Logger.get();
+ *
+ * // Simple message
+ * log.info('Request received');
+ *
+ * // With structured data
+ * log.debug({ userId, action }, 'Processing action');
+ *
+ * // Create child logger with bindings
+ * const reqLog = log.child({ requestId: 'abc-123' });
+ *
+ * // Check level before expensive operation
+ * if (log.isLevelEnabled('trace')) {
+ *   log.trace({ fullState: getState() }, 'State dump');
+ * }
+ * ```
+ *
+ * @see {@link Logger} - Static methods to get/configure loggers
+ * @see {@link LogLevel} - Available log levels
+ */
 export interface KernelLogger {
+  /** Log at trace level (very detailed debugging) */
   trace: LogMethod;
+  /** Log at debug level (debugging information) */
   debug: LogMethod;
+  /** Log at info level (normal operations) */
   info: LogMethod;
+  /** Log at warn level (warning conditions) */
   warn: LogMethod;
+  /** Log at error level (error conditions) */
   error: LogMethod;
+  /** Log at fatal level (severe errors) */
   fatal: LogMethod;
 
   /** Create a child logger with additional bindings */

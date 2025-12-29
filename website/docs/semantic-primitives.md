@@ -657,7 +657,7 @@ import { Renderer, MarkdownRenderer, XMLRenderer } from "aidk";
 
 Test your components with both renderers:
 
-```typescript
+``` tsx
 import { MarkdownRenderer, XMLRenderer } from 'aidk';
 import { render } from './test-utils';
 
@@ -685,3 +685,6 @@ describe('OrderSummary', () => {
 ---
 
 **Next:** [Creating Tools](/docs/guides/tools)
+
+
+

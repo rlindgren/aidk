@@ -9,7 +9,7 @@ import { Component } from '../../component/component';
 import { Section, Message, Timeline, Tool } from '../../jsx/components/primitives';
 import { Text } from '../../jsx/components/content';
 import { createElement, Fragment } from '../../jsx/jsx-runtime';
-import { useState, useComState, useTickStart, useTickEnd, useEffect } from '../hooks';
+import { useState, useComState, useTickStart, useTickEnd, useEffect } from '../../state/hooks';
 import type { COMTimelineEntry } from '../../engine/engine-response';
 
 describe('FiberCompiler', () => {

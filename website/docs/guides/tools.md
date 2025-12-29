@@ -53,7 +53,7 @@ export const CalculatorTool = createTool({
 
 For basic tools, just define handler and schema:
 
-```typescript
+``` tsx
 import { createTool } from 'aidk';
 import { z } from 'zod';
 
@@ -246,7 +246,7 @@ class MultiToolAgent extends Component {
 
 Tools support the same lifecycle hooks as components:
 
-```typescript
+``` tsx
 export const MyTool = createTool({
   name: 'my_tool',
   description: 'Example tool',
@@ -551,7 +551,7 @@ class MyAgent extends Component {
 
 Tools have full access to COM state:
 
-```typescript
+``` tsx
 export const StatefulTool = createTool({
   name: 'stateful',
   parameters: z.object({ action: z.string() }),
@@ -588,7 +588,7 @@ export const StatefulTool = createTool({
 
 Tools have full access to execution context:
 
-```typescript
+``` tsx
 import { Context } from 'aidk';
 
 export const ContextAwareTool = createTool({
@@ -631,7 +631,7 @@ export const ContextAwareTool = createTool({
 
 Tools can use other tools:
 
-```typescript
+``` tsx
 export const CompositeTool = createTool({
   name: 'composite',
   parameters: z.object({ /* ... */ }),
@@ -663,7 +663,7 @@ export const CompositeTool = createTool({
 
 Test tools like components:
 
-```typescript
+``` tsx
 import { CalculatorTool } from './calculator';
 
 describe('CalculatorTool', () => {

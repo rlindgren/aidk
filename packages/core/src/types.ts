@@ -636,26 +636,3 @@ export function findSimilar(
 
   return filtered.slice(0, topK);
 }
-
-export function normalizeMessages(messages: string | string[] | Message[]): Message[] {
-  if (typeof messages === 'string') {
-    return [{
-      role: 'user',
-      content: [{ type: 'text', text: messages }],
-    }];
-  }
-
-  if (Array.isArray(messages) && messages.length > 0) {
-    // Check if it's an array of strings
-    if (typeof messages[0] === 'string') {
-       return (messages as string[]).map(msg => ({
-         role: 'user',
-         content: [{ type: 'text', text: msg }]
-       }));
-    }
-    // Otherwise assume it's already Message[]
-    return messages as Message[];
-  }
-
-  return messages as Message[];
-}

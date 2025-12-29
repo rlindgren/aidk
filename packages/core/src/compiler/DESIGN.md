@@ -136,8 +136,8 @@ function TimelineManager() {
   
   useTickStart((com, state) => {
     // Process model output from previous tick
-    if (state.currentState?.timeline) {
-      setTimeline(t => [...t, ...state.currentState.timeline]);
+    if (state.current?.timeline) {
+      setTimeline(t => [...t, ...state.current.timeline]);
     }
   });
   
@@ -259,9 +259,9 @@ class ConversationManager extends Component {
   private maxMessages = input<number>(100);
   
   async onTickStart(com: ContextObjectModel, state: TickState) {
-    if (state.currentState?.timeline) {
-      this.timeline.update(t => [...t, ...state.currentState.timeline]);
-      this.messageCount.update(c => c + state.currentState.timeline.length);
+    if (state.current?.timeline) {
+      this.timeline.update(t => [...t, ...state.current.timeline]);
+      this.messageCount.update(c => c + state.current.timeline.length);
     }
   }
   
@@ -701,8 +701,8 @@ function TimelineManager() {
   const [timeline, setTimeline] = useComState('timeline', []);
   
   useTickStart((com, state) => {
-    if (state.currentState?.timeline) {
-      setTimeline(t => [...t, ...state.currentState.timeline]);
+    if (state.current?.timeline) {
+      setTimeline(t => [...t, ...state.current.timeline]);
     }
   });
   
@@ -796,8 +796,8 @@ class MyAgent extends Component {
   }
   
   async onTickStart(com: ContextObjectModel, state: TickState) {
-    if (state.currentState?.timeline) {
-      this.timeline.update(t => [...t, ...state.currentState.timeline]);
+    if (state.current?.timeline) {
+      this.timeline.update(t => [...t, ...state.current.timeline]);
     }
   }
   

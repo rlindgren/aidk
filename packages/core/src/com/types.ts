@@ -114,7 +114,7 @@ export interface COMInput {
   
   /**
    * System messages - consolidated from sections each tick.
-   * Rebuilt fresh each tick (declarative), NOT persisted in previousState.
+   * Rebuilt fresh each tick (declarative), NOT persisted in previous.
    * This separation ensures system content doesn't duplicate across ticks.
    * Uses COMTimelineEntry envelope for consistency with timeline entries.
    */
@@ -137,7 +137,7 @@ export interface COMInput {
  * Contains what was produced by the model and tool execution.
  * 
  * On tick 1, before model execution, this may contain userInput (timeline, sections)
- * to allow components to render purely from previousState + currentState without
+ * to allow components to render purely from previous + current without
  * needing to check tick number or access com.getUserInput().
  */
 export interface COMOutput {

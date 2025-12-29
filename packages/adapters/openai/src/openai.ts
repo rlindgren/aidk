@@ -15,7 +15,7 @@ import {
   type ToolDefinition,
 } from "aidk";
 import { type Message, type ContentBlock, type TextBlock } from "aidk/content";
-import { normalizeModelInput } from "aidk/normalization";
+import { normalizeModelInput } from "aidk/utils";
 import { type OpenAIAdapterConfig, STOP_REASON_MAP } from "./types";
 import { AdapterError } from "aidk-shared";
 

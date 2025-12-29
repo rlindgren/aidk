@@ -9,10 +9,19 @@
     ".": "./src/index.ts",
     "./jsx-runtime": "./src/jsx/jsx-runtime.ts",
     "./jsx/components": "./src/jsx/components/index.ts",
-    "./content": "./src/content.ts",
+    "./content": "./src/content/index.ts",
     "./model": "./src/model/index.ts",
     "./channels/*": "./src/channels/*.ts",
     "./tool": "./src/tool/index.ts",
+    "./hooks/*": "./src/hooks/*.ts",
+    "./hooks": "./src/hooks/index.ts",
+    "./procedure": "./src/procedure/index.ts",
+    "./context": "./src/context/index.ts",
+    "./config": "./src/config/index.ts",
+    "./compiler/*": "./src/compiler/*.ts",
+    "./compiler": "./src/compiler/index.ts",
+    "./renderers/*": "./src/renderers/*.ts",
+    "./renderers": "./src/renderers/index.ts",
     "./utils/*": "./src/utils/*.ts",
     "./utils": "./src/utils/index.ts",
     "./state/*": "./src/state/*.ts",
@@ -21,6 +30,12 @@
     "./engine/*": "./src/engine/*.ts",
     "./com": "./src/com/index.ts",
     "./com/*": "./src/com/*.ts",
+    "./component/*": "./src/component/*.ts",
+    "./component": "./src/component/index.ts",
+    "./client/*": "./src/client/*.ts",
+    "./client": "./src/client/index.ts",
+    "./mcp/*": "./src/mcp/*.ts",
+    "./mcp": "./src/mcp/index.ts",
     "./*": "./src/*.ts"
   },
   "publishConfig": {
@@ -41,8 +56,8 @@
         "import": "./dist/jsx/components/index.js"
       },
       "./content": {
-        "types": "./dist/content.d.ts",
-        "import": "./dist/content.js"
+        "types": "./dist/content/index.d.ts",
+        "import": "./dist/content/index.js"
       },
       "./model": {
         "types": "./dist/model/*.d.ts",
@@ -55,6 +70,26 @@
       "./tool": {
         "types": "./dist/tool/*.d.ts",
         "import": "./dist/tool/index.js"
+      },
+      "./hooks": {
+        "types": "./dist/hooks/index.d.ts",
+        "import": "./dist/hooks/index.js"
+      },
+      "./procedure": {
+        "types": "./dist/procedure/index.d.ts",
+        "import": "./dist/procedure/index.js"
+      },
+      "./context": {
+        "types": "./dist/context/index.d.ts",
+        "import": "./dist/context/index.js"
+      },
+      "./config": {
+        "types": "./dist/config/index.d.ts",
+        "import": "./dist/config/index.js"
+      },
+      "./hooks/*": {
+        "types": "./dist/hooks/*.d.ts",
+        "import": "./dist/hooks/*.js"
       },
       "./utils/*": {
         "types": "./dist/utils/*.d.ts",
@@ -87,6 +122,46 @@
       "./com/*": {
         "types": "./dist/com/*.d.ts",
         "import": "./dist/com/*.js"
+      },
+      "./component/*": {
+        "types": "./dist/component/*.d.ts",
+        "import": "./dist/component/*.js"
+      },
+      "./component": {
+        "types": "./dist/component/index.d.ts",
+        "import": "./dist/component/index.js"
+      },
+      "./client/*": {
+        "types": "./dist/client/*.d.ts",
+        "import": "./dist/client/*.js"
+      },
+      "./client": {
+        "types": "./dist/client/index.d.ts",
+        "import": "./dist/client/index.js"
+      },
+      "./renderers/*": {
+        "types": "./dist/renderers/*.d.ts",
+        "import": "./dist/renderers/*.js"
+      },
+      "./renderers": {
+        "types": "./dist/renderers/index.d.ts",
+        "import": "./dist/renderers/index.js"
+      },
+      "./compiler/*": {
+        "types": "./dist/compiler/*.d.ts",
+        "import": "./dist/compiler/*.js"
+      },
+      "./compiler": {
+        "types": "./dist/compiler/index.d.ts",
+        "import": "./dist/compiler/index.js"
+      },
+      "./mcp/*": {
+        "types": "./dist/mcp/*.d.ts",
+        "import": "./dist/mcp/*.js"
+      },
+      "./mcp": {
+        "types": "./dist/mcp/index.d.ts",
+        "import": "./dist/mcp/index.js"
       },
       "./*": {
         "types": "./dist/*.d.ts",

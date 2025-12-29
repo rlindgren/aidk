@@ -1,4 +1,16 @@
 import { defineConfig } from "vitepress";
+import fs from "fs";
+
+// Load typedoc sidebar if it exists (API docs may not be generated yet)
+let typedocSidebar: Array<{ text: string; link: string }> = [];
+try {
+  const sidebarPath = new URL("../api/typedoc-sidebar.json", import.meta.url);
+  if (fs.existsSync(sidebarPath)) {
+    typedocSidebar = JSON.parse(fs.readFileSync(sidebarPath, "utf-8"));
+  }
+} catch {
+  // API docs not generated yet, use empty sidebar
+}
 
 export default defineConfig({
   title: "AIDK",
@@ -33,10 +45,11 @@ export default defineConfig({
 
     nav: [
       { text: "Docs", link: "/docs/" },
+      { text: "API", link: "/api/" },
       { text: "Examples", link: "/examples/" },
       {
         text: "GitHub",
-        link: "https://github.com/lindgrengroup/aidk",
+        link: "https://github.com/rlindgren/aidk",
       },
     ],
 
@@ -91,10 +104,16 @@ export default defineConfig({
           ],
         },
       ],
+      "/api/": [
+        {
+          text: "API Reference",
+          items: [{ text: "Overview", link: "/api/" }, ...typedocSidebar],
+        },
+      ],
     },
 
     socialLinks: [
-      { icon: "github", link: "https://github.com/lindgrengroup/aidk" },
+      { icon: "github", link: "https://github.com/rlindgren/aidk" },
     ],
 
     footer: {
@@ -107,7 +126,7 @@ export default defineConfig({
     },
 
     editLink: {
-      pattern: "https://github.com/lindgrengroup/aidk/edit/main/website/:path",
+      pattern: "https://github.com/rlindgren/aidk/edit/main/website/:path",
       text: "Edit this page on GitHub",
     },
   },

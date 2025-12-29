@@ -355,7 +355,7 @@ describe('ExecutionHandleImpl', () => {
       
       const agent = {} as any;
       const input = { timeline: [] };
-      const previousState: COMInput = {
+      const previous: COMInput = {
         timeline: [],
         sections: {},
         tools: [],
@@ -364,7 +364,7 @@ describe('ExecutionHandleImpl', () => {
         system: [],
       };
       
-      const state = handle.toState(agent, input, 2, previousState);
+      const state = handle.toState(agent, input, 2, previous);
       
       expect(state.pid).toBe(handle.pid);
       expect(state.rootPid).toBe(handle.rootPid);
@@ -373,7 +373,7 @@ describe('ExecutionHandleImpl', () => {
       expect(state.input).toBe(input);
       expect(state.agent).toBe(agent);
       expect(state.currentTick).toBe(2);
-      expect(state.previousState).toBe(previousState);
+      expect(state.previous).toBe(previous);
       expect(state.startedAt).toBe(handle.startedAt);
     });
     

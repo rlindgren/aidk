@@ -72,7 +72,7 @@ aidk/
 │   ├── backend/       # Express backend example
 │   ├── frontend-react/    # React frontend example
 │   └── frontend-angular/  # Angular frontend example
-└── docs/              # Documentation
+└── website/           # Documentation website (VitePress)
 ```
 
 ## Development Workflow

@@ -396,13 +396,13 @@ export class ValidationError extends AIDKError {
  */
 export class StateError extends AIDKError {
   /** Current state */
-  readonly currentState: string;
+  readonly current: string;
 
   /** Expected/required state (optional) */
   readonly expectedState?: string;
 
   constructor(
-    currentState: string,
+    current: string,
     expectedState: string | undefined,
     message: string,
     code:
@@ -415,22 +415,22 @@ export class StateError extends AIDKError {
     super(
       code,
       message,
-      { currentState, ...(expectedState && { expectedState }) },
+      { current, ...(expectedState && { expectedState }) },
       cause,
     );
     this.name = "StateError";
-    this.currentState = currentState;
+    this.current = current;
     this.expectedState = expectedState;
   }
 
   /**
    * Create error for "not ready" state
    */
-  static notReady(component: string, currentState: string): StateError {
+  static notReady(component: string, current: string): StateError {
     return new StateError(
-      currentState,
+      current,
       "ready",
-      `${component} is not ready (current state: ${currentState})`,
+      `${component} is not ready (current state: ${current})`,
       "STATE_NOT_READY",
     );
   }

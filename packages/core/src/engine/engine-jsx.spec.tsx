@@ -13,7 +13,7 @@ import { fromEngineState, toEngineState } from '../model/utils/language-model';
 import { signal } from '../state/signal';
 
 // Mock models
-jest.mock('../registry', () => ({
+jest.mock('../utils/registry', () => ({
   modelRegistry: {
     get: jest.fn(),
   },
@@ -743,7 +743,7 @@ describe('Engine React Architecture', () => {
     });
 
     it('should support Model component with model identifier string', async () => {
-      const { modelRegistry } = require('../registry');
+      const { modelRegistry } = require('../utils/registry');
       modelRegistry.get.mockReturnValue(fastModel);
 
       engine = createEngine({});

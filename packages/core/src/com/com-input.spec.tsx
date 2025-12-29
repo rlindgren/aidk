@@ -15,7 +15,7 @@ import { fromEngineState, toEngineState } from '../model/utils/language-model';
 import { signal } from '../state/signal';
 
 // Mock models
-jest.mock('../registry', () => ({
+jest.mock('../utils/registry', () => ({
   modelRegistry: {
     get: jest.fn(),
   },
@@ -152,7 +152,7 @@ describe('COMInput Validation', () => {
       expect(result.sections['main'].content).toBe('Main content');
       
       // System messages are transient (rebuilt each tick, not persisted in result)
-      // They're passed to the model via fromEngineState but excluded from previousState
+      // They're passed to the model via fromEngineState but excluded from previous
       // Verify sections were sent to model by checking prepareInputMock
       expect(prepareInputMock).toHaveBeenCalled();
       const modelInput = prepareInputMock.mock.calls[0][0];
@@ -739,9 +739,9 @@ describe('COMInput Validation', () => {
           }
         }
         render(com: ContextObjectModel, state: TickState) {
-          // Render from previousState + currentState (no tick checking needed!)
-          const previousEntries = state.previousState?.timeline || [];
-          const currentEntries = state.currentState?.timeline || [];
+          // Render from previous + current (no tick checking needed!)
+          const previousEntries = state.previous?.timeline || [];
+          const currentEntries = state.current?.timeline || [];
           const allEntries = [...previousEntries, ...currentEntries];
           
           return (
@@ -1043,9 +1043,9 @@ describe('COMInput Validation', () => {
       class AccumulatingComponent extends Component {
         render(com: ContextObjectModel, state: TickState) {
           const tickNumber = state.tick || 1;
-          // Render from previousState + currentState (no tick checking needed!)
-          const previousEntries = state.previousState?.timeline || [];
-          const currentEntries = state.currentState?.timeline || [];
+          // Render from previous + current (no tick checking needed!)
+          const previousEntries = state.previous?.timeline || [];
+          const currentEntries = state.current?.timeline || [];
           const allEntries = [...previousEntries, ...currentEntries];
           
           // Add new user message for this tick

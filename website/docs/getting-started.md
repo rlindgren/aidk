@@ -90,8 +90,8 @@ export class AssistantAgent extends Component {
 
   onTickStart(com: ContextObjectModel, state: TickState) {
     // Append new entries from the model response
-    if (state.currentState?.timeline?.length) {
-      this.timeline.update(t => [...t, ...state.currentState!.timeline]);
+    if (state.current?.timeline?.length) {
+      this.timeline.update(t => [...t, ...state.current!.timeline]);
     }
   }
 
@@ -140,7 +140,7 @@ export function Assistant(): JSX.Element {
 
 Create `src/server.ts`:
 
-```typescript
+``` tsx
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
@@ -189,7 +189,7 @@ curl -X POST http://localhost:3000/api/agent/stream \
 
 Create `src/tools/calculator.ts`:
 
-```typescript
+``` tsx
 import { createTool } from 'aidk';
 import { z } from 'zod';
 
@@ -240,7 +240,7 @@ pnpm add -D @nestjs/cli typescript
 
 ### Setup
 
-```typescript
+``` tsx
 // app.module.ts
 import { Module } from '@nestjs/common';
 import { EngineModule } from 'aidk-nestjs';
@@ -260,7 +260,7 @@ export class AppModule {}
 
 ### Controller
 
-```typescript
+``` tsx
 // agent.controller.ts
 import { Controller, Post, Body, Res, UseInterceptors } from '@nestjs/common';
 import { Response } from 'express';

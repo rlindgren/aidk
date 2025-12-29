@@ -1,10 +1,19 @@
-import DefaultTheme from 'vitepress/theme'
-import ProgressiveExample from './components/ProgressiveExample.vue'
-import './custom.css'
+import DefaultTheme from "vitepress/theme";
+import { h } from "vue";
+// @ts-ignore
+import ProgressiveExample from "./components/ProgressiveExample.vue";
+// @ts-ignore
+import AlphaBanner from "./components/AlphaBanner.vue";
+import "./custom.css";
 
 export default {
   extends: DefaultTheme,
   enhanceApp({ app }) {
-    app.component('ProgressiveExample', ProgressiveExample)
-  }
-}
+    app.component("ProgressiveExample", ProgressiveExample);
+  },
+  Layout() {
+    return h(DefaultTheme.Layout, null, {
+      "home-hero-actions-after": () => h(AlphaBanner),
+    });
+  },
+};

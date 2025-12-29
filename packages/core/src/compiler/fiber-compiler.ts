@@ -10,7 +10,7 @@
 
 import { AsyncLocalStorage } from "node:async_hooks";
 import { Logger } from "aidk-kernel";
-import { isHostPrimitive as isHostPrimitiveSymbol } from "aidk-shared";
+import { isContentBlock, isHostPrimitive as isHostPrimitiveSymbol } from "aidk-shared";
 import type { ContextObjectModel } from "../com/object-model";
 import type {
   TickState,
@@ -49,7 +49,7 @@ import {
   bindCOMSignals,
   cleanupSignals,
   PROPS_SIGNAL_SYMBOL,
-} from "../state/use-state";
+} from "../state";
 import type { Signal } from "../state/signal";
 import {
   initializeContentBlockMappers,
@@ -77,7 +77,7 @@ import type {
   NormalizedChild,
   CompileResult,
 } from "./types";
-import { FiberFlags, EffectPhase, HookTag, isContentBlock } from "./types";
+import { FiberFlags, EffectPhase, HookTag } from "./types";
 import {
   createFiber,
   createWorkInProgress,
@@ -85,7 +85,7 @@ import {
   traverseFiber,
   traverseFiberBottomUp,
 } from "./fiber";
-import { setRenderContext, setScheduleWork } from "./hooks";
+import { setRenderContext, setScheduleWork } from "../state/hooks";
 
 const log = Logger.for("FiberCompiler");
 

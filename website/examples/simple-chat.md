@@ -13,7 +13,7 @@ A basic chat agent with streaming responses. Perfect starting point.
 
 ::: code-group
 
-```typescript [agent.tsx]
+``` tsx [agent.tsx]
 import { Component, comState, ContextObjectModel, TickState } from 'aidk';
 import { Timeline, Message, Section, H2, Paragraph } from 'aidk';
 import { AiSdkModel } from '@aidk/ai-sdk';
@@ -24,8 +24,8 @@ export class ChatAgent extends Component {
   
   onTickStart(com: ContextObjectModel, state: TickState) {
     // Accumulate messages from model responses
-    if (state.currentState?.timeline) {
-      this.timeline.update(t => [...t, ...state.currentState.timeline]);
+    if (state.current?.timeline) {
+      this.timeline.update(t => [...t, ...state.current.timeline]);
     }
   }
   
@@ -60,7 +60,7 @@ export class ChatAgent extends Component {
 }
 ```
 
-```typescript [server.ts]
+``` tsx [server.ts]
 import express from 'express';
 import cors from 'cors';
 import { createEngine } from 'aidk';
@@ -171,13 +171,13 @@ Visit `http://localhost:5173`
 
 The timeline uses `comState` to persist across ticks:
 
-```typescript
+``` tsx
 private timeline = comState<any[]>('timeline', []);
 
 onTickStart(com, state) {
   // Append new entries
-  if (state.currentState?.timeline) {
-    this.timeline.update(t => [...t, ...state.currentState.timeline]);
+  if (state.current?.timeline) {
+    this.timeline.update(t => [...t, ...state.current.timeline]);
   }
 }
 ```
@@ -186,7 +186,7 @@ onTickStart(com, state) {
 
 The server uses Server-Sent Events for real-time streaming:
 
-```typescript
+``` tsx
 createSSEHandler({
   engine,
   getAgent: () => <ChatAgent />,
@@ -208,7 +208,7 @@ The `useExecution` hook handles:
 - Streaming state
 - Error handling
 
-```typescript
+``` tsx
 const { messages, send, isStreaming, error } = useExecution({
   client,
   endpoint: '/api/chat',
@@ -219,7 +219,7 @@ const { messages, send, isStreaming, error } = useExecution({
 
 ### Add Tools
 
-```typescript
+``` tsx
 import { createTool } from 'aidk';
 import { z } from 'zod';
 
@@ -248,7 +248,7 @@ render() {
 
 ### Add Context
 
-```typescript
+``` tsx
 app.post('/api/chat', createSSEHandler({
   engine,
   getAgent: () => <ChatAgent />,
@@ -263,7 +263,7 @@ app.post('/api/chat', createSSEHandler({
 
 Access in your agent:
 
-```typescript
+``` tsx
 import { Context } from 'aidk';
 
 render() {

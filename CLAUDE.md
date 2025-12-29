@@ -32,8 +32,7 @@ aidk/
 │       ├── openai/    # OpenAI native adapter
 │       └── google/    # Google AI native adapter
 ├── example/           # Example applications
-├── website/           # Documentation website
-└── docs/              # Additional documentation
+└── website/           # Documentation website (VitePress)
 ```
 
 ## Key Files to Understand

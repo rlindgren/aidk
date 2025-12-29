@@ -123,7 +123,7 @@ import { XMLRenderer } from 'aidk';
 class AdaptiveAgent extends Component {
   render(com, state) {
     // Check response quality
-    const quality = analyzeResponse(state.currentState);
+    const quality = analyzeResponse(state.current);
     
     return (
       <>
@@ -170,7 +170,7 @@ class AdaptiveAgent extends Component {
 
 AIDK includes built-in preferences for popular models:
 
-```typescript
+``` tsx
 // From model adapter capabilities
 const modelPreferences = {
   // Anthropic models prefer XML
@@ -191,7 +191,7 @@ const modelPreferences = {
 
 You can also configure this dynamically:
 
-```typescript
+``` tsx
 import { createAiSdkModel } from '@aidk/ai-sdk';
 
 const model = createAiSdkModel({
@@ -357,7 +357,7 @@ console.log(greeting);`}
 
 Create your own renderer for custom formats:
 
-```typescript
+``` tsx
 import { Renderer, SemanticContentBlock, SemanticNode } from 'aidk';
 
 class JSONRenderer extends Renderer {
@@ -489,7 +489,7 @@ Inline renderer switching is powerful but can be complex:
 
 When building reusable components, test with both renderers:
 
-```typescript
+``` tsx
 import { MarkdownRenderer, XMLRenderer } from 'aidk';
 
 describe('UserProfile component', () => {
@@ -728,7 +728,7 @@ class ContentAwareAgent extends Component {
 
 ### `Renderer` (Base Class)
 
-```typescript
+``` tsx
 abstract class Renderer {
   abstract formatNode(node: SemanticNode): string;
   abstract formatSemantic(block: SemanticContentBlock): ContentBlock | null;
@@ -745,7 +745,7 @@ abstract class Renderer {
 
 ### `MarkdownRenderer`
 
-```typescript
+``` tsx
 class MarkdownRenderer extends Renderer {
   constructor(flavor?: 'github' | 'commonmark' | 'gfm');
 }
@@ -753,7 +753,7 @@ class MarkdownRenderer extends Renderer {
 
 ### `XMLRenderer`
 
-```typescript
+``` tsx
 class XMLRenderer extends Renderer {
   constructor(rootTag?: string);
 }

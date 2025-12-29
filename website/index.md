@@ -11,7 +11,7 @@ hero:
       link: /docs/getting-started
     - theme: alt
       text: View on GitHub
-      link: https://github.com/lindgrengroup/aidk
+      link: https://github.com/rlindgren/aidk
 
 features:
   - icon: <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
@@ -76,7 +76,7 @@ class ResearchAgent extends Component {
 
         {/* You control how the timeline renders */}
         <Timeline>
-          {state.currentState?.timeline.map((entry) => (
+          {state.current?.timeline.map((entry) => (
             <Message key={entry.id} {...entry.message} />
           ))}
         </Timeline>
@@ -175,14 +175,14 @@ You don't have to rewrite anything. Use AIDK for the parts that need it.
 
 Keep your existing `generateText` calls. Use JSX for dynamic context.
 
-```typescript
-import { compile } from 'aidk-ai-sdk';
-import { generateText } from 'ai';
+```tsx
+import { compile } from "aidk-ai-sdk";
+import { generateText } from "ai";
 
 const { messages, tools, system } = await compile(<MyAgent />);
 
 const result = await generateText({
-  model: openai('gpt-4o'),
+  model: openai("gpt-4o"),
   messages,
   tools,
   system,
@@ -200,13 +200,13 @@ const result = await generateText({
 
 The compiler manages the tick loop. You still control model selection.
 
-```typescript
-import { createCompiler } from 'aidk-ai-sdk';
+```tsx
+import { createCompiler } from "aidk-ai-sdk";
 
 const compiler = createCompiler();
 
 for await (const event of compiler.stream(<MyAgent />, async (input) => {
-  return streamText({ model: openai('gpt-4o'), ...input });
+  return streamText({ model: openai("gpt-4o"), ...input });
 })) {
   console.log(event);
 }
@@ -223,7 +223,7 @@ for await (const event of compiler.stream(<MyAgent />, async (input) => {
 
 Real-time updates, execution tracking, state recovery.
 
-```typescript
+```tsx
 import { createEngine } from "aidk";
 import { createExpressMiddleware } from "aidk-express";
 
@@ -324,6 +324,8 @@ const mcpTools = await discoverMCPTools({
 </div>
 
 ### Confirmation and feedback
+
+Escalate tool execution requests
 
 ```tsx
 const DeleteTool = createTool({
@@ -487,11 +489,9 @@ npm install aidk aidk-ai-sdk ai @ai-sdk/openai
 ```
 
 <div class="cta-buttons">
-
-[Get Started](/docs/getting-started)
-[See Examples](/examples/)
-[Read the Docs](/docs/)
-
+<a href="/aidk/docs/getting-started">Get Started</a>
+<a href="/aidk/examples/">See Examples</a>
+<a href="/aidk/docs/">Read the Docs</a>
 </div>
 
 </div>
@@ -502,7 +502,7 @@ npm install aidk aidk-ai-sdk ai @ai-sdk/openai
 .custom-home {
   max-width: 900px;
   margin: 0 auto;
-  padding: 2rem 1.5rem;
+  padding: 2rem 0;
   overflow-x: hidden;
 }
 

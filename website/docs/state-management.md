@@ -31,7 +31,7 @@ There are three types of state signals in AIDK:
 
 Use `signal()` for component-local state that doesn't need to be shared:
 
-```typescript
+``` tsx
 import { EngineComponent, signal } from 'aidk';
 
 class CounterComponent extends Component {
@@ -53,7 +53,7 @@ class CounterComponent extends Component {
 
 Use `comState()` for state shared across components and persisted across ticks:
 
-```typescript
+``` tsx
 import { EngineComponent, comState, type COMTimelineEntry } from 'aidk';
 
 class TimelineComponent extends Component {
@@ -68,8 +68,8 @@ class TimelineComponent extends Component {
 
   onTickStart(com, state) {
     // Append new entries from current tick
-    if (state.currentState?.timeline?.length) {
-      this.timeline.update(t => [...t, ...state.currentState.timeline]);
+    if (state.current?.timeline?.length) {
+      this.timeline.update(t => [...t, ...state.current.timeline]);
     }
   }
 
@@ -89,7 +89,7 @@ class TimelineComponent extends Component {
 
 Use `watchComState()` (or its shorthand `watch()`) when you want to **observe** COM state that another component owns, without being able to modify it:
 
-```typescript
+``` tsx
 import { EngineComponent, watchComState, watch, computed } from 'aidk';
 
 class StatusDisplay extends Component {
@@ -129,7 +129,7 @@ Use `computed()` for values derived from other signals. Computed signals are:
 - **Memoized** — cached until dependencies change
 - **Reactive** — auto-update when dependencies change
 
-```typescript
+``` tsx
 import { EngineComponent, signal, computed } from 'aidk';
 
 class StatsComponent extends Component {
@@ -156,7 +156,7 @@ class StatsComponent extends Component {
 
 Use `effect()` sparingly for syncing with external systems. **Prefer `computed()` for derived values.**
 
-```typescript
+``` tsx
 import { EngineComponent, signal, effect } from "aidk";
 
 class LoggingComponent extends Component {
@@ -176,7 +176,7 @@ class LoggingComponent extends Component {
 
 Effects can return a cleanup function:
 
-```typescript
+``` tsx
 effect(() => {
   const timer = setInterval(() => console.log("tick"), 1000);
 
@@ -189,7 +189,7 @@ effect(() => {
 
 When updating multiple signals, use `batch()` to prevent intermediate re-renders:
 
-```typescript
+``` tsx
 import { batch, signal } from "aidk";
 
 const firstName = signal("");
@@ -210,7 +210,7 @@ batch(() => {
 
 Use `untracked()` to read a signal without creating a dependency:
 
-```typescript
+``` tsx
 import { effect, signal, untracked } from "aidk";
 
 const user = signal("Alice");
@@ -240,7 +240,7 @@ All signals are **automatically cleaned up** when a component unmounts. The clea
 
 If you need to dispose a signal before unmount:
 
-```typescript
+``` tsx
 class MyComponent extends Component {
   private tempData = signal<Data | null>(null);
 
@@ -255,7 +255,7 @@ class MyComponent extends Component {
 
 Class components use `signal()`, `comState()`, and `watch()` as class properties:
 
-```typescript
+``` tsx
 class MyAgent extends Component {
   // Local state
   private count = signal(0);
@@ -276,7 +276,7 @@ class MyAgent extends Component {
 
 Use `input()` to create reactive props:
 
-```typescript
+``` tsx
 interface AgentProps {
   title?: string;
   model: string;  // Required
@@ -305,7 +305,7 @@ class ConfigurableAgent extends Component<AgentProps> {
 
 Function components use **hooks** (React-inspired, async-first):
 
-```typescript
+``` tsx
 function Counter() {
   // Local state
   const count = useSignal(0);
@@ -327,7 +327,7 @@ function Counter() {
 
 Function components receive props directly - just use them:
 
-```typescript
+``` tsx
 interface MessageCardProps {
   message: string;
   author?: string;
@@ -353,7 +353,7 @@ function MessageCard(props: MessageCardProps) {
 
 ### The Correct Patterns
 
-```typescript
+``` tsx
 // ✅ Use EngineComponent for stateful components
 class GoodComponent extends Component {
   private count = signal(0);  // Stored on instance, persists
@@ -380,7 +380,7 @@ function TimelineView(props: { entries: COMTimelineEntry[] }) {
 
 Creates a local reactive signal.
 
-```typescript
+``` tsx
 const count = signal(0);
 const name = signal("", {
   equal: (a, b) => a.toLowerCase() === b.toLowerCase(),
@@ -398,7 +398,7 @@ count.disposed; // Check: true
 
 Creates a COM-bound signal (shared, persisted). Use when you **own** the state.
 
-```typescript
+``` tsx
 const timeline = comState<Entry[]>('timeline', []);
 
 // Automatically syncs with COM state
@@ -410,7 +410,7 @@ com.setState('timeline', [...]);  // Updates signal
 
 Creates a **read-only** signal that watches COM state. Use when another component owns the state.
 
-```typescript
+``` tsx
 class ObserverComponent extends Component {
   // Watch state set by another component
   private timeline = watchComState<Entry[]>('timeline');
@@ -432,7 +432,7 @@ class ObserverComponent extends Component {
 
 Shorthand for `watchComState`. Same API.
 
-```typescript
+``` tsx
 private status = watch<'idle' | 'loading'>('status', 'idle');
 ```
 
@@ -442,7 +442,7 @@ Creates a signal bound to a component prop. **Class components only.**
 
 The prop key is inferred from the property name, or can be overridden via `config.key`.
 
-```typescript
+``` tsx
 interface AgentProps {
   title?: string;
   model: string;  // Required
@@ -468,7 +468,7 @@ Props signals are **read-only** from the component's perspective - only the comp
 
 Creates a derived signal.
 
-```typescript
+``` tsx
 const doubled = computed(() => count() * 2);
 
 doubled(); // Read (triggers computation if dirty)
@@ -480,7 +480,7 @@ doubled.dispose();
 
 Runs a side effect when dependencies change.
 
-```typescript
+``` tsx
 const ref = effect((onCleanup) => {
   console.log(count());
   onCleanup(() => console.log('cleaning up'));
@@ -500,7 +500,7 @@ ref.disposed;   // Check: true
 
 Groups updates to prevent intermediate notifications.
 
-```typescript
+``` tsx
 batch(() => {
   a.set(1);
   b.set(2);
@@ -513,7 +513,7 @@ batch(() => {
 
 Reads signals without creating dependencies.
 
-```typescript
+``` tsx
 effect(() => {
   const tracked = count();
   const notTracked = untracked(() => other());
@@ -522,7 +522,7 @@ effect(() => {
 
 ### Type Guards
 
-```typescript
+``` tsx
 import { isSignal, isComputed, isEffect } from "aidk";
 
 isSignal(count); // true for signal()
@@ -532,7 +532,7 @@ isEffect(ref); // true for effect()
 
 ### Manual Disposal
 
-```typescript
+``` tsx
 import { disposeSignal } from "aidk";
 
 disposeSignal(mySignal); // Same as mySignal.dispose()
@@ -546,7 +546,7 @@ These hooks are for **function components only**. For class components, use the 
 
 Creates a local signal in a function component.
 
-```typescript
+``` tsx
 function Counter() {
   const count = useSignal(0);
   return <Text>Count: {count()}</Text>;
@@ -557,7 +557,7 @@ function Counter() {
 
 Creates a COM-bound signal in a function component.
 
-```typescript
+``` tsx
 function Timeline() {
   const entries = useComState<Entry[]>('timeline', []);
   return <List>{entries().map(...)}</List>;
@@ -568,7 +568,7 @@ function Timeline() {
 
 Watches COM state owned by another component.
 
-```typescript
+``` tsx
 function StatusDisplay() {
   const status = useWatch<string>('agentStatus', 'idle');
   return <Text>Status: {status()}</Text>;
@@ -579,7 +579,7 @@ function StatusDisplay() {
 
 Creates a computed value.
 
-```typescript
+``` tsx
 function Summary() {
   const items = useComState<Item[]>('items', []);
   const total = useComputed(() => items().length, []);
@@ -591,7 +591,7 @@ function Summary() {
 
 Runs a side effect. Unlike React, callback CAN be async.
 
-```typescript
+``` tsx
 function Logger() {
   const message = useComState("message", "");
 
@@ -606,7 +606,7 @@ function Logger() {
 
 Runs once when the component mounts.
 
-```typescript
+``` tsx
 function DataLoader() {
   const data = useComState("data", null);
 
@@ -621,7 +621,7 @@ function DataLoader() {
 
 Runs when the component unmounts.
 
-```typescript
+``` tsx
 function Subscription() {
   useOnUnmount(() => {
     unsubscribe();
@@ -633,7 +633,7 @@ function Subscription() {
 
 Runs at the start of each tick.
 
-```typescript
+``` tsx
 function TickLogger() {
   useTickStart((com, state) => {
     console.log(`Tick ${state.tick} starting`);
@@ -645,7 +645,7 @@ function TickLogger() {
 
 Runs at the end of each tick.
 
-```typescript
+``` tsx
 function TickLogger() {
   useTickEnd((com, state) => {
     console.log(`Tick ${state.tick} ended`);
@@ -657,7 +657,7 @@ function TickLogger() {
 
 Runs when a message is received during streaming.
 
-```typescript
+``` tsx
 function MessageHandler() {
   useOnMessage((message) => {
     console.log("Received:", message);
@@ -669,7 +669,7 @@ function MessageHandler() {
 
 Memoizes a value.
 
-```typescript
+``` tsx
 function ExpensiveComponent(props) {
   const processed = useMemo(() => expensiveOperation(props.data), [props.data]);
 }
@@ -679,7 +679,7 @@ function ExpensiveComponent(props) {
 
 Creates a mutable ref that persists across renders.
 
-```typescript
+``` tsx
 function Timer() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -697,7 +697,7 @@ function Timer() {
 
 Gets the current execution's abort signal.
 
-```typescript
+``` tsx
 function CancellableRequest() {
   const signal = useAbortSignal();
 

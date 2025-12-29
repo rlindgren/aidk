@@ -201,7 +201,7 @@ export class ContextObjectModel extends EventEmitter {
   // Ephemeral entries - transient content rebuilt each tick, NOT persisted
   private ephemeral: EphemeralEntry[] = [];
 
-  // System messages - consolidated from sections each tick, NOT persisted in previousState
+  // System messages - consolidated from sections each tick, NOT persisted in previous
   // Rebuilt fresh each tick to maintain declarative principle
   // Uses COMTimelineEntry envelope for consistency
   private systemMessages: COMTimelineEntry[] = [];
@@ -270,7 +270,7 @@ export class ContextObjectModel extends EventEmitter {
     if (initial) {
       // We don't copy timeline, sections, or tools from initial input because
       // Components are responsible for building them declaratively each tick.
-      // Components have access to previousState and currentState
+      // Components have access to previous and current
       // to make decisions about what to render.
       // Initial metadata is fine.
       if (initial.metadata) Object.assign(this.metadata, initial.metadata);
@@ -422,7 +422,7 @@ export class ContextObjectModel extends EventEmitter {
    *
    * System messages go to a separate array (not timeline) because:
    * - They are declarative (rebuilt each tick from sections)
-   * - They should not be persisted in previousState
+   * - They should not be persisted in previous
    * - This prevents duplicate system messages across ticks
    */
   addMessage(
@@ -862,7 +862,7 @@ export class ContextObjectModel extends EventEmitter {
    * ```typescript
    * class ResponseVerifier extends Component {
    *   render(com: ContextObjectModel, state: TickState) {
-   *     const response = state.currentState?.timeline.find(e => e.message.role === 'assistant');
+   *     const response = state.current?.timeline.find(e => e.message.role === 'assistant');
    *     if (response && this.isComplete(response)) {
    *       com.requestStop({ reason: 'response-complete', status: 'completed' });
    *     }

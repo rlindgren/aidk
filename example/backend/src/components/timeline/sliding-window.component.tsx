@@ -57,10 +57,10 @@ export class SlidingWindowTimeline extends Component<SlidingWindowTimelineProps>
     this.timeline.set([...history, ...(userInput.timeline || [])]);
   }
 
-  onTickStart(_com: ContextObjectModel, { currentState }: TickState): void {
+  onTickStart(_com: ContextObjectModel, { current }: TickState): void {
     // Update timeline with new entries
     // on tick 1 this holds user input (timeline, metadata)
-    this.timeline.update(curr => [...curr, ...(currentState.timeline || [])]);
+    this.timeline.update(curr => [...curr, ...(current.timeline || [])]);
   }
 
   async render() {

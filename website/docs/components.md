@@ -26,8 +26,8 @@ class MyAgent extends Component {
   
   // Lifecycle: Called before each tick
   onTickStart(com: ContextObjectModel, state: TickState) {
-    if (state.currentState?.timeline) {
-      this.timeline.update(t => [...t, ...state.currentState.timeline]);
+    if (state.current?.timeline) {
+      this.timeline.update(t => [...t, ...state.current.timeline]);
     }
   }
   
@@ -103,8 +103,8 @@ function MessageTimeline() {
   });
   
   useTickStart((com, state) => {
-    if (state.currentState?.timeline) {
-      timeline.update(t => [...t, ...state.currentState.timeline]);
+    if (state.current?.timeline) {
+      timeline.update(t => [...t, ...state.current.timeline]);
     }
   });
   
@@ -460,8 +460,8 @@ class ChatContainer extends Component {
   private messages = comState<Message[]>('messages', []);
   
   onTickStart(com, state) {
-    if (state.currentState?.timeline) {
-      this.messages.update(m => [...m, ...state.currentState.timeline]);
+    if (state.current?.timeline) {
+      this.messages.update(m => [...m, ...state.current.timeline]);
     }
   }
   

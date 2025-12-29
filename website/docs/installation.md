@@ -139,7 +139,7 @@ yarn add aidk
 
 Create a test file to verify everything works:
 
-```typescript
+``` tsx
 // test.ts
 import { Component } from 'aidk';
 

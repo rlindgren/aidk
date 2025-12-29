@@ -45,7 +45,7 @@ website/
 
 The site is automatically deployed to GitHub Pages on push to `main`:
 
-- **URL:** https://lindgrengroup.github.io/aidk/
+- **URL:** https://rlindgren.github.io/aidk/
 - **Workflow:** `.github/workflows/deploy-docs.yml`
 
 ### Manual Deployment
@@ -65,13 +65,13 @@ Use VitePress code groups for multi-file examples:
 ````markdown
 ::: code-group
 
-```typescript [agent.tsx]
+``` tsx [agent.tsx]
 export class MyAgent extends Component {
   // ...
 }
 ```
 
-```typescript [server.ts]
+``` tsx [server.ts]
 import { createEngine } from 'aidk';
 ```
 

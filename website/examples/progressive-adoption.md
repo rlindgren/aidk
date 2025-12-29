@@ -8,7 +8,7 @@ The minimal starting point. Use JSX for context, keep your existing code.
 
 ::: code-group
 
-```typescript [agent.tsx]
+``` tsx [agent.tsx]
 import { System, User, Assistant, Section } from '@aidk/ai-sdk';
 
 export function SimpleAgent() {
@@ -26,7 +26,7 @@ export function SimpleAgent() {
 }
 ```
 
-```typescript [main.ts]
+``` tsx [main.ts]
 import { compile } from '@aidk/ai-sdk';
 import { generateText } from 'ai';
 import { openai } from '@ai-sdk/openai';
@@ -65,7 +65,7 @@ Add multi-tick execution while keeping control of model calls.
 
 ::: code-group
 
-```typescript [agent.tsx]
+``` tsx [agent.tsx]
 import { Component, comState, Timeline, Message } from 'aidk';
 import { Model, Tool } from '@aidk/ai-sdk';
 import { openai } from '@ai-sdk/openai';
@@ -75,8 +75,8 @@ export class MathAgent extends Component {
   private timeline = comState<any[]>('timeline', []);
   
   onTickStart(com, state) {
-    if (state.currentState?.timeline) {
-      this.timeline.update(t => [...t, ...state.currentState.timeline]);
+    if (state.current?.timeline) {
+      this.timeline.update(t => [...t, ...state.current.timeline]);
     }
   }
   
@@ -98,7 +98,7 @@ export class MathAgent extends Component {
 }
 ```
 
-```typescript [main.ts]
+``` tsx [main.ts]
 import { createCompiler } from '@aidk/ai-sdk';
 import { generateText } from 'ai';
 import { MathAgent } from './agent';
@@ -128,7 +128,7 @@ async function main() {
 main();
 ```
 
-```typescript [tools.ts]
+``` tsx [tools.ts]
 import { createTool } from 'aidk';
 import { z } from 'zod';
 
@@ -161,7 +161,7 @@ Let AIDK handle everything.
 
 ::: code-group
 
-```typescript [agent.tsx]
+``` tsx [agent.tsx]
 import { Component, comState, Timeline, Message, Section } from 'aidk';
 import { Model, Tool } from '@aidk/ai-sdk';
 import { openai } from '@ai-sdk/openai';
@@ -171,8 +171,8 @@ export class TaskAgent extends Component {
   private taskCount = comState<number>('tasks', 0);
   
   onTickStart(com, state) {
-    if (state.currentState?.timeline) {
-      this.timeline.update(t => [...t, ...state.currentState.timeline]);
+    if (state.current?.timeline) {
+      this.timeline.update(t => [...t, ...state.current.timeline]);
     }
   }
   
@@ -200,7 +200,7 @@ export class TaskAgent extends Component {
 }
 ```
 
-```typescript [main.ts]
+``` tsx [main.ts]
 import { createCompiler } from '@aidk/ai-sdk';
 import { openai } from '@ai-sdk/openai';
 import { TaskAgent } from './agent';
@@ -282,7 +282,7 @@ Production-ready backend with full features.
 
 ::: code-group
 
-```typescript [agent.tsx]
+``` tsx [agent.tsx]
 import { Component, comState, Context } from 'aidk';
 import { Model, Tool } from '@aidk/ai-sdk';
 import { openai } from '@ai-sdk/openai';
@@ -298,8 +298,8 @@ export class CustomerAgent extends Component {
   }
   
   onTickStart(com, state) {
-    if (state.currentState?.timeline) {
-      this.timeline.update(t => [...t, ...state.currentState.timeline]);
+    if (state.current?.timeline) {
+      this.timeline.update(t => [...t, ...state.current.timeline]);
     }
   }
   
@@ -332,7 +332,7 @@ export class CustomerAgent extends Component {
 }
 ```
 
-```typescript [server.ts]
+``` tsx [server.ts]
 import express from 'express';
 import { createEngine } from 'aidk';
 import { createSSEHandler } from 'aidk-express';
@@ -365,7 +365,7 @@ app.post('/api/agent/stream', createSSEHandler({
 app.listen(3000);
 ```
 
-```typescript [middleware.ts]
+``` tsx [middleware.ts]
 import { Context } from 'aidk';
 
 export const loggingMiddleware = async (args, envelope, next) => {

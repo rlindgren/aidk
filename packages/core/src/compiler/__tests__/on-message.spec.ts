@@ -8,7 +8,7 @@
  * - COM abort via com.abort()
  */
 
-import { useOnMessage, setRenderContext } from "../hooks";
+import { useOnMessage, setRenderContext } from "../../state/hooks";
 import type { RenderContext } from "../types";
 import { createFiber } from "../fiber";
 import { ContextObjectModel } from "../../com/object-model";

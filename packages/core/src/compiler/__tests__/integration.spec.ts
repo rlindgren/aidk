@@ -11,7 +11,7 @@ import { Component } from '../../component/component';
 import { Section, Message, Timeline } from '../../jsx/components/primitives';
 import { Text } from '../../jsx/components/content';
 import { createElement } from '../../jsx/jsx-runtime';
-import { useState, useComState, useTickStart, useTickEnd, useOnMount, useEffect } from '../hooks';
+import { useState, useComState, useTickStart, useTickEnd, useOnMount, useEffect } from '../../state/hooks';
 import { signal, comState } from '../../state/use-state';
 
 describe('Compiler Integration', () => {
@@ -25,7 +25,7 @@ describe('Compiler Integration', () => {
     tickState = {
       tick: 1,
       stop: jest.fn(),
-      currentState: {
+      current: {
         timeline: [],
       },
     } as TickState;

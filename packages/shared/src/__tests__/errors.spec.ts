@@ -293,7 +293,7 @@ describe("StateError", () => {
 
     expect(error.message).toBe("Cannot stop running process");
     expect(error.code).toBe("STATE_INVALID");
-    expect(error.currentState).toBe("running");
+    expect(error.current).toBe("running");
     expect(error.expectedState).toBe("stopped");
     expect(error.name).toBe("StateError");
   });
@@ -306,7 +306,7 @@ describe("StateError", () => {
         "Engine is not ready (current state: initializing)",
       );
       expect(error.code).toBe("STATE_NOT_READY");
-      expect(error.currentState).toBe("initializing");
+      expect(error.current).toBe("initializing");
       expect(error.expectedState).toBe("ready");
     });
   });
@@ -317,7 +317,7 @@ describe("StateError", () => {
 
       expect(error.message).toBe("Cannot send message: already complete");
       expect(error.code).toBe("STATE_ALREADY_COMPLETE");
-      expect(error.currentState).toBe("complete");
+      expect(error.current).toBe("complete");
     });
   });
 });

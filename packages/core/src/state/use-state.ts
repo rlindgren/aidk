@@ -20,7 +20,7 @@
  *   private timeline = comState<COMTimelineEntry[]>('timeline', []);
  *   
  *   onTickStart(com, state) {
- *     this.timeline.update(t => [...t, ...state.currentState.timeline]);
+ *     this.timeline.update(t => [...t, ...state.current.timeline]);
  *   }
  *   
  *   render() {
@@ -53,11 +53,6 @@ import {
 } from './signal';
 import type { ContextObjectModel } from '../com/object-model';
 
-// Re-export signal for component-local state
-export { signal } from './signal';
-export type { Signal, ComputedSignal, ReadonlySignal, EffectRef, SignalOptions } from './signal';
-export { computed, effect, batch, untracked, isSignal, isComputed, isEffect, PROPS_SIGNAL_SYMBOL } from './signal';
-
 /**
  * Creates a COM-bound signal (shared state).
  * 
@@ -80,7 +75,7 @@ export { computed, effect, batch, untracked, isSignal, isComputed, isEffect, PRO
  *   
  *   onTickStart(com, state) {
  *     // Update signal - automatically syncs with COM
- *     this.timeline.update(t => [...t, ...state.currentState.timeline]);
+ *     this.timeline.update(t => [...t, ...state.current.timeline]);
  *   }
  *   
  *   render() {
@@ -163,15 +158,6 @@ export function watch<T>(key: string, defaultValue?: T): ReadonlySignal<T | unde
 }
 
 /**
- * Input function type.
- * Use explicit props interfaces with Component<P> for type checking.
- * Required vs optional props are determined by your props interface.
- */
-interface InputFunction {
-  <T>(initialValue?: T, config?: { key?: string }): ReadonlySignal<T | undefined>;
-}
-
-/**
  * Creates a signal bound to a component prop.
  * 
  * The prop key is inferred from the property name, but can be overridden via config.
@@ -212,7 +198,7 @@ interface InputFunction {
  * <MyComponent />  // ❌ Error: name is required (from props interface)
  * ```
  */
-export const input: InputFunction = function <T>(
+export function input<T>(
   initialValue?: T,
   config?: { key?: string }
 ): ReadonlySignal<T | undefined> {
@@ -226,7 +212,7 @@ export const input: InputFunction = function <T>(
   
   // Return as ReadonlySignal (components can't write, compiler can)
   return sig as ReadonlySignal<T | undefined>;
-} as InputFunction;
+}
 
 /**
  * Binds all COM signals on a component instance.

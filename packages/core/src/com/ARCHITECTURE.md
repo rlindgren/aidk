@@ -158,7 +158,7 @@ The COM manages two categories of data with different persistence semantics:
 │  • Component refs                                               │
 │                                                                 │
 │  Note: Timeline is managed BY COMPONENTS using comState         │
-│  or by re-rendering from previousState each tick.               │
+│  or by re-rendering from previous each tick.               │
 │                                                                 │
 │  DECLARATIVE (rebuilt each tick):                               │
 │  ─────────────────────────────────────────────────              │
@@ -536,7 +536,7 @@ sequenceDiagram
     Note over COM: Reset timeline, sections,<br/>tools, ephemeral<br/>(state persists)
 
     Engine->>Components: onTickStart(com, state)
-    Components->>COM: setState(), access previousState
+    Components->>COM: setState(), access previous
 
     Engine->>Compiler: compile(agent, com, tickState)
     Compiler->>Components: render(com, state)
@@ -554,7 +554,7 @@ sequenceDiagram
     Model-->>Engine: ModelOutput
 
     Engine->>Engine: toEngineState(output)
-    Note over Engine: Create currentState with<br/>new timeline entries
+    Note over Engine: Create current with<br/>new timeline entries
 
     Engine->>Components: onTickEnd(com, state)
 
@@ -610,8 +610,8 @@ class TimelineManager extends Component {
 
   onTickStart(com, state) {
     // Merge new entries from model output
-    if (state.currentState?.timeline) {
-      this.timeline.update(t => [...t, ...state.currentState.timeline]);
+    if (state.current?.timeline) {
+      this.timeline.update(t => [...t, ...state.current.timeline]);
     }
   }
 
@@ -706,14 +706,14 @@ com.addMessage(message, options);
 │  ─────────────────────────────────                              │
 │  • User messages, assistant responses, tool calls/results       │
 │  • Managed by components (comState or manual re-render)         │
-│  • Persisted in previousState → currentState flow               │
+│  • Persisted in previous → current flow               │
 │  • Sent to model as the message history                         │
 │                                                                 │
 │  SYSTEM MESSAGES (instructions):                                │
 │  ─────────────────────────────────                              │
 │  • System role messages, section content                        │
 │  • Rebuilt fresh each tick (declarative)                        │
-│  • NOT in previousState (prevents duplication)                  │
+│  • NOT in previous (prevents duplication)                  │
 │  • Consolidated into single system message for model            │
 │                                                                 │
 │  Why separate?                                                  │
@@ -726,14 +726,14 @@ com.addMessage(message, options);
 
 ### Common Timeline Patterns
 
-#### Pattern 1: Render from previousState + currentState
+#### Pattern 1: Render from previous + current
 
 ```typescript
 class ConversationAgent extends Component {
   render(com, state) {
     // Combine previous and current entries
-    const previousEntries = state.previousState?.timeline ?? [];
-    const currentEntries = state.currentState?.timeline ?? [];
+    const previousEntries = state.previous?.timeline ?? [];
+    const currentEntries = state.current?.timeline ?? [];
 
     return (
       <Fragment>
@@ -762,12 +762,12 @@ class StatefulAgent extends Component {
 
   onTickStart(com, state) {
     // On first tick, seed from userInput
-    if (state.tick === 1 && state.currentState?.timeline) {
-      this.timeline.set(state.currentState.timeline);
+    if (state.tick === 1 && state.current?.timeline) {
+      this.timeline.set(state.current.timeline);
     }
     // On subsequent ticks, merge new entries
-    else if (state.currentState?.timeline) {
-      this.timeline.update(t => [...t, ...state.currentState.timeline]);
+    else if (state.current?.timeline) {
+      this.timeline.update(t => [...t, ...state.current.timeline]);
     }
   }
 
@@ -854,12 +854,12 @@ class SimpleAgent extends Component {
         <Section id="context" content={`Today is ${new Date().toDateString()}`} />
 
         {/* Conversation history */}
-        {(state.previousState?.timeline ?? []).map(entry => (
+        {(state.previous?.timeline ?? []).map(entry => (
           <Message role={entry.message.role} content={entry.message.content} />
         ))}
 
         {/* New messages from this tick */}
-        {(state.currentState?.timeline ?? []).map(entry => (
+        {(state.current?.timeline ?? []).map(entry => (
           <Message role={entry.message.role} content={entry.message.content} />
         ))}
       </Fragment>
@@ -915,7 +915,7 @@ class ToolProvider extends Component {
       com.addTool(this.adminTool);
     }
 
-    if (state.currentState?.toolCalls?.length > 0) {
+    if (state.current?.toolCalls?.length > 0) {
       // Add debug tool after first tool use
       com.addTool(this.debugTool);
     }
@@ -930,7 +930,7 @@ class ToolProvider extends Component {
 ```typescript
 class ResponseVerifier extends Component {
   render(com, state) {
-    const lastResponse = state.currentState?.timeline?.find(
+    const lastResponse = state.current?.timeline?.find(
       (e) => e.message.role === "assistant",
     );
 
@@ -1003,7 +1003,7 @@ class OrchestratorAgent extends Component {
 
     // Fork with inherited state
     const forkHandle = com.process?.fork(
-      { timeline: state.previousState?.timeline ?? [] },
+      { timeline: state.previous?.timeline ?? [] },
       SummarizerAgent,
       { inherit: { timeline: true, state: true } }
     );
@@ -1028,7 +1028,7 @@ System messages are kept separate because:
 
 1. **Declarative semantics** - Sections are "what should be", not "what was said"
 2. **Prevents duplication** - Without separation, system messages would accumulate each tick
-3. **Clean previousState** - Components render from previousState without filtering system messages
+3. **Clean previous** - Components render from previous without filtering system messages
 4. **Model optimization** - Single consolidated system message is more efficient
 
 ### Why Events Instead of Direct Observation?

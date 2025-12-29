@@ -24,28 +24,148 @@ import { AbortError, ValidationError } from "aidk-shared";
 // Types
 // ============================================================================
 
+/**
+ * Middleware function that can intercept and transform procedure execution.
+ *
+ * Middleware can:
+ * - Transform input arguments before passing to the next middleware/handler
+ * - Modify the result after `next()` returns
+ * - Short-circuit execution by not calling `next()`
+ * - Handle or transform errors
+ *
+ * @typeParam TArgs - The argument types of the procedure
+ *
+ * @example
+ * ```typescript
+ * const loggingMiddleware: Middleware<[string]> = async (args, envelope, next) => {
+ *   console.log(`${envelope.operationName} called with:`, args);
+ *   const start = Date.now();
+ *   try {
+ *     const result = await next();
+ *     console.log(`Completed in ${Date.now() - start}ms`);
+ *     return result;
+ *   } catch (error) {
+ *     console.error(`Failed:`, error);
+ *     throw error;
+ *   }
+ * };
+ * ```
+ *
+ * @example Transform arguments
+ * ```typescript
+ * const upperMiddleware: Middleware<[string]> = async (args, envelope, next) => {
+ *   return next([args[0].toUpperCase()]);
+ * };
+ * ```
+ *
+ * @see {@link ProcedureEnvelope} - The envelope containing execution metadata
+ * @see {@link createPipeline} - Bundle multiple middleware for reuse
+ */
 export type Middleware<TArgs extends any[] = any[]> = (
   args: TArgs,
   envelope: ProcedureEnvelope<TArgs>,
   next: (transformedArgs?: TArgs) => Promise<any>,
 ) => Promise<any>;
 
+/**
+ * Metadata envelope passed to middleware containing execution context.
+ *
+ * @typeParam TArgs - The argument types of the procedure
+ *
+ * @example
+ * ```typescript
+ * const middleware: Middleware<[string]> = async (args, envelope, next) => {
+ *   if (envelope.sourceType === 'hook') {
+ *     console.log(`Hook ${envelope.operationName} from ${envelope.sourceId}`);
+ *   }
+ *   return next();
+ * };
+ * ```
+ */
 export interface ProcedureEnvelope<TArgs extends any[]> {
+  /** Whether this is a regular procedure or a hook */
   sourceType: "procedure" | "hook";
+  /** Identifier of the source (e.g., class name for decorated methods) */
   sourceId?: string;
+  /** Name of the operation being executed */
   operationName: string;
+  /** The arguments passed to the procedure */
   args: TArgs;
+  /** The current kernel context */
   context: KernelContext;
 }
 
+/**
+ * Handle for monitoring and controlling a running procedure execution.
+ *
+ * Obtained by calling `.withHandle()` on a procedure. Useful for:
+ * - Subscribing to execution events (progress, errors, completion)
+ * - Correlating execution via trace ID
+ * - Cancelling long-running operations
+ *
+ * @typeParam TOutput - The return type of the procedure
+ *
+ * @example
+ * ```typescript
+ * const { handle, result } = myProc.withHandle()('input');
+ *
+ * // Subscribe to events
+ * handle.events.on('stream:chunk', (e) => console.log('Progress:', e));
+ *
+ * // Check status
+ * console.log('Status:', handle.getStatus?.());
+ *
+ * // Wait for completion
+ * const output = await result;
+ * ```
+ *
+ * @see {@link HandleFactory} - Custom handle factory function type
+ */
 export interface ExecutionHandle<TOutput> {
+  /** Promise that resolves with the procedure result */
   result: Promise<TOutput>;
+  /** EventEmitter for subscribing to execution events */
   events: EventEmitter;
+  /** Trace ID for distributed tracing correlation */
   traceId: string;
+  /** Cancel the execution (if supported) */
   cancel?(): void;
+  /** Get current execution status */
   getStatus?(): "running" | "completed" | "failed" | "cancelled";
 }
 
+/**
+ * Factory function for creating custom execution handles.
+ *
+ * Use this to provide custom handle implementations with additional
+ * functionality like cancellation, status tracking, or specialized events.
+ *
+ * @typeParam THandle - The custom handle type (must extend ExecutionHandle)
+ * @typeParam TContext - The context type (must extend KernelContext)
+ *
+ * @example
+ * ```typescript
+ * const customHandleFactory: HandleFactory = (events, traceId, result, context) => ({
+ *   events,
+ *   traceId,
+ *   result,
+ *   status: 'running' as const,
+ *   cancel() {
+ *     // Custom cancellation logic
+ *   },
+ *   getStatus() {
+ *     return this.status;
+ *   }
+ * });
+ *
+ * const proc = createProcedure(
+ *   { handleFactory: customHandleFactory },
+ *   async (input) => input
+ * );
+ * ```
+ *
+ * @see {@link ExecutionHandle} - The base handle interface
+ */
 export type HandleFactory<
   THandle extends ExecutionHandle<any> = ExecutionHandle<any>,
   TContext extends KernelContext = KernelContext,
@@ -56,15 +176,38 @@ export type HandleFactory<
   context: TContext,
 ) => THandle;
 
+/**
+ * Configuration options for creating a procedure.
+ *
+ * @example
+ * ```typescript
+ * const proc = createProcedure({
+ *   name: 'myProcedure',
+ *   schema: z.object({ input: z.string() }),
+ *   middleware: [loggingMiddleware],
+ *   timeout: 5000,
+ * }, async ({ input }) => input.toUpperCase());
+ * ```
+ *
+ * @see {@link createProcedure} - Create a procedure with these options
+ */
 export interface ProcedureOptions {
+  /** Name of the procedure (used in telemetry and logging) */
   name?: string;
+  /** Middleware pipeline to apply to this procedure */
   middleware?: (Middleware<any[]> | MiddlewarePipeline)[];
+  /** Custom factory for creating execution handles */
   handleFactory?: HandleFactory;
+  /** Zod schema for input validation */
   schema?: z.ZodType<any>;
-  parentProcedure?: string; // For hooks
-  sourceType?: "procedure" | "hook"; // Internal use
-  sourceId?: string; // Internal use
-  metadata?: Record<string, any>; // For telemetry span attributes (e.g., { type: 'tool', id: 'myTool', operation: 'run' })
+  /** Parent procedure name (for hooks) */
+  parentProcedure?: string;
+  /** @internal Whether this is a procedure or hook */
+  sourceType?: "procedure" | "hook";
+  /** @internal Source identifier (e.g., class name) */
+  sourceId?: string;
+  /** Metadata for telemetry span attributes (e.g., { type: 'tool', id: 'myTool' }) */
+  metadata?: Record<string, any>;
   /** Timeout in milliseconds. If exceeded, throws AbortError.timeout() */
   timeout?: number;
 }
@@ -77,32 +220,97 @@ export interface StaticMiddleware {
   [procedureName: string]: (Middleware<any[]> | MiddlewarePipeline)[];
 }
 
+/**
+ * A callable function wrapper with middleware, validation, and execution control.
+ *
+ * Procedures are the core execution primitive in AIDK. They wrap any async function
+ * and provide:
+ * - **Middleware pipeline** - Transform args, intercept results, handle errors
+ * - **Schema validation** - Zod-based input validation
+ * - **Execution handles** - Events and cancellation for long-running operations
+ * - **Automatic tracking** - Every call is tracked in the procedure graph
+ * - **Composition** - Chain procedures with `.pipe()`
+ *
+ * @typeParam THandler - The function type being wrapped
+ *
+ * @example Direct call
+ * ```typescript
+ * const greet = createProcedure(async (name: string) => `Hello, ${name}!`);
+ * const result = await greet('World'); // 'Hello, World!'
+ * ```
+ *
+ * @example With middleware
+ * ```typescript
+ * const proc = createProcedure(async (x: number) => x * 2)
+ *   .use(loggingMiddleware)
+ *   .use(timingMiddleware);
+ * ```
+ *
+ * @example With execution handle
+ * ```typescript
+ * const { handle, result } = proc.withHandle()(input);
+ * handle.events.on('stream:chunk', console.log);
+ * const output = await result;
+ * ```
+ *
+ * @see {@link createProcedure} - Create a new procedure
+ * @see {@link Middleware} - Middleware function type
+ * @see {@link ExecutionHandle} - Handle for execution control
+ */
 export interface Procedure<THandler extends (...args: any[]) => any> {
-  // Direct call - always returns Promise<TOutput>
-  // For streams, TOutput = AsyncIterable<ChunkType>, so await returns AsyncIterable
+  /**
+   * Call the procedure directly.
+   * For streams, returns `Promise<AsyncIterable<ChunkType>>`.
+   */
   (...args: ExtractArgs<THandler>): Promise<ExtractReturn<THandler>>;
 
-  // Chained execution
-  // @deprecated Use .run() instead.
+  /**
+   * Call the procedure (alias for direct call).
+   * @deprecated Use `.run()` or direct call instead.
+   */
   call(...args: ExtractArgs<THandler>): Promise<ExtractReturn<THandler>>;
 
-  // Direct call - always returns Promise<TOutput>
-  // For streams, TOutput = AsyncIterable<ChunkType>, so await returns AsyncIterable
+  /**
+   * Run the procedure with explicit arguments.
+   * Equivalent to direct call.
+   */
   run(...args: ExtractArgs<THandler>): Promise<ExtractReturn<THandler>>;
 
-  // Configuration methods (return Procedure for chaining)
+  /**
+   * Add middleware to the procedure. Returns a new Procedure (immutable).
+   * @param middleware - Middleware functions or pipelines to add
+   */
   use(
     ...middleware: (Middleware<ExtractArgs<THandler>> | MiddlewarePipeline)[]
   ): Procedure<THandler>;
+
+  /**
+   * Get a procedure variant that returns an execution handle.
+   * Useful for subscribing to events and tracking long-running operations.
+   */
   withHandle(): ProcedureWithHandle<THandler>;
+
+  /**
+   * Create a procedure variant with merged context. Returns a new Procedure.
+   * @param ctx - Partial context to merge with the current context
+   */
   withContext(ctx: Partial<KernelContext>): Procedure<THandler>;
+
+  /**
+   * Add a single middleware. Returns a new Procedure.
+   * Convenience method equivalent to `.use(mw)`.
+   */
   withMiddleware(
     mw: Middleware<ExtractArgs<THandler>> | MiddlewarePipeline,
   ): Procedure<THandler>;
-  /** Create a procedure variant with a timeout. Throws AbortError.timeout() if exceeded. */
+
+  /**
+   * Create a procedure variant with a timeout. Returns a new Procedure.
+   * Throws `AbortError.timeout()` if the timeout is exceeded.
+   * @param ms - Timeout in milliseconds
+   */
   withTimeout(ms: number): Procedure<THandler>;
 
-  // Composition methods
   /**
    * Pipe the output of this procedure to another procedure.
    * Creates a new procedure that runs this procedure, then passes its result to the next.
@@ -124,26 +332,59 @@ export interface Procedure<THandler extends (...args: any[]) => any> {
   >;
 }
 
+/**
+ * A procedure variant that returns an execution handle along with the result.
+ *
+ * Obtained by calling `.withHandle()` on a Procedure. Useful for:
+ * - Subscribing to execution events (progress, errors, completion)
+ * - Correlating execution via trace ID
+ * - Cancelling long-running operations
+ *
+ * @typeParam THandler - The function type being wrapped
+ *
+ * @example
+ * ```typescript
+ * const proc = createProcedure(async function* (count: number) {
+ *   for (let i = 0; i < count; i++) {
+ *     yield { progress: i / count };
+ *   }
+ * });
+ *
+ * const { handle, result } = proc.withHandle()(10);
+ * handle.events.on('stream:chunk', (e) => console.log('Progress:', e.payload));
+ * const final = await result;
+ * ```
+ *
+ * @see {@link Procedure.withHandle} - Create a ProcedureWithHandle
+ * @see {@link ExecutionHandle} - The handle interface
+ */
 export type ProcedureWithHandle<THandler extends (...args: any[]) => any> = {
+  /** Call the procedure, returning both handle and result promise */
   (...args: ExtractArgs<THandler>): {
     handle: ExecutionHandle<ExtractReturn<THandler>>;
     result: Promise<ExtractReturn<THandler>>;
   };
+  /** @deprecated Use direct call or `.run()` instead */
   call(...args: ExtractArgs<THandler>): {
     handle: ExecutionHandle<ExtractReturn<THandler>>;
     result: Promise<ExtractReturn<THandler>>;
   };
+  /** Run the procedure, returning both handle and result promise */
   run(...args: ExtractArgs<THandler>): {
     handle: ExecutionHandle<ExtractReturn<THandler>>;
     result: Promise<ExtractReturn<THandler>>;
   };
+  /** Add middleware. Returns a new ProcedureWithHandle. */
   use(
     ...middleware: (Middleware<ExtractArgs<THandler>> | MiddlewarePipeline)[]
   ): ProcedureWithHandle<THandler>;
+  /** Create variant with merged context. Returns a new ProcedureWithHandle. */
   withContext(ctx: Partial<KernelContext>): ProcedureWithHandle<THandler>;
+  /** Add single middleware. Returns a new ProcedureWithHandle. */
   withMiddleware(
     mw: Middleware<ExtractArgs<THandler>> | MiddlewarePipeline,
   ): ProcedureWithHandle<THandler>;
+  /** Create variant with timeout. Returns a new ProcedureWithHandle. */
   withTimeout(ms: number): ProcedureWithHandle<THandler>;
 };
 
@@ -269,11 +510,60 @@ export type WithProcedures<T> = {
 // Pipeline (Middleware Bundles)
 // ============================================================================
 
+/**
+ * A reusable bundle of middleware that can be applied to procedures.
+ *
+ * Pipelines allow you to define common middleware combinations once
+ * and reuse them across multiple procedures.
+ *
+ * @example
+ * ```typescript
+ * const commonPipeline = createPipeline()
+ *   .use(loggingMiddleware)
+ *   .use(timingMiddleware)
+ *   .use(errorHandlingMiddleware);
+ *
+ * const proc1 = createProcedure(handler1).use(commonPipeline);
+ * const proc2 = createProcedure(handler2).use(commonPipeline);
+ * ```
+ *
+ * @see {@link createPipeline} - Create a new middleware pipeline
+ * @see {@link Middleware} - Individual middleware function type
+ */
 export interface MiddlewarePipeline {
+  /** Add middleware to this pipeline. Returns the pipeline for chaining. */
   use(...middleware: Middleware<any[]>[]): MiddlewarePipeline;
+  /** Get all middleware in this pipeline. */
   getMiddleware(): Middleware<any[]>[];
 }
 
+/**
+ * Create a reusable middleware pipeline.
+ *
+ * Pipelines bundle multiple middleware together for reuse across procedures.
+ * They can be passed to `procedure.use()` just like individual middleware.
+ *
+ * @param middleware - Initial middleware to include in the pipeline
+ * @returns A new MiddlewarePipeline
+ *
+ * @example
+ * ```typescript
+ * // Create a pipeline with initial middleware
+ * const authPipeline = createPipeline([authMiddleware, rateLimitMiddleware]);
+ *
+ * // Or build it up with .use()
+ * const logPipeline = createPipeline()
+ *   .use(requestLogging)
+ *   .use(responseLogging);
+ *
+ * // Apply to procedures
+ * const proc = createProcedure(handler)
+ *   .use(authPipeline)
+ *   .use(logPipeline);
+ * ```
+ *
+ * @see {@link MiddlewarePipeline} - The pipeline interface
+ */
 export function createPipeline(
   middleware: Middleware<any[]>[] = [],
 ): MiddlewarePipeline {

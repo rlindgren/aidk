@@ -356,7 +356,7 @@ class MyComponent extends Component {
   private timeline = comState<Entry[]>("timeline", []);
 
   onTickStart(com, state) {
-    this.timeline.update((t) => [...t, ...state.currentState.timeline]);
+    this.timeline.update((t) => [...t, ...state.current.timeline]);
   }
 }
 ```
@@ -524,8 +524,8 @@ class TimelineManager extends Component {
 
   onTickStart(com, state) {
     // Merge new timeline entries
-    if (state.currentState?.timeline) {
-      this.timeline.update(t => [...t, ...state.currentState.timeline]);
+    if (state.current?.timeline) {
+      this.timeline.update(t => [...t, ...state.current.timeline]);
     }
   }
 

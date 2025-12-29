@@ -26,7 +26,7 @@ You can stop at any level. Each provides value independently.
 
 ### Example
 
-```typescript
+``` tsx
 import { compile } from '@aidk/ai-sdk';
 import { generateText } from 'ai';
 import { openai } from '@ai-sdk/openai';
@@ -77,7 +77,7 @@ console.log(result.text);
 
 ### Example
 
-```typescript
+``` tsx
 import { createCompiler } from '@aidk/ai-sdk';
 import { generateText } from 'ai';
 import { openai } from '@ai-sdk/openai';
@@ -100,7 +100,7 @@ const result = await compiler.run(<MyAgent />, async (input) => {
 
 ### With Streaming
 
-```typescript
+``` tsx
 for await (const event of compiler.stream(
   <MyAgent />,
   async (input) => {
@@ -124,7 +124,7 @@ for await (const event of compiler.stream(
 
 Use signals for reactive state management:
 
-```typescript
+``` tsx
 import { Component, comState } from 'aidk';
 
 class SearchAgent extends Component {
@@ -134,7 +134,7 @@ class SearchAgent extends Component {
   
   onTickStart(com, state) {
     // Extract query from user message
-    const lastMessage = state.currentState?.timeline?.at(-1);
+    const lastMessage = state.current?.timeline?.at(-1);
     if (lastMessage?.role === 'user') {
       this.query.set(extractQuery(lastMessage.content));
     }
@@ -187,7 +187,7 @@ const result = await compiler.run(<SearchAgent />, async (input) => {
 
 ### Example
 
-```typescript
+``` tsx
 import { createCompiler } from '@aidk/ai-sdk';
 import { openai } from '@ai-sdk/openai';
 
@@ -206,7 +206,7 @@ console.log(result.text);
 
 ### Streaming
 
-```typescript
+``` tsx
 for await (const event of compiler.stream(<MyAgent />)) {
   if (event.type === 'chunk') {
     process.stdout.write(event.chunk.textDelta ?? '');
@@ -218,7 +218,7 @@ for await (const event of compiler.stream(<MyAgent />)) {
 
 You can still override the model per agent using the `<Model>` component:
 
-```typescript
+``` tsx
 import { Model } from '@aidk/ai-sdk';
 
 class AdaptiveAgent extends Component {
@@ -261,7 +261,7 @@ class AdaptiveAgent extends Component {
 
 ### Example
 
-```typescript
+``` tsx
 import { generateText, streamText } from '@aidk/ai-sdk';
 import { openai } from '@ai-sdk/openai';
 
@@ -310,7 +310,7 @@ const finalText = await text;
 
 ### Example
 
-```typescript
+``` tsx
 import { createEngine } from 'aidk';
 import { createAiSdkModel } from '@aidk/ai-sdk';
 import { openai } from '@ai-sdk/openai';
@@ -406,7 +406,7 @@ Pick the simplest level that provides value:
 
 You can migrate one agent at a time:
 
-```typescript
+``` tsx
 // Old code - keep running
 const legacyResult = await generateText({
   model: openai('gpt-4o'),
@@ -423,7 +423,7 @@ const newResult = await generateText(<NewAgent />, {
 
 Use feature flags to test AIDK in production:
 
-```typescript
+``` tsx
 const useAIDK = await featureFlags.isEnabled('use-aidk', userId);
 
 const result = useAIDK

@@ -10,7 +10,7 @@ npm install aidk aidk-express aidk-ai-sdk ai @ai-sdk/openai
 
 ## Basic Setup
 
-```typescript
+``` tsx
 import express from "express";
 import { createEngine } from "aidk";
 import { createExpressMiddleware } from "aidk-express";
@@ -51,7 +51,7 @@ app.listen(3000);
 
 Execute the agent and return the final result:
 
-```typescript
+``` tsx
 // Request
 POST /api/chat
 {
@@ -77,7 +77,7 @@ POST /api/chat
 
 Stream the response using Server-Sent Events:
 
-```typescript
+``` tsx
 // Request
 POST /api/chat/stream
 {
@@ -102,7 +102,7 @@ data: {"type":"message_end","stopReason":"stop"}
 
 Extract user info, thread IDs, etc. from the request:
 
-```typescript
+``` tsx
 app.use(
   "/api/chat",
   createExpressMiddleware({
@@ -143,7 +143,7 @@ class ChatAgent extends Component {
 
 Enable bidirectional communication:
 
-```typescript
+``` tsx
 import { createExpressMiddleware, SSETransport } from "aidk-express";
 import { ChannelRouter } from "aidk";
 
@@ -177,7 +177,7 @@ app.get("/api/channels", transport.handler());
 
 ### Client Connection
 
-```typescript
+``` tsx
 import { createEngineClient } from "aidk-client";
 import { SSETransport } from "aidk-client/transports";
 
@@ -193,7 +193,7 @@ const client = createEngineClient({
 
 Add authentication before the AIDK middleware:
 
-```typescript
+``` tsx
 function requireAuth(req, res, next) {
   const token = req.headers.authorization?.split(" ")[1];
 
@@ -226,7 +226,7 @@ app.use(
 
 Errors are automatically caught and returned:
 
-```typescript
+``` tsx
 // If an error occurs during execution
 {
   "success": false,
@@ -240,7 +240,7 @@ Errors are automatically caught and returned:
 
 Custom error handling:
 
-```typescript
+``` tsx
 app.use(
   "/api/chat",
   createExpressMiddleware({
@@ -263,7 +263,7 @@ app.use(
 
 Mount different agents at different paths:
 
-```typescript
+``` tsx
 app.use(
   "/api/chat",
   createExpressMiddleware({
@@ -299,7 +299,7 @@ app.use(
 
 When tools execute on the client, they post results back:
 
-```typescript
+``` tsx
 // Client calls this after executing a client tool
 POST /api/chat/tool-result
 {
@@ -318,7 +318,7 @@ This is handled automatically by `aidk-client` and `aidk-react`.
 
 For cross-origin requests:
 
-```typescript
+``` tsx
 import cors from "cors";
 
 app.use(
@@ -339,7 +339,7 @@ app.use(
 
 ## Full Example
 
-```typescript
+``` tsx
 import express from 'express';
 import cors from 'cors';
 import { createEngine, Component, System, Timeline, createTool } from 'aidk';

@@ -15,7 +15,7 @@ import {
   StopReason,
 } from "aidk";
 import type { ContentBlock, Message, TextBlock } from "aidk/content";
-import { normalizeModelInput } from "aidk/normalization";
+import { normalizeModelInput } from "aidk/utils";
 import { type GoogleAdapterConfig, STOP_REASON_MAP } from "./types";
 import { AdapterError, ValidationError } from "aidk-shared";
 
