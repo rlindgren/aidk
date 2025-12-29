@@ -51,7 +51,7 @@ import {
   type Signal,
   type ReadonlySignal,
 } from './signal';
-import type { ContextObjectModel } from '../com/object-model';
+import type { COM } from '../com/object-model';
 
 /**
  * Creates a COM-bound signal (shared state).
@@ -221,7 +221,7 @@ export function input<T>(
  * Finds all properties marked with COM_SIGNAL_SYMBOL or WATCH_SIGNAL_SYMBOL
  * and replaces them with signals bound to the actual COM state.
  */
-export function bindCOMSignals(instance: any, com: ContextObjectModel): void {
+export function bindCOMSignals(instance: any, com: COM): void {
   const signalsToCleanup: any[] = [];
   
   const bindProperty = (propKey: string | symbol, value: any) => {

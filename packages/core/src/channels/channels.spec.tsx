@@ -1,13 +1,12 @@
 import { createEngine } from '../engine/factory';
 import type { EngineConfig } from '../engine/engine';
 import { Component, type TickState } from '../component/component';
-import { ContextObjectModel } from '../com/object-model';
+import { COM } from '../com/object-model';
 import { ChannelService } from './service';
 import { type ChannelEvent } from 'aidk-kernel';
 import { Context } from '../context';
 import { createTool } from '../tool/tool';
 import type { ContentBlock } from '../content';
-import type { JSX, createElement } from '../jsx/jsx-runtime';
 import { createModel, type ModelInput, type ModelOutput } from '../model/model';
 import { StopReason, type StreamChunk } from 'aidk-shared';
 import { z } from 'zod';
@@ -27,7 +26,7 @@ describe('Channels Integration', () => {
       capabilities: [],
     },
     executors: {
-      execute: async (input: ModelInput): Promise<ModelOutput> => {
+      execute: async (_input: ModelInput): Promise<ModelOutput> => {
         return {
           model: 'test-model',
           createdAt: new Date().toISOString(),
@@ -63,7 +62,7 @@ describe('Channels Integration', () => {
 
   describe('Component Integration', () => {
     class TestComponent extends Component {
-      render(com: ContextObjectModel, state: TickState) {
+      render(com: COM, state: TickState) {
         // Publish event using channels from state
         if (state.channels) {
           const ctx = Context.tryGet();
@@ -166,7 +165,7 @@ describe('Channels Integration', () => {
         try {
           const response = await ctx.channels.waitForResponse(ctx, 'tool:request', requestId, 1000);
           return [{ type: 'text', text: `Received response: ${JSON.stringify(response.payload)}` }];
-        } catch (error) {
+        } catch (_error) {
           return [{ type: 'text', text: 'No response received' }];
         }
       }
@@ -257,7 +256,7 @@ describe('Channels Integration', () => {
 
   describe('Bidirectional Communication', () => {
     class RequestResponseComponent extends Component {
-      render(com: ContextObjectModel, state: TickState) {
+      render(com: COM, state: TickState) {
         if (!state.channels) return null;
 
         const ctx = Context.tryGet();

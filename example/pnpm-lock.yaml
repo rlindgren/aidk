@@ -8,11 +8,60 @@ importers:
 
   .: {}
 
-  backend:
+  angular:
+    dependencies:
+      '@angular/common':
+        specifier: ^20.0.0
+        version: 20.3.15(@angular/core@20.3.15(@angular/compiler@20.3.15)(rxjs@7.8.2)(zone.js@0.15.1))(rxjs@7.8.2)
+      '@angular/core':
+        specifier: ^20.0.0
+        version: 20.3.15(@angular/compiler@20.3.15)(rxjs@7.8.2)(zone.js@0.15.1)
+      '@angular/forms':
+        specifier: ^20.0.0
+        version: 20.3.15(@angular/common@20.3.15(@angular/core@20.3.15(@angular/compiler@20.3.15)(rxjs@7.8.2)(zone.js@0.15.1))(rxjs@7.8.2))(@angular/core@20.3.15(@angular/compiler@20.3.15)(rxjs@7.8.2)(zone.js@0.15.1))(@angular/platform-browser@20.3.15(@angular/common@20.3.15(@angular/core@20.3.15(@angular/compiler@20.3.15)(rxjs@7.8.2)(zone.js@0.15.1))(rxjs@7.8.2))(@angular/core@20.3.15(@angular/compiler@20.3.15)(rxjs@7.8.2)(zone.js@0.15.1)))(rxjs@7.8.2)
+      '@angular/platform-browser':
+        specifier: ^20.0.0
+        version: 20.3.15(@angular/common@20.3.15(@angular/core@20.3.15(@angular/compiler@20.3.15)(rxjs@7.8.2)(zone.js@0.15.1))(rxjs@7.8.2))(@angular/core@20.3.15(@angular/compiler@20.3.15)(rxjs@7.8.2)(zone.js@0.15.1))
+      '@angular/router':
+        specifier: ^20.0.0
+        version: 20.3.15(@angular/common@20.3.15(@angular/core@20.3.15(@angular/compiler@20.3.15)(rxjs@7.8.2)(zone.js@0.15.1))(rxjs@7.8.2))(@angular/core@20.3.15(@angular/compiler@20.3.15)(rxjs@7.8.2)(zone.js@0.15.1))(@angular/platform-browser@20.3.15(@angular/common@20.3.15(@angular/core@20.3.15(@angular/compiler@20.3.15)(rxjs@7.8.2)(zone.js@0.15.1))(rxjs@7.8.2))(@angular/core@20.3.15(@angular/compiler@20.3.15)(rxjs@7.8.2)(zone.js@0.15.1)))(rxjs@7.8.2)
+      aidk-angular:
+        specifier: link:../../packages/angular
+        version: link:../../packages/angular
+      marked:
+        specifier: ^17.0.0
+        version: 17.0.1
+      rxjs:
+        specifier: ^7.0.0
+        version: 7.8.2
+      tslib:
+        specifier: ^2.6.0
+        version: 2.8.1
+      zone.js:
+        specifier: ^0.15.0
+        version: 0.15.1
+    devDependencies:
+      '@angular-devkit/build-angular':
+        specifier: ^20.0.3
+        version: 20.3.13(@angular/compiler-cli@20.3.15(@angular/compiler@20.3.15)(typescript@5.9.3))(@angular/compiler@20.3.15)(@angular/core@20.3.15(@angular/compiler@20.3.15)(rxjs@7.8.2)(zone.js@0.15.1))(@angular/platform-browser@20.3.15(@angular/common@20.3.15(@angular/core@20.3.15(@angular/compiler@20.3.15)(rxjs@7.8.2)(zone.js@0.15.1))(rxjs@7.8.2))(@angular/core@20.3.15(@angular/compiler@20.3.15)(rxjs@7.8.2)(zone.js@0.15.1)))(@types/node@24.10.3)(chokidar@4.0.3)(jiti@1.21.7)(tailwindcss@3.4.19)(typescript@5.9.3)
+      '@angular/cli':
+        specifier: ^20.0.3
+        version: 20.3.13(@types/node@24.10.3)(chokidar@4.0.3)
+      '@angular/compiler':
+        specifier: ^20.0.3
+        version: 20.3.15
+      '@angular/compiler-cli':
+        specifier: ^20.0.3
+        version: 20.3.15(@angular/compiler@20.3.15)(typescript@5.9.3)
+      '@angular/language-service':
+        specifier: ^20.0.3
+        version: 20.3.15
+
+  express:
     dependencies:
       '@ai-sdk/google':
         specifier: ^2.0.0
-        version: 2.0.45(zod@4.1.13)
+        version: 2.0.46(zod@4.1.13)
       '@ai-sdk/google-vertex':
         specifier: ^3.0.0
         version: 3.0.89(zod@4.1.13)
@@ -69,56 +118,7 @@ importers:
         specifier: ^2.1.0
         version: 2.1.9(@types/node@24.10.3)(less@4.4.0)(sass@1.90.0)(terser@5.43.1)
 
-  frontend-angular:
-    dependencies:
-      '@angular/common':
-        specifier: ^20.0.0
-        version: 20.3.15(@angular/core@20.3.15(@angular/compiler@20.3.15)(rxjs@7.8.2)(zone.js@0.15.1))(rxjs@7.8.2)
-      '@angular/core':
-        specifier: ^20.0.0
-        version: 20.3.15(@angular/compiler@20.3.15)(rxjs@7.8.2)(zone.js@0.15.1)
-      '@angular/forms':
-        specifier: ^20.0.0
-        version: 20.3.15(@angular/common@20.3.15(@angular/core@20.3.15(@angular/compiler@20.3.15)(rxjs@7.8.2)(zone.js@0.15.1))(rxjs@7.8.2))(@angular/core@20.3.15(@angular/compiler@20.3.15)(rxjs@7.8.2)(zone.js@0.15.1))(@angular/platform-browser@20.3.15(@angular/common@20.3.15(@angular/core@20.3.15(@angular/compiler@20.3.15)(rxjs@7.8.2)(zone.js@0.15.1))(rxjs@7.8.2))(@angular/core@20.3.15(@angular/compiler@20.3.15)(rxjs@7.8.2)(zone.js@0.15.1)))(rxjs@7.8.2)
-      '@angular/platform-browser':
-        specifier: ^20.0.0
-        version: 20.3.15(@angular/common@20.3.15(@angular/core@20.3.15(@angular/compiler@20.3.15)(rxjs@7.8.2)(zone.js@0.15.1))(rxjs@7.8.2))(@angular/core@20.3.15(@angular/compiler@20.3.15)(rxjs@7.8.2)(zone.js@0.15.1))
-      '@angular/router':
-        specifier: ^20.0.0
-        version: 20.3.15(@angular/common@20.3.15(@angular/core@20.3.15(@angular/compiler@20.3.15)(rxjs@7.8.2)(zone.js@0.15.1))(rxjs@7.8.2))(@angular/core@20.3.15(@angular/compiler@20.3.15)(rxjs@7.8.2)(zone.js@0.15.1))(@angular/platform-browser@20.3.15(@angular/common@20.3.15(@angular/core@20.3.15(@angular/compiler@20.3.15)(rxjs@7.8.2)(zone.js@0.15.1))(rxjs@7.8.2))(@angular/core@20.3.15(@angular/compiler@20.3.15)(rxjs@7.8.2)(zone.js@0.15.1)))(rxjs@7.8.2)
-      aidk-angular:
-        specifier: link:../../packages/angular
-        version: link:../../packages/angular
-      marked:
-        specifier: ^17.0.0
-        version: 17.0.1
-      rxjs:
-        specifier: ^7.0.0
-        version: 7.8.2
-      tslib:
-        specifier: ^2.6.0
-        version: 2.8.1
-      zone.js:
-        specifier: ^0.15.0
-        version: 0.15.1
-    devDependencies:
-      '@angular-devkit/build-angular':
-        specifier: ^20.0.3
-        version: 20.3.13(@angular/compiler-cli@20.3.15(@angular/compiler@20.3.15)(typescript@5.9.3))(@angular/compiler@20.3.15)(@angular/core@20.3.15(@angular/compiler@20.3.15)(rxjs@7.8.2)(zone.js@0.15.1))(@angular/platform-browser@20.3.15(@angular/common@20.3.15(@angular/core@20.3.15(@angular/compiler@20.3.15)(rxjs@7.8.2)(zone.js@0.15.1))(rxjs@7.8.2))(@angular/core@20.3.15(@angular/compiler@20.3.15)(rxjs@7.8.2)(zone.js@0.15.1)))(@types/node@24.10.3)(chokidar@4.0.3)(jiti@1.21.7)(tailwindcss@3.4.19)(typescript@5.9.3)
-      '@angular/cli':
-        specifier: ^20.0.3
-        version: 20.3.13(@types/node@24.10.3)(chokidar@4.0.3)
-      '@angular/compiler':
-        specifier: ^20.0.3
-        version: 20.3.15
-      '@angular/compiler-cli':
-        specifier: ^20.0.3
-        version: 20.3.15(@angular/compiler@20.3.15)(typescript@5.9.3)
-      '@angular/language-service':
-        specifier: ^20.0.3
-        version: 20.3.15
-
-  frontend-react:
+  react:
     dependencies:
       aidk-react:
         specifier: link:../../packages/react
@@ -174,12 +174,6 @@ packages:
 
   '@ai-sdk/google-vertex@3.0.89':
     resolution: {integrity: sha512-ihqWNaJe/Qw7orn8rPwBadxOQq3VunqWCGS+LSmnZj5RD9qJK/VWJjFCXT9jy+lUyjj8xVbHELcE1tg2ArF3/Q==}
-    engines: {node: '>=18'}
-    peerDependencies:
-      zod: ^3.25.76 || ^4.1.8
-
-  '@ai-sdk/google@2.0.45':
-    resolution: {integrity: sha512-2kQUjjWGnaWzx92muvS0XQUM0+zy3TOv+kTdtfkD7n/9B3ikRZrq6clTNisg0MxUxHcXvNbBrmqbqIWLzU9Q1w==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -4878,12 +4872,6 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@ai-sdk/google@2.0.45(zod@4.1.13)':
-    dependencies:
-      '@ai-sdk/provider': 2.0.0
-      '@ai-sdk/provider-utils': 3.0.18(zod@4.1.13)
-      zod: 4.1.13
-
   '@ai-sdk/google@2.0.46(zod@4.1.13)':
     dependencies:
       '@ai-sdk/provider': 2.0.0
@@ -6513,7 +6501,7 @@ snapshots:
 
   '@npmcli/fs@4.0.0':
     dependencies:
-      semver: 7.7.2
+      semver: 7.7.3
 
   '@npmcli/git@6.0.3':
     dependencies:
@@ -6523,7 +6511,7 @@ snapshots:
       npm-pick-manifest: 10.0.0
       proc-log: 5.0.0
       promise-retry: 2.0.1
-      semver: 7.7.2
+      semver: 7.7.3
       which: 5.0.0
 
   '@npmcli/installed-package-contents@3.0.0':
@@ -6540,7 +6528,7 @@ snapshots:
       hosted-git-info: 8.1.0
       json-parse-even-better-errors: 4.0.0
       proc-log: 5.0.0
-      semver: 7.7.2
+      semver: 7.7.3
       validate-npm-package-license: 3.0.4
 
   '@npmcli/promise-spawn@8.0.3':
@@ -8575,7 +8563,7 @@ snapshots:
       make-fetch-happen: 14.0.3
       nopt: 8.1.0
       proc-log: 5.0.0
-      semver: 7.7.2
+      semver: 7.7.3
       tar: 7.5.2
       tinyglobby: 0.2.15
       which: 5.0.0
@@ -8598,7 +8586,7 @@ snapshots:
 
   npm-install-checks@7.1.2:
     dependencies:
-      semver: 7.7.2
+      semver: 7.7.3
 
   npm-normalize-package-bin@4.0.0: {}
 
@@ -8606,14 +8594,14 @@ snapshots:
     dependencies:
       hosted-git-info: 8.1.0
       proc-log: 5.0.0
-      semver: 7.7.2
+      semver: 7.7.3
       validate-npm-package-name: 6.0.2
 
   npm-package-arg@13.0.0:
     dependencies:
       hosted-git-info: 9.0.2
       proc-log: 5.0.0
-      semver: 7.7.2
+      semver: 7.7.3
       validate-npm-package-name: 6.0.2
 
   npm-packlist@10.0.3:
@@ -8626,7 +8614,7 @@ snapshots:
       npm-install-checks: 7.1.2
       npm-normalize-package-bin: 4.0.0
       npm-package-arg: 12.0.2
-      semver: 7.7.2
+      semver: 7.7.3
 
   npm-registry-fetch@18.0.2:
     dependencies:

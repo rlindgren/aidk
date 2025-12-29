@@ -47,8 +47,8 @@ describe('Engine Lifecycle Hooks', () => {
 
     it('should call multiple onInit hooks in order', async () => {
       const callOrder: string[] = [];
-      
-      const engine = createEngine({
+
+      const _engine = createEngine({
         model: mockModel,
         lifecycleHooks: {
           onInit: [
@@ -338,8 +338,8 @@ describe('Engine Lifecycle Hooks', () => {
 
       const input: EngineInput = { timeline: [] };
       const { handle } = await parentEngine.execute.withHandle().call(input);
-      const executionHandle = handle as ExecutionHandleImpl;
-      
+      const _executionHandle = handle as ExecutionHandleImpl;
+
       // Fork inherits parent hooks
       // Note: Fork execution will use the same engine instance, so hooks will be called
       // We just need to verify that hooks are registered correctly

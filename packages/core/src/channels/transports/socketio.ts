@@ -160,7 +160,7 @@ export class SocketIOTransport implements ChannelTransport {
       let io: any;
       try {
         io = require('socket.io-client');
-      } catch (error) {
+      } catch (_error) {
         throw new Error(
           "SocketIOTransport requires 'socket.io-client' package. Install it with: npm install socket.io-client"
         );
@@ -237,7 +237,7 @@ export class SocketIOTransport implements ChannelTransport {
   /**
    * Get rooms this connection has joined.
    */
-  getConnectionRooms(connectionId: string): string[] {
+  getConnectionRooms(_connectionId: string): string[] {
     return Array.from(this.joinedRooms);
   }
 
@@ -245,7 +245,7 @@ export class SocketIOTransport implements ChannelTransport {
    * Disconnect from transport.
    * If socket was provided in constructor, only removes handlers (doesn't disconnect socket).
    */
-  async disconnect(connectionId?: string): Promise<void> {
+  async disconnect(_connectionId?: string): Promise<void> {
     this.isConnected = false;
     this.joinedRooms.clear();
 

@@ -181,7 +181,7 @@ function MyAgent() {
 class MyAgent extends Component {
   private mcpToolRef?: MCPToolComponent;
 
-  async onStart(com: ContextObjectModel) {
+  async onStart(com: COM) {
     // Update runtime config (e.g., refresh auth token)
     if (this.mcpToolRef) {
       await this.mcpToolRef.updateRuntimeConfig(com, {

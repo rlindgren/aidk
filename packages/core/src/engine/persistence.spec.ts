@@ -1,11 +1,10 @@
 import { createEngine } from './factory';
 import type { EngineConfig } from './engine';
 import { Component, type TickState } from '../component/component';
-import { ContextObjectModel } from '../com/object-model';
+import { COM } from '../com/object-model';
 import type { ExecutionState } from './execution-types';
 import { createModel, type ModelInput, type ModelOutput } from '../model/model';
 import { StopReason, type StreamChunk } from 'aidk-shared';
-import { type JSX, createElement, Fragment } from '../jsx/jsx-runtime';
 import { fromEngineState, toEngineState } from '../model/utils/language-model';
 
 describe('Execution Persistence', () => {
@@ -23,7 +22,7 @@ describe('Execution Persistence', () => {
         capabilities: [],
       },
       executors: {
-        execute: async (input: ModelInput): Promise<ModelOutput> => {
+        execute: async (_input: ModelInput): Promise<ModelOutput> => {
           return {
             model: 'test-model',
             createdAt: new Date().toISOString(),
@@ -74,7 +73,7 @@ describe('Execution Persistence', () => {
       engine = createEngine(config);
       
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
@@ -100,7 +99,7 @@ describe('Execution Persistence', () => {
     });
     
     it('should not fail execution if persistence fails', async () => {
-      const persistFn = jest.fn(async (state: ExecutionState) => {
+      const persistFn = jest.fn(async (_state: ExecutionState) => {
         throw new Error('Persistence failed');
       });
       
@@ -113,7 +112,7 @@ describe('Execution Persistence', () => {
       engine = createEngine(config);
       
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
@@ -142,7 +141,7 @@ describe('Execution Persistence', () => {
       engine = createEngine(config);
       
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
@@ -176,7 +175,7 @@ describe('Execution Persistence', () => {
       engine = createEngine(config);
       
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
@@ -229,7 +228,7 @@ describe('Execution Persistence', () => {
     });
     
     it('should get recoverable executions', async () => {
-      const loadFn = jest.fn(async (pid: string) => {
+      const loadFn = jest.fn(async (_pid: string) => {
         return undefined;
       });
       
@@ -272,7 +271,7 @@ describe('Execution Persistence', () => {
     it('should create handle from state', async () => {
       const config: EngineConfig = {
         model: mockModel,
-        loadExecutionState: async (pid: string) => {
+        loadExecutionState: async (_pid: string) => {
           return undefined;
         },
       };
@@ -321,7 +320,7 @@ describe('Execution Persistence', () => {
       engine = createEngine(config);
       
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }

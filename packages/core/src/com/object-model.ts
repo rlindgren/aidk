@@ -925,7 +925,7 @@ export class ContextObjectModel extends EventEmitter {
   _resolveTickControl(
     defaultStatus: COMTickStatus,
     defaultReason?: string,
-    tickNumber?: number,
+    _tickNumber?: number,
   ): COMTickDecision {
     // Sort by priority (higher priority first)
     const sortedRequests = [...this.controlRequests].sort(
@@ -1131,3 +1131,5 @@ export class ContextObjectModel extends EventEmitter {
     this._abortReason = undefined;
   }
 }
+
+export { ContextObjectModel as COM };

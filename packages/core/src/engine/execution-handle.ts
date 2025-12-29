@@ -19,8 +19,8 @@ import {
   type HandleFactory,
 } from "aidk-kernel";
 import { Context } from "aidk-kernel";
-import { AbortError, StateError, ValidationError } from "aidk-shared";
-import { ContextObjectModel } from "../com/object-model";
+import { AbortError, StateError } from "aidk-shared";
+import { COM } from "../com/object-model";
 import { ExecutionGraph } from "./execution-graph";
 import type { EngineContext } from "../types";
 
@@ -51,7 +51,7 @@ export class ExecutionHandleImpl
   private completionPromise: Promise<COMInput>;
   private completionResolve?: (value: COMInput) => void;
   private completionReject?: (error: Error) => void;
-  private comInstance?: ContextObjectModel;
+  private comInstance?: COM;
   private streamIterator?: AsyncIterable<EngineStreamEvent>;
   private tickCount: number = 0;
   private session?: {
@@ -99,7 +99,7 @@ export class ExecutionHandleImpl
     });
     // Prevent unhandled promise rejection when fail() or cancel() is called but no one is waiting
     // This catch handler ensures that rejections are always handled, even if waitForCompletion() is never called
-    this.completionPromise.catch((error) => {
+    this.completionPromise.catch((_error) => {
       // Error is stored in this.error and will be returned by waitForCompletion
       // if called later. This catch prevents Node.js from complaining about
       // unhandled rejections when we use fail() or cancel() internally.
@@ -166,7 +166,7 @@ export class ExecutionHandleImpl
     // Also monitor via waitForCompletion as fallback
     // Only abort on failure/cancellation, not on successful completion
     if (parent.status === "running") {
-      parent.waitForCompletion().catch((error) => {
+      parent.waitForCompletion().catch((_error) => {
         // Parent failed or was cancelled - abort fork
         // Don't abort on successful completion - fork should continue running
         if (this.status === "running") {
@@ -303,7 +303,7 @@ export class ExecutionHandleImpl
       // Reject the promise - the catch handler in constructor will prevent unhandled rejection
       try {
         reject(error);
-      } catch (rejectionError) {
+      } catch (_rejectionError) {
         // Ignore errors if promise already settled (this is expected and harmless)
         // The promise's catch handler will still prevent unhandled rejection
       }
@@ -378,7 +378,7 @@ export class ExecutionHandleImpl
       // Reject the promise - the catch handler in constructor will prevent unhandled rejection
       try {
         reject(error);
-      } catch (rejectionError) {
+      } catch (_rejectionError) {
         // Ignore errors if promise already settled (this is expected and harmless)
         // The promise's catch handler will still prevent unhandled rejection
       }
@@ -672,7 +672,7 @@ export class ExecutionHandleImpl
     return allNodes.find((node) => !node.parentPid);
   }
 
-  setComInstance(com: ContextObjectModel): void {
+  setComInstance(com: COM): void {
     this.comInstance = com;
   }
 
@@ -719,7 +719,7 @@ export class ExecutionHandleImpl
     await this.session.sendMessage(message);
   }
 
-  getComInstance(): ContextObjectModel | undefined {
+  getComInstance(): COM | undefined {
     return this.comInstance;
   }
 }

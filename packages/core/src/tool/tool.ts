@@ -27,7 +27,7 @@ import {
   type RecoveryAction,
   type TickState,
 } from "../component/component";
-import { ContextObjectModel } from "../com/object-model";
+import { COM } from "../com/object-model";
 import type { COMInput } from "../com/types";
 import type { JSX } from "../jsx/jsx-runtime";
 import type { ComponentBaseProps } from "../jsx/jsx-types";
@@ -188,28 +188,28 @@ export interface CreateToolOptions<TInput = any> {
 
   // === Component Lifecycle Hooks (for JSX usage) ===
 
-  onMount?: (com: ContextObjectModel) => void | Promise<void>;
-  onUnmount?: (com: ContextObjectModel) => void | Promise<void>;
-  onStart?: (com: ContextObjectModel) => void | Promise<void>;
+  onMount?: (com: COM) => void | Promise<void>;
+  onUnmount?: (com: COM) => void | Promise<void>;
+  onStart?: (com: COM) => void | Promise<void>;
   onTickStart?: (
-    com: ContextObjectModel,
+    com: COM,
     state: TickState,
   ) => void | Promise<void>;
   onTickEnd?: (
-    com: ContextObjectModel,
+    com: COM,
     state: TickState,
   ) => void | Promise<void>;
   onComplete?: (
-    com: ContextObjectModel,
+    com: COM,
     finalState: COMInput,
   ) => void | Promise<void>;
   onError?: (
-    com: ContextObjectModel,
+    com: COM,
     state: TickState,
   ) => RecoveryAction | void;
-  render?: (com: ContextObjectModel, state: TickState) => JSX.Element | null;
+  render?: (com: COM, state: TickState) => JSX.Element | null;
   onAfterCompile?: (
-    com: ContextObjectModel,
+    com: COM,
     compiled: CompiledStructure,
     state: TickState,
     ctx: any,
@@ -358,51 +358,51 @@ export function createTool<TInput = any>(
     static metadata = metadata;
     static run = run;
 
-    async onMount(com: ContextObjectModel): Promise<void> {
+    async onMount(com: COM): Promise<void> {
       // Register tool with COM when component mounts
       com.addTool({ metadata, run } as ExecutableTool);
       if (options.onMount) await options.onMount(com);
     }
 
-    async onUnmount(com: ContextObjectModel): Promise<void> {
+    async onUnmount(com: COM): Promise<void> {
       // Unregister tool when component unmounts
       com.removeTool(metadata.name);
       if (options.onUnmount) await options.onUnmount(com);
     }
 
-    async onStart(com: ContextObjectModel): Promise<void> {
+    async onStart(com: COM): Promise<void> {
       if (options.onStart) await options.onStart(com);
     }
 
     async onTickStart(
-      com: ContextObjectModel,
+      com: COM,
       state: TickState,
     ): Promise<void> {
       if (options.onTickStart) await options.onTickStart(com, state);
     }
 
-    async onTickEnd(com: ContextObjectModel, state: TickState): Promise<void> {
+    async onTickEnd(com: COM, state: TickState): Promise<void> {
       if (options.onTickEnd) await options.onTickEnd(com, state);
     }
 
     async onComplete(
-      com: ContextObjectModel,
+      com: COM,
       finalState: COMInput,
     ): Promise<void> {
       if (options.onComplete) await options.onComplete(com, finalState);
     }
 
-    onError(com: ContextObjectModel, state: TickState): RecoveryAction | void {
+    onError(com: COM, state: TickState): RecoveryAction | void {
       if (options.onError) return options.onError(com, state);
     }
 
-    render(com: ContextObjectModel, state: TickState): JSX.Element | null {
+    render(com: COM, state: TickState): JSX.Element | null {
       if (options.render) return options.render(com, state);
       return null;
     }
 
     async onAfterCompile(
-      com: ContextObjectModel,
+      com: COM,
       compiled: CompiledStructure,
       state: TickState,
       ctx: any,

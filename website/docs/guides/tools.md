@@ -99,7 +99,7 @@ Tools can be full components with lifecycle and rendering:
 import { 
   createTool, 
   Context, 
-  ContextObjectModel, 
+  COM, 
   TickState,
   Section, 
   Paragraph, 
@@ -130,7 +130,7 @@ export const ScratchpadTool = createTool({
   },
   
   // Lifecycle: Called when tool is added to agent
-  async onMount(com: ContextObjectModel) {
+  async onMount(com: COM) {
     const ctx = Context.get();
     const threadId = ctx.metadata.threadId;
     
@@ -152,7 +152,7 @@ export const ScratchpadTool = createTool({
   },
   
   // Render: Contributes context to the model
-  render(com: ContextObjectModel, state: TickState) {
+  render(com: COM, state: TickState) {
     const notes = com.getState('scratchpad_notes') || [];
     
     return (
@@ -205,7 +205,7 @@ export const ScratchpadTool = createTool({
 Attach tools directly to components:
 
 ```tsx
-import { Component, ContextObjectModel, TickState } from 'aidk';
+import { Component, COM, TickState } from 'aidk';
 import { CalculatorTool } from './tools/calculator';
 import { ScratchpadTool } from './tools/scratchpad';
 
@@ -213,7 +213,7 @@ class MathAgent extends Component {
   // Static tool member - automatically registered
   static tool = CalculatorTool;
   
-  render(com: ContextObjectModel, state: TickState) {
+  render(com: COM, state: TickState) {
     return (
       <>
         <AiSdkModel model={openai('gpt-4o')} />
@@ -254,30 +254,30 @@ export const MyTool = createTool({
   handler: async (input) => { /* ... */ },
   
   // Called when tool is added to agent
-  async onMount(com: ContextObjectModel) {
+  async onMount(com: COM) {
     console.log('Tool mounted');
     // Initialize resources
     await loadInitialState(com);
   },
   
   // Called before each tick
-  onTickStart(com: ContextObjectModel, state: TickState) {
+  onTickStart(com: COM, state: TickState) {
     console.log(`Tick ${state.tick} starting`);
     // Update state before render
   },
   
   // Called on each tick to render context
-  render(com: ContextObjectModel, state: TickState) {
+  render(com: COM, state: TickState) {
     return <Section>{/* Tool-specific context */}</Section>;
   },
   
   // Called after each tick
-  onTickEnd(com: ContextObjectModel, state: TickState) {
+  onTickEnd(com: COM, state: TickState) {
     console.log(`Tick ${state.tick} complete`);
   },
   
   // Called when execution completes
-  onComplete(com: ContextObjectModel, finalState: any) {
+  onComplete(com: COM, finalState: any) {
     console.log('Execution complete');
     // Save final state
   },
@@ -289,7 +289,7 @@ export const MyTool = createTool({
   },
   
   // Called on errors
-  onError(com: ContextObjectModel, error: Error, state: TickState) {
+  onError(com: COM, error: Error, state: TickState) {
     console.error('Tool error:', error);
     // Handle or recover
   }
@@ -304,7 +304,7 @@ A complete tool with state, lifecycle, and rendering:
 import { 
   createTool, 
   Context, 
-  ContextObjectModel, 
+  COM, 
   TickState,
   Section, 
   Table,
@@ -354,7 +354,7 @@ export const TodoListTool = createTool({
     }];
   },
   
-  async onMount(com: ContextObjectModel) {
+  async onMount(com: COM) {
     const ctx = Context.get();
     const threadId = ctx.metadata.threadId;
     
@@ -374,7 +374,7 @@ export const TodoListTool = createTool({
     TodoChannel.unregisterContext(Context.get());
   },
   
-  render(com: ContextObjectModel, state: TickState) {
+  render(com: COM, state: TickState) {
     const todos = com.getState<Todo[]>('todos') || [];
     const pending = todos.filter(t => !t.completed);
     const completed = todos.filter(t => t.completed);

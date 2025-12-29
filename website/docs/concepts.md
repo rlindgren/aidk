@@ -36,11 +36,11 @@ Class-based components with lifecycle methods:
 
 ```tsx
 class MyAgent extends Component {
-  async onMount(com: ContextObjectModel) {
+  async onMount(com: COM) {
     // Called once when component mounts
   }
   
-  render(com: ContextObjectModel, state: TickState): JSX.Element {
+  render(com: COM, state: TickState): JSX.Element {
     // Called on each tick
     return <>{/* ... */}</>;
   }
@@ -73,7 +73,7 @@ The COM is a structured representation of the current agent state, providing:
 - **Legacy state** - `com.setState()`, `com.getState()` (prefer signals instead)
 
 ```tsx
-render(com: ContextObjectModel, state: TickState) {
+render(com: COM, state: TickState) {
   // Get user input
   const input = com.getUserInput();
   

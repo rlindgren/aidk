@@ -72,7 +72,7 @@ Create `src/agents/assistant.tsx`:
 ```tsx
 import { 
   EngineComponent, 
-  ContextObjectModel, 
+  COM, 
   TickState,
   Section,
   Message,
@@ -88,14 +88,14 @@ export class AssistantAgent extends Component {
   // Use comState for timeline - shared across components, persisted across ticks
   private timeline = comState<COMTimelineEntry[]>('timeline', []);
 
-  onTickStart(com: ContextObjectModel, state: TickState) {
+  onTickStart(com: COM, state: TickState) {
     // Append new entries from the model response
     if (state.current?.timeline?.length) {
       this.timeline.update(t => [...t, ...state.current!.timeline]);
     }
   }
 
-  render(com: ContextObjectModel, state: TickState): JSX.Element {
+  render(com: COM, state: TickState): JSX.Element {
     return (
       <>
         {/* Configure the AI model */}

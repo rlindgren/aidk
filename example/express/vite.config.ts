@@ -10,7 +10,6 @@ export default defineConfig({
       // aidk subpath imports (order matters - more specific first)
       { find: 'aidk/jsx-dev-runtime', replacement: resolve(workspaceRoot, 'packages/core/src/jsx/jsx-runtime.ts') },
       { find: 'aidk/jsx-runtime', replacement: resolve(workspaceRoot, 'packages/core/src/jsx/jsx-runtime.ts') },
-      { find: 'aidk/content', replacement: resolve(workspaceRoot, 'packages/core/src/content.ts') },
       { find: /^aidk\/(.*)$/, replacement: resolve(workspaceRoot, 'packages/core/src/$1') },
       // aidk-kernel subpath imports
       { find: /^aidk-kernel\/(.*)$/, replacement: resolve(workspaceRoot, 'packages/kernel/src/$1') },

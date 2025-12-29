@@ -84,7 +84,7 @@ When adding new features, follow these patterns:
 
 ```typescript
 describe('Feature Name', () => {
-  let com: ContextObjectModel;
+  let com: COM;
   let compiler: FiberCompilerV2;
   let tickState: TickState;
 

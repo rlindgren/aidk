@@ -11,7 +11,7 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import { Logger } from "aidk-kernel";
 import { isContentBlock, isHostPrimitive as isHostPrimitiveSymbol } from "aidk-shared";
-import type { ContextObjectModel } from "../com/object-model";
+import type { COM } from "../com/object-model";
 import type {
   TickState,
   AfterCompileContext,
@@ -83,7 +83,6 @@ import {
   createWorkInProgress,
   getChildFibers,
   traverseFiber,
-  traverseFiberBottomUp,
 } from "./fiber";
 import { setRenderContext, setScheduleWork } from "../state/hooks";
 
@@ -158,7 +157,7 @@ export class FiberCompiler {
   private workInProgress: FiberNode | null = null;
 
   // Context
-  private com: ContextObjectModel;
+  private com: COM;
   private tickState: TickState | null = null;
 
   // Rendering
@@ -191,7 +190,7 @@ export class FiberCompiler {
   private config: FiberCompilerConfig;
 
   constructor(
-    com: ContextObjectModel,
+    com: COM,
     hookRegistry?: ComponentHookRegistry,
     config: FiberCompilerConfig = {},
   ) {
@@ -689,7 +688,7 @@ export class FiberCompiler {
         children = await (
           Component as (
             p: unknown,
-            c: ContextObjectModel,
+            c: COM,
             s: TickState,
           ) => FiberChild | Promise<FiberChild>
         )(props, this.com, this.tickState!);
@@ -697,7 +696,7 @@ export class FiberCompiler {
         children = await (
           Component as (
             p: unknown,
-            c: ContextObjectModel,
+            c: COM,
           ) => FiberChild | Promise<FiberChild>
         )(props, this.com);
       } else {
@@ -967,7 +966,7 @@ export class FiberCompiler {
     parent: FiberNode,
     oldFiber: FiberNode | null,
     element: JSX.Element,
-    index: number,
+    _index: number,
   ): Promise<FiberNode> {
     if (oldFiber && this.canReuse(oldFiber, element)) {
       // Reuse existing fiber

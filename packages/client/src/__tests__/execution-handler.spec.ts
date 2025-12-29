@@ -116,7 +116,7 @@ describe("Message Helpers", () => {
     });
 
     it("should throw for invalid input", () => {
-      expect(() => normalizeMessageInput(123 as any)).toThrow();
+      expect(() => normalizeMessageInput(123 as any)).toThrow("Invalid input");
     });
   });
 });

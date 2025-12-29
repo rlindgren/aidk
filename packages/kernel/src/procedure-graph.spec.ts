@@ -1,4 +1,4 @@
-import { ProcedureGraph, ProcedureNode, ProcedureStatus } from './procedure-graph';
+import { ProcedureGraph } from './procedure-graph';
 
 describe('ProcedureGraph', () => {
   let graph: ProcedureGraph;
@@ -23,7 +23,7 @@ describe('ProcedureGraph', () => {
     });
     
     it('should register a child procedure with parent', () => {
-      const parent = graph.register('proc-1', undefined, 'parent');
+      graph.register('proc-1', undefined, 'parent');
       const child = graph.register('proc-2', 'proc-1', 'child');
       
       expect(child.parentPid).toBe('proc-1');
@@ -32,9 +32,9 @@ describe('ProcedureGraph', () => {
     });
     
     it('should register multiple children for a parent', () => {
-      const parent = graph.register('proc-1', undefined, 'parent');
-      const child1 = graph.register('proc-2', 'proc-1', 'child1');
-      const child2 = graph.register('proc-3', 'proc-1', 'child2');
+      graph.register('proc-1', undefined, 'parent');
+      graph.register('proc-2', 'proc-1', 'child1');
+      graph.register('proc-3', 'proc-1', 'child2');
       
       const children = graph.getChildren('proc-1');
       expect(children).toHaveLength(2);

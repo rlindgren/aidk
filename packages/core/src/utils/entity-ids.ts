@@ -17,10 +17,11 @@ function generateRandomId(prefix: string): string {
   return `${prefix}_${randomHex}`;
 }
 
-let messageCounter = 0;
-let contentCounter = 0;
-let toolCallCounter = 0;
-let toolResultCounter = 0;
+// Counters reserved for potential future use with sequential ID generation
+let _messageCounter = 0;
+let _contentCounter = 0;
+let _toolCallCounter = 0;
+let _toolResultCounter = 0;
 
 /**
  * Generate a unique message ID

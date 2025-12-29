@@ -1,4 +1,4 @@
-import { Logger, composeContextFields, defaultContextFields, type KernelLogger } from './logger';
+import { Logger, composeContextFields, defaultContextFields } from './logger';
 import { Context, type KernelContext } from './context';
 import { EventEmitter } from 'node:events';
 
@@ -220,7 +220,7 @@ describe('Logger', () => {
 
     it('should not include default fields when custom extractor replaces them', () => {
       // This test verifies the custom extractor completely replaces defaults
-      const customExtractor = jest.fn((ctx) => ({
+      const customExtractor = jest.fn((_ctx) => ({
         only_this_field: 'value',
       }));
 

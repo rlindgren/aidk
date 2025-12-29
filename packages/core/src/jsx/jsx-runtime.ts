@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-namespace */
 import type { ComponentClass, ComponentFactory } from '../component/component';
-import type { ReadonlySignal } from '../state/signal';
 import type { ToolClass, ExecutableTool } from '../tool/tool';
 import type { ContentBlock, MessageRoles } from 'aidk-shared';
 
@@ -22,7 +21,7 @@ export namespace JSX {
   /**
    * Tell TypeScript that async functions returning Promise<Element> are valid components.
    */
-  export type LibraryManagedAttributes<C, P> = P;
+  export type LibraryManagedAttributes<_C, P> = P;
   
   /**
    * Allow async components by accepting Promise<Element> as a valid element type.
@@ -274,7 +273,7 @@ export namespace JSX {
  * This is more flexible than requiring ComponentClass from component.ts
  * to support classes that implement Component directly.
  */
-type AnyComponentClass = new (...args: any[]) => any;
+type _AnyComponentClass = new (...args: any[]) => any;
 
 /**
  * Function component type - functions that take props and return JSX.Element

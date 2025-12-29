@@ -13,7 +13,6 @@ import {
   type MessageProps as CoreMessageProps,
 } from 'aidk/jsx/components';
 import type { ContentBlock, Message as MessageType } from 'aidk/content';
-import type { ModelMessage as AiSdkCoreMessage, TextPart, ToolCallPart, ToolResultPart } from 'ai';
 
 // ============================================================================
 // Types - AI SDK Message Format

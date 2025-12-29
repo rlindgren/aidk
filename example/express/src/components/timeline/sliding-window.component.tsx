@@ -1,6 +1,6 @@
 import { 
   Component, 
-  ContextObjectModel, 
+  COM, 
   context, 
   Logger,
   Timeline,
@@ -43,7 +43,7 @@ export class SlidingWindowTimeline extends Component<SlidingWindowTimelineProps>
   // Computed signal - derived, memoized
   private windowMessages = computed(() => this.timeline().slice(-this.windowSize()));
 
-  async onMount(com: ContextObjectModel): Promise<void> {
+  async onMount(com: COM): Promise<void> {
     // COM signals are automatically bound here by base class
     // No manual binding needed!
     const userInput = com.getUserInput();
@@ -57,7 +57,7 @@ export class SlidingWindowTimeline extends Component<SlidingWindowTimelineProps>
     this.timeline.set([...history, ...(userInput.timeline || [])]);
   }
 
-  onTickStart(_com: ContextObjectModel, { current }: TickState): void {
+  onTickStart(_com: COM, { current }: TickState): void {
     // Update timeline with new entries
     // on tick 1 this holds user input (timeline, metadata)
     this.timeline.update(curr => [...curr, ...(current.timeline || [])]);

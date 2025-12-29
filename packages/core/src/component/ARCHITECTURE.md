@@ -82,40 +82,40 @@ interface EngineComponent {
   tool?: ExecutableTool;
 
   // Lifecycle
-  onMount?: (com: ContextObjectModel) => Promise<void> | void;
-  onUnmount?: (com: ContextObjectModel) => Promise<void> | void;
-  onStart?: (com: ContextObjectModel) => Promise<void> | void;
+  onMount?: (com: COM) => Promise<void> | void;
+  onUnmount?: (com: COM) => Promise<void> | void;
+  onStart?: (com: COM) => Promise<void> | void;
   onTickStart?: (
-    com: ContextObjectModel,
+    com: COM,
     state: TickState,
   ) => Promise<void> | void;
   onAfterCompile?: (
-    com: ContextObjectModel,
+    com: COM,
     compiled: CompiledStructure,
     state: TickState,
     ctx: AfterCompileContext,
   ) => Promise<void> | void;
   onTickEnd?: (
-    com: ContextObjectModel,
+    com: COM,
     state: TickState,
   ) => Promise<void> | void;
   onComplete?: (
-    com: ContextObjectModel,
+    com: COM,
     finalState: COMInput,
   ) => Promise<void> | void;
   onMessage?: (
-    com: ContextObjectModel,
+    com: COM,
     message: ExecutionMessage,
     state: TickState,
   ) => Promise<void> | void;
   onError?: (
-    com: ContextObjectModel,
+    com: COM,
     state: TickState,
   ) => Promise<RecoveryAction | void> | RecoveryAction | void;
 
   // Render
   render?: (
-    com: ContextObjectModel,
+    com: COM,
     state: TickState,
   ) => Promise<void | JSX.Element | null> | void | JSX.Element | null;
 }
@@ -156,7 +156,7 @@ type PureFunctionComponent<P = any> =
   | ((props: P) => JSX.Element | null)
   | ((
       props: P,
-      com: ContextObjectModel,
+      com: COM,
       state: TickState,
     ) => JSX.Element | null);
 
@@ -184,7 +184,7 @@ function Greeting(props: { name: string }) {
 }
 
 // Engine-style (props + COM access)
-function StatefulGreeting(props: { name: string }, com: ContextObjectModel) {
+function StatefulGreeting(props: { name: string }, com: COM) {
   const count = com.getState<number>("visitCount") ?? 0;
   return (
     <User>
@@ -196,7 +196,7 @@ function StatefulGreeting(props: { name: string }, com: ContextObjectModel) {
 // Full access (props + COM + TickState)
 function TickAwareGreeting(
   props: { name: string },
-  com: ContextObjectModel,
+  com: COM,
   state: TickState,
 ) {
   return (
@@ -227,18 +227,18 @@ class ChatAgent extends Component<{ model: Model }, { messages: Message[] }> {
     onTickStart: [loggingMiddleware], // Static middleware
   };
 
-  async onMount(com: ContextObjectModel) {
+  async onMount(com: COM) {
     // Initialize resources
     const history = await loadChatHistory();
     this.setState({ messages: history });
   }
 
-  onTickStart(com: ContextObjectModel, state: TickState) {
+  onTickStart(com: COM, state: TickState) {
     // Called before each tick
     console.log(`Starting tick ${state.tick}`);
   }
 
-  render(com: ContextObjectModel, state: TickState): JSX.Element {
+  render(com: COM, state: TickState): JSX.Element {
     return (
       <Fragment>
         <Model model={this.props.model} />
@@ -252,7 +252,7 @@ class ChatAgent extends Component<{ model: Model }, { messages: Message[] }> {
     );
   }
 
-  onComplete(com: ContextObjectModel, finalState: COMInput) {
+  onComplete(com: COM, finalState: COMInput) {
     // Save conversation
     saveChatHistory(this.state.messages);
   }
@@ -281,14 +281,14 @@ abstract class Component<P = {}, S = {}> implements EngineComponent {
   getState<T>(key: keyof S): T;
 
   // Lifecycle (override as needed)
-  onMount(com: ContextObjectModel): void;
-  onUnmount(com: ContextObjectModel): void;
-  onStart(com: ContextObjectModel): void;
-  onTickStart(com: ContextObjectModel, state: TickState): void;
+  onMount(com: COM): void;
+  onUnmount(com: COM): void;
+  onStart(com: COM): void;
+  onTickStart(com: COM, state: TickState): void;
   onAfterCompile(com, compiled, state, ctx): void;
-  onTickEnd(com: ContextObjectModel, state: TickState): void;
-  onComplete(com: ContextObjectModel, finalState: COMInput): void;
-  onError(com: ContextObjectModel, state: TickState): RecoveryAction | void;
+  onTickEnd(com: COM, state: TickState): void;
+  onComplete(com: COM, finalState: COMInput): void;
+  onError(com: COM, state: TickState): RecoveryAction | void;
   render(com, state): JSX.Element | null;
 }
 ```
@@ -400,11 +400,11 @@ Components can handle errors and optionally recover:
 interface RecoveryAction {
   continue: boolean; // Whether to continue execution
   recoveryMessage?: string; // Message to add explaining recovery
-  modifications?: (com: ContextObjectModel) => void | Promise<void>;
+  modifications?: (com: COM) => void | Promise<void>;
 }
 
 class ResilientAgent extends Component {
-  onError(com: ContextObjectModel, state: TickState): RecoveryAction {
+  onError(com: COM, state: TickState): RecoveryAction {
     const error = state.error;
 
     if (error?.recoverable && error?.phase === "tool_execution") {
@@ -564,7 +564,7 @@ Components can render in two ways:
 ```tsx
 // JSX rendering (declarative)
 class DeclarativeAgent extends Component {
-  render(com: ContextObjectModel, state: TickState): JSX.Element {
+  render(com: COM, state: TickState): JSX.Element {
     return (
       <Fragment>
         <Model model={this.props.model} />
@@ -577,7 +577,7 @@ class DeclarativeAgent extends Component {
 
 // Direct COM modification (imperative)
 class ImperativeAgent extends Component {
-  render(com: ContextObjectModel, state: TickState): void {
+  render(com: COM, state: TickState): void {
     com.pushToTimeline({
       kind: "message",
       message: { role: "user", content: [{ type: "text", text: "Hello" }] },
@@ -670,13 +670,13 @@ abstract class Component<P = {}, S = {}> implements EngineComponent {
   getState<T>(key: keyof S): T;
 
   // Lifecycle methods (all optional, override as needed)
-  onMount(com: ContextObjectModel): void;
-  onUnmount(com: ContextObjectModel): void;
-  onStart(com: ContextObjectModel): void;
-  onTickStart(com: ContextObjectModel, state: TickState): void;
+  onMount(com: COM): void;
+  onUnmount(com: COM): void;
+  onStart(com: COM): void;
+  onTickStart(com: COM, state: TickState): void;
   onAfterCompile(com, compiled, state, ctx): void;
-  onTickEnd(com: ContextObjectModel, state: TickState): void;
-  onComplete(com: ContextObjectModel, finalState: COMInput): void;
+  onTickEnd(com: COM, state: TickState): void;
+  onComplete(com: COM, finalState: COMInput): void;
   onError(com, state): RecoveryAction | void;
   render(com, state): JSX.Element | null;
 }
@@ -740,7 +740,7 @@ Return from `onError` to control error handling:
 interface RecoveryAction {
   continue: boolean;
   recoveryMessage?: string;
-  modifications?: (com: ContextObjectModel) => void | Promise<void>;
+  modifications?: (com: COM) => void | Promise<void>;
 }
 ```
 
@@ -831,15 +831,15 @@ interface GreetingState {
 class GreetingAgent extends Component<GreetingProps, GreetingState> {
   static tags = ["greeting"];
 
-  onMount(com: ContextObjectModel) {
+  onMount(com: COM) {
     this.state = { greetCount: 0 };
   }
 
-  onTickStart(com: ContextObjectModel, state: TickState) {
+  onTickStart(com: COM, state: TickState) {
     this.setState({ greetCount: this.state.greetCount + 1 });
   }
 
-  render(com: ContextObjectModel, state: TickState): JSX.Element {
+  render(com: COM, state: TickState): JSX.Element {
     return (
       <Fragment>
         <Model model={myModel} />
@@ -889,7 +889,7 @@ function CounterAgent(props: { initialCount: number }) {
 ```tsx
 class InteractiveAgent extends Component {
   onMessage(
-    com: ContextObjectModel,
+    com: COM,
     message: ExecutionMessage,
     state: TickState,
   ) {
@@ -902,7 +902,7 @@ class InteractiveAgent extends Component {
     }
   }
 
-  render(com: ContextObjectModel, state: TickState): JSX.Element {
+  render(com: COM, state: TickState): JSX.Element {
     const feedback = com.getState<string>("userFeedback");
 
     return (
@@ -936,7 +936,7 @@ const calculatorTool = createTool({
 class CalculatorAgent extends Component {
   static tool = calculatorTool; // Auto-registered on mount
 
-  render(com: ContextObjectModel, state: TickState): JSX.Element {
+  render(com: COM, state: TickState): JSX.Element {
     return (
       <Fragment>
         <Model model={myModel} />
@@ -953,7 +953,7 @@ class CalculatorAgent extends Component {
 
 ```tsx
 class ResilientAgent extends Component {
-  onError(com: ContextObjectModel, state: TickState): RecoveryAction {
+  onError(com: COM, state: TickState): RecoveryAction {
     const error = state.error;
 
     if (!error) {

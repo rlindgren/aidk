@@ -1,11 +1,9 @@
 import { createEngine } from './factory';
 import { type EngineConfig } from './engine';
 import { Component, type TickState } from '../component/component';
-import { ContextObjectModel } from '../com/object-model';
-import { type ExecutionHandle } from './execution-types';
+import { COM } from '../com/object-model';
 import { createModel, type ModelInput, type ModelOutput } from '../model/model';
 import { StopReason, type StreamChunk } from 'aidk-shared';
-import { type JSX, createElement, Fragment } from '../jsx/jsx-runtime';
 import { type SignalEvent } from './execution-types';
 import { fromEngineState, toEngineState } from '../model/utils/language-model';
 
@@ -21,7 +19,7 @@ describe('Signal System', () => {
         capabilities: [],
       },
       executors: {
-        execute: async (input: ModelInput): Promise<ModelOutput> => {
+        execute: async (_input: ModelInput): Promise<ModelOutput> => {
           return {
             model: 'test-model',
             createdAt: new Date().toISOString(),
@@ -71,7 +69,7 @@ describe('Signal System', () => {
   describe('ExecutionHandle Signal Emission', () => {
     it('should emit abort signal when cancel() is called', async () => {
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
@@ -99,14 +97,14 @@ describe('Signal System', () => {
       // Wait for cancellation to complete
       try {
         await handle.waitForCompletion({ timeout: 100 });
-      } catch (e) {
+      } catch (_e) {
         // Expected
       }
     });
     
     it('should emit abort signal with custom reason', async () => {
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
@@ -130,14 +128,14 @@ describe('Signal System', () => {
       // Wait for cancellation to complete
       try {
         await handle.waitForCompletion({ timeout: 100 });
-      } catch (e) {
+      } catch (_e) {
         // Expected
       }
     });
     
     it('should propagate abort signal to child forks', async () => {
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
@@ -175,14 +173,14 @@ describe('Signal System', () => {
           parentHandle.waitForCompletion({ timeout: 100 }),
           forkHandle.waitForCompletion({ timeout: 100 }),
         ]);
-      } catch (e) {
+      } catch (_e) {
         // Expected
       }
     });
     
     it('should not propagate abort signal to spawns', async () => {
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
@@ -216,7 +214,7 @@ describe('Signal System', () => {
           parentHandle.waitForCompletion({ timeout: 100 }),
           spawnHandle.waitForCompletion({ timeout: 100 }),
         ]);
-      } catch (e) {
+      } catch (_e) {
         // Expected for parent
       }
     });
@@ -225,7 +223,7 @@ describe('Signal System', () => {
   describe('Signal Propagation During Execution', () => {
     it('should abort execution when abort signal is received', async () => {
       class LongRunningAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
@@ -252,14 +250,14 @@ describe('Signal System', () => {
     
     it('should abort fork when parent is cancelled', async () => {
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
       
       // Agent that waits a bit to ensure fork is still running when parent completes
       class DelayedAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           // Return empty fragment - execution will complete quickly
           return createElement(Fragment, {});
         }
@@ -271,7 +269,7 @@ describe('Signal System', () => {
       );
       
       // Set up abort signal listener BEFORE creating fork to catch the signal
-      const forkAbortPromise = new Promise<SignalEvent>((resolve) => {
+      const _forkAbortPromise = new Promise<SignalEvent>((_resolve) => {
         // We'll attach this listener after fork is created
       });
       
@@ -298,7 +296,7 @@ describe('Signal System', () => {
       // Wait for parent cancellation
       try {
         await parentHandle.waitForCompletion({ timeout: 1000 });
-      } catch (e) {
+      } catch (_e) {
         // Expected - parent was cancelled
       }
       
@@ -325,13 +323,13 @@ describe('Signal System', () => {
     
     it('should abort fork when parent fails', async () => {
       class FailingAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           throw new Error('Parent execution failed');
         }
       }
       
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
@@ -361,7 +359,7 @@ describe('Signal System', () => {
       try {
         await parentHandle.waitForCompletion({ timeout: 1000 });
         throw new Error('Expected parent to fail');
-      } catch (error) {
+      } catch (_error) {
         // Expected - parent failed
       }
       
@@ -405,7 +403,7 @@ describe('Signal System', () => {
     
     it('should cancel all running executions on shutdown', async () => {
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
@@ -442,7 +440,7 @@ describe('Signal System', () => {
   describe('Signal Listeners in iterateTicks', () => {
     it('should abort execution when Context signal is aborted', async () => {
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
@@ -473,7 +471,7 @@ describe('Signal System', () => {
     
     it('should abort execution when handle signal is emitted', async () => {
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
@@ -502,7 +500,7 @@ describe('Signal System', () => {
   describe('Signal Inheritance for Forks', () => {
     it('should inherit parent abort signal in fork', async () => {
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
@@ -542,7 +540,7 @@ describe('Signal System', () => {
     
     it('should merge fork signal with parent signal', async () => {
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
@@ -593,7 +591,7 @@ describe('Signal System', () => {
   describe('Signal Event Structure', () => {
     it('should include correct metadata in signal events when fork cancels itself', async () => {
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
@@ -632,14 +630,14 @@ describe('Signal System', () => {
       // Wait for cancellation to complete
       try {
         await forkHandle.waitForCompletion({ timeout: 100 });
-      } catch (e) {
+      } catch (_e) {
         // Expected
       }
     });
     
     it('should include propagatedFrom metadata when parent cancels fork', async () => {
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
@@ -694,7 +692,7 @@ describe('Signal System', () => {
       // Wait for parent cancellation
       try {
         await parentHandle.waitForCompletion({ timeout: 1000 });
-      } catch (e) {
+      } catch (_e) {
         // Expected - parent was cancelled
       }
     });
@@ -703,7 +701,7 @@ describe('Signal System', () => {
   describe('Multiple Signal Listeners', () => {
     it('should call all listeners when signal is emitted', async () => {
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
@@ -740,14 +738,14 @@ describe('Signal System', () => {
       // Wait for cancellation to complete
       try {
         await handle.waitForCompletion({ timeout: 100 });
-      } catch (e) {
+      } catch (_e) {
         // Expected
       }
     });
     
     it('should allow removing listeners', async () => {
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
@@ -785,7 +783,7 @@ describe('Signal System', () => {
       // Wait for cancellation to complete
       try {
         await handle.waitForCompletion({ timeout: 100 });
-      } catch (e) {
+      } catch (_e) {
         // Expected
       }
     });

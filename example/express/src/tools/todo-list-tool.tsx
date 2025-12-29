@@ -1,4 +1,4 @@
-import { Column, Context, ContextObjectModel, createTool, Grounding, Header, JSX, Paragraph, Row, Section, Table, TickState } from 'aidk';
+import { Column, Context, COM, createTool, Grounding, Header, JSX, Paragraph, Row, Section, Table, TickState } from 'aidk';
 import { type ContentBlock } from 'aidk';
 import { z } from 'zod';
 import { TodoListService, TodoTask, type TodoActionOptions } from '../services/todo-list.service';
@@ -69,7 +69,7 @@ export const TodoListTool = createTool({
     return [{ type: 'text', text: result.message }];
   },
 
-  async onMount(com: ContextObjectModel): Promise<void> {
+  async onMount(com: COM): Promise<void> {
     // Resolve userId from context
     const ctx = Context.get();
     const userId = ctx.user.id 
@@ -101,7 +101,7 @@ export const TodoListTool = createTool({
     TodoListService.channel?.unregisterContext(Context.get());
   },
 
-  render(com: ContextObjectModel, state: TickState): JSX.Element | null {
+  render(com: COM, state: TickState): JSX.Element | null {
     const tasks = com.getState<TodoTask[]>('todo_list_tasks') || [];
     
     return (

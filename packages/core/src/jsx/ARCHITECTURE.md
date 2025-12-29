@@ -306,7 +306,7 @@ async function AsyncComponent(props: Props): Promise<JSX.Element> {
 
 // Class component (extends Component<P>)
 class MyAgent extends Component<AgentProps> {
-  render(com: ContextObjectModel): JSX.Element {
+  render(com: COM): JSX.Element {
     return <Fragment>...</Fragment>;
   }
 }
@@ -647,11 +647,11 @@ function CustomerServiceAgent({ user, query }: Props) {
 class StatefulAgent extends Component<{ topic: string }> {
   private conversationCount = 0;
 
-  async onMount(com: ContextObjectModel) {
+  async onMount(com: COM) {
     this.conversationCount = await loadConversationCount();
   }
 
-  render(com: ContextObjectModel): JSX.Element {
+  render(com: COM): JSX.Element {
     return (
       <Fragment>
         <Model model={myModel} />

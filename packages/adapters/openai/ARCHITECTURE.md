@@ -526,7 +526,7 @@ const model = createOpenAIModel({
 ### With Pre-configured Client
 
 ```typescript
-import OpenAI from "openai";
+import { OpenAI } from "openai";
 import { openai } from "aidk-openai";
 
 // Create your own OpenAI client with full control

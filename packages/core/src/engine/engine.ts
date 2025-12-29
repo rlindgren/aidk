@@ -12,29 +12,20 @@ import {
   applyRegistryMiddleware,
   isProcedure,
 } from "../procedure";
-import { getWaitHandles } from "../jsx/components/fork-spawn-helpers";
 import { EventEmitter } from "node:events";
 import { randomUUID } from "node:crypto";
 import type { ModelInstance, ModelInput, ModelOutput } from "../model/model";
-import { type ToolClass, isToolClass } from "../tool/tool";
+import { type ToolClass } from "../tool/tool";
 import { toolRegistry, modelRegistry } from "../utils/registry";
 import type {
-  Component,
   TickState,
   ComponentDefinition,
-  ComponentClass,
-  ComponentFactory,
-  EngineError,
-  RecoveryAction,
 } from "../component/component";
 import type {
   COMInput,
-  COMOutput,
   EngineInput,
-  COMTimelineEntry,
-  COMSection,
 } from "../com/types";
-import { ContextObjectModel, type COMTickStatus } from "../com/object-model";
+import { COM } from "../com/object-model";
 import type { ToolExecutionOptions } from "../types";
 import {
   ToolExecutionType,
@@ -47,20 +38,15 @@ import {
   type JSX,
   createElement,
   Fragment,
-  isElement,
   ensureElement,
 } from "../jsx/jsx-runtime";
-import { StructureRenderer } from "../compiler/structure-renderer";
 import { MarkdownRenderer, XMLRenderer } from "../renderers";
 import { type EngineStreamEvent } from "./engine-events";
 import { type EngineResponse } from "./engine-response";
 import {
   ComponentHookRegistry,
   type ComponentHookName,
-  type ComponentSelector,
   type ComponentHookMiddleware,
-  getComponentTags,
-  getComponentName,
 } from "../component/component-hooks";
 import {
   ModelHookRegistry,
@@ -95,7 +81,6 @@ import { ExecutionGraph } from "./execution-graph";
 import {
   type ExecutionHandle,
   type ExecutionState,
-  type ExecutionMetrics,
   type ExecutionTreeNode,
   type EngineMetrics,
   type ForkInheritanceOptions,
@@ -119,7 +104,6 @@ import {
   CompileJSXService,
   type CompileSession,
 } from "../utils/compile-jsx-service";
-import type { FiberCompiler, isFragment } from "../compiler";
 
 // Module-level logger for Engine
 const log = Logger.for("Engine");
@@ -1100,9 +1084,9 @@ export class Engine extends EventEmitter {
 
   /**
    * Resolves a model from COM, config, or registry.
-   * @param com Optional ContextObjectModel to get model from. If not provided, uses config.
+   * @param com Optional COM to get model from. If not provided, uses config.
    */
-  private getRawModel(com?: ContextObjectModel): ModelInstance | undefined {
+  private getRawModel(com?: COM): ModelInstance | undefined {
     // First check COM (set by Model component)
     if (com) {
       const comModel = com.getModel();
@@ -1145,9 +1129,9 @@ export class Engine extends EventEmitter {
   /**
    * Gets the wrapped model with hooks applied.
    * Wraps once and caches the result per model instance.
-   * @param com Optional ContextObjectModel to get model from.
+   * @param com Optional COM to get model from.
    */
-  private getWrappedModel(com?: ContextObjectModel): ModelInstance | undefined {
+  private getWrappedModel(com?: COM): ModelInstance | undefined {
     const rawModel = this.getRawModel(com);
     if (!rawModel) {
       return undefined;
@@ -1366,13 +1350,13 @@ export class Engine extends EventEmitter {
    * Persist partial message from accumulated chunks.
    */
   private async persistPartialMessage(
-    com: ContextObjectModel,
+    com: COM,
     chunks: unknown[],
     handle: ExecutionHandleImpl,
     tick: number,
     rootElement: JSX.Element,
     input: EngineInput,
-    previous?: COMInput,
+    _previous?: COMInput,
   ): Promise<void> {
     if (!this.config.persistExecutionState || chunks.length === 0) {
       return;
@@ -1588,7 +1572,7 @@ export class Engine extends EventEmitter {
           get: (pid) => {
             return this.executionGraph.getHandle(pid);
           },
-        } as ContextObjectModel["process"],
+        } as COM["process"],
       });
 
       // Create long-lived session (replaces setup + tick loop state management)
@@ -1703,7 +1687,7 @@ export class Engine extends EventEmitter {
             model: compilationModel,
             modelInput: compilationModelInput,
             shouldStop,
-            stopReason: compilationStopReason,
+            stopReason: _compilationStopReason,
           } = compilationResult;
 
           // Handle compilation stop request (from TickState.stop() callback)
@@ -1917,7 +1901,7 @@ export class Engine extends EventEmitter {
                   const events: ToolProcessingEvent[] = [];
                   toolEvents.set(call.id, events);
 
-                  const { result, confirmCheck, confirmation } =
+                  const { result, confirmCheck, confirmation: _confirmation } =
                     await this.toolExecutor.processToolWithConfirmation(
                       call,
                       com,
@@ -1973,7 +1957,7 @@ export class Engine extends EventEmitter {
               // Yield all collected events and results in order
               // We yield events per-tool to maintain the logical flow:
               // confirmation_required -> confirmation_result -> tool_result
-              for (const { call, result, events } of processingResults) {
+              for (const { call: _call, result, events } of processingResults) {
                 // Yield confirmation events for this tool
                 for (const event of events) {
                   if (event.type === "tool_confirmation_required") {
@@ -2038,9 +2022,9 @@ export class Engine extends EventEmitter {
           }
 
           // 4. Post-model state injection (Session handles component lifecycle)
-          let tickResult;
+          let _tickResult;
           try {
-            tickResult = await session.ingestTickResult({
+            _tickResult = await session.ingestTickResult({
               response,
               toolResults,
             });
@@ -2257,7 +2241,7 @@ export class Engine extends EventEmitter {
             channels?: ChannelServiceConfig;
           })
       | undefined,
-    parentHandle: ExecutionHandle,
+    _parentHandle: ExecutionHandle,
   ): Partial<Omit<EngineContext, "channels">> {
     const inherit = options?.inherit;
     const { channels: _channelsConfig, ...restOptions } = options || {};
@@ -2503,10 +2487,10 @@ export class Engine extends EventEmitter {
     } & Partial<Omit<EngineContext, "channels">> & {
         channels?: ChannelServiceConfig;
       },
-    parentHandle?: ExecutionHandle,
+    _parentHandle?: ExecutionHandle,
   ) {
     try {
-      const { engineClass, engineConfig, channels, ...kernelOptions } =
+      const { engineClass: _engineClass, engineConfig: _engineConfig, channels: _channels, ...kernelOptions } =
         options || {};
 
       // Note: Engine's execute method is a Procedure, so we call it directly

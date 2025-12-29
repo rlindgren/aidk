@@ -434,14 +434,14 @@ class MCPService {
   // Discover and register tools with COM
   async discoverAndRegister(
     config: MCPConfig,
-    com: ContextObjectModel,
+    com: COM,
   ): Promise<void>;
 
   // Register a single tool
   registerMCPTool(
     config: MCPConfig,
     def: MCPToolDefinition,
-    com: ContextObjectModel,
+    com: COM,
   ): void;
 
   // List tools from a server
@@ -540,8 +540,8 @@ interface CreateMCPToolOptions {
   toolPrefix?: string; // Name prefix
   runtimeConfig?: Partial<MCPConfig>; // Runtime overrides
   // Component lifecycle hooks...
-  onMount?: (com: ContextObjectModel) => Promise<void>;
-  onUnmount?: (com: ContextObjectModel) => Promise<void>;
+  onMount?: (com: COM) => Promise<void>;
+  onUnmount?: (com: COM) => Promise<void>;
   // etc.
 }
 ```
@@ -592,12 +592,12 @@ JSX component that connects to MCP server and registers tools:
 ```typescript
 class MCPToolComponent extends Component<MCPToolComponentProps> {
   // Lifecycle
-  async onMount(com: ContextObjectModel): Promise<void>;
-  async onUnmount(com: ContextObjectModel): Promise<void>;
+  async onMount(com: COM): Promise<void>;
+  async onUnmount(com: COM): Promise<void>;
 
   // Runtime updates
   async updateRuntimeConfig(
-    com: ContextObjectModel,
+    com: COM,
     runtimeConfig: Partial<MCPConfig>,
   ): Promise<void>;
 }

@@ -5,22 +5,21 @@
  */
 
 import { FiberCompiler } from '../fiber-compiler';
-import { ContextObjectModel } from '../../com/object-model';
+import { COM } from '../../com/object-model';
 import type { TickState } from '../../component/component';
 import { Component } from '../../component/component';
 import { Section, Message, Timeline } from '../../jsx/components/primitives';
 import { Text } from '../../jsx/components/content';
 import { createElement } from '../../jsx/jsx-runtime';
 import { useState, useComState, useTickStart, useTickEnd, useOnMount, useEffect } from '../../state/hooks';
-import { signal, comState } from '../../state';
 
 describe('Compiler Integration', () => {
-  let com: ContextObjectModel;
+  let com: COM;
   let compiler: FiberCompiler;
   let tickState: TickState;
 
   beforeEach(() => {
-    com = new ContextObjectModel();
+    com = new COM();
     compiler = new FiberCompiler(com);
     tickState = {
       tick: 1,

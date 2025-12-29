@@ -284,7 +284,7 @@ function transformEventContent(
   
   // Check if content is already formatted text blocks (from renderer)
   // If so, we need to extract the text and wrap it with delimiters
-  const isAlreadyFormatted = content.every(block => block.type === 'text');
+  const _isAlreadyFormatted = content.every(block => block.type === 'text');
   
   // Per-block-type delimiters - extract text and wrap each block
   if (isBlockDelimiters(delimiter)) {

@@ -3,11 +3,9 @@ import {
   createHook,
   createPipeline,
   procedure as procedureDecorator,
-  hook,
 } from "./procedure";
 import type { Middleware } from "./procedure";
 import { Context } from "./context";
-import { z } from "zod";
 
 describe("Kernel Procedure", () => {
   it("should execute a simple handler", async () => {
@@ -304,7 +302,7 @@ describe("Procedure v2 - Hooks as Procedures", () => {
   it("should track parent-child in execution graph", async () => {
     const stream = createProcedure(
       { name: "stream" },
-      async function* (input: string) {
+      async function* (_input: string) {
         const processChunk = createHook(
           { name: "stream:chunk" },
           async (chunk: string) => {

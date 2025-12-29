@@ -927,7 +927,7 @@ Components can handle errors and request recovery:
 ```typescript
 class ResilientAgent extends Component {
   async onError(
-    com: ContextObjectModel,
+    com: COM,
     error: EngineError,
     state: TickState,
   ): Promise<RecoveryAction | null> {
@@ -1145,7 +1145,7 @@ class ToolExecutor {
   // Execute tool calls
   executeToolCalls(
     toolCalls: AgentToolCall[],
-    com: ContextObjectModel,
+    com: COM,
     parallel?: boolean,
     configTools?: ExecutableTool[],
   ): Promise<AgentToolResult[]>;
@@ -1153,14 +1153,14 @@ class ToolExecutor {
   // Execute single tool (without confirmation handling)
   executeSingleTool(
     call: AgentToolCall,
-    com: ContextObjectModel,
+    com: COM,
     configTools?: ExecutableTool[],
   ): Promise<AgentToolResult>;
 
   // Process tool with full confirmation flow
   processToolWithConfirmation(
     call: AgentToolCall,
-    com: ContextObjectModel,
+    com: COM,
     configTools?: ExecutableTool[],
     callbacks?: {
       onConfirmationRequired?: (call: AgentToolCall, message: string) => void;
@@ -1178,7 +1178,7 @@ class ToolExecutor {
   // Check if a tool requires confirmation
   checkConfirmationRequired(
     call: AgentToolCall,
-    com: ContextObjectModel,
+    com: COM,
     configTools?: ExecutableTool[],
   ): Promise<ConfirmationCheckResult | null>;
 

@@ -5,7 +5,7 @@ import {
   comState,
   computed,
   Model,
-  ContextObjectModel,
+  COM,
   TickState
 } from 'aidk';
 
@@ -47,7 +47,7 @@ export class TaskAssistantAgent {
     })
   }));
 
-  async render(com: ContextObjectModel, state: TickState) {
+  async render(com: COM, state: TickState) {
     return (
       <>
         <Model model={this.executionModel()} />

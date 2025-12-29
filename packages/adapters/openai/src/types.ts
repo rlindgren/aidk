@@ -1,4 +1,4 @@
-import OpenAI, { type ClientOptions } from "openai";
+import { OpenAI, type ClientOptions } from "openai";
 import { type ProviderClientOptions, StopReason } from "aidk";
 
 /**

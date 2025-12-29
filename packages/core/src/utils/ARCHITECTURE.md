@@ -92,8 +92,8 @@ class CompileJSXService {
 
   // Tool management
   getTools(): (ToolClass | ExecutableTool)[];
-  registerTools(com: ContextObjectModel): void;
-  registerMCPTools(com: ContextObjectModel): Promise<void>;
+  registerTools(com: COM): void;
+  registerMCPTools(com: COM): Promise<void>;
 
   // Internal helpers
   setup(
@@ -102,7 +102,7 @@ class CompileJSXService {
     handle?,
   ): Promise<{ com; compiler; structureRenderer }>;
   prepareTickState(com, tick, previous?, current?): TickState;
-  clearAndReRegisterTools(com: ContextObjectModel): void;
+  clearAndReRegisterTools(com: COM): void;
   checkAbort(): void;
   callLifecycleHooks<T>(hookName: T, args): Promise<void>;
 }
@@ -117,8 +117,8 @@ interface CompileJSXServiceConfig {
   channels?: ChannelServiceConfig | ChannelService;
   renderers?: { [key: string]: Renderer };
   defaultRenderer?: ContentRenderer;
-  modelGetter?: (com: ContextObjectModel) => ModelInstance | undefined;
-  processMethods?: ContextObjectModel["process"];
+  modelGetter?: (com: COM) => ModelInstance | undefined;
+  processMethods?: COM["process"];
   hookRegistries?: {
     components?: ComponentHookRegistry;
     lifecycle?: EngineLifecycleHookRegistry;
@@ -144,7 +144,7 @@ class CompileSession {
   readonly current: COMOutput | undefined;
   readonly tickState: TickState | undefined;
   readonly stopReason: string | undefined;
-  readonly com: ContextObjectModel;
+  readonly com: COM;
 
   // Control queries
   shouldContinue(): boolean;
@@ -170,7 +170,7 @@ class CompileSession {
 ```typescript
 interface CompileJSXResult {
   compiled: CompiledStructure;
-  com: ContextObjectModel;
+  com: COM;
   structureRenderer: StructureRenderer;
   formatted: COMInput;
   input: COMInput;
@@ -200,7 +200,7 @@ async function compileJSX(
     initialInput?: Partial<COMInput>;
   },
 ): Promise<{
-  com: ContextObjectModel;
+  com: COM;
   compiled: CompiledStructure;
   formatted: COMInput;
 }>;

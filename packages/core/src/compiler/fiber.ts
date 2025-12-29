@@ -12,7 +12,7 @@ import type { ContentRenderer } from '../renderers';
 // Fiber Creation
 // ============================================================================
 
-let fiberIdCounter = 0;
+let _fiberIdCounter = 0;
 
 /**
  * Create a new fiber node.

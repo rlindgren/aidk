@@ -297,7 +297,7 @@ class MyAgent extends Component {
   private mcpClient?: MCPClient;
   private mcpService?: MCPService;
 
-  async onStart(com: ContextObjectModel) {
+  async onStart(com: COM) {
     // Create MCP client/service instances
     this.mcpClient = new MCPClient();
     this.mcpService = new MCPService(this.mcpClient);
@@ -323,7 +323,7 @@ class MyAgent extends Component {
     }
   }
 
-  async onUnmount(com: ContextObjectModel) {
+  async onUnmount(com: COM) {
     // Cleanup MCP connections if needed
     if (this.mcpClient) {
       await this.mcpClient.disconnectAll();

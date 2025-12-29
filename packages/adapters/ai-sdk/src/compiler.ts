@@ -411,7 +411,7 @@ export async function compile(
   const service = new CompileJSXService();
   const engineInput = aiSdkMessagesToEngineInput(initialMessages);
 
-  const { formatted, com } = await service.compile(jsx, engineInput);
+  const { formatted } = await service.compile(jsx, engineInput);
 
   // Extract model from COM if <Model> component was used
   // TODO: Need to expose model extraction from COM
@@ -535,7 +535,7 @@ export class AiSdkCompiler {
       spawn: (
         input: EngineInput,
         agent?: ComponentDefinition,
-        options?: {
+        _options?: {
           engineConfig?: Partial<EngineConfig>;
         },
       ): ExecutionHandle => {
@@ -659,7 +659,7 @@ export class AiSdkCompiler {
     let tick = 1;
     let lastResult: Awaited<ReturnType<typeof aiSdkGenerateText>> | undefined;
 
-    const finalState = await this.service._run(config, async (compiled) => {
+    await this.service._run(config, async (compiled) => {
       const input = toCompiledInput(compiled, tick);
       const result = await executor(input);
       lastResult = result;

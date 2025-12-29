@@ -3,7 +3,7 @@
  * which provides full type support without coercion.
  */
 
-import { createProcedure, generatorProcedure, Procedure } from './procedure';
+import { createProcedure, generatorProcedure } from './procedure';
 
 describe('Procedure v2 - Property Initializer Pattern', () => {
   it('should provide full type support for class properties', async () => {
@@ -37,7 +37,7 @@ describe('Procedure v2 - Property Initializer Pattern', () => {
     expect(typeof withMw).toBe('function');
 
     // ✅ Can use withHandle
-    const { handle, result: handleResult } = model.execute.withHandle().call('test');
+    const { handle, result: _handleResult } = model.execute.withHandle().call('test');
     expect(handle).toBeDefined();
     expect(handle.traceId).toBeDefined();
   });

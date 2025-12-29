@@ -33,7 +33,7 @@ const greetTool = createTool({
 
 // Define an agent
 class MyAgent extends Component {
-  render(com: ContextObjectModel, state: TickState) {
+  render(com: COM, state: TickState) {
     return (
       <>
         <Timeline>

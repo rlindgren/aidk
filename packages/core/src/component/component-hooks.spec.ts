@@ -1,17 +1,17 @@
 import { ComponentHookRegistry } from './component-hooks';
 import { Component } from './component';
 import { type TickState } from './component';
-import { ContextObjectModel } from '../com/object-model';
+import { COM } from '../com/object-model';
 
 describe('ComponentHookRegistry', () => {
   let registry: ComponentHookRegistry;
-  let mockCom: ContextObjectModel;
-  let mockState: TickState;
+  let _mockCom: COM;
+  let _mockState: TickState;
 
   beforeEach(() => {
     registry = new ComponentHookRegistry();
-    mockCom = {} as ContextObjectModel;
-    mockState = {
+    _mockCom = {} as COM;
+    _mockState = {
       tick: 1,
       stop: () => {},
     } as TickState;

@@ -5,7 +5,7 @@ import {
   type ToolConfirmationResult,
   ToolExecutionType,
 } from "../tool/tool";
-import { ContextObjectModel } from "../com/object-model";
+import { COM } from "../com/object-model";
 import { type ContentBlock } from "aidk-shared";
 import { type Middleware, type MiddlewarePipeline } from "aidk-kernel";
 import {
@@ -77,13 +77,13 @@ export class ToolExecutor {
    * Evaluates the requiresConfirmation option (boolean or function).
    *
    * @param call - The tool call to check
-   * @param com - ContextObjectModel for tool resolution
+   * @param com - COM for tool resolution
    * @param configTools - Optional config tools for fallback
    * @returns ConfirmationCheckResult or null if tool not found
    */
   async checkConfirmationRequired(
     call: AgentToolCall,
-    com: ContextObjectModel,
+    com: COM,
     configTools: ExecutableTool[] = [],
   ): Promise<ConfirmationCheckResult | null> {
     // Resolve tool
@@ -193,14 +193,14 @@ export class ToolExecutor {
    * Execute tool calls sequentially or in parallel.
    *
    * @param toolCalls Array of tool calls to execute
-   * @param com ContextObjectModel for tool resolution
+   * @param com COM for tool resolution
    * @param parallel Whether to execute tools in parallel (default: false)
    * @param configTools Optional array of tools from Engine config for fallback resolution
    * @returns Array of tool results
    */
   async executeToolCalls(
     toolCalls: AgentToolCall[],
-    com: ContextObjectModel,
+    com: COM,
     parallel: boolean = false,
     configTools: ExecutableTool[] = [],
   ): Promise<AgentToolResult[]> {
@@ -216,7 +216,7 @@ export class ToolExecutor {
    */
   private async executeSequential(
     toolCalls: AgentToolCall[],
-    com: ContextObjectModel,
+    com: COM,
     configTools: ExecutableTool[] = [],
   ): Promise<AgentToolResult[]> {
     const results: AgentToolResult[] = [];
@@ -235,7 +235,7 @@ export class ToolExecutor {
    */
   private async executeParallel(
     toolCalls: AgentToolCall[],
-    com: ContextObjectModel,
+    com: COM,
     configTools: ExecutableTool[] = [],
   ): Promise<AgentToolResult[]> {
     // TODO: Implement proper parallel execution with:
@@ -254,13 +254,13 @@ export class ToolExecutor {
    * This method does NOT handle confirmation - caller should check confirmation first.
    *
    * @param call - The tool call to execute
-   * @param com - ContextObjectModel for tool resolution
+   * @param com - COM for tool resolution
    * @param configTools - Optional config tools for fallback
    * @returns The tool result
    */
   async executeSingleTool(
     call: AgentToolCall,
-    com: ContextObjectModel,
+    com: COM,
     configTools: ExecutableTool[] = [],
   ): Promise<AgentToolResult> {
     // 1. Resolve tool
@@ -500,14 +500,14 @@ export class ToolExecutor {
    * wait for confirmation while other tools are being processed.
    *
    * @param call - The tool call to process
-   * @param com - ContextObjectModel for tool resolution
+   * @param com - COM for tool resolution
    * @param configTools - Optional config tools for fallback
    * @param callbacks - Callbacks for emitting events during processing
    * @returns The tool result and metadata about the processing
    */
   async processToolWithConfirmation(
     call: AgentToolCall,
-    com: ContextObjectModel,
+    com: COM,
     configTools: ExecutableTool[] = [],
     callbacks: {
       onConfirmationRequired?: (

@@ -1,8 +1,6 @@
 import type { ContentBlock, Message, MessageRoles } from "aidk-shared";
-import { markAsHostPrimitive } from "aidk-shared";
 import { createElement, type JSX, Fragment } from "../jsx-runtime";
 import type {
-  AgentStreamEvent,
   EngineStreamEvent,
 } from "../../engine/engine-events";
 import type { ComponentBaseProps } from "../jsx-types";

@@ -52,7 +52,7 @@ export class ToolConfirmationCoordinator {
    */
   async waitForConfirmation(
     toolUseId: string,
-    toolName: string,
+    _toolName: string,
   ): Promise<ToolConfirmationResult> {
     // Create deferred promise for this confirmation
     const deferred = new Deferred<ToolConfirmationResult>();

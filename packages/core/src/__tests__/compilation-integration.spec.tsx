@@ -10,7 +10,7 @@
  * Uses CompileJSXService for isolated testing without full Engine.
  */
 
-import { Message, Section, Text, Image, Audio, Video, Document, Code, Markdown, XML, UserAction, Event } from '../jsx/components';
+import { Message, Section, Text, Image, Audio, Code, Markdown, XML, UserAction, Event } from '../jsx/components';
 import { H1, H2, H3, Paragraph } from '../jsx/components/semantic';
 import { CompileJSXService } from '../utils/compile-jsx-service';
 import { MarkdownRenderer, XMLRenderer } from '../renderers';
@@ -556,9 +556,9 @@ describe('Compilation Integration Tests', () => {
       const jsx = (
         <Message role="user">
           {[
-            <Text>A</Text>,
-            [<Text>B</Text>, <Text>C</Text>],
-            <Text>D</Text>
+            <Text key="a">A</Text>,
+            [<Text key="b">B</Text>, <Text key="c">C</Text>],
+            <Text key="d">D</Text>
           ]}
         </Message>
       );

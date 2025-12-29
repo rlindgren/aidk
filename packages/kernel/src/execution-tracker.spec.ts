@@ -1,6 +1,5 @@
 import { Context, type KernelContext } from "./context";
 import { ExecutionTracker } from "./execution-tracker";
-import { ProcedureGraph } from "./procedure-graph";
 import { Telemetry } from "./telemetry";
 
 // Mock Telemetry
@@ -168,7 +167,7 @@ describe("ExecutionTracker", () => {
             await ExecutionTracker.track(
               parentCtx,
               { name: "child" },
-              async (childNode) => {
+              async (_childNode) => {
                 // Use Context.get() to access the child's forked context
                 const childCtx = Context.get();
                 childCtx.metrics!["usage.inputTokens"] = 100;
@@ -209,7 +208,7 @@ describe("ExecutionTracker", () => {
 
     it("should send metrics to telemetry on completion", async () => {
       await runInContext(async () => {
-        return ExecutionTracker.track(ctx, { name: "test" }, async (node) => {
+        return ExecutionTracker.track(ctx, { name: "test" }, async (_node) => {
           // Use Context.get() to access the forked context's metrics proxy
           const forkedCtx = Context.get();
           forkedCtx.metrics!["usage.inputTokens"] = 100;

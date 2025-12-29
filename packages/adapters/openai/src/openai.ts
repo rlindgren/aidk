@@ -1,4 +1,4 @@
-import OpenAI, { type ClientOptions } from "openai";
+import { OpenAI, type ClientOptions } from "openai";
 import type {
   ChatCompletion,
   ChatCompletionChunk,
@@ -47,7 +47,7 @@ export function createOpenAIModel(
         { stream: true, toolCalls: true, provider: "openai" },
         {
           // Use function to inspect actual model and make intelligent decisions
-          messageTransformation: (modelId: string, provider?: string) => {
+          messageTransformation: (modelId: string, _provider?: string) => {
             const isGPT4 = modelId.includes("gpt-4") || modelId.includes("o1");
             const supportsDeveloper = isGPT4; // GPT-4 and newer support developer role
 
@@ -360,7 +360,7 @@ async function processOutput(output: ChatCompletion): Promise<ModelOutput> {
         let parsedInput: any;
         try {
           parsedInput = JSON.parse(toolCall.function.arguments);
-        } catch (error) {
+        } catch {
           parsedInput = toolCall.function.arguments as any;
         }
 

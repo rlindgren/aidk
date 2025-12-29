@@ -7,7 +7,7 @@ import { Context } from 'aidk';
  */
 @Injectable()
 export class EngineContextGuard implements CanActivate {
-  canActivate(context: ExecutionContext): boolean {
+  canActivate(_context: ExecutionContext): boolean {
     const ctx = Context.get();
     return !!ctx;
   }

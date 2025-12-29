@@ -18,7 +18,7 @@
  * JSX Components → COM (Context Object Model) → Model Input
  * ```
  *
- * @see {@link ContextObjectModel} - Main COM class
+ * @see {@link COM} - Main COM class
  * @see {@link COMSection} - Section structure
  * @see {@link COMTimelineEntry} - Timeline entry structure
  *

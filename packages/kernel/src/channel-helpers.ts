@@ -1,5 +1,5 @@
 import { Channel, type ChannelEvent } from './channel';
-import { Context, type KernelContext } from './context';
+import { Context } from './context';
 
 /**
  * Helper functions for accessing channels from KernelContext.

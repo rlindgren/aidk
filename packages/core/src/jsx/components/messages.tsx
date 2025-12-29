@@ -13,7 +13,7 @@
  *   <ToolResult toolCallId="..." name="weather">Sunny, 72°F</ToolResult>
  */
 
-import type { ContentBlock, EventAllowedBlock, UserActionBlock, SystemEventBlock, StateChangeBlock } from 'aidk-shared';
+import type { ContentBlock, EventAllowedBlock } from 'aidk-shared';
 import { Message as MessagePrimitive, type MessageProps } from './primitives';
 import { createElement, type JSX } from '../jsx-runtime';
 import type { EphemeralPosition } from '../../com/types';

@@ -30,7 +30,7 @@
 
 import { createElement, type JSX, Fragment } from '../jsx-runtime';
 import { Component, type ComponentDefinition } from '../../component/component';
-import { ContextObjectModel } from '../../com/object-model';
+import { COM } from '../../com/object-model';
 import { type TickState } from '../../component/component';
 import { type EngineInput } from '../../com/types';
 import { type ExecutionHandle, type ForkInheritanceOptions } from '../../engine/execution-types';
@@ -100,7 +100,7 @@ export class ForkComponent extends Component<ForkProps> {
   private forkHandle?: ExecutionHandle;
   private forkStarted = false;
   
-  async onUnmount(com: ContextObjectModel): Promise<void> {
+  async onUnmount(com: COM): Promise<void> {
     // Cancel fork if still running
     if (this.forkHandle?.status === 'running') {
       this.forkHandle.cancel('Fork component unmounted');
@@ -110,7 +110,7 @@ export class ForkComponent extends Component<ForkProps> {
     super.onUnmount(com);
   }
   
-  render(com: ContextObjectModel, state: TickState): JSX.Element | null {
+  render(com: COM, _state: TickState): JSX.Element | null {
     if (!com.process) {
       throw new Error('Fork component requires process operations. Ensure Engine provides process interface to COM');
     }

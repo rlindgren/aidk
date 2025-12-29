@@ -6,7 +6,7 @@
  */
 
 import { type EngineComponent, Component } from '../component/component';
-import { ContextObjectModel } from '../com/object-model';
+import { COM } from '../com/object-model';
 import { MCPClient } from './client';
 import { MCPService } from './service';
 import type { MCPConfig, MCPServerConfig } from './types';
@@ -155,7 +155,7 @@ class MCPToolComponent extends Component<MCPToolComponentProps> {
     this.baseConfig = normalizeMCPConfig(props.server, props.config);
   }
 
-  async onMount(com: ContextObjectModel): Promise<void> {
+  async onMount(com: COM): Promise<void> {
     // Merge base config with runtime config
     const effectiveConfig = mergeMCPConfig(this.baseConfig, this.props.runtimeConfig);
 
@@ -205,7 +205,7 @@ class MCPToolComponent extends Component<MCPToolComponentProps> {
     }
   }
 
-  async onUnmount(com: ContextObjectModel): Promise<void> {
+  async onUnmount(com: COM): Promise<void> {
     // Remove registered tools
     for (const toolName of this.registeredToolNames) {
       com.removeTool(toolName);
@@ -228,7 +228,7 @@ class MCPToolComponent extends Component<MCPToolComponentProps> {
    * This will reconnect and re-register tools with new config.
    */
   async updateRuntimeConfig(
-    com: ContextObjectModel,
+    com: COM,
     runtimeConfig: Partial<MCPConfig>
   ): Promise<void> {
     // Remove existing tools

@@ -100,10 +100,10 @@ export interface TelemetryProvider {
 }
 
 class NoOpProvider implements TelemetryProvider {
-  startTrace(name: string): string {
+  startTrace(_name: string): string {
     return `trace-${crypto.randomUUID()}`;
   }
-  startSpan(name: string): Span {
+  startSpan(_name: string): Span {
     return {
       end: () => {},
       setAttribute: () => {},
@@ -114,10 +114,10 @@ class NoOpProvider implements TelemetryProvider {
     console.error("Telemetry Error:", error);
   }
   endTrace(): void {}
-  getCounter(name: string): Counter {
+  getCounter(_name: string): Counter {
     return { add: () => {} };
   }
-  getHistogram(name: string): Histogram {
+  getHistogram(_name: string): Histogram {
     return { record: () => {} };
   }
 }

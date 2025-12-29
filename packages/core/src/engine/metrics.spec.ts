@@ -1,10 +1,9 @@
 import { createEngine } from './factory';
 import type { EngineConfig } from './engine';
 import { Component, type TickState } from '../component/component';
-import { ContextObjectModel } from '../com/object-model';
+import { COM } from '../com/object-model';
 import { createModel, type ModelInput, type ModelOutput } from '../model/model';
 import { StopReason, type StreamChunk } from 'aidk-shared';
-import { type JSX, createElement, Fragment } from '../jsx/jsx-runtime';
 import { fromEngineState, toEngineState } from '../model/utils/language-model';
 
 describe('Engine Metrics', () => {
@@ -19,7 +18,7 @@ describe('Engine Metrics', () => {
         capabilities: [],
       },
       executors: {
-        execute: async (input: ModelInput): Promise<ModelOutput> => {
+        execute: async (_input: ModelInput): Promise<ModelOutput> => {
           return {
             model: 'test-model',
             createdAt: new Date().toISOString(),
@@ -89,7 +88,7 @@ describe('Engine Metrics', () => {
     
     it('should track active executions', async () => {
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
@@ -116,7 +115,7 @@ describe('Engine Metrics', () => {
     
     it('should track executions by status', async () => {
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
@@ -139,7 +138,7 @@ describe('Engine Metrics', () => {
     
     it('should track executions by type', async () => {
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
@@ -169,7 +168,7 @@ describe('Engine Metrics', () => {
     
     it('should calculate average execution time', async () => {
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
@@ -211,7 +210,7 @@ describe('Engine Metrics', () => {
     
     it('should build execution tree for root execution', async () => {
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
@@ -233,7 +232,7 @@ describe('Engine Metrics', () => {
     
     it('should build tree with nested forks', async () => {
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
@@ -287,7 +286,7 @@ describe('Engine Metrics', () => {
     
     it('should return outstanding forks', async () => {
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
@@ -332,7 +331,7 @@ describe('Engine Metrics', () => {
   describe('getOrphanedForks', () => {
     it('should return empty array when no orphaned forks', async () => {
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
@@ -363,7 +362,7 @@ describe('Engine Metrics', () => {
     
     it('should detect orphaned forks', async () => {
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
@@ -408,7 +407,7 @@ describe('Engine Metrics', () => {
     
     it('should return handle for existing PID', async () => {
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }

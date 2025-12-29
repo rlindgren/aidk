@@ -30,6 +30,10 @@
     "typecheck": "turbo typecheck",
     "clean": "turbo clean",
     "dev": "turbo dev",
+    "lint": "turbo lint",
+    "lint:all": "turbo lint && eslint .",
+    "format": "oxfmt --write .",
+    "format:check": "turbo format:check",
     "changeset": "changeset",
     "version-packages": "changeset version",
     "publish-packages": "turbo run test build && changeset publish"
@@ -63,8 +67,10 @@
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
     "eslint": "^9.0.0",
+    "eslint-plugin-oxlint": "^1.36.0",
     "jest": "^30.0.0",
-    "prettier": "^3.0.0",
+    "oxfmt": "^0.21.0",
+    "oxlint": "^1.36.0",
     "ts-jest": "^29.0.0",
     "turbo": "^2.6.3",
     "typescript": "^5.9.3"

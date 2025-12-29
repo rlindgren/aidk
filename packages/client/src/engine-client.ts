@@ -344,7 +344,7 @@ export class EngineClient {
     }
 
     // Apply scalar updates
-    const { callbacks, routes, api, channels, transport, ...rest } = updates;
+    const { callbacks: _callbacks, routes: _routes, api: _api, channels: _channels, transport: _transport, ...rest } = updates;
     Object.assign(this.config, rest);
 
     // Only reconnect if identity actually changed - room memberships depend on these

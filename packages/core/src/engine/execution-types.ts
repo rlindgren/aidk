@@ -1,7 +1,6 @@
 import { randomUUID } from "crypto";
 import { EventEmitter } from "node:events";
 import type { EngineInput, COMInput } from "../com/types";
-import type { JSX } from "../jsx/jsx-runtime";
 import type { ComponentDefinition } from "../component/component";
 
 /**

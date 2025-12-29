@@ -1,15 +1,15 @@
-import { ContextObjectModel, type COMEventMap } from './object-model';
+import { COM } from './object-model';
 import type { Message } from '../content';
 import type { ExecutableTool } from '../tool/tool';
 import type { COMTimelineEntry, COMSection } from './types';
 import { createTool } from '../tool/tool';
 import { z } from 'zod';
 
-describe('ContextObjectModel EventEmitter', () => {
-  let com: ContextObjectModel;
+describe('COM EventEmitter', () => {
+  let com: COM;
 
   beforeEach(() => {
-    com = new ContextObjectModel();
+    com = new COM();
   });
 
   describe('EventEmitter inheritance', () => {
@@ -134,7 +134,7 @@ describe('ContextObjectModel EventEmitter', () => {
         name: 'test-tool',
         description: 'Test tool',
         parameters: z.object({ input: z.string().optional() }),
-        handler: async (input: { input?: string }) => [],
+        handler: async (_input: { input?: string }) => [],
       });
 
       com.addTool(mockTool);
@@ -152,7 +152,7 @@ describe('ContextObjectModel EventEmitter', () => {
         name: 'valid-tool',
         description: 'Test tool',
         parameters: z.object({ input: z.string().optional() }),
-        handler: async (input: { input?: string }) => [],
+        handler: async (_input: { input?: string }) => [],
       });
       
       // Override name to empty string (this shouldn't happen in practice)
@@ -173,7 +173,7 @@ describe('ContextObjectModel EventEmitter', () => {
         name: 'test-tool',
         description: 'Test tool',
         parameters: z.object({ input: z.string().optional() }),
-        handler: async (input: { input?: string }) => [],
+        handler: async (_input: { input?: string }) => [],
       });
 
       com.addTool(mockTool);
@@ -432,11 +432,11 @@ describe('ContextObjectModel EventEmitter', () => {
       // If types are wrong, TypeScript will error at compile time
 
       // Correct usage - should compile
-      com.on('message:added', (message: Message, options: any) => {
+      com.on('message:added', (message: Message, _options: any) => {
         expect(message.role).toBeDefined();
       });
 
-      com.on('state:changed', (key: string, value: unknown, previousValue: unknown) => {
+      com.on('state:changed', (key: string, _value: unknown, _previousValue: unknown) => {
         expect(typeof key).toBe('string');
       });
 

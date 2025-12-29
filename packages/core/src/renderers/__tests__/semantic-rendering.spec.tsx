@@ -10,7 +10,7 @@
  */
 
 import { Text } from '../../jsx/components/content';
-import { Paragraph, H1, H2, H3 } from '../../jsx/components/semantic';
+import { H1, H2, H3 } from '../../jsx/components/semantic';
 import { initializeContentBlockMappers, type ContentBlockMapper } from '../../compiler/content-block-registry';
 import { MarkdownRenderer } from '../markdown';
 import { XMLRenderer } from '../xml';

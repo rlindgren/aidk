@@ -82,7 +82,7 @@ const mcpService = new MCPService(mcpClient);
 
 // In your component's onMount or onStart:
 class MyAgent extends Component {
-  async onStart(com: ContextObjectModel) {
+  async onStart(com: COM) {
     // Discover MCP tools and register them manually
     await mcpService.discoverAndRegister(filesystemMCPConfig, com);
     // Now model can use these tools!

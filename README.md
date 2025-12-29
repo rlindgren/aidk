@@ -66,7 +66,7 @@ import { AiSdkModel } from "aidk-ai-sdk";
 import { openai } from "@ai-sdk/openai";
 
 export class AssistantAgent extends Component {
-  render(com: ContextObjectModel, state: TickState) {
+  render(com: COM, state: TickState) {
     return (
       <>
         <AiSdkModel model={openai("gpt-4o-mini")} />

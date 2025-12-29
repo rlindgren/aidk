@@ -1,11 +1,9 @@
 import { createEngine } from './factory';
 import type { EngineConfig } from './engine';
 import { Component, type TickState } from '../component/component';
-import { ContextObjectModel } from '../com/object-model';
-import type { ExecutionHandle } from './execution-types';
+import { COM } from '../com/object-model';
 import { createModel, type ModelInput, type ModelOutput } from '../model/model';
 import { StopReason, type StreamChunk } from 'aidk-shared';
-import { type JSX, createElement, Fragment } from '../jsx/jsx-runtime';
 import { fromEngineState, toEngineState } from '../model/utils/language-model';
 
 describe('Fork and Spawn', () => {
@@ -20,7 +18,7 @@ describe('Fork and Spawn', () => {
         capabilities: [],
       },
       executors: {
-        execute: async (input: ModelInput): Promise<ModelOutput> => {
+        execute: async (_input: ModelInput): Promise<ModelOutput> => {
           return {
             model: 'test-model',
             createdAt: new Date().toISOString(),
@@ -63,7 +61,7 @@ describe('Fork and Spawn', () => {
   describe('spawn', () => {
     it('should spawn a new independent execution', async () => {
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
@@ -87,7 +85,7 @@ describe('Fork and Spawn', () => {
     
     it('should track spawn in execution graph', async () => {
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
@@ -105,7 +103,7 @@ describe('Fork and Spawn', () => {
     
     it('should allow multiple spawns to run concurrently', async () => {
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
@@ -135,13 +133,13 @@ describe('Fork and Spawn', () => {
   describe('fork', () => {
     it('should fork a child execution with parent PID', async () => {
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
       
       // First, create a parent execution
-      const parentResult = await engine.execute(
+      const _parentResult = await engine.execute(
         { timeline: [] },
         createElement(SimpleAgent, {})
       );
@@ -178,7 +176,7 @@ describe('Fork and Spawn', () => {
     
     it('should throw if parent PID does not exist', () => {
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
@@ -197,7 +195,7 @@ describe('Fork and Spawn', () => {
     
     it('should inherit timeline when copying', async () => {
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
@@ -242,7 +240,7 @@ describe('Fork and Spawn', () => {
   describe('execution graph tracking', () => {
     it('should track parent-child relationships', async () => {
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
@@ -275,7 +273,7 @@ describe('Fork and Spawn', () => {
     
     it('should detect orphaned forks', async () => {
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
@@ -307,7 +305,7 @@ describe('Fork and Spawn', () => {
       // Wait for fork to complete (it may already be done)
       try {
         await forkHandle.waitForCompletion({ timeout: 1000 });
-      } catch (error) {
+      } catch (_error) {
         // Fork might have failed, that's ok for this test
       }
     });
@@ -316,7 +314,7 @@ describe('Fork and Spawn', () => {
   describe('execution tree', () => {
     it('should build execution tree with forks', async () => {
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
@@ -361,7 +359,7 @@ describe('Fork and Spawn', () => {
   describe('hook inheritance', () => {
     it('should inherit component hooks from parent engine by default', async () => {
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
@@ -397,7 +395,7 @@ describe('Fork and Spawn', () => {
     
     it('should inherit model hooks from parent engine', async () => {
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
@@ -433,7 +431,7 @@ describe('Fork and Spawn', () => {
     
     it('should inherit tool hooks from parent engine', async () => {
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
@@ -475,7 +473,7 @@ describe('Fork and Spawn', () => {
     
     it('should not inherit hooks when inherit.hooks is false', async () => {
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
@@ -524,7 +522,7 @@ describe('Fork and Spawn', () => {
     
     it('should inherit all hook types (component, model, tool, engine)', async () => {
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
@@ -570,7 +568,7 @@ describe('Fork and Spawn', () => {
   describe('fork-specific hooks', () => {
     it('should register fork-specific hooks when provided', async () => {
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
@@ -617,7 +615,7 @@ describe('Fork and Spawn', () => {
     
     it('should register fork-specific hooks when inheritance is disabled', async () => {
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
@@ -666,7 +664,7 @@ describe('Fork and Spawn', () => {
     
     it('should support all hook types (component, model, tool, engine)', async () => {
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
@@ -718,7 +716,7 @@ describe('Fork and Spawn', () => {
     
     it('should add fork hooks after inherited hooks (order matters)', async () => {
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
@@ -773,7 +771,7 @@ describe('Fork and Spawn', () => {
     
     it('should allow multiple hooks of the same type', async () => {
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }

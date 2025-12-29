@@ -1,17 +1,14 @@
 import { createEngine } from '../engine/factory';
-import { type EngineConfig } from '../engine/engine';
-import { type EngineComponent, type TickState, Component } from '../component/component';
-import { ContextObjectModel } from './object-model';
-import { createElement, Fragment } from '../jsx/jsx-runtime';
+import { type TickState, Component } from '../component/component';
+import { COM } from './object-model';
+import { Fragment } from '../jsx/jsx-runtime';
 import { Section, Message, Tool, Timeline, Model } from '../jsx/components/primitives';
 import { Text, Code, Image } from '../jsx/components/content';
 import { createTool } from '../tool/tool';
 import { z } from 'zod';
-import type { COMInput, COMTimelineEntry, COMSection } from './types';
 import { createModel, type ModelInput, type ModelOutput } from '../model/model';
 import { type StreamChunk } from 'aidk-shared';
-import { inspect } from 'util';
-import { fromEngineState, toEngineState } from '../model/utils/language-model';
+import { fromEngineState } from '../model/utils/language-model';
 import { signal } from '../state/signal';
 
 // Mock models
@@ -231,7 +228,7 @@ describe('COMInput Validation', () => {
             </Fragment>
           );
         }
-        onMount(com: ContextObjectModel) {
+        onMount(com: COM) {
           com.addMetadata('source', 'test');
           com.addMetadata('version', '1.0');
         }
@@ -505,7 +502,7 @@ describe('COMInput Validation', () => {
 
     it('should merge metadata from multiple components', async () => {
       class ComponentA extends Component {
-        onMount(com: ContextObjectModel) {
+        onMount(com: COM) {
           com.addMetadata('source', 'component-a');
           com.addMetadata('key1', 'value1');
         }
@@ -515,7 +512,7 @@ describe('COMInput Validation', () => {
       }
 
       class ComponentB extends Component {
-        onMount(com: ContextObjectModel) {
+        onMount(com: COM) {
           com.addMetadata('source', 'component-b'); // Overwrites component-a
           com.addMetadata('key2', 'value2');
         }
@@ -732,13 +729,13 @@ describe('COMInput Validation', () => {
     it('should switch models conditionally across ticks', async () => {
       class ModelSwitcher {
         useFast = signal(true);
-        onTickStart(com: ContextObjectModel, state: TickState) {
+        onTickStart(_com: COM, _state: TickState) {
           // Switch to accurate after first tick
           if (state.tick > 1 && this.useFast()) {
             this.useFast.set(false);
           }
         }
-        render(com: ContextObjectModel, state: TickState) {
+        render(com: COM, state: TickState) {
           // Render from previous + current (no tick checking needed!)
           const previousEntries = state.previous?.timeline || [];
           const currentEntries = state.current?.timeline || [];
@@ -746,8 +743,9 @@ describe('COMInput Validation', () => {
           
           return (
             <Fragment>
-              {allEntries.map((entry) => (
+              {allEntries.map((entry, idx) => (
                 <Message
+                  key={`entry-${idx}`}
                   role={entry.message.role}
                   content={entry.message.content}
                 />
@@ -1041,7 +1039,7 @@ describe('COMInput Validation', () => {
   describe('Multiple Ticks', () => {
     it('should accumulate timeline entries across ticks', async () => {
       class AccumulatingComponent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(com: COM, state: TickState) {
           const tickNumber = state.tick || 1;
           // Render from previous + current (no tick checking needed!)
           const previousEntries = state.previous?.timeline || [];
@@ -1051,8 +1049,9 @@ describe('COMInput Validation', () => {
           // Add new user message for this tick
           return (
             <Fragment>
-              {allEntries.map((entry) => (
+              {allEntries.map((entry, idx) => (
                 <Message
+                  key={`entry-${idx}`}
                   role={entry.message.role}
                   content={entry.message.content}
                 />
@@ -1106,7 +1105,7 @@ describe('COMInput Validation', () => {
       class DynamicSection {
         tick = signal(0);
 
-        onTickStart(com: ContextObjectModel, state: TickState) {
+        onTickStart(_com: COM, _state: TickState) {
           this.tick.update(t => t + 1);
         }
         render() {
@@ -1220,7 +1219,7 @@ describe('COMInput Validation', () => {
       });
 
       class ComprehensiveComponent extends Component {
-        onMount(com: ContextObjectModel) {
+        onMount(com: COM) {
           com.addMetadata('component', 'comprehensive');
           com.addMetadata('version', '1.0');
         }

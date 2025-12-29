@@ -647,7 +647,7 @@ let renderContext: RenderContext | null = null;
 
 interface RenderContext {
   fiber: FiberNode; // Current fiber being rendered
-  com: ContextObjectModel; // COM instance
+  com: COM; // COM instance
   tickState: TickState; // Current tick state
   currentHook: HookState | null; // From previous render
   workInProgressHook: HookState | null; // Being built
@@ -814,7 +814,7 @@ Builds a semantic tree from nested JSX:
 ```typescript
 class FiberCompiler {
   constructor(
-    com: ContextObjectModel,
+    com: COM,
     hookRegistry?: ComponentHookRegistry,
     config?: FiberCompilerConfig,
   );
@@ -952,18 +952,18 @@ class StatefulAgent extends Component<
 
   static tags = ["chat", "agent"];
 
-  async onMount(com: ContextObjectModel) {
+  async onMount(com: COM) {
     const history = await loadHistory();
     this.timeline.set(history);
   }
 
-  async onTickStart(com: ContextObjectModel, state: TickState) {
+  async onTickStart(com: COM, state: TickState) {
     if (state.current?.timeline) {
       this.timeline.update((t) => [...t, ...state.current.timeline]);
     }
   }
 
-  render(com: ContextObjectModel, state: TickState): JSX.Element {
+  render(com: COM, state: TickState): JSX.Element {
     return (
       <Fragment>
         <Model model={this.props.model} />
@@ -1003,7 +1003,7 @@ function ExecutionController({ maxTurns }: { maxTurns: number }) {
 ```tsx
 class DynamicAgent extends Component {
   async onAfterCompile(
-    com: ContextObjectModel,
+    com: COM,
     compiled: CompiledStructure,
     state: TickState,
     ctx: AfterCompileContext,
@@ -1017,7 +1017,7 @@ class DynamicAgent extends Component {
     }
   }
 
-  render(com: ContextObjectModel, state: TickState) {
+  render(com: COM, state: TickState) {
     const shouldTruncate = com.getState<boolean>("truncateTimeline");
     const timeline = this.timeline();
     const visible = shouldTruncate ? timeline.slice(-50) : timeline;

@@ -96,7 +96,7 @@ export function useEngineClient(options: UseEngineClientOptions = {}): UseEngine
   const [isConnected] = useState(false);
 
   // Generate a stable cache key
-  const cacheKey = useMemo(() => getClientCacheKey(options), [options.baseUrl, options.sessionId]);
+  const cacheKey = useMemo(() => getClientCacheKey(options), [options]);
   
   // Get or create client from cache
   // This runs during render to ensure client is available immediately

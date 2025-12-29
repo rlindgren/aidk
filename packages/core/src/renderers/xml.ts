@@ -507,7 +507,7 @@ export class XMLRenderer extends Renderer {
       }
 
       // Pass through native content block types as-is
-      case "image":
+      // Note: "image" is handled above with text conversion
       case "audio":
       case "video":
       case "document":

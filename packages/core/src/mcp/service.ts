@@ -9,7 +9,7 @@ import { Client } from "@modelcontextprotocol/sdk/client";
 import { MCPClient } from "./client";
 import { MCPTool } from "./tool";
 import type { MCPConfig, MCPToolDefinition } from "./types";
-import { ContextObjectModel } from "../com/object-model";
+import { COM } from "../com/object-model";
 
 /**
  * MCP Service handles discovery and registration of MCP tools
@@ -43,7 +43,7 @@ export class MCPService {
    */
   async discoverAndRegister(
     config: MCPConfig,
-    com: ContextObjectModel,
+    com: COM,
   ): Promise<void> {
     const tools = await this.connectAndDiscover(config);
 
@@ -68,7 +68,7 @@ export class MCPService {
   registerMCPTool(
     config: MCPConfig,
     mcpToolDef: MCPToolDefinition,
-    com: ContextObjectModel,
+    com: COM,
   ): void {
     const tool = new MCPTool(this.mcpClient, config.serverName, mcpToolDef, {
       serverUrl: config.connection.url,
@@ -85,7 +85,7 @@ export class MCPService {
    */
   async disconnectAndUnregister(
     serverName: string,
-    com: ContextObjectModel,
+    com: COM,
   ): Promise<void> {
     // Find all tools that belong to this MCP server
     const allTools = com.getTools();

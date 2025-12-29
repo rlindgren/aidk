@@ -13,7 +13,6 @@
 import type {
   FiberNode,
   HookState,
-  Effect,
   UpdateQueue,
   Update,
   RenderContext,
@@ -22,7 +21,6 @@ import type {
   RefObject,
   AsyncResult,
   EffectCallback,
-  EffectCleanup,
   Dispatch,
 } from "../compiler/types";
 import { HookTag, EffectPhase } from "../compiler/types";
@@ -38,7 +36,7 @@ import {
   isComputed,
 } from "./signal";
 import { shouldSkipRecompile } from "../compiler/fiber-compiler";
-import type { ContextObjectModel } from "../com/object-model";
+import type { COM } from "../com/object-model";
 import type { TickState } from "../component/component";
 import type { CompiledStructure } from "../compiler/types";
 import type { ExecutionMessage } from "../engine/execution-types";
@@ -498,7 +496,7 @@ export function useEffect(create: EffectCallback, deps?: unknown[]): void {
  * ```
  */
 export async function useInit(
-  callback: (com: ContextObjectModel, state: TickState) => void | Promise<void>,
+  callback: (com: COM, state: TickState) => void | Promise<void>,
 ): Promise<void> {
   const ctx = getCurrentContext();
   const hook = mountOrUpdateHook(HookTag.Memo);
@@ -533,7 +531,7 @@ export async function useInit(
  * ```
  */
 export function useOnMount(
-  callback: (com: ContextObjectModel) => void | Promise<void>,
+  callback: (com: COM) => void | Promise<void>,
 ): void {
   const ctx = getCurrentContext();
 
@@ -546,7 +544,7 @@ export function useOnMount(
  * useOnUnmount - Run once when component unmounts.
  */
 export function useOnUnmount(
-  callback: (com: ContextObjectModel) => void | Promise<void>,
+  callback: (com: COM) => void | Promise<void>,
 ): void {
   const ctx = getCurrentContext();
 
@@ -559,7 +557,7 @@ export function useOnUnmount(
  * useTickStart - Run at start of each tick, before render.
  */
 export function useTickStart(
-  callback: (com: ContextObjectModel, state: TickState) => void | Promise<void>,
+  callback: (com: COM, state: TickState) => void | Promise<void>,
 ): void {
   const hook = mountOrUpdateHook(HookTag.TickStart);
   const ctx = getCurrentContext();
@@ -580,7 +578,7 @@ export function useTickStart(
  * useTickEnd - Run at end of each tick, after model execution.
  */
 export function useTickEnd(
-  callback: (com: ContextObjectModel, state: TickState) => void | Promise<void>,
+  callback: (com: COM, state: TickState) => void | Promise<void>,
 ): void {
   const hook = mountOrUpdateHook(HookTag.TickEnd);
   const ctx = getCurrentContext();
@@ -601,13 +599,13 @@ export function useTickEnd(
  */
 export function useAfterCompile(
   callback: (
-    com: ContextObjectModel,
+    com: COM,
     compiled: CompiledStructure,
     state: TickState,
   ) => void,
 ): void {
   const hook = mountOrUpdateHook(HookTag.AfterCompile);
-  const ctx = getCurrentContext();
+  const _ctx = getCurrentContext();
 
   // Store callback and create effect
   hook.memoizedState = callback;
@@ -655,7 +653,7 @@ export function useAfterCompile(
  */
 export function useOnMessage(
   callback: (
-    com: ContextObjectModel,
+    com: COM,
     message: ExecutionMessage,
     state: TickState,
   ) => void | Promise<void>,

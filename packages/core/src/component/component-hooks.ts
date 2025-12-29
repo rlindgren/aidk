@@ -5,10 +5,9 @@ import type {
   RecoveryAction,
   AfterCompileContext,
 } from "./component";
-import { ContextObjectModel } from "../com/object-model";
+import { COM } from "../com/object-model";
 import type { COMInput } from "../com/types";
 import type { JSX } from "../jsx/jsx-runtime";
-import { HookRegistry } from "../hooks/hook-registry";
 import { BaseHookRegistry } from "../hooks/base-hook-registry";
 import type { CompiledStructure } from "../compiler/types";
 import type { ExecutionMessage } from "../engine/execution-types";
@@ -49,34 +48,34 @@ export type ComponentHookMiddleware<T extends ComponentHookName> = Middleware<
  * Arguments for each component hook.
  */
 export type ComponentHookArgs<T extends ComponentHookName> = T extends "onMount"
-  ? [com: ContextObjectModel]
+  ? [com: COM]
   : T extends "onUnmount"
-    ? [com: ContextObjectModel]
+    ? [com: COM]
     : T extends "onStart"
-      ? [com: ContextObjectModel]
+      ? [com: COM]
       : T extends "onTickStart"
         ? [state: TickState]
         : T extends "render"
-          ? [com: ContextObjectModel, state: TickState]
+          ? [com: COM, state: TickState]
           : T extends "onAfterCompile"
             ? [
-                com: ContextObjectModel,
+                com: COM,
                 compiled: CompiledStructure,
                 state: TickState,
                 ctx: AfterCompileContext,
               ]
             : T extends "onTickEnd"
-              ? [com: ContextObjectModel, state: TickState]
+              ? [com: COM, state: TickState]
               : T extends "onMessage"
                 ? [
-                    com: ContextObjectModel,
+                    com: COM,
                     message: ExecutionMessage,
                     state: TickState,
                   ]
                 : T extends "onComplete"
-                  ? [com: ContextObjectModel, finalState: COMInput]
+                  ? [com: COM, finalState: COMInput]
                   : T extends "onError"
-                    ? [com: ContextObjectModel, state: TickState]
+                    ? [com: COM, state: TickState]
                     : never;
 
 /**

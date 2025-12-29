@@ -6,7 +6,7 @@ import { z } from "zod";
 import { createTool, ToolExecutionType } from "../../tool/tool";
 import { ToolExecutor } from "../tool-executor";
 import { ToolConfirmationCoordinator } from "../tool-confirmation-coordinator";
-import { ContextObjectModel } from "../../com/object-model";
+import { COM } from "../../com/object-model";
 import type { AgentToolCall } from "aidk-shared";
 
 describe("Tool Confirmation", () => {
@@ -160,11 +160,11 @@ describe("Tool Confirmation", () => {
 
   describe("ToolExecutor confirmation checking", () => {
     let executor: ToolExecutor;
-    let com: ContextObjectModel;
+    let com: COM;
 
     beforeEach(() => {
       executor = new ToolExecutor();
-      com = new ContextObjectModel({ timeline: [] });
+      com = new COM({ timeline: [] });
     });
 
     it("should return required=false when tool has no requiresConfirmation", async () => {
@@ -433,11 +433,11 @@ describe("Tool Confirmation", () => {
 
   describe("ToolExecutor with confirmation flow", () => {
     let executor: ToolExecutor;
-    let com: ContextObjectModel;
+    let com: COM;
 
     beforeEach(() => {
       executor = new ToolExecutor();
-      com = new ContextObjectModel({ timeline: [] });
+      com = new COM({ timeline: [] });
     });
 
     it("should execute tool when confirmation received", async () => {
@@ -531,11 +531,11 @@ describe("Tool Confirmation", () => {
 
   describe("Tool confirmation with different tool types", () => {
     let executor: ToolExecutor;
-    let com: ContextObjectModel;
+    let com: COM;
 
     beforeEach(() => {
       executor = new ToolExecutor();
-      com = new ContextObjectModel({ timeline: [] });
+      com = new COM({ timeline: [] });
     });
 
     it("should work with SERVER tools", async () => {
@@ -608,11 +608,11 @@ describe("Tool Confirmation", () => {
 
   describe("processToolWithConfirmation", () => {
     let executor: ToolExecutor;
-    let com: ContextObjectModel;
+    let com: COM;
 
     beforeEach(() => {
       executor = new ToolExecutor();
-      com = new ContextObjectModel({ timeline: [] });
+      com = new COM({ timeline: [] });
     });
 
     it("should process tool without confirmation directly", async () => {
@@ -717,11 +717,11 @@ describe("Tool Confirmation", () => {
 
   describe("Parallel tool execution with confirmations", () => {
     let executor: ToolExecutor;
-    let com: ContextObjectModel;
+    let com: COM;
 
     beforeEach(() => {
       executor = new ToolExecutor();
-      com = new ContextObjectModel({ timeline: [] });
+      com = new COM({ timeline: [] });
     });
 
     it("should process multiple tools in parallel with mixed confirmation states", async () => {

@@ -1,8 +1,7 @@
-import { createElement, type JSX, Fragment } from '../jsx-runtime';
-import { type EngineComponent, Component } from '../../component/component';
-import { ContextObjectModel } from '../../com/object-model';
-import { ModelAdapter, type ModelInstance } from '../../model/model';
-import { modelRegistry } from '../../utils/registry';
+import { createElement, type JSX } from '../jsx-runtime';
+import { Component } from '../../component/component';
+import { COM } from '../../com/object-model';
+import type { ModelInstance } from '../../model/model';
 import type { ComponentBaseProps } from '../jsx-types';
 import type { ProviderGenerationOptions } from '../../types';
 import type { MessageTransformationConfig } from '../../model/model';
@@ -27,12 +26,12 @@ export interface ModelComponentProps extends ComponentBaseProps {
   /**
    * Optional callback when model is mounted.
    */
-  onMount?: (com: ContextObjectModel) => Promise<void> | void;
+  onMount?: (com: COM) => Promise<void> | void;
   
   /**
    * Optional callback when model is unmounted.
    */
-  onUnmount?: (com: ContextObjectModel) => Promise<void> | void;
+  onUnmount?: (com: COM) => Promise<void> | void;
 }
 
 /**
@@ -69,7 +68,7 @@ export interface ModelComponentProps extends ComponentBaseProps {
  * ```
  */
 export class ModelComponent extends Component<ModelComponentProps> {
-  async onMount(com: ContextObjectModel): Promise<void> {
+  async onMount(com: COM): Promise<void> {
     // Set the model on COM and notify Engine
     com.setModel(this.props.model);
     
@@ -79,7 +78,7 @@ export class ModelComponent extends Component<ModelComponentProps> {
     }
   }
 
-  async onUnmount(com: ContextObjectModel): Promise<void> {
+  async onUnmount(com: COM): Promise<void> {
     // Clear the model when component unmounts
     com.unsetModel();
     
@@ -89,7 +88,7 @@ export class ModelComponent extends Component<ModelComponentProps> {
     }
   }
 
-  render(com: ContextObjectModel): JSX.Element | null {
+  render(_com: COM): JSX.Element | null {
     // Model is configuration-only - doesn't render anything
     return null;
   }
@@ -167,7 +166,7 @@ export interface ModelOptionsProps extends ComponentBaseProps {
  * ```
  */
 export class ModelOptionsComponent extends Component<ModelOptionsProps> {
-  async onTickStart(com: ContextObjectModel): Promise<void> {
+  async onTickStart(com: COM): Promise<void> {
     const { messageTransformation, temperature, maxTokens } = this.props;
     
     com.setModelOptions({

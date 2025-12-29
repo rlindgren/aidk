@@ -1,4 +1,4 @@
-import { Context, ContextObjectModel, createTool, Grounding, JSX, List, ListItem, Paragraph, Section, TickState } from 'aidk';
+import { Context, COM, createTool, Grounding, JSX, List, ListItem, Paragraph, Section, TickState } from 'aidk';
 import { type ContentBlock } from 'aidk';
 import { z } from 'zod';
 import { ScratchpadNote, ScratchpadService, type ScratchpadActionOptions } from '../services/scratchpad.service';
@@ -58,7 +58,7 @@ export const ScratchpadTool = createTool({
     return [{ type: 'text', text: result.message }];
   },
 
-  async onMount(com: ContextObjectModel): Promise<void> {    
+  async onMount(com: COM): Promise<void> {    
     // Resolve threadId from context
     const ctx = Context.get();
     const userInput = com.getUserInput() as any;
@@ -96,7 +96,7 @@ export const ScratchpadTool = createTool({
     ScratchpadService.channel?.unregisterContext(Context.get());
   },
 
-  render(com: ContextObjectModel, state: TickState): JSX.Element | null {
+  render(com: COM, state: TickState): JSX.Element | null {
     const notes = com.getState<ScratchpadNote[]>('scratchpad_notes') || [];
     
     return (

@@ -1,4 +1,3 @@
-import { Context } from './context';
 import { createProcedure } from './procedure';
 
 describe('Kernel Abort Handling', () => {

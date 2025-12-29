@@ -18,7 +18,7 @@ describe('Kernel Hook', () => {
 
   it('should run middleware', async () => {
     const hook = createHook({ name: 'test' }, async (input: number) => input * 2)
-      .use(async ([input], envelope, next) => {
+      .use(async ([_input], _envelope, next) => {
         // Transform: input + 1, then handler multiplies by 2, then add 1 to result
         // Flow: 1 -> [2] -> handler(2) = 4 -> 4 + 1 = 5
         // But test expects 3, so let's adjust: input = 1, transform to [1], handler(1) = 2, add 1 = 3
@@ -141,7 +141,7 @@ describe('Kernel Hook', () => {
 
   it('should support void return type', async () => {
     let called = false;
-    const hook = createHook(async (message: string) => {
+    const hook = createHook(async (_message: string) => {
       called = true;
     });
     
@@ -226,7 +226,7 @@ describe('Kernel Hook', () => {
 
   it('should handle errors in middleware correctly', async () => {
     const hook = createHook(async (value: number) => value)
-      .use(async (args, envelope, next) => {
+      .use(async (_args, _envelope, _next) => {
         throw new Error('Middleware error');
       });
     
@@ -234,7 +234,7 @@ describe('Kernel Hook', () => {
   });
 
   it('should handle errors in handler correctly', async () => {
-    const hook = createHook(async (value: number) => {
+    const hook = createHook(async (_value: number) => {
       throw new Error('Handler error');
     });
     

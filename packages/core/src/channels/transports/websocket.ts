@@ -290,7 +290,7 @@ export class WebSocketTransport implements ChannelTransport {
       if (!this.wsModule) {
         try {
           this.wsModule = require('ws');
-        } catch (error) {
+        } catch (_error) {
           throw new Error(
             "WebSocketTransport requires 'ws' package in Node.js. Install it with: npm install ws"
           );
@@ -417,14 +417,14 @@ export class WebSocketTransport implements ChannelTransport {
   /**
    * Get rooms this connection has joined.
    */
-  getConnectionRooms(connectionId: string): string[] {
+  getConnectionRooms(_connectionId: string): string[] {
     return Array.from(this.joinedRooms);
   }
 
   /**
    * Disconnect from transport.
    */
-  async disconnect(connectionId?: string): Promise<void> {
+  async disconnect(_connectionId?: string): Promise<void> {
     this.isConnected = false;
     this.joinedRooms.clear();
     

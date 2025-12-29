@@ -4,23 +4,22 @@
 
 import { useState, useEffect, useMemo, useComputed, useCallback, useRef } from '../../state/hooks';
 import { useComState, useWatch, useInput } from '../../state/hooks';
-import { useInit, useOnMount, useOnUnmount, useTickStart, useTickEnd, useAfterCompile } from '../../state/hooks';
+import { useInit, useOnMount, useTickStart, useTickEnd, useAfterCompile } from '../../state/hooks';
 import { useAsync, usePrevious, useToggle, useCounter } from '../../state/hooks';
-import { setRenderContext, getCurrentFiber } from '../../state/hooks';
+import { setRenderContext } from '../../state/hooks';
 import type { RenderContext } from '../types';
 import { createFiber } from '../fiber';
-import { ContextObjectModel } from '../../com/object-model';
+import { COM } from '../../com/object-model';
 import type { TickState } from '../../component/component';
-import { Fragment } from '../../jsx/jsx-runtime';
 
 describe('V2 Hooks', () => {
-  let com: ContextObjectModel;
+  let com: COM;
   let tickState: TickState;
   let renderContext: RenderContext;
   let fiber: ReturnType<typeof createFiber>;
 
   beforeEach(() => {
-    com = new ContextObjectModel();
+    com = new COM();
     tickState = {
       tick: 1,
       stop: jest.fn(),
@@ -70,17 +69,17 @@ describe('V2 Hooks', () => {
 
     it('should support functional updates', () => {
       setRenderContext(renderContext);
-      
-      const [count, setCount] = useState(0);
+
+      const [_count, setCount] = useState(0);
       setCount(prev => prev + 1);
-      
+
       const hook = fiber.memoizedState;
       expect(hook).toBeDefined();
     });
 
     it('should persist state across renders', () => {
       setRenderContext(renderContext);
-      const [count1] = useState(5);
+      const [_count1] = useState(5);
       
       // Simulate re-render with previous hook state
       const prevHook = fiber.memoizedState;
@@ -554,7 +553,7 @@ describe('V2 Hooks', () => {
       // The error happens because we're trying to get more hooks than exist
       expect(() => {
         useState(1);
-      }).toThrow();
+      }).toThrow("Rendered more hooks");
     });
   });
 });

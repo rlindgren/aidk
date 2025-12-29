@@ -158,7 +158,7 @@ React-style hooks use fiber-based state storage and a render context:
 // Render context set by compiler during component render
 interface RenderContext {
   fiber: FiberNode; // Current fiber being rendered
-  com: ContextObjectModel; // Shared state container
+  com: COM; // Shared state container
   tickState: TickState; // Current tick information
   currentHook: HookState | null;
   workInProgressHook: HookState | null;
@@ -439,29 +439,29 @@ function useEffect(create: EffectCallback, deps?: unknown[]): void;
 
 // One-time initialization (blocking, awaitable)
 async function useInit(
-  callback: (com: ContextObjectModel, state: TickState) => void | Promise<void>,
+  callback: (com: COM, state: TickState) => void | Promise<void>,
 ): Promise<void>;
 
 // Mount/unmount effects
 function useOnMount(
-  callback: (com: ContextObjectModel) => void | Promise<void>,
+  callback: (com: COM) => void | Promise<void>,
 ): void;
 function useOnUnmount(
-  callback: (com: ContextObjectModel) => void | Promise<void>,
+  callback: (com: COM) => void | Promise<void>,
 ): void;
 
 // Tick lifecycle
 function useTickStart(
-  callback: (com: ContextObjectModel, state: TickState) => void | Promise<void>,
+  callback: (com: COM, state: TickState) => void | Promise<void>,
 ): void;
 function useTickEnd(
-  callback: (com: ContextObjectModel, state: TickState) => void | Promise<void>,
+  callback: (com: COM, state: TickState) => void | Promise<void>,
 ): void;
 
 // After compile
 function useAfterCompile(
   callback: (
-    com: ContextObjectModel,
+    com: COM,
     compiled: CompiledStructure,
     state: TickState,
   ) => void,
@@ -470,7 +470,7 @@ function useAfterCompile(
 // Message handling
 function useOnMessage(
   callback: (
-    com: ContextObjectModel,
+    com: COM,
     message: ExecutionMessage,
     state: TickState,
   ) => void | Promise<void>,

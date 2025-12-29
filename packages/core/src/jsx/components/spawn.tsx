@@ -30,7 +30,7 @@
 
 import { createElement, type JSX, Fragment } from '../jsx-runtime';
 import { Component, type ComponentDefinition } from '../../component/component';
-import { ContextObjectModel } from '../../com/object-model';
+import { COM } from '../../com/object-model';
 import type { TickState } from '../../component/component';
 import type { EngineInput } from '../../com/types';
 import type { ExecutionHandle } from '../../engine/execution-types';
@@ -90,7 +90,7 @@ export class SpawnComponent extends Component<SpawnProps> {
   private spawnHandle?: ExecutionHandle;
   private spawnStarted = false;
   
-  async onUnmount(com: ContextObjectModel): Promise<void> {
+  async onUnmount(com: COM): Promise<void> {
     // Cancel spawn if still running
     if (this.spawnHandle?.status === 'running') {
       this.spawnHandle.cancel('Spawn component unmounted');
@@ -100,7 +100,7 @@ export class SpawnComponent extends Component<SpawnProps> {
     super.onUnmount(com);
   }
   
-  render(com: ContextObjectModel, state: TickState): JSX.Element | null {
+  render(com: COM, _state: TickState): JSX.Element | null {
     if (!com.process) {
       throw new Error('Spawn component requires process operations. Ensure Engine provides process interface to COM');
     }

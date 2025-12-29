@@ -359,14 +359,14 @@ export class StreamableHTTPTransport implements ChannelTransport {
   /**
    * Get rooms this connection has joined.
    */
-  getConnectionRooms(connectionId: string): string[] {
+  getConnectionRooms(_connectionId: string): string[] {
     return Array.from(this.joinedRooms);
   }
 
   /**
    * Disconnect from transport
    */
-  async disconnect(connectionId?: string): Promise<void> {
+  async disconnect(_connectionId?: string): Promise<void> {
     this.isConnected = false;
     this.joinedRooms.clear();
     

@@ -16,7 +16,6 @@ import { EventEmitter } from "node:events";
 import { Context, type KernelContext, isKernelContext } from "./context";
 import { ExecutionTracker } from "./execution-tracker";
 import { randomUUID } from "node:crypto";
-import { ProcedureGraph } from "./procedure-graph";
 import { ProcedureNode } from "./procedure-graph";
 import { AbortError, ValidationError } from "aidk-shared";
 
@@ -400,7 +399,7 @@ export type ProcedureWithHandle<THandler extends (...args: any[]) => any> = {
  * ```
  */
 export type ExtractArgs<T> = T extends {
-  (this: infer This, ...args: infer Args): any;
+  (this: infer _This, ...args: infer Args): any;
 }
   ? Args
   : T extends {
@@ -409,26 +408,26 @@ export type ExtractArgs<T> = T extends {
     ? Args
     : T extends {
           (
-            this: infer This,
+            this: infer _This,
             ...args: infer Args
-          ): Generator<infer Y, infer R, infer N>;
+          ): Generator<infer _Y, infer _R, infer _N>;
         }
       ? Args
       : T extends {
-            (...args: infer Args): Generator<infer Y, infer R, infer N>;
+            (...args: infer Args): Generator<infer _Y, infer _R, infer _N>;
           }
         ? Args
         : T extends {
               (
-                this: infer This,
+                this: infer _This,
                 ...args: infer Args
-              ): AsyncGenerator<infer Y, infer R, infer N>;
+              ): AsyncGenerator<infer _Y, infer _R, infer _N>;
             }
           ? Args
           : T extends {
                 (
                   ...args: infer Args
-                ): AsyncGenerator<infer Y, infer R, infer N>;
+                ): AsyncGenerator<infer _Y, infer _R, infer _N>;
               }
             ? Args
             : never;
@@ -741,7 +740,7 @@ class ProcedureImpl<
         parentPid: context.procedurePid,
         metadata: this.metadata, // Pass metadata to ExecutionTracker for span attributes
       },
-      async (node: ProcedureNode) => {
+      async (_node: ProcedureNode) => {
         // Check Abort Signal before starting
         if (context?.signal?.aborted) {
           throw new AbortError();
@@ -1281,19 +1280,15 @@ type Handler<TArgs extends any[]> =
   | ((this: any, ...args: TArgs) => any);
 
 export function generatorProcedure<
-  TThis extends any,
+  TThis,
   TArgs extends any[],
   THandler extends Handler<TArgs>,
 >(
   optionsOrFn?: ProcedureOptions | THandler,
   fn?: THandler,
 ): Procedure<THandler> {
-  let options: ProcedureOptions = {};
-
   if (typeof optionsOrFn === "function") {
     fn = optionsOrFn;
-  } else if (optionsOrFn) {
-    options = optionsOrFn;
   }
 
   return createProcedure(function (this: TThis, ...args: TArgs) {

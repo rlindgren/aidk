@@ -96,7 +96,7 @@ export class RedisChannelAdapter implements ChannelAdapter {
               db: this.config.db || 0,
             });
         return this.redisClient;
-      } catch (error) {
+      } catch (_error) {
         // Fall back to 'redis' package
         const redis = require('redis');
         this.redisClient = this.config.url
@@ -113,7 +113,7 @@ export class RedisChannelAdapter implements ChannelAdapter {
         await this.redisClient.connect();
         return this.redisClient;
       }
-    } catch (error) {
+    } catch (_error) {
       throw new Error(
         `RedisChannelAdapter requires 'redis' or 'ioredis' package. Install it with: npm install redis or npm install ioredis`
       );

@@ -495,7 +495,7 @@ class Counter extends Component {
   // Component-local state (not shared)
   private count = signal(0);
 
-  onMount(com: ContextObjectModel) {
+  onMount(com: COM) {
     effect(() => {
       console.log('Count changed:', this.count());
     });

@@ -5,7 +5,6 @@ import type { ModelInput, ModelOutput } from '../model';
 import { type StreamChunk } from 'aidk-shared/streaming';
 import type { EngineInput } from '../com/types';
 import { Telemetry, Context } from 'aidk-kernel';
-import type { JSX } from '../jsx/jsx-runtime';
 import { fromEngineState, toEngineState } from '../model/utils/language-model';
 import { z } from 'zod';
 

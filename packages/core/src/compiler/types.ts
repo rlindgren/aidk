@@ -1,16 +1,13 @@
 import type {
-  COMSection,
-  COMTimelineEntry,
   EphemeralPosition,
 } from "../com/types";
 import type { ExecutableTool } from "../tool/tool";
 import type { SemanticContentBlock, ContentRenderer } from "../renderers";
 import type { ContentBlock, MessageRoles } from "aidk-shared";
 import { Fragment, type JSX } from "aidk/jsx-runtime";
-import type { ContextObjectModel } from "../com/object-model";
+import type { COM } from "../com/object-model";
 import type { TickState } from "../component/component";
 import type { ExecutionMessage } from "../engine/execution-types";
-import { isContentBlock } from "aidk-shared";
 
 /**
  * Compiled structure from JSX tree traversal.
@@ -346,10 +343,10 @@ export interface FiberNode {
  */
 export type FunctionComponent<P = Record<string, unknown>> =
   | ((props: P) => FiberChild | Promise<FiberChild>)
-  | ((props: P, com: ContextObjectModel) => FiberChild | Promise<FiberChild>)
+  | ((props: P, com: COM) => FiberChild | Promise<FiberChild>)
   | ((
       props: P,
-      com: ContextObjectModel,
+      com: COM,
       state: TickState,
     ) => FiberChild | Promise<FiberChild>);
 
@@ -376,37 +373,37 @@ export interface ComponentInstance {
   props: Record<string, unknown>;
 
   // Lifecycle
-  onMount?: (com: ContextObjectModel) => void | Promise<void>;
-  onUnmount?: (com: ContextObjectModel) => void | Promise<void>;
-  onStart?: (com: ContextObjectModel) => void | Promise<void>;
+  onMount?: (com: COM) => void | Promise<void>;
+  onUnmount?: (com: COM) => void | Promise<void>;
+  onStart?: (com: COM) => void | Promise<void>;
   onTickStart?: (
-    com: ContextObjectModel,
+    com: COM,
     state: TickState,
   ) => void | Promise<void>;
   onTickEnd?: (
-    com: ContextObjectModel,
+    com: COM,
     state: TickState,
   ) => void | Promise<void>;
   onAfterCompile?: (
-    com: ContextObjectModel,
+    com: COM,
     compiled: unknown,
     state: TickState,
     ctx: unknown,
   ) => void | Promise<void>;
   onComplete?: (
-    com: ContextObjectModel,
+    com: COM,
     finalState: unknown,
   ) => void | Promise<void>;
-  onError?: (com: ContextObjectModel, state: TickState) => unknown;
+  onError?: (com: COM, state: TickState) => unknown;
   onMessage?: (
-    com: ContextObjectModel,
+    com: COM,
     state: TickState,
     message: ExecutionMessage,
   ) => void | Promise<void>;
 
   // Render
   render?: (
-    com: ContextObjectModel,
+    com: COM,
     state: TickState,
   ) => FiberChild | Promise<FiberChild>;
 }
@@ -450,7 +447,7 @@ export interface RenderContext {
   fiber: FiberNode;
 
   /** Context Object Model */
-  com: ContextObjectModel;
+  com: COM;
 
   /** Current tick state */
   tickState: TickState;

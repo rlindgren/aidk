@@ -1,9 +1,8 @@
-import { ContextObjectModel } from '../com/object-model';
-import type { COMInput, COMSection, COMTimelineEntry, EphemeralEntry } from '../com/types';
+import { COM } from '../com/object-model';
+import type { COMInput, COMSection, COMTimelineEntry } from '../com/types';
 import type { ContentBlock, TextBlock } from 'aidk-shared';
 import { ContentRenderer, type SemanticContentBlock, MarkdownRenderer } from '../renderers';
 import type { CompiledStructure, CompiledSection, CompiledTimelineEntry, CompiledEphemeral } from '../compiler/types';
-import type { Renderer } from '../renderers/base';
 
 /**
  * Consolidate contiguous text blocks into single text blocks.
@@ -51,7 +50,7 @@ function consolidateTextBlocks(blocks: ContentBlock[]): ContentBlock[] {
 export class StructureRenderer {
   private defaultRenderer: ContentRenderer;
 
-  constructor(private com: ContextObjectModel) {
+  constructor(private com: COM) {
     this.defaultRenderer = new MarkdownRenderer();
   }
 
@@ -77,7 +76,7 @@ export class StructureRenderer {
     this.consolidateSystemMessage(compiled.systemMessageItems);
 
     // 4. Apply tools
-    for (const { name, tool } of compiled.tools) {
+    for (const { name: _name, tool } of compiled.tools) {
       this.com.addTool(tool);
     }
 

@@ -5,7 +5,7 @@ import {
   type COMTimelineEntry,
 } from 'aidk';
 import { getMessageRepository, type MessageEntity } from '../../persistence/repositories/messages';
-import { useComState, useTickStart, useInit, useSignal, useComputed } from 'aidk/compiler/hooks';
+import { useComState, useTickStart, useInit, useSignal, useComputed } from 'aidk/state/hooks';
 import { FormattedMessage } from '../messages/formatted-message.component';
 
 export interface SlidingWindowTimelineProps {

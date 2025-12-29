@@ -17,11 +17,10 @@ import {
   getWaitHandles 
 } from './fork-spawn-helpers';
 import { Component } from '../../component/component';
-import { ContextObjectModel } from '../../com/object-model';
+import { COM } from '../../com/object-model';
 import { type TickState } from '../../component/component';
 import { type ExecutionHandle } from '../../engine/execution-types';
 import { Message } from './primitives';
-import { createElement, Fragment, type JSX } from '../jsx-runtime';
 
 describe('Fork/Spawn Helper Functions', () => {
   let engine: ReturnType<typeof createEngine>;
@@ -35,7 +34,7 @@ describe('Fork/Spawn Helper Functions', () => {
         capabilities: [],
       },
       executors: {
-        execute: async (input: ModelInput): Promise<ModelOutput> => {
+        execute: async (_input: ModelInput): Promise<ModelOutput> => {
           return {
             model: 'test-model',
             createdAt: new Date().toISOString(),
@@ -79,7 +78,7 @@ describe('Fork/Spawn Helper Functions', () => {
       };
 
       class ForkCreator extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(com: COM, state: TickState) {
           const handle = createForkHandle(
             engine,
             com,
@@ -109,7 +108,7 @@ describe('Fork/Spawn Helper Functions', () => {
 
     it('should create a fork handle with JSX children', async () => {
       class ForkCreator extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(com: COM, state: TickState) {
           const handle = createForkHandle(
             engine,
             com,
@@ -139,7 +138,7 @@ describe('Fork/Spawn Helper Functions', () => {
       const onCompleteSpy = jest.fn();
 
       class ForkCreator extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(com: COM, state: TickState) {
           createForkHandle(
             engine,
             com,
@@ -189,7 +188,7 @@ describe('Fork/Spawn Helper Functions', () => {
 
       // Use spawn instead of fork - spawn doesn't require a parent execution
       class SpawnCreator extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(com: COM, state: TickState) {
           const handle = createSpawnHandle(
             errorEngine,
             com,
@@ -215,7 +214,7 @@ describe('Fork/Spawn Helper Functions', () => {
           { timeline: [] },
           <SpawnCreator />
         );
-      } catch (e) {
+      } catch (_e) {
         // Execution might fail, but spawn error handler should still be called
       }
 
@@ -223,7 +222,7 @@ describe('Fork/Spawn Helper Functions', () => {
       if (spawnHandle) {
         try {
           await spawnHandle.waitForCompletion();
-        } catch (e) {
+        } catch (_e) {
           // Expected to fail
         }
       }
@@ -239,7 +238,7 @@ describe('Fork/Spawn Helper Functions', () => {
       let rootHandle: ExecutionHandle | undefined;
 
       class RootForkCreator extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(com: COM, state: TickState) {
           // Create a root fork first to get a valid PID
           const handle = createForkHandle(
             engine,
@@ -263,7 +262,7 @@ describe('Fork/Spawn Helper Functions', () => {
       }
 
       class ChildForkCreator extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(com: COM, state: TickState) {
           const rootPid = com.getState<string>('rootPid');
           if (rootPid) {
             const handle = createForkHandle(
@@ -308,7 +307,7 @@ describe('Fork/Spawn Helper Functions', () => {
 
     it('should throw error if no agent or children provided', async () => {
       class ForkCreator extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(com: COM, state: TickState) {
           expect(() => {
             createForkHandle(
               engine,
@@ -343,7 +342,7 @@ describe('Fork/Spawn Helper Functions', () => {
       };
 
       class SpawnCreator extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(com: COM, state: TickState) {
           const handle = createSpawnHandle(
             engine,
             com,
@@ -373,7 +372,7 @@ describe('Fork/Spawn Helper Functions', () => {
 
     it('should create a spawn handle with JSX children', async () => {
       class SpawnCreator extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(com: COM, state: TickState) {
           const handle = createSpawnHandle(
             engine,
             com,
@@ -403,7 +402,7 @@ describe('Fork/Spawn Helper Functions', () => {
       const onCompleteSpy = jest.fn();
 
       class SpawnCreator extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(com: COM, state: TickState) {
           createSpawnHandle(
             engine,
             com,
@@ -435,7 +434,7 @@ describe('Fork/Spawn Helper Functions', () => {
 
     it('should throw error if no agent or children provided', async () => {
       class SpawnCreator extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(com: COM, state: TickState) {
           expect(() => {
             createSpawnHandle(
               engine,
@@ -462,7 +461,7 @@ describe('Fork/Spawn Helper Functions', () => {
   describe('registerWaitHandle and getWaitHandles', () => {
     it('should register a handle for waiting', async () => {
       class WaitHandler extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(com: COM, state: TickState) {
           const handle = createForkHandle(
             engine,
             com,
@@ -496,7 +495,7 @@ describe('Fork/Spawn Helper Functions', () => {
 
     it('should not register handle when waitUntilComplete is false', async () => {
       class WaitHandler extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(com: COM, state: TickState) {
           const handle = createForkHandle(
             engine,
             com,
@@ -530,7 +529,7 @@ describe('Fork/Spawn Helper Functions', () => {
 
     it('should clean up handle when it completes', async () => {
       class WaitHandler extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(com: COM, state: TickState) {
           const handle = createForkHandle(
             engine,
             com,
@@ -560,7 +559,7 @@ describe('Fork/Spawn Helper Functions', () => {
       await new Promise(resolve => setTimeout(resolve, 200));
 
       // Handle should be cleaned up
-      const com = new ContextObjectModel();
+      const com = new COM();
       const waitHandles = getWaitHandles(com);
       expect(waitHandles.size).toBe(0);
     });
@@ -569,7 +568,7 @@ describe('Fork/Spawn Helper Functions', () => {
   describe('Real-World Usage Patterns', () => {
     it('should handle background processing with helpers', async () => {
       class BackgroundProcessor extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(com: COM, state: TickState) {
           // Start background fork
           const handle = createForkHandle(
             engine,
@@ -608,7 +607,7 @@ describe('Fork/Spawn Helper Functions', () => {
 
     it('should handle parallel processing with multiple forks', async () => {
       class ParallelProcessor extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(com: COM, state: TickState) {
           const handles: ExecutionHandle[] = [];
 
           // Create multiple parallel forks
@@ -649,7 +648,7 @@ describe('Fork/Spawn Helper Functions', () => {
 
     it('should handle conditional fork creation', async () => {
       class ConditionalFork extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(com: COM, state: TickState) {
           const shouldFork = com.getState<boolean>('shouldFork') ?? true;
 
           if (shouldFork) {

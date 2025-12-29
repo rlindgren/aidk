@@ -12,10 +12,9 @@ import { Fork, ForkComponent } from './fork';
 import { Model } from './model';
 import { Message, Timeline } from './primitives';
 import { Component } from '../../component/component';
-import { ContextObjectModel } from '../../com/object-model';
+import { COM } from '../../com/object-model';
 import { type TickState } from '../../component/component';
 import { type ExecutionHandle } from '../../engine/execution-types';
-import { createElement, Fragment } from '../jsx-runtime';
 
 describe('Fork Component', () => {
   let engine: ReturnType<typeof createEngine>;
@@ -29,7 +28,7 @@ describe('Fork Component', () => {
         capabilities: [],
       },
       executors: {
-        execute: async (input: ModelInput): Promise<ModelOutput> => {
+        execute: async (_input: ModelInput): Promise<ModelOutput> => {
           return {
             model: 'test-model',
             createdAt: new Date().toISOString(),
@@ -133,7 +132,7 @@ describe('Fork Component', () => {
       let fork: ForkComponent | undefined;
       
       class ForkAccessor extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(com: COM, _state: TickState) {
           // Access ref in a later tick to ensure Fork has mounted
           fork = com.getRef<ForkComponent>('myFork');
           return null;
@@ -167,7 +166,7 @@ describe('Fork Component', () => {
       let fork: ForkComponent | undefined;
       
       class ForkHandleAccessor extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(com: COM, _state: TickState) {
           fork = com.getRef<ForkComponent>('dataFork');
           forkHandle = fork?.getHandle();
           return null;
@@ -199,8 +198,8 @@ describe('Fork Component', () => {
 
     it('should clean up ref on unmount', async () => {
       class RefChecker extends Component {
-        render(com: ContextObjectModel, state: TickState) {
-          const refs = com.getRefs();
+        render(_com: COM, _state: TickState) {
+          // Checking refs cleanup - we just need to render
           return null;
         }
       }
@@ -232,7 +231,7 @@ describe('Fork Component', () => {
       let forkHandle: ExecutionHandle | undefined;
 
       class ForkWithHandler extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(com: COM, _state: TickState) {
           const fork = com.getRef<ForkComponent>('forkWithHandler');
           forkHandle = fork?.getHandle();
           return null;
@@ -312,7 +311,7 @@ describe('Fork Component', () => {
       let forkCompleted = false;
       
       class AfterFork extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           // This should only render after fork completes
           forkCompleted = true;
           return <Message role="system" content="After fork" />;
@@ -348,7 +347,7 @@ describe('Fork Component', () => {
       let afterForkRendered = false;
       
       class AfterFork extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           afterForkRendered = true;
           return null;
         }
@@ -441,7 +440,7 @@ describe('Fork Component', () => {
       let parentFork: ForkComponent | undefined;
 
       class NestedForkAccessor extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(com: COM, _state: TickState) {
           parentFork = com.getRef<ForkComponent>('parentFork');
           parentHandle = parentFork?.getHandle();
           return null;
@@ -481,7 +480,7 @@ describe('Fork Component', () => {
       let forkHandle: ExecutionHandle | undefined;
 
       class TickTracker extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(com: COM, _state: TickState) {
           tickCount++;
           
           const fork = com.getRef<ForkComponent>('persistentFork');
@@ -516,7 +515,7 @@ describe('Fork Component', () => {
   describe('Real-World Scenarios', () => {
     it('should handle parallel data processing forks', async () => {
       class DataProcessor extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return (
             <>
               {/* Process data in parallel forks */}
@@ -547,7 +546,7 @@ describe('Fork Component', () => {
 
     it('should handle sequential forks with results', async () => {
       class SequentialProcessor extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(com: COM, _state: TickState) {
           const fork1 = com.getRef<ForkComponent>('step1');
           const fork2 = com.getRef<ForkComponent>('step2');
           

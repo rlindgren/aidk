@@ -21,7 +21,7 @@ onTickStart(com, state) {
   }
 }
 
-async render(com: ContextObjectModel, state: TickState) {
+async render(com: COM, state: TickState) {
   const ctx = Context.get();  // User, auth, metadata—available everywhere
   const lastResponse = state.current?.timeline?.[0];
   const tokenCount = await estimateTokens(this.timeline());
@@ -75,7 +75,7 @@ class AdaptiveAgent extends Component {
     }
   }
 
-  render(com: ContextObjectModel, state: TickState) {
+  render(com: COM, state: TickState) {
     const responseQuality = analyzeResponse(state.current);
 
     // Change strategy based on what's happening
@@ -108,7 +108,7 @@ No passing context objects through every function. `Context.get()` returns the e
 
 ```tsx
 // In your agent
-render(com: ContextObjectModel, state: TickState) {
+render(com: COM, state: TickState) {
   const ctx = Context.get();
   return <>{ctx.user.isAdmin && <AdminTools />}</>;
 }
@@ -181,13 +181,13 @@ class Scratchpad extends Component {
   // Use comState for notes - persists across ticks
   private notes = comState<Note[]>("notes", []);
 
-  async onMount(com: ContextObjectModel) {
+  async onMount(com: COM) {
     const ctx = Context.get();
     const loaded = await loadNotes(ctx.metadata.threadId);
     this.notes.set(loaded);
   }
 
-  render(com: ContextObjectModel) {
+  render(com: COM) {
     const notes = this.notes();
 
     return (
@@ -229,7 +229,7 @@ onTickStart(com, state) {
   }
 }
 
-render(com: ContextObjectModel, state: TickState) {
+render(com: COM, state: TickState) {
   const user = Context.get().user;
   const products = this.cart();
 
@@ -351,7 +351,7 @@ onTickStart(com, state) {
   }
 }
 
-render(com: ContextObjectModel, state: TickState) {
+render(com: COM, state: TickState) {
   return (
     <>
       <AiSdkModel model={openai('gpt-4o')} />
@@ -382,7 +382,7 @@ See what's about to go to the model. React to it.
 
 ```tsx
 class ContextManager extends Component {
-  onAfterCompile(com: ContextObjectModel, compiled: CompiledStructure) {
+  onAfterCompile(com: COM, compiled: CompiledStructure) {
     const tokens = estimateTokens(compiled);
 
     if (tokens > 80000) {
@@ -456,7 +456,7 @@ AIDK bridges both. The same components render to users (via your frontend) and t
 ```tsx
 // This component serves both audiences
 class Scratchpad extends Component {
-  render(com: ContextObjectModel) {
+  render(com: COM) {
     const notes = com.getState<Note[]>("notes");
 
     // For the model: describe the notes in natural language
@@ -488,7 +488,7 @@ Your components don't build strings. They mutate a structured object that repres
 
 ```tsx
 // Components mutate the COM, like React components mutate the virtual DOM
-render(com: ContextObjectModel, state: TickState) {
+render(com: COM, state: TickState) {
   com.setState('processingStep', 3);           // State lives in the COM
 
   return (
@@ -559,7 +559,7 @@ Routing isn't configuration. It's rendering.
 class OrchestratorAgent extends Component {
   private detectedIntent = comState<string | null>("detectedIntent", null);
 
-  render(com: ContextObjectModel, state: TickState) {
+  render(com: COM, state: TickState) {
     const intent = this.detectedIntent();
 
     // Route by rendering the appropriate agent
@@ -591,7 +591,7 @@ class ResearchCoordinator extends Component {
   private sources = comState<any>("sources", null);
   private report = comState<any>("report", null);
 
-  render(com: ContextObjectModel, state: TickState) {
+  render(com: COM, state: TickState) {
     if (this.phase() === "gather") {
       return (
         <>
@@ -628,7 +628,7 @@ The same component works everywhere:
 ```tsx
 // A reusable context component
 class UserProfile extends Component {
-  render(com: ContextObjectModel) {
+  render(com: COM) {
     const user = Context.get().user;
     return (
       <Section id="user-profile" audience="model">
@@ -1089,7 +1089,7 @@ AIDK: your agent IS the code.
 
 ```tsx
 class CustomerServiceAgent extends Component {
-  render(com: ContextObjectModel, state: TickState) {
+  render(com: COM, state: TickState) {
     const ctx = Context.get();
 
     return (

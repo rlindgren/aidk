@@ -1,6 +1,6 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "globalDependencies": ["tsconfig.json"],
+  "globalDependencies": ["tsconfig.json", ".oxlintrc.json"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
@@ -13,7 +13,12 @@
       "inputs": ["src/**", "jest.config.*"]
     },
     "lint": {
-      "outputs": []
+      "outputs": [],
+      "inputs": ["src/**", "../../.oxlintrc.json"]
+    },
+    "format:check": {
+      "outputs": [],
+      "inputs": ["src/**"]
     },
     "typecheck": {
       "dependsOn": ["^build"],

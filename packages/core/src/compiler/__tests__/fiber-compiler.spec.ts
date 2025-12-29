@@ -3,7 +3,7 @@
  */
 
 import { FiberCompiler } from '../fiber-compiler';
-import { ContextObjectModel } from '../../com/object-model';
+import { COM } from '../../com/object-model';
 import type { TickState } from '../../component/component';
 import { Component } from '../../component/component';
 import { Section, Message, Timeline, Tool } from '../../jsx/components/primitives';
@@ -13,12 +13,12 @@ import { useState, useComState, useTickStart, useTickEnd, useEffect } from '../.
 import type { COMTimelineEntry } from '../../engine/engine-response';
 
 describe('FiberCompiler', () => {
-  let com: ContextObjectModel;
+  let com: COM;
   let compiler: FiberCompiler;
   let tickState: TickState;
 
   beforeEach(() => {
-    com = new ContextObjectModel();
+    com = new COM();
     compiler = new FiberCompiler(com);
     tickState = {
       tick: 1,
@@ -108,7 +108,7 @@ describe('FiberCompiler', () => {
 
     it('should handle non-rendering component', async () => {
       function StateManager() {
-        const data = useComState('data', []);
+        const _data = useComState('data', []);
         useTickStart(() => {});
         return null;
       }
@@ -262,10 +262,10 @@ describe('FiberCompiler', () => {
 
   describe('Compile Stabilization', () => {
     it('should compile until stable', async () => {
-      let compileCount = 0;
-      
+      let _compileCount = 0;
+
       function RecompileComponent() {
-        compileCount++;
+        _compileCount++;
         const [count, setCount] = useState(0);
         
         useEffect(() => {

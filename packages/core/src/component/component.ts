@@ -1,5 +1,5 @@
 import type { COMInput, COMOutput } from "../com/types";
-import { ContextObjectModel } from "../com/object-model";
+import { COM } from "../com/object-model";
 import type { JSX } from "../jsx/jsx-runtime";
 import type { StopReason } from "aidk-shared";
 import type { ExecutableTool } from "../tool/tool";
@@ -86,7 +86,7 @@ export interface RecoveryAction {
   /**
    * Optional modifications to make to the COM before continuing.
    */
-  modifications?: (com: ContextObjectModel) => void | Promise<void>;
+  modifications?: (com: COM) => void | Promise<void>;
 }
 
 export interface TickState {
@@ -178,35 +178,35 @@ export interface EngineComponent {
    * Use this to register static resources like tools.
    * @param com The persistent Context Object Model for this execution.
    */
-  onMount?: (com: ContextObjectModel) => Promise<void> | void;
+  onMount?: (com: COM) => Promise<void> | void;
 
   /**
    * Called when the component is unmounted from the engine.
    * @param com The persistent Context Object Model for this execution.
    */
-  onUnmount?: (com: ContextObjectModel) => Promise<void> | void;
+  onUnmount?: (com: COM) => Promise<void> | void;
 
   /**
    * Called once before the first tick, after the COM is created.
    * Use this for initialization that needs to happen before execution starts.
    * @param com The persistent Context Object Model for this execution.
    */
-  onStart?: (com: ContextObjectModel) => Promise<void> | void;
+  onStart?: (com: COM) => Promise<void> | void;
 
   onTickStart?: (
-    com: ContextObjectModel,
+    com: COM,
     state: TickState,
   ) => Promise<void> | void;
 
   /**
    * Declaratively render context for the current tick.
-   * Components should interact with the ContextObjectModel to compose the context.
+   * Components should interact with the COM to compose the context.
    * OR return a Virtual DOM tree (JSX.Element) to be rendered by the Engine.
    * @param com The persistent Context Object Model for this execution.
    * @param state Current tick state including input and previous render.
    */
   render?: (
-    com: ContextObjectModel,
+    com: COM,
     state: TickState,
   ) => Promise<void | JSX.Element | null> | void | JSX.Element | null;
 
@@ -224,7 +224,7 @@ export interface EngineComponent {
    * @param ctx Context containing iteration metadata.
    */
   onAfterCompile?: (
-    com: ContextObjectModel,
+    com: COM,
     compiled: CompiledStructure,
     state: TickState,
     ctx: AfterCompileContext,
@@ -239,7 +239,7 @@ export interface EngineComponent {
    * @param state Current tick state including previous and current.
    */
   onTickEnd?: (
-    com: ContextObjectModel,
+    com: COM,
     state: TickState,
   ) => Promise<void> | void;
 
@@ -255,7 +255,7 @@ export interface EngineComponent {
    * @param finalState The final COMInput state after all ticks.
    */
   onComplete?: (
-    com: ContextObjectModel,
+    com: COM,
     finalState: COMInput,
   ) => Promise<void> | void;
 
@@ -289,7 +289,7 @@ export interface EngineComponent {
    * ```
    */
   onMessage?: (
-    com: ContextObjectModel,
+    com: COM,
     message: ExecutionMessage,
     state: TickState,
   ) => Promise<void> | void;
@@ -303,7 +303,7 @@ export interface EngineComponent {
    * @returns RecoveryAction to indicate whether to continue execution, or void/undefined to let error propagate
    */
   onError?: (
-    com: ContextObjectModel,
+    com: COM,
     state: TickState,
   ) => Promise<RecoveryAction | void> | RecoveryAction | void;
 }
@@ -317,7 +317,7 @@ export type PureFunctionComponent<P = any> =
   | ((props: P) => JSX.Element | null)
   | ((
       props: P,
-      com: ContextObjectModel,
+      com: COM,
       state: TickState,
     ) => JSX.Element | null);
 // A ComponentDefinition can be an instance, a class, a factory, a pure function, or a Virtual Element
@@ -391,69 +391,69 @@ export abstract class Component<P = {}, S = {}> implements EngineComponent {
   // Note: Signal binding and ref handling are now done automatically by the compiler.
   // Components can override onMount/onUnmount for custom logic, but don't need to
   // call super.onMount()/super.onUnmount() for basic signal/ref handling.
-  onMount(com: ContextObjectModel) {
+  onMount(_com: COM) {
     // Override for custom mount logic
     // Signal binding and ref handling are handled automatically by the compiler
   }
 
-  onUnmount(com: ContextObjectModel) {
+  onUnmount(_com: COM) {
     // Override for custom unmount logic
     // Signal cleanup and ref removal are handled automatically by the compiler
   }
-  onStart(com: ContextObjectModel) {}
-  onTickStart(com: ContextObjectModel, state: TickState) {}
+  onStart(_com: COM) {}
+  onTickStart(_com: COM, _state: TickState) {}
   onAfterCompile(
-    com: ContextObjectModel,
-    compiled: CompiledStructure,
-    state: TickState,
-    ctx: AfterCompileContext,
+    _com: COM,
+    _compiled: CompiledStructure,
+    _state: TickState,
+    _ctx: AfterCompileContext,
   ) {}
-  onTickEnd(com: ContextObjectModel, state: TickState) {}
-  onComplete(com: ContextObjectModel, finalState: COMInput): void {}
-  onError(com: ContextObjectModel, state: TickState): RecoveryAction | void {
+  onTickEnd(_com: COM, _state: TickState) {}
+  onComplete(_com: COM, _finalState: COMInput): void {}
+  onError(_com: COM, _state: TickState): RecoveryAction | void {
     // Default: let error propagate (no recovery)
     return undefined;
   }
 
   onMessage(
-    com: ContextObjectModel,
-    message: ExecutionMessage,
-    state: TickState,
+    _com: COM,
+    _message: ExecutionMessage,
+    _state: TickState,
   ): void | Promise<void> {
     // Override to handle messages sent to the execution
   }
 
   // Render is optional - components can just manage state or provide side effects
   render(
-    com: ContextObjectModel,
-    state: TickState,
+    _com: COM,
+    _state: TickState,
   ): Promise<void | JSX.Element | null> | void | JSX.Element | null {
     return null;
   }
 }
 
 export interface OnMount {
-  onMount: (com: ContextObjectModel) => Promise<void> | void;
+  onMount: (com: COM) => Promise<void> | void;
 }
 
 export interface OnUnmount {
-  onUnmount: (com: ContextObjectModel) => Promise<void> | void;
+  onUnmount: (com: COM) => Promise<void> | void;
 }
 
 export interface OnStart {
-  onStart: (com: ContextObjectModel) => Promise<void> | void;
+  onStart: (com: COM) => Promise<void> | void;
 }
 
 export interface OnTickStart {
   onTickStart: (
-    com: ContextObjectModel,
+    com: COM,
     state: TickState,
   ) => Promise<void> | void;
 }
 
 export interface OnAfterCompile {
   onAfterCompile: (
-    com: ContextObjectModel,
+    com: COM,
     compiled: CompiledStructure,
     state: TickState,
     ctx: AfterCompileContext,
@@ -462,28 +462,28 @@ export interface OnAfterCompile {
 
 export interface OnTickEnd {
   onTickEnd: (
-    com: ContextObjectModel,
+    com: COM,
     state: TickState,
   ) => Promise<void> | void;
 }
 
 export interface OnComplete {
   onComplete: (
-    com: ContextObjectModel,
+    com: COM,
     finalState: COMInput,
   ) => Promise<void> | void;
 }
 
 export interface OnError {
   onError: (
-    com: ContextObjectModel,
+    com: COM,
     state: TickState,
   ) => Promise<RecoveryAction | void> | RecoveryAction | void;
 }
 
 export interface OnMessage {
   onMessage: (
-    com: ContextObjectModel,
+    com: COM,
     message: ExecutionMessage,
     state: TickState,
   ) => Promise<void> | void;
@@ -491,7 +491,7 @@ export interface OnMessage {
 
 export interface Render {
   render: (
-    com: ContextObjectModel,
+    com: COM,
     state: TickState,
   ) => Promise<void | JSX.Element | null> | void | JSX.Element | null;
 }

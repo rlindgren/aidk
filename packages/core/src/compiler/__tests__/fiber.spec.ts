@@ -15,8 +15,6 @@ import {
   fiberToDebugString,
   fiberTreeToDebugString,
 } from '../fiber';
-import type { FiberNode } from '../types';
-import { Fragment } from '../../jsx/jsx-runtime';
 
 describe('Fiber Utilities', () => {
   describe('createFiber', () => {

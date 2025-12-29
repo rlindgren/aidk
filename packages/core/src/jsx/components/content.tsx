@@ -1,5 +1,5 @@
 import { createElement, type JSX } from '../jsx-runtime';
-import type { ContentBlock as ContentBlockType, TextBlock, ImageBlock, DocumentBlock, AudioBlock, VideoBlock, CodeBlock, JsonBlock, MediaSource } from 'aidk-shared';
+import type { ContentBlock as ContentBlockType, MediaSource } from 'aidk-shared';
 import { CodeLanguage } from 'aidk-shared';
 import type { ComponentBaseProps } from '../jsx-types';
 

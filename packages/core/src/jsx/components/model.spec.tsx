@@ -2,7 +2,7 @@ import { createEngine } from '../../engine/factory';
 import { createModel, type ModelOutput } from '../../model/model';
 import type { StreamChunk } from 'aidk-shared';
 import { Model, ModelComponent } from './model';
-import { ContextObjectModel } from '../../com/object-model';
+import { COM } from '../../com/object-model';
 import { createElement, Fragment } from '../jsx-runtime';
 import { Message } from './primitives';
 import { modelRegistry } from '../../utils/registry';
@@ -35,7 +35,7 @@ describe('Model Component', () => {
       }
     },
     transformers: {
-      processStream: async (chunks: StreamChunk[]) => ({
+      processStream: async (_chunks: StreamChunk[]) => ({
         model: 'mock-model-1',
         createdAt: new Date().toISOString(),
         message: { role: 'assistant', content: [{ type: 'text', text: 'Response from model 1' }] },
@@ -73,7 +73,7 @@ describe('Model Component', () => {
       }
     },
     transformers: {
-      processStream: async (chunks: StreamChunk[]) => ({
+      processStream: async (_chunks: StreamChunk[]) => ({
         model: 'mock-model-2',
         createdAt: new Date().toISOString(),
         message: { role: 'assistant', content: [{ type: 'text', text: 'Response from model 2' }] },
@@ -92,7 +92,7 @@ describe('Model Component', () => {
 
   describe('ModelComponent', () => {
     it('should set model on COM when mounted', async () => {
-      const com = new ContextObjectModel();
+      const com = new COM();
 
       const component = new ModelComponent({ model: mockModel1 });
       await component.onMount(com);
@@ -101,7 +101,7 @@ describe('Model Component', () => {
     });
 
     it('should clear model on COM when unmounted', async () => {
-      const com = new ContextObjectModel();
+      const com = new COM();
 
       const component = new ModelComponent({ model: mockModel1 });
       await component.onMount(com);
@@ -112,7 +112,7 @@ describe('Model Component', () => {
     });
 
     it('should call onMount callback if provided', async () => {
-      const com = new ContextObjectModel();
+      const com = new COM();
 
       const onMountSpy = jest.fn();
       const component = new ModelComponent({
@@ -127,7 +127,7 @@ describe('Model Component', () => {
     });
 
     it('should call onUnmount callback if provided', async () => {
-      const com = new ContextObjectModel();
+      const com = new COM();
 
       const onUnmountSpy = jest.fn();
       const component = new ModelComponent({
@@ -143,7 +143,7 @@ describe('Model Component', () => {
     });
 
     it('should not render anything (configuration-only)', () => {
-      const com = new ContextObjectModel();
+      const com = new COM();
       const component = new ModelComponent({
         model: mockModel1
       });
@@ -328,9 +328,9 @@ describe('Model Component', () => {
     });
   });
 
-  describe('ContextObjectModel model management', () => {
+  describe('COM model management', () => {
     it('should store and retrieve model', () => {
-      const com = new ContextObjectModel();
+      const com = new COM();
 
       com.setModel(mockModel1);
       expect(com.getModel()).toBe(mockModel1);
@@ -343,7 +343,7 @@ describe('Model Component', () => {
     });
 
     it('should allow Model component to notify Engine when model is set', async () => {
-      const com = new ContextObjectModel();
+      const com = new COM();
 
       const setModelSpy = jest.spyOn(com, 'setModel');
       

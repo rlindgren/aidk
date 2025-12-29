@@ -4,12 +4,9 @@ import {
   type ExecutionType,
   type ExecutionMetrics,
   type ExecutionTreeNode,
-  type ExecutionState,
-  generatePid,
   ExecutionStatuses,
   ExecutionTypes,
 } from './execution-types';
-import type { COMInput } from '../com/types';
 
 /**
  * Execution context stored in the graph
@@ -153,7 +150,7 @@ export class ExecutionGraph {
   getOrphanedForks(): ExecutionHandle[] {
     const orphaned: ExecutionHandle[] = [];
     
-    for (const [pid, context] of this.executions.entries()) {
+    for (const [_pid, context] of this.executions.entries()) {
       // Skip root executions
       if (context.type === 'root') {
         continue;

@@ -11,18 +11,18 @@
 import { useOnMessage, setRenderContext } from "../../state/hooks";
 import type { RenderContext } from "../types";
 import { createFiber } from "../fiber";
-import { ContextObjectModel } from "../../com/object-model";
+import { COM } from "../../com/object-model";
 import type { TickState } from "../../component/component";
 import type { ExecutionMessage } from "../../engine/execution-types";
 
 describe("onMessage Hook", () => {
-  let com: ContextObjectModel;
+  let com: COM;
   let tickState: TickState;
   let renderContext: RenderContext;
   let fiber: ReturnType<typeof createFiber>;
 
   beforeEach(() => {
-    com = new ContextObjectModel();
+    com = new COM();
     tickState = {
       tick: 1,
       stop: jest.fn(),
@@ -80,7 +80,7 @@ describe("onMessage Hook", () => {
     });
   });
 
-  describe("ContextObjectModel message queue", () => {
+  describe("COM message queue", () => {
     it("should queue messages via queueMessage()", () => {
       const message: ExecutionMessage = {
         id: "msg_1",
@@ -151,7 +151,7 @@ describe("onMessage Hook", () => {
     });
   });
 
-  describe("ContextObjectModel abort control", () => {
+  describe("COM abort control", () => {
     it("should set shouldAbort via abort()", () => {
       expect(com.shouldAbort).toBe(false);
 
@@ -198,10 +198,10 @@ describe("TickState.queuedMessages", () => {
 });
 
 describe("Message queue timing", () => {
-  let com: ContextObjectModel;
+  let com: COM;
 
   beforeEach(() => {
-    com = new ContextObjectModel();
+    com = new COM();
   });
 
   it("should make messages available in the NEXT tick after they arrive", () => {

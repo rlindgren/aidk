@@ -1,13 +1,13 @@
 import { createEngine } from './factory';
-import { type EngineComponent, Component } from '../component/component';
-import { ContextObjectModel } from '../com/object-model';
-import { createElement, Fragment } from '../jsx/jsx-runtime';
+import { Component } from '../component/component';
+import { COM } from '../com/object-model';
+import { Fragment } from '../jsx/jsx-runtime';
 import { Section, Message, Tool, Model } from '../jsx/components/primitives';
 import { Text, Image, Code } from '../jsx/components/content';
 import { createTool } from '../tool/tool';
 import { createModel, type ModelInput, type ModelOutput } from '../model/model';
 import { z } from 'zod';
-import { StopReason, type StreamChunk } from 'aidk-shared';
+import { type StreamChunk } from 'aidk-shared';
 import type { COMInput } from '../com/types';
 import { fromEngineState, toEngineState } from '../model/utils/language-model';
 import { signal } from '../state/signal';
@@ -38,7 +38,7 @@ const toEngineStateMock = jest.fn(async (output: any) => ({
   usage: output.usage
 }));
 
-const processStreamMock = jest.fn(async (chunks: any[]) => {
+const processStreamMock = jest.fn(async (_chunks: any[]) => {
   // Default aggregation for tests
   return {
     model: 'mock-model',
@@ -193,7 +193,7 @@ describe('Engine React Architecture', () => {
 
   it('should support legacy imperative components wrapped automatically', async () => {
     class ImperativeComp {
-      render(com: ContextObjectModel) {
+      render(com: COM) {
         com.addSection({ id: 'imperative', content: 'Done' });
       }
     }
@@ -273,7 +273,7 @@ describe('Engine React Architecture', () => {
   });
 
   it('should support Message with Content component primitives', async () => {
-    const Agent = (props: any) => {
+    const Agent = (_props: any) => {
       return <Fragment>
         <Message role="user">
           <Text>Hello</Text>
@@ -463,7 +463,7 @@ describe('Engine React Architecture', () => {
         },
       },
       transformers: {
-        processStream: async (chunks: StreamChunk[]) => ({
+        processStream: async (_chunks: StreamChunk[]) => ({
           model: 'fast-model',
           createdAt: new Date().toISOString(),
           message: { role: 'assistant', content: [{ type: 'text', text: 'Fast response' }] },
@@ -498,7 +498,7 @@ describe('Engine React Architecture', () => {
         },
       },
       transformers: {
-        processStream: async (chunks: StreamChunk[]) => ({
+        processStream: async (_chunks: StreamChunk[]) => ({
           model: 'accurate-model',
           createdAt: new Date().toISOString(),
           message: { role: 'assistant', content: [{ type: 'text', text: 'Accurate response' }] },

@@ -31,6 +31,8 @@
     "build": "tsc -p tsconfig.build.json",
     "test": "jest",
     "typecheck": "tsc -p tsconfig.build.json --noEmit",
+    "lint": "oxlint src/",
+    "format:check": "oxfmt --check src/",
     "clean": "rm -rf dist",
     "prepublishOnly": "pnpm build",
     "dev": "tsc --watch"

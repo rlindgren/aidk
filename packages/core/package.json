@@ -197,6 +197,8 @@
     "prepublishOnly": "pnpm build",
     "test": "jest",
     "typecheck": "tsc -p tsconfig.build.json --noEmit",
+    "lint": "oxlint src/",
+    "format:check": "oxfmt --check src/",
     "clean": "rm -rf dist",
     "dev": "tsc --watch"
   },

@@ -329,7 +329,7 @@ export function computed<T>(computation: () => T, options?: SignalOptions<T>): C
   let isDirty = true;
   let isDisposed = false;
   let isComputing = false;
-  const equal = options?.equal ?? Object.is;
+  const _equal = options?.equal ?? Object.is;
   
   // Subscriptions to our dependencies (signals we read)
   const dependencySubscriptions = new Set<Subscription>();

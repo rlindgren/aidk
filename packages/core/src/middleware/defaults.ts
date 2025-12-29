@@ -134,8 +134,8 @@ export const errorMiddleware: Middleware = async (args, envelope, next) => {
     const errorType = classifyError(error);
     const recoverable = isRecoverableError(error);
     
-    // Create EngineError with context
-    const engineError: EngineError = {
+    // Create EngineError with context (attached to normalized error for downstream handlers)
+    const _engineError: EngineError = {
       error: normalizedError,
       phase: 'unknown', // Middleware doesn't know the phase - will be set by engine if needed
       recoverable,
@@ -148,10 +148,9 @@ export const errorMiddleware: Middleware = async (args, envelope, next) => {
         // Add any other relevant context
       },
     };
-    
-    // Attach EngineError to the error for downstream handlers
-    // This allows error handlers to access the normalized error
-    // (normalizedError as any).engineError = engineError;
+
+    // Note: EngineError is created for future use when error handlers access it
+    // (normalizedError as any).engineError = _engineError;
     
     // Record error in telemetry
     Telemetry.recordError(normalizedError);

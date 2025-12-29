@@ -1,7 +1,5 @@
 import { createEngine } from 'aidk';
 import { OpenAIModel } from './openai-model';
-import { createElement } from 'aidk/jsx-runtime';
-import { Message } from 'aidk/jsx/components/primitives';
 
 describe('OpenAIModel Component', () => {
   describe('OpenAIModel factory function', () => {
@@ -66,7 +64,7 @@ describe('OpenAIModel Component', () => {
 
   describe('Integration with Engine', () => {
     it('should create element compatible with Engine', async () => {
-      const engine = createEngine({});
+      const _engine = createEngine({});
 
       const element = OpenAIModel({
         apiKey: 'test-key',

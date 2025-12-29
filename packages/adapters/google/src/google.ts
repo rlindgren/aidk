@@ -47,7 +47,7 @@ export function createGoogleModel(
         { stream: true, toolCalls: true, provider: "google" },
         {
           // Google models work best with markdown and user role
-          messageTransformation: (modelId: string, provider?: string) => ({
+          messageTransformation: (_modelId: string, _provider?: string) => ({
             preferredRenderer: "markdown",
             roleMapping: {
               event: "user",

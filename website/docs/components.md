@@ -9,7 +9,7 @@ AIDK supports both class-based and functional components. Both can be nested, co
 Class components have full access to lifecycle hooks and are the preferred style:
 
 ```tsx
-import { Component, ContextObjectModel, TickState, signal, comState } from 'aidk';
+import { Component, COM, TickState, signal, comState } from 'aidk';
 
 class MyAgent extends Component {
   // Local state (component-only)
@@ -19,20 +19,20 @@ class MyAgent extends Component {
   private timeline = comState<any[]>('timeline', []);
   
   // Lifecycle: Called when component mounts
-  async onMount(com: ContextObjectModel) {
+  async onMount(com: COM) {
     console.log('Component mounted');
     await this.loadInitialState();
   }
   
   // Lifecycle: Called before each tick
-  onTickStart(com: ContextObjectModel, state: TickState) {
+  onTickStart(com: COM, state: TickState) {
     if (state.current?.timeline) {
       this.timeline.update(t => [...t, ...state.current.timeline]);
     }
   }
   
   // Required: Render method
-  render(com: ContextObjectModel, state: TickState) {
+  render(com: COM, state: TickState) {
     return (
       <>
         <AiSdkModel model={openai('gpt-4o')} />
@@ -46,7 +46,7 @@ class MyAgent extends Component {
   }
   
   // Lifecycle: Called when component unmounts
-  onUnmount(com: ContextObjectModel) {
+  onUnmount(com: COM) {
     console.log('Component unmounting');
   }
 }
@@ -169,7 +169,7 @@ function FormattedMessage({ message }: { message: Message }) {
 class ChatAgent extends Component {
   private timeline = comState<any[]>('timeline', []);
   
-  render(com: ContextObjectModel, state: TickState) {
+  render(com: COM, state: TickState) {
     return (
       <>
         <AiSdkModel model={openai('gpt-4o')} />
@@ -192,7 +192,7 @@ class ChatAgent extends Component {
 
 ```tsx
 class UserContext extends Component {
-  render(com: ContextObjectModel) {
+  render(com: COM) {
     const ctx = Context.get();
     return (
       <Section audience="model">
@@ -204,7 +204,7 @@ class UserContext extends Component {
 }
 
 class MainAgent extends Component {
-  render(com: ContextObjectModel, state: TickState) {
+  render(com: COM, state: TickState) {
     return (
       <>
         <AiSdkModel model={openai('gpt-4o')} />
@@ -287,47 +287,47 @@ Class components use lifecycle methods:
 
 ```tsx
 class LifecycleExample extends Component {
-  async onMount(com: ContextObjectModel) {
+  async onMount(com: COM) {
     // Called once when component mounts
     console.log('Mounted');
   }
   
-  async onStart(com: ContextObjectModel) {
+  async onStart(com: COM) {
     // Called before first tick
     console.log('Starting');
   }
   
-  onTickStart(com: ContextObjectModel, state: TickState) {
+  onTickStart(com: COM, state: TickState) {
     // Called before each render
     console.log(`Tick ${state.tick} starting`);
   }
   
-  render(com: ContextObjectModel, state: TickState) {
+  render(com: COM, state: TickState) {
     // Called every tick to build context
     return <>{/* ... */}</>;
   }
   
-  onAfterCompile(com: ContextObjectModel, compiled: any, state: TickState) {
+  onAfterCompile(com: COM, compiled: any, state: TickState) {
     // Called after compilation, before model call
     console.log('Context compiled');
   }
   
-  onTickEnd(com: ContextObjectModel, state: TickState) {
+  onTickEnd(com: COM, state: TickState) {
     // Called after model responds
     console.log(`Tick ${state.tick} complete`);
   }
   
-  onComplete(com: ContextObjectModel, finalState: any) {
+  onComplete(com: COM, finalState: any) {
     // Called when execution finishes
     console.log('Complete');
   }
   
-  onUnmount(com: ContextObjectModel) {
+  onUnmount(com: COM) {
     // Called when component is removed
     console.log('Unmounting');
   }
   
-  onError(com: ContextObjectModel, error: Error, state: TickState) {
+  onError(com: COM, error: Error, state: TickState) {
     // Called on errors
     console.error('Error:', error);
   }
@@ -420,7 +420,7 @@ interface AgentProps {
 }
 
 class ConfigurableAgent extends Component<AgentProps> {
-  render(com: ContextObjectModel, state: TickState) {
+  render(com: COM, state: TickState) {
     const { model = 'gpt-4o', temperature = 0.7 } = this.props;
     
     return (

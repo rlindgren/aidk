@@ -301,7 +301,7 @@ describe('ChannelSession', () => {
   describe('removeChannel', () => {
     it('should remove and destroy channel', () => {
       const channel = session.getChannel('test-channel');
-      const unsubscribe = channel.subscribe(() => {});
+      const _unsubscribe = channel.subscribe(() => {});
 
       expect(session.channels.has('test-channel')).toBe(true);
       expect(channel.getSubscriberCount()).toBe(1);

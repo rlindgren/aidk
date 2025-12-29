@@ -19,6 +19,9 @@ Thumbs.db
 *.swo
 *~
 
+# Claude AI (local settings only)
+.claude/*.local.json
+
 # Repo
 .turbo/
 dist/

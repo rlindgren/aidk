@@ -6,7 +6,6 @@
  */
 
 import { createEngine } from './factory';
-import type { EngineConfig } from './engine';
 import type { ProcedureEnvelope } from 'aidk-kernel';
 import { Context } from '../context';
 import { createModel, type ModelInput, type ModelOutput } from '../model/model';
@@ -17,7 +16,7 @@ import { StopReason, type StreamChunk } from 'aidk-shared';
 import { Component } from '../component/component';
 import { Model } from '../jsx/components/primitives';
 import { Message } from '../jsx/components/primitives';
-import { createElement, Fragment } from '../jsx/jsx-runtime';
+import { createElement } from '../jsx/jsx-runtime';
 import { type EngineInput } from '../com/types';
 import { fromEngineState, toEngineState } from '../model/utils/language-model';
 import type { ChannelServiceConfig, ChannelAdapter, ChannelTransport } from '../channels/service';
@@ -31,7 +30,7 @@ describe('Engine v2', () => {
       capabilities: []
     },
     executors: {
-      execute: async (input: ModelInput) => ({
+      execute: async (_input: ModelInput) => ({
         model: 'mock-model',
         createdAt: new Date().toISOString(),
         message: { role: 'assistant', content: [{ type: 'text', text: 'Hello' }] },
@@ -39,7 +38,7 @@ describe('Engine v2', () => {
         stopReason: 'stop',
         raw: {}
       } as ModelOutput),
-      executeStream: async function* (input: ModelInput) {
+      executeStream: async function* (_input: ModelInput) {
         yield {
           type: 'content_delta',
           delta: 'Hello',
@@ -263,7 +262,7 @@ describe('Engine v2', () => {
           capabilities: []
         },
         executors: {
-          execute: async (input: ModelInput) => ({
+          execute: async (_input: ModelInput) => ({
             model: 'tool-call-model',
             createdAt: new Date().toISOString(),
             message: { role: 'assistant', content: [{ type: 'text', text: 'Calling tool' }] },
@@ -276,7 +275,7 @@ describe('Engine v2', () => {
             stopReason: StopReason.TOOL_USE,
             raw: {}
           } as ModelOutput),
-          executeStream: async function* (input: ModelInput) {
+          executeStream: async function* (_input: ModelInput) {
             yield {
               type: 'content_delta',
               delta: '',
@@ -341,7 +340,7 @@ describe('Engine v2', () => {
           capabilities: []
         },
         executors: {
-          execute: async (input: ModelInput) => ({
+          execute: async (_input: ModelInput) => ({
             model: 'tool-call-model',
             createdAt: new Date().toISOString(),
             message: { role: 'assistant', content: [] },
@@ -354,7 +353,7 @@ describe('Engine v2', () => {
             stopReason: StopReason.TOOL_USE,
             raw: {}
           } as ModelOutput),
-          executeStream: async function* (input: ModelInput) {
+          executeStream: async function* (_input: ModelInput) {
             yield {
               type: 'content_delta',
               delta: '',
@@ -537,7 +536,7 @@ describe('Engine v2', () => {
     it('should pass EngineContext options via .withContext()', async () => {
       const metadataAgent: EngineComponent = {
         name: 'metadata-agent',
-        render: (com, state) => {
+        render: (com, _state) => {
           // Access context from within the procedure
           const ctx = Context.tryGet();
           if (ctx?.metadata?.['userId']) {
@@ -670,7 +669,7 @@ describe('Engine v2', () => {
         capabilities: []
       },
       executors: {
-        execute: async (input: ModelInput) => ({
+        execute: async (_input: ModelInput) => ({
           model: 'mock-model-2',
           createdAt: new Date().toISOString(),
           message: { role: 'assistant', content: [{ type: 'text', text: 'Response from model 2' }] },
@@ -678,7 +677,7 @@ describe('Engine v2', () => {
           stopReason: 'stop',
           raw: {}
         } as ModelOutput),
-        executeStream: async function* (input: ModelInput) {
+        executeStream: async function* (_input: ModelInput) {
           yield {
             type: 'content_delta',
             delta: 'Response from model 2',
@@ -689,7 +688,7 @@ describe('Engine v2', () => {
         }
       },
       transformers: {
-        processStream: async (chunks: StreamChunk[]) => ({
+        processStream: async (_chunks: StreamChunk[]) => ({
           model: 'mock-model-2',
           createdAt: new Date().toISOString(),
           message: { role: 'assistant', content: [{ type: 'text', text: 'Response from model 2' }] },

@@ -14,12 +14,10 @@ import { STOP_REASON_MAP } from "../types";
 import { StopReason } from "aidk";
 import type {
   ContentBlock,
-  TextBlock,
   ImageBlock,
   ToolUseBlock,
   ToolResultBlock,
 } from "aidk/content";
-import type { GoogleAdapterConfig } from "../types";
 
 // =============================================================================
 // Stop Reason Mapping

@@ -3,7 +3,7 @@ import { Text, Image, Document, Audio, Video, Code, Json } from '../jsx/componen
 import { H1, H2, H3, Header, Paragraph, Table, List } from '../jsx/components/semantic';
 import { UserAction, SystemEvent, StateChange } from '../jsx/components/messages';
 import { type JSX } from '../jsx/jsx-runtime';
-import { ContentRenderer, type SemanticContentBlock, type SemanticNode } from '../renderers';
+import { ContentRenderer, type SemanticContentBlock } from '../renderers';
 import { extractSemanticNodeFromElement, extractTextFromElement, extractTableStructure, extractListStructure } from './extractors';
 
 export type ContentBlockMapper = (element: JSX.Element, currentRenderer?: ContentRenderer) => SemanticContentBlock | null;

@@ -1,8 +1,8 @@
 {
-  "name": "aidk-backend-example",
+  "name": "aidk-express-example",
   "version": "0.0.0",
   "private": true,
-  "description": "Example backend using AIDK with Express",
+  "description": "Example express using AIDK with Express",
   "type": "module",
   "scripts": {
     "dev": "vite-node --watch src/server.ts",

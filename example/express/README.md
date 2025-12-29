@@ -1,4 +1,4 @@
-# aidk Example Backend
+# aidk Example Express Backend
 
 Express.js backend demonstrating the aidk Engine with:
 - Agent execution via REST API

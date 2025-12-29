@@ -5,9 +5,9 @@
   "description": "Example applications using AIDK",
   "packageManager": "pnpm@10.25.0",
   "scripts": {
-    "dev:backend": "pnpm --filter aidk-backend-example dev",
-    "dev:frontend-react": "pnpm --filter aidk-frontend-react-example dev",
-    "dev:frontend-angular": "pnpm --filter aidk-frontend-angular-example dev",
+    "dev:express": "pnpm --filter aidk-express-example dev",
+    "dev:react": "pnpm --filter aidk-react-example dev",
+    "dev:angular": "pnpm --filter aidk-angular-example dev",
     "build": "turbo build",
     "typecheck": "turbo typecheck",
     "clean": "turbo clean",

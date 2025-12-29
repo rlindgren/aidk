@@ -1,6 +1,6 @@
 import type { JSX } from "../jsx/jsx-runtime";
 import {
-  ContextObjectModel,
+  COM,
   type COMTickStatus,
   type COMTickDecision,
 } from "../com/object-model";
@@ -102,13 +102,13 @@ export interface CompileJSXServiceConfig {
    * Function to get model instance for renderer resolution.
    * If provided, will resolve preferred renderer from model capabilities.
    */
-  modelGetter?: (com: ContextObjectModel) => ModelInstance | undefined;
+  modelGetter?: (com: COM) => ModelInstance | undefined;
 
   /**
    * Process methods for COM (fork/spawn support).
    * Required for components that use fork/spawn.
    */
-  processMethods?: ContextObjectModel["process"];
+  processMethods?: COM["process"];
 
   /**
    * Existing hook registries to use (instead of creating new ones).
@@ -174,9 +174,9 @@ export interface CompileJSXResult {
   compiled: CompiledStructure;
 
   /**
-   * The ContextObjectModel instance used for compilation.
+   * The COM instance used for compilation.
    */
-  com: ContextObjectModel;
+  com: COM;
 
   /**
    * The StructureRenderer instance used for formatting.
@@ -446,7 +446,7 @@ export class CompileSession {
 
   constructor(
     private readonly service: CompileJSXService,
-    private readonly _com: ContextObjectModel,
+    private readonly _com: COM,
     private readonly compiler: FiberCompiler,
     private readonly structureRenderer: StructureRenderer,
     private readonly rootElement: JSX.Element,
@@ -494,7 +494,7 @@ export class CompileSession {
   /**
    * The COM instance (for Engine access if needed).
    */
-  get com(): ContextObjectModel {
+  get com(): COM {
     return this._com;
   }
 
@@ -1309,7 +1309,7 @@ export class CompileJSXService {
    * Register tools with COM.
    * Called during setup and after COM.clear() for multi-tick scenarios.
    */
-  registerTools(com: ContextObjectModel): void {
+  registerTools(com: COM): void {
     for (const tool of this.configTools) {
       com.addTool(tool);
     }
@@ -1318,7 +1318,7 @@ export class CompileJSXService {
   /**
    * Initialize MCP servers and discover their tools.
    */
-  async registerMCPTools(com: ContextObjectModel): Promise<void> {
+  async registerMCPTools(com: COM): Promise<void> {
     if (!this.config.mcpServers || !this.mcpService) {
       return;
     }
@@ -1373,12 +1373,12 @@ export class CompileJSXService {
     rootElement: JSX.Element,
     handle?: ExecutionHandle,
   ): Promise<{
-    com: ContextObjectModel;
+    com: COM;
     compiler: FiberCompiler;
     structureRenderer: StructureRenderer;
   }> {
     // Create COM with proper setup
-    const com = new ContextObjectModel(
+    const com = new COM(
       {
         metadata: input.metadata || {},
         modelOptions: input.modelOptions || undefined,
@@ -1537,7 +1537,7 @@ export class CompileJSXService {
    * @returns TickState ready for compilation
    */
   prepareTickState(
-    com: ContextObjectModel,
+    com: COM,
     tick: number,
     previous?: COMInput,
     current?: COMOutput,
@@ -1575,7 +1575,7 @@ export class CompileJSXService {
    *
    * @param com COM instance to clear
    */
-  clearAndReRegisterTools(com: ContextObjectModel): void {
+  clearAndReRegisterTools(com: COM): void {
     // Clear ephemeral state (timeline, sections) from previous tick
     com.clear();
 
@@ -1613,7 +1613,7 @@ export class CompileJSXService {
    * @returns Final compiled structure (possibly recompiled) and metadata
    */
   async waitForForksAndRecompile(
-    com: ContextObjectModel,
+    com: COM,
     compiler: FiberCompiler,
     rootElement: JSX.Element,
     tickState: TickState,
@@ -1937,7 +1937,7 @@ export class CompileJSXService {
 
     // Wait for forks/spawns to complete and re-compile if needed
     // This happens BEFORE applying structures so fork results are included
-    const { compiled: finalCompiled, recompiled } =
+    const { compiled: finalCompiled, recompiled: _recompiled } =
       await this.waitForForksAndRecompile(
         com,
         compiler,
@@ -2012,7 +2012,7 @@ export class CompileJSXService {
    * @returns Compilation result with formatted input and tick control
    */
   async compileTick(
-    com: ContextObjectModel,
+    com: COM,
     compiler: FiberCompiler,
     structureRenderer: StructureRenderer,
     rootElement: JSX.Element,

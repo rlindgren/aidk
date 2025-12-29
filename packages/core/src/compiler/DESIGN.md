@@ -258,7 +258,7 @@ class ConversationManager extends Component {
   // Input signals
   private maxMessages = input<number>(100);
   
-  async onTickStart(com: ContextObjectModel, state: TickState) {
+  async onTickStart(com: COM, state: TickState) {
     if (state.current?.timeline) {
       this.timeline.update(t => [...t, ...state.current.timeline]);
       this.messageCount.update(c => c + state.current.timeline.length);
@@ -791,11 +791,11 @@ class MyAgent extends Component {
   // Input signals (from props)
   private maxTurns = input<number>(10);
   
-  async onMount(com: ContextObjectModel) {
+  async onMount(com: COM) {
     // Setup
   }
   
-  async onTickStart(com: ContextObjectModel, state: TickState) {
+  async onTickStart(com: COM, state: TickState) {
     if (state.current?.timeline) {
       this.timeline.update(t => [...t, ...state.current.timeline]);
     }
@@ -807,7 +807,7 @@ class MyAgent extends Component {
     }
   }
   
-  render(com: ContextObjectModel, state: TickState) {
+  render(com: COM, state: TickState) {
     return (
       <Timeline>
         {this.timeline().map((msg, i) => (

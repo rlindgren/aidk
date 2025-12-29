@@ -6,7 +6,7 @@
  */
 
 import { Engine, type EngineConfig } from '../../engine/engine';
-import { ContextObjectModel } from '../../com/object-model';
+import { COM } from '../../com/object-model';
 import { type TickState, type ComponentDefinition } from '../../component/component';
 import { type EngineInput } from '../../com/types';
 import { type ExecutionHandle,type ForkInheritanceOptions } from '../../engine/execution-types';
@@ -91,7 +91,7 @@ export interface CreateSpawnOptions {
  * Use this in custom components to create forks correctly.
  * 
  * @param engine Engine instance (from com.engine)
- * @param com ContextObjectModel (for accessing current execution context)
+ * @param com COM (for accessing current execution context)
  * @param state TickState (for accessing execution handle)
  * @param options Fork options
  * @returns ExecutionHandle for the fork
@@ -99,7 +99,7 @@ export interface CreateSpawnOptions {
  * @example
  * ```typescript
  * class MyComponent extends Component {
- *   render(com: ContextObjectModel, state: TickState) {
+ *   render(com: COM, state: TickState) {
  *     const forkHandle = createForkHandle(
  *       com.engine as Engine,
  *       com,
@@ -120,7 +120,7 @@ export interface CreateSpawnOptions {
  */
 export function createForkHandle(
   engine: Engine,
-  com: ContextObjectModel,
+  com: COM,
   state: TickState,
   options: CreateForkOptions
 ): ExecutionHandle {
@@ -170,7 +170,7 @@ export function createForkHandle(
  * Use this in custom components to create spawns correctly.
  * 
  * @param engine Engine instance (from com.engine)
- * @param com ContextObjectModel (for context)
+ * @param com COM (for context)
  * @param state TickState (for context)
  * @param options Spawn options
  * @returns ExecutionHandle for the spawn
@@ -178,7 +178,7 @@ export function createForkHandle(
  * @example
  * ```typescript
  * class MyComponent extends Component {
- *   render(com: ContextObjectModel, state: TickState) {
+ *   render(com: COM, state: TickState) {
  *     const spawnHandle = createSpawnHandle(
  *       com.engine as Engine,
  *       com,
@@ -199,7 +199,7 @@ export function createForkHandle(
  */
 export function createSpawnHandle(
   engine: Engine,
-  com: ContextObjectModel,
+  com: COM,
   state: TickState,
   options: CreateSpawnOptions
 ): ExecutionHandle {
@@ -236,12 +236,12 @@ export function createSpawnHandle(
  * If waitUntilComplete is true, this registers the handle in COM state
  * so the Engine can wait for it before continuing the tick.
  * 
- * @param com ContextObjectModel
+ * @param com COM
  * @param handle ExecutionHandle to register
  * @param waitUntilComplete Whether to wait for completion
  */
 export function registerWaitHandle(
-  com: ContextObjectModel,
+  com: COM,
   handle: ExecutionHandle,
   waitUntilComplete: boolean
 ): void {
@@ -274,10 +274,10 @@ export function registerWaitHandle(
  * 
  * Used by Engine to check if any forks/spawns are waiting.
  * 
- * @param com ContextObjectModel
+ * @param com COM
  * @returns Set of ExecutionHandles that are waiting
  */
-export function getWaitHandles(com: ContextObjectModel): Set<ExecutionHandle> {
+export function getWaitHandles(com: COM): Set<ExecutionHandle> {
   return com.getState<Set<ExecutionHandle>>('__wait_handles__') || new Set();
 }
 

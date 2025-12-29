@@ -1,4 +1,4 @@
-import { ChannelService, type ChannelServiceConfig, type ChannelTransport, type ChannelAdapter } from './service';
+import { ChannelService, type ChannelTransport, type ChannelAdapter } from './service';
 import { Context } from '../context';
 import type { EngineContext } from '../types';
 

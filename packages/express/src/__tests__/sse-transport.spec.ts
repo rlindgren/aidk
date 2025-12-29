@@ -515,7 +515,7 @@ describe("SSETransport", () => {
       const mockRes = createMockResponse();
 
       await heartbeatTransport.connect("conn-1", { res: mockRes as Response });
-      const initialWrites = mockRes._written.length;
+      const _initialWrites = mockRes._written.length;
 
       jest.advanceTimersByTime(10000);
 

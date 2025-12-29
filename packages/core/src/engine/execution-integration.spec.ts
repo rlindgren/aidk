@@ -1,11 +1,9 @@
 import { createEngine } from './factory';
 import type { EngineConfig } from './engine';
 import { Component, type TickState } from '../component/component';
-import { ContextObjectModel } from '../com/object-model';
-import type { ExecutionState } from './execution-types';
+import { COM } from '../com/object-model';
 import { createModel, type ModelInput, type ModelOutput } from '../model/model';
 import { StopReason, type StreamChunk } from 'aidk-shared';
-import { type JSX, createElement, Fragment } from '../jsx/jsx-runtime';
 import { fromEngineState, toEngineState } from '../model/utils/language-model';
 
 /**
@@ -15,11 +13,8 @@ import { fromEngineState, toEngineState } from '../model/utils/language-model';
 describe('Execution System Integration', () => {
   let engine: ReturnType<typeof createEngine>;
   let mockModel: ReturnType<typeof createModel>;
-  let persistedStates: ExecutionState[] = [];
   
   beforeEach(() => {
-    persistedStates = [];
-    
     mockModel = createModel<ModelInput, ModelOutput, ModelInput, ModelOutput, StreamChunk>({
       metadata: {
         id: 'test-model',
@@ -27,7 +22,7 @@ describe('Execution System Integration', () => {
         capabilities: [],
       },
       executors: {
-        execute: async (input: ModelInput): Promise<ModelOutput> => {
+        execute: async (_input: ModelInput): Promise<ModelOutput> => {
           return {
             model: 'test-model',
             createdAt: new Date().toISOString(),
@@ -73,19 +68,19 @@ describe('Execution System Integration', () => {
   describe('multi-agent orchestration', () => {
     it('should orchestrate multiple agents with fork/spawn', async () => {
       class AgentA extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
       
       class AgentB extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
       
       class AgentC extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
@@ -144,13 +139,13 @@ describe('Execution System Integration', () => {
     
     it('should handle orphaned forks correctly', async () => {
       class BackgroundAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
       
       class MainAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
@@ -190,13 +185,13 @@ describe('Execution System Integration', () => {
     
     it('should track outstanding forks', async () => {
       class AgentA extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
       
       class AgentB extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
@@ -261,7 +256,7 @@ describe('Execution System Integration', () => {
   describe('execution graph integrity', () => {
     it('should maintain correct parent-child relationships', async () => {
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
@@ -314,7 +309,7 @@ describe('Execution System Integration', () => {
     
     it('should handle concurrent spawns correctly', async () => {
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
@@ -351,7 +346,7 @@ describe('Execution System Integration', () => {
   describe('metrics accuracy', () => {
     it('should accurately track execution counts', async () => {
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
@@ -379,7 +374,7 @@ describe('Execution System Integration', () => {
     
     it('should calculate average execution time correctly', async () => {
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
@@ -406,7 +401,7 @@ describe('Execution System Integration', () => {
   describe('persistence integration', () => {
     it('should persist state for all execution types', async () => {
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
@@ -451,7 +446,7 @@ describe('Execution System Integration', () => {
     
     it('should persist state with increasing tick numbers', async () => {
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
@@ -471,7 +466,7 @@ describe('Execution System Integration', () => {
       });
       
       // Verify tick numbers increase for each PID
-      statesByPid.forEach((states, pid) => {
+      statesByPid.forEach((states, _pid) => {
         const tickNumbers = states.map(s => s.currentTick).sort((a, b) => a - b);
         for (let i = 1; i < tickNumbers.length; i++) {
           expect(tickNumbers[i]).toBeGreaterThanOrEqual(tickNumbers[i - 1]);
@@ -483,13 +478,13 @@ describe('Execution System Integration', () => {
   describe('error handling', () => {
     it('should handle fork errors gracefully', async () => {
       class FailingAgent extends Component {
-        render(com: ContextObjectModel, state: TickState): JSX.Element | null {
+        render(_com: COM, _state: TickState): JSX.Element | null {
           throw new Error('Agent error');
         }
       }
 
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState): JSX.Element | null {
+        render(_com: COM, _state: TickState): JSX.Element | null {
           return createElement(Fragment, {});
         }
       }
@@ -536,7 +531,7 @@ describe('Execution System Integration', () => {
   describe('long-running engine', () => {
     it('should handle many concurrent executions', async () => {
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
@@ -564,7 +559,7 @@ describe('Execution System Integration', () => {
     
     it('should maintain graph integrity with many forks', async () => {
       class SimpleAgent extends Component {
-        render(com: ContextObjectModel, state: TickState) {
+        render(_com: COM, _state: TickState) {
           return createElement(Fragment, {});
         }
       }
