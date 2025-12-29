@@ -36,10 +36,13 @@ jobs:
         uses: actions/configure-pages@v4
 
       - name: Install dependencies
-        run: cd website && pnpm install
+        run: pnpm install --frozen-lockfile
 
-      - name: Build with VitePress
-        run: cd website && pnpm build
+      - name: Build packages
+        run: pnpm build
+
+      - name: Build website
+        run: pnpm --filter aidk-website build
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
