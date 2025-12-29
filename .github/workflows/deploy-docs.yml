@@ -46,7 +46,7 @@ jobs:
 
       - name: Install website dependencies
         working-directory: website
-        run: pnpm install
+        run: pnpm install --ignore-workspace
 
       - name: Build website
         working-directory: website
