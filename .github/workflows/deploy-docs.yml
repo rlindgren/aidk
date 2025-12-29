@@ -38,11 +38,19 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Disable Turbo Telemetry
+        run: turbo telemetry disable
+
       - name: Build packages
         run: pnpm build
 
+      - name: Install website dependencies
+        working-directory: website
+        run: pnpm install
+
       - name: Build website
-        run: pnpm --filter aidk-website build
+        working-directory: website
+        run: pnpm build
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
