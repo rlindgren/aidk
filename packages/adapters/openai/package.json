@@ -40,7 +40,7 @@
     "aidk-shared": "workspace:*"
   },
   "devDependencies": {
-    "@types/jest": "^29.5.14"
+    "@types/jest": "^30.0.0"
   },
   "peerDependencies": {
     "openai": "^6.0.0"
