@@ -4,5 +4,6 @@
     "tsBuildInfoFile": "dist/.tsbuildinfo.spec"
   },
   "extends": "./tsconfig.json",
-  "include": ["src/**/*"]
+  "include": ["src/**/*"],
+  "exclude": []
 }

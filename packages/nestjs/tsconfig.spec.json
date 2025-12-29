@@ -4,6 +4,7 @@
     "tsBuildInfoFile": "dist/.tsbuildinfo.spec",
     "types": ["jest", "node"]
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*"],
+  "exclude": []
 }
 

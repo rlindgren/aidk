@@ -4,12 +4,10 @@ Complete, runnable examples demonstrating AIDK features.
 
 ## Quick Links
 
-- [Simple Chat](/examples/simple-chat) - Basic chat agent
-- [Progressive Adoption](/examples/progressive-adoption) - All adoption levels
-- [Multi-Agent](/examples/multi-agent) - Coordinator with forks/spawns  
-- [Tools & MCP](/examples/tools-mcp) - Tool integration
-- [Real-time Updates](/examples/realtime) - Channels and SSE
-- [Full Stack](/examples/fullstack) - Complete application
+- [Simple Chat](/examples/simple-chat) - Basic chat agent with streaming
+- [Task Assistant](/examples/task-assistant) - Full-stack app with tools and channels
+- [Multi-Agent](/examples/multi-agent) - Research coordinator with Fork/Spawn
+- [Dynamic Router](/examples/dynamic-router) - Model switching based on context
 
 ## Running Examples
 
@@ -102,36 +100,22 @@ Basic chat agent with streaming responses.
 
 <div class="feature-card">
 
-### [Progressive Adoption](/examples/progressive-adoption)
-See all 5 adoption levels in action.
+### [Task Assistant](/examples/task-assistant)
+Full-stack app with tools, channels, and React.
 
 </div>
 
 <div class="feature-card">
 
 ### [Multi-Agent](/examples/multi-agent)
-Coordinator with parallel execution.
+Research coordinator with Fork/Spawn for parallel execution.
 
 </div>
 
 <div class="feature-card">
 
-### [Tools & MCP](/examples/tools-mcp)
-Custom tools and MCP integration.
-
-</div>
-
-<div class="feature-card">
-
-### [Real-time](/examples/realtime)
-Channels and real-time updates.
-
-</div>
-
-<div class="feature-card">
-
-### [Full Stack](/examples/fullstack)
-Complete application walkthrough.
+### [Dynamic Router](/examples/dynamic-router)
+Smart model selection based on task and cost.
 
 </div>
 

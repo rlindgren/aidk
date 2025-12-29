@@ -60,19 +60,19 @@ class MyAgent extends Component {
 Default for most models. Formats content as Markdown.
 
 ```tsx
-import { MarkdownRenderer } from 'aidk';
+import { Markdown } from 'aidk';
 
 // Used automatically for GPT models
-<AiSdkModel 
-  model={openai('gpt-4o')}  
+<AiSdkModel
+  model={openai('gpt-4o')}
   // preferredRenderer: 'markdown' (automatic)
 />
 
-// Or explicitly
-<Renderer renderer={new MarkdownRenderer()}>
+// Or explicitly with the <Markdown> component
+<Markdown>
   <H1>Title</H1>
   <Paragraph>Content with <strong>bold</strong> and <em>italic</em></Paragraph>
-</Renderer>
+</Markdown>
 ```
 
 **Output:**
@@ -87,19 +87,19 @@ Content with **bold** and *italic*
 Preferred by Claude and other Anthropic models.
 
 ```tsx
-import { XMLRenderer } from 'aidk';
+import { XML } from 'aidk';
 
 // Used automatically for Claude
-<AiSdkModel 
+<AiSdkModel
   model={anthropic('claude-3-5-sonnet-20241022')}
   // preferredRenderer: 'xml' (automatic)
 />
 
-// Or explicitly
-<Renderer renderer={new XMLRenderer()}>
+// Or explicitly with the <XML> component
+<XML>
   <H1>Title</H1>
   <Paragraph>Content with <strong>bold</strong> and <em>italic</em></Paragraph>
-</Renderer>
+</XML>
 ```
 
 **Output:**
@@ -209,16 +209,26 @@ const model = createAiSdkModel({
 
 You always have full control over renderers.
 
-### Global Default
+### Via Model Configuration
 
-Set the default renderer for all sections:
+Set the preferred renderer for a model:
 
 ```tsx
-import { setDefaultRenderer } from 'aidk';
-import { XMLRenderer } from 'aidk';
+<AiSdkModel
+  model={openai('gpt-4o')}
+  preferredRenderer="xml"  // Override the default
+/>
+```
 
-// At app initialization
-setDefaultRenderer(new XMLRenderer());
+Or dynamically based on model:
+
+```tsx
+<AiSdkModel
+  model={model}
+  messageTransformation={{
+    preferredRenderer: modelId.includes('claude') ? 'xml' : 'markdown',
+  }}
+/>
 ```
 
 ### Per-Section
@@ -226,29 +236,29 @@ setDefaultRenderer(new XMLRenderer());
 Override the renderer for specific sections:
 
 ```tsx
-import { Renderer, MarkdownRenderer, XMLRenderer } from 'aidk';
+import { Markdown, XML } from 'aidk';
 
 <>
   {/* Use model's preferred renderer (automatic) */}
   <Section audience="model">
     <H2>Standard Content</H2>
   </Section>
-  
+
   {/* Force Markdown for this section */}
-  <Renderer renderer={new MarkdownRenderer()}>
+  <Markdown>
     <Section audience="model">
       <H2>Markdown-only Content</H2>
       <Code language="python">print("Hello")</Code>
     </Section>
-  </Renderer>
-  
+  </Markdown>
+
   {/* Force XML for this section */}
-  <Renderer renderer={new XMLRenderer()}>
+  <XML>
     <Section audience="model">
       <H2>XML-only Content</H2>
       <List><ListItem>Item</ListItem></List>
     </Section>
-  </Renderer>
+  </XML>
 </>
 ```
 
@@ -257,16 +267,16 @@ import { Renderer, MarkdownRenderer, XMLRenderer } from 'aidk';
 Switch renderers within a section:
 
 ```tsx
-<Renderer renderer={new MarkdownRenderer()}>
+<Markdown>
   <H1>Outer Content (Markdown)</H1>
-  
-  <Renderer renderer={new XMLRenderer()}>
+
+  <XML>
     <H2>Inner Content (XML)</H2>
     <Paragraph>This part uses XML</Paragraph>
-  </Renderer>
-  
+  </XML>
+
   <Paragraph>Back to Markdown</Paragraph>
-</Renderer>
+</Markdown>
 ```
 
 ### Inline Renderer Switching
@@ -427,12 +437,12 @@ Trust the automatic renderer selection for most content:
 </Section>
 
 // ❌ Less good: Force a renderer without reason
-<Renderer renderer={new MarkdownRenderer()}>
+<Markdown>
   <AiSdkModel model={model} />
   <Section audience="model">
     <H2>Content</H2>
   </Section>
-</Renderer>
+</Markdown>
 ```
 
 **Why?** Models specify their preferences for a reason. Claude models parse XML more effectively. GPT models work better with Markdown. Let them choose.
@@ -621,19 +631,21 @@ Select renderers based on runtime conditions:
 class SmartAgent extends Component {
   render(com, state) {
     const ctx = Context.get();
-    
+
     // Choose renderer based on context size
     const useXML = ctx.metadata.contextSize > 50000;
-    
+
+    // Option 1: Conditional rendering with sugar components
+    const content = (
+      <Section audience="model">
+        {/* Content automatically formatted */}
+      </Section>
+    );
+
     return (
       <>
         <AiSdkModel model={model} />
-        
-        <Renderer renderer={useXML ? new XMLRenderer() : new MarkdownRenderer()}>
-          <Section audience="model">
-            {/* Content automatically formatted */}
-          </Section>
-        </Renderer>
+        {useXML ? <XML>{content}</XML> : <Markdown>{content}</Markdown>}
       </>
     );
   }
@@ -762,13 +774,17 @@ class XMLRenderer extends Renderer {
 ### Components
 
 ```tsx
-// Wrap content to use specific renderer
+// Sugar components (preferred)
+<Markdown>{children}</Markdown>
+<XML>{children}</XML>
+
+// Low-level Renderer component (for custom renderers)
 <Renderer renderer={new MarkdownRenderer()}>
   {children}
 </Renderer>
 
-// Set default for app
-setDefaultRenderer(renderer);
+// Set preferred renderer via model
+<AiSdkModel model={model} preferredRenderer="xml" />
 ```
 
 ## Related

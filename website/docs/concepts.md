@@ -214,7 +214,7 @@ Sections organize content for different audiences:
 
 ## Tools
 
-Tools give agents capabilities to interact with the world:
+Tools give agents capabilities to interact with the world. **Tools are components** with full lifecycle support.
 
 ``` tsx
 const myTool = createTool({
@@ -224,9 +224,9 @@ const myTool = createTool({
     param1: z.string(),
     param2: z.number().optional(),
   }),
-  execute: async (input, context) => {
-    // Tool logic
-    return { result: 'data' };
+  handler: async (input) => {
+    // Tool logic - returns ContentBlock[]
+    return [{ type: 'text', text: JSON.stringify({ result: 'data' }) }];
   },
 });
 ```
@@ -378,10 +378,19 @@ client.channels.subscribe('todos', (event) => {
                               └─────────┘
 ```
 
+## Deep Dive
+
+For deeper understanding, see these concept guides:
+
+- [Runtime Architecture](./concepts/runtime-architecture.md) - The tick loop and execution model
+- [Context Object Model](./concepts/context-object-model.md) - COM as the shared state tree
+- [Tick Lifecycle](./concepts/tick-lifecycle.md) - When each hook fires and why
+
 ## Next Steps
 
 - [State Management](./state-management.md) - Signals and reactive state
-- [Tools Guide](./guides/tools.md) - Deep dive into tools
-- [Hooks Guide](./guides/hooks.md) - Extend with hooks
+- [Tools Guide](./guides/tools.md) - Deep dive into tools (tools are components!)
+- [Ephemeral vs Persisted](./guides/ephemeral-content.md) - Grounding vs Section content
+- [Fork & Spawn](./guides/fork-spawn.md) - Parallel and background agents
 - [Channels Guide](./guides/channels.md) - Real-time updates
 

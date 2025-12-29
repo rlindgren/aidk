@@ -1,4 +1,5 @@
 import { defineConfig } from "vitepress";
+import { withMermaid } from "vitepress-plugin-mermaid";
 import fs from "fs";
 
 // Load typedoc sidebar if it exists (API docs may not be generated yet)
@@ -12,12 +13,21 @@ try {
   // API docs not generated yet, use empty sidebar
 }
 
-export default defineConfig({
+export default withMermaid(defineConfig({
   title: "AIDK",
   description:
-    "Context engineering for AI agents. Control what your model sees on every tick.",
+    "A runtime engine for model-driven applications. Your code runs between model calls.",
   base: "/aidk/",
   ignoreDeadLinks: true, // TODO: Fix remaining dead links as docs are completed
+
+  vite: {
+    optimizeDeps: {
+      include: ["mermaid", "dayjs"],
+    },
+    ssr: {
+      noExternal: ["mermaid"],
+    },
+  },
 
   head: [
     ["link", { rel: "icon", type: "image/svg+xml", href: "/aidk/logo.svg" }],
@@ -27,7 +37,7 @@ export default defineConfig({
       "meta",
       {
         property: "og:title",
-        content: "AIDK - Context Engineering for AI Agents",
+        content: "AIDK - Runtime Engine for Model-Driven Applications",
       },
     ],
     [
@@ -35,7 +45,7 @@ export default defineConfig({
       {
         property: "og:description",
         content:
-          "Control what your model sees on every tick. No templates. No YAML. Just code.",
+          "Your code runs between model calls. Build agents today. Build world model apps tomorrow.",
       },
     ],
   ],
@@ -61,7 +71,26 @@ export default defineConfig({
             { text: "What is AIDK?", link: "/docs/" },
             { text: "Installation", link: "/docs/installation" },
             { text: "Quick Start", link: "/docs/getting-started" },
-            { text: "Core Concepts", link: "/docs/concepts" },
+          ],
+        },
+        {
+          text: "Learn",
+          items: [
+            { text: "Overview", link: "/docs/learn/" },
+            { text: "Understanding Ticks", link: "/docs/learn/understanding-ticks" },
+            { text: "Tools as Components", link: "/docs/learn/tools-as-components" },
+            { text: "Reactive State", link: "/docs/learn/reactive-state" },
+            { text: "Dynamic Models", link: "/docs/learn/dynamic-models" },
+            { text: "Parallel Agents", link: "/docs/learn/parallel-agents" },
+          ],
+        },
+        {
+          text: "Core Concepts",
+          items: [
+            { text: "Runtime Architecture", link: "/docs/concepts/runtime-architecture" },
+            { text: "Context Object Model", link: "/docs/concepts/context-object-model" },
+            { text: "Tick Lifecycle", link: "/docs/concepts/tick-lifecycle" },
+            { text: "Overview", link: "/docs/concepts" },
           ],
         },
         {
@@ -71,6 +100,7 @@ export default defineConfig({
             { text: "State Management", link: "/docs/state-management" },
             { text: "Creating Tools", link: "/docs/guides/tools" },
             { text: "Semantic Primitives", link: "/docs/semantic-primitives" },
+            { text: "Ephemeral vs Persisted", link: "/docs/guides/ephemeral-content" },
             { text: "Renderers", link: "/docs/guides/renderers" },
           ],
         },
@@ -83,6 +113,10 @@ export default defineConfig({
             },
             { text: "Real-time Channels", link: "/docs/guides/channels" },
             { text: "Fork & Spawn", link: "/docs/guides/fork-spawn" },
+            { text: "Procedures & Middleware", link: "/docs/advanced/procedures" },
+            { text: "Metrics & Telemetry", link: "/docs/guides/metrics-telemetry" },
+            { text: "Error Handling", link: "/docs/guides/error-handling" },
+            { text: "Testing", link: "/docs/guides/testing" },
           ],
         },
         {
@@ -93,6 +127,12 @@ export default defineConfig({
             { text: "React", link: "/docs/frameworks/react" },
           ],
         },
+        {
+          text: "Reference",
+          items: [
+            { text: "Message Roles", link: "/docs/reference/message-roles" },
+          ],
+        },
       ],
       "/examples/": [
         {
@@ -101,13 +141,21 @@ export default defineConfig({
             { text: "Overview", link: "/examples/" },
             { text: "Simple Chat", link: "/examples/simple-chat" },
             { text: "Task Assistant", link: "/examples/task-assistant" },
+            { text: "Multi-Agent", link: "/examples/multi-agent" },
+            { text: "Dynamic Router", link: "/examples/dynamic-router" },
           ],
         },
       ],
       "/api/": [
         {
           text: "API Reference",
-          items: [{ text: "Overview", link: "/api/" }, ...typedocSidebar],
+          items: [
+            { text: "Overview", link: "/api/" },
+            { text: "Engine", link: "/api/engine" },
+            { text: "ExecutionHandle", link: "/api/execution-handle" },
+            { text: "COM", link: "/api/com" },
+            ...typedocSidebar,
+          ],
         },
       ],
     },
@@ -130,4 +178,4 @@ export default defineConfig({
       text: "Edit this page on GitHub",
     },
   },
-});
+}));

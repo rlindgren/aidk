@@ -1,6 +1,17 @@
 # Creating Tools
 
-AIDK tools aren't just functions—they're **components** that can render context, maintain state, and react to lifecycle events.
+**Tools are components.**
+
+This is the key insight. In AIDK, tools aren't just functions that execute when called—they're **full components** with lifecycle hooks, state management, and the ability to render context for the model.
+
+A tool can:
+- **Load data on mount** — Initialize state when the agent starts
+- **Render context** — Show the model its current state on every tick
+- **React to lifecycle events** — onTickStart, onTickEnd, onComplete
+- **Manage state** — Persist data across ticks via COM state
+- **Subscribe to channels** — Update in real-time
+
+This means your tools don't just execute—they **participate in the render cycle** just like any other component. See [Runtime Architecture](/docs/concepts/runtime-architecture) and [Tick Lifecycle](/docs/concepts/tick-lifecycle) for how this fits into the execution model.
 
 ## The Difference
 
@@ -549,30 +560,40 @@ class MyAgent extends Component {
 
 ## Tool State Management
 
-Tools have full access to COM state:
+Tools manage state via lifecycle hooks, not in the handler:
 
 ``` tsx
 export const StatefulTool = createTool({
   name: 'stateful',
   parameters: z.object({ action: z.string() }),
-  
-  handler: async (input, com) => {
-    // Read state
-    const count = com.getState<number>('tool_usage_count') || 0;
-    
-    // Update state
-    com.setState('tool_usage_count', count + 1);
-    
-    // State persists across tool calls
-    return [{ 
-      type: 'text', 
-      text: `Tool used ${count + 1} times this session` 
+
+  // Initialize state on mount
+  async onMount(com) {
+    com.setState('tool_usage_count', 0);
+  },
+
+  // Increment count on each tick that follows tool usage
+  // (tracked by a flag set in render or via external service)
+  async onTickStart(com) {
+    // Refresh count from external tracking if needed
+    const count = await ToolAnalytics.getUsageCount();
+    com.setState('tool_usage_count', count);
+  },
+
+  // Handler only receives input
+  handler: async (input) => {
+    // Track usage externally (handler can call services)
+    await ToolAnalytics.recordUsage(input.action);
+
+    return [{
+      type: 'text',
+      text: `Action "${input.action}" completed`
     }];
   },
-  
+
   render(com) {
     const count = com.getState<number>('tool_usage_count') || 0;
-    
+
     return (
       <Section audience="model">
         <Paragraph>
@@ -583,6 +604,8 @@ export const StatefulTool = createTool({
   }
 });
 ```
+
+Note: The handler only receives `input` and returns `ContentBlock[]`. State updates happen in lifecycle hooks like `onMount`, `onTickStart`, or `onTickEnd`.
 
 ## Context Access
 

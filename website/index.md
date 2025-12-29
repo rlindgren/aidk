@@ -3,8 +3,8 @@ layout: home
 
 hero:
   name: AIDK
-  text: Context Engineering for AI Agents
-  tagline: Control what your model sees on every tick. No templates. No YAML. Just code.
+  text: Runtime Engine for Model-Driven Applications
+  tagline: Your code runs between model calls. Build agents today. Build world model apps tomorrow.
   actions:
     - theme: brand
       text: Get Started
@@ -14,42 +14,58 @@ hero:
       link: https://github.com/rlindgren/aidk
 
 features:
-  - icon: <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
-    title: You Control the Context
-    details: Your code runs before every model call. Decide what the model sees. Transform, summarize, hydrate - whatever you need.
+  - icon: <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M12 1v6m0 6v10"></path><path d="m4.22 4.22 4.24 4.24m7.08 7.08 4.24 4.24"></path><path d="M1 12h6m6 0h10"></path><path d="m4.22 19.78 4.24-4.24m7.08-7.08 4.24-4.24"></path></svg>
+    title: Complete Runtime Engine
+    details: Not a template system. A tick-based execution engine with component lifecycle, reactive state, and the Context Object Model (COM).
 
   - icon: <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg>
-    title: Hook Into Everything
-    details: Mount, unmount, tick start, tick end, message received. Run code at any point in the execution lifecycle.
+    title: Full Lifecycle Control
+    details: Mount, tick start, compile, model call, tools, tick end, unmount. Async hooks at every phase of execution.
 
   - icon: <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
-    title: No More Jinja
-    details: JSX compiles to model context. Conditionals, loops, components - use real programming constructs.
+    title: Tools Are Components
+    details: Tools have lifecycle hooks, state, and render context for the model. Not just execution, but full component capabilities.
 
   - icon: <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-    title: Await or Fire-and-Forget
-    details: Fork parallel work and wait. Spawn background tasks. Your agent, your control flow.
+    title: Fork & Spawn
+    details: Fork parallel work and await results. Spawn background tasks. Full process control for multi-agent coordination.
 
   - icon: <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
     title: Any Model, Any Framework
-    details: OpenAI, Anthropic, Google. Express, NestJS. React, Angular. Plug in what you use.
+    details: OpenAI, Anthropic, Google via adapters. Express, NestJS, React, Angular. Bring your stack.
 
   - icon: <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
-    title: Format Per Model
-    details: Write JSX once. Claude gets XML. GPT gets Markdown. The adapter handles it.
+    title: Context Object Model
+    details: The browser has DOM. AIDK has COM. A shared state tree for sections, timeline, tools, and reactive signals.
 ---
 
 <div class="vp-doc custom-home">
 
-## Stop configuring. Start programming.
+## Not a template system. A runtime.
 
-Other frameworks give you an agent loop and ask you to configure it. Add a planning step. Add a summary step. Add guardrails. Tack on more and more until you're fighting the abstraction.
+AIDK is a **runtime execution engine** for model-driven applications. Your code compiles to context, the model responds, tools execute, state updates—and the cycle repeats.
 
-AIDK gives you the loop. **You decide what happens inside it.**
+```mermaid
+flowchart LR
+    A[COMPILE] --> B[MODEL]
+    B --> C[TOOLS]
+    C --> D[STATE]
+    D --> A
+```
+
+Other frameworks give you an agent loop and ask you to configure it. AIDK gives you the loop. **You decide what happens inside it.**
 
 ```tsx
 class ResearchAgent extends Component {
   private sources = comState<Source[]>("sources", []);
+  private timeline = comState<COMTimelineEntry[]>("timeline", []);
+
+  onTickStart(com, state) {
+    // Accumulate timeline entries across ticks
+    if (state.current?.timeline) {
+      this.timeline.set([...this.timeline(), ...state.current.timeline]);
+    }
+  }
 
   render(com, state) {
     return (
@@ -76,7 +92,7 @@ class ResearchAgent extends Component {
 
         {/* You control how the timeline renders */}
         <Timeline>
-          {state.current?.timeline.map((entry) => (
+          {this.timeline().map((entry) => (
             <Message key={entry.id} {...entry.message} />
           ))}
         </Timeline>
@@ -86,7 +102,7 @@ class ResearchAgent extends Component {
 }
 ```
 
-Your component renders before every model call. The model responds. Your component renders again. That's it. **You control the interface.**
+Every tick: your component compiles, the model responds, tools execute, state updates. Next tick: compile again with new state. That's the runtime loop. **You control the interface.**
 
 ---
 
@@ -500,8 +516,8 @@ npm install aidk aidk-ai-sdk ai @ai-sdk/openai
 
 <style>
 .custom-home {
-  max-width: 900px;
-  margin: 0 auto;
+  /* max-width: 900px; */ /* use full width? yeah*/
+  margin: 0;
   padding: 2rem 0;
   overflow-x: hidden;
 }

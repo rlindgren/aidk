@@ -1,12 +1,26 @@
 # AIDK
 
-**The context engineering framework for AI agents.**
+**A runtime engine for model-driven applications.**
 
-## Programming, not configuration.
+## Not a template system. A runtime.
+
+AIDK is a **runtime execution engine**—not a prompt builder, not a template system. It manages component lifecycle, shared state, and tick loops. Your code runs *between* model calls, with full visibility into what happened and complete control over what comes next.
+
+```mermaid
+flowchart LR
+    A[COMPILE] --> B[MODEL]
+    B --> C[TOOLS]
+    C --> D[STATE]
+    D --> A
+```
+
+Each execution runs through discrete **ticks**. Each tick: compile your JSX components, call the model, execute tools, update state, repeat. Your components persist across ticks. State accumulates. You're not configuring an agent—you're **programming** one.
+
+## The Core Insight
 
 Most agent frameworks ask you to describe what you want, then hope the runtime figures it out. You write YAML. You configure state machines. You connect nodes in a graph. And when it doesn't work, you're debugging someone else's abstractions.
 
-AIDK is different. **Your agent is code that runs on every tick.** The model responds, your code runs, you decide what happens next. No graphs. No state machines. No configuration files.
+AIDK is different. **Your code runs on every tick.** The model responds, your components re-render, you see what happened, you decide what comes next. No graphs. No state machines. No configuration files.
 
 Just like frontend code doesn't just "render UI"—it manages state, handles events, orchestrates data, and defines how the application behaves—your agent code doesn't just build context. It defines execution logic. It reacts to model output. It manages state across ticks. It decides when to stop, when to fork, when to swap models. **You're in control of the loop.**
 
@@ -50,10 +64,11 @@ AIDK is a **context engineering framework**—a platform for building applicatio
 
 ## Quick Links
 
-- [Getting Started](./getting-started.md) - Build your first agent
-- [Core Concepts](./concepts.md) - Understand the architecture
+- [Getting Started](./getting-started.md) - Build your first agent in 5 minutes
+- [Runtime Architecture](./concepts/runtime-architecture.md) - Understand the tick loop
+- [Context Object Model](./concepts/context-object-model.md) - The shared state tree (like DOM for AI)
+- [Tick Lifecycle](./concepts/tick-lifecycle.md) - Complete hook reference
 - [State Management](./state-management.md) - Signals and reactive state
-- [API Reference](./api/README.md) - Complete reference
 - [Examples](https://github.com/your-org/aidk/tree/main/example) - Working applications
 
 ---

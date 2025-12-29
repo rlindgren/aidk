@@ -560,10 +560,10 @@ Visual separator:
 
 ## Renderer Switching
 
-Switch renderers for specific content:
+Switch renderers for specific content using `<Markdown>` and `<XML>` components:
 
 ```tsx
-import { Renderer, MarkdownRenderer, XMLRenderer } from "aidk";
+import { Markdown, XML } from "aidk";
 
 <>
   {/* Default renderer (from model) */}
@@ -572,22 +572,22 @@ import { Renderer, MarkdownRenderer, XMLRenderer } from "aidk";
   </Section>
 
   {/* Force Markdown */}
-  <Renderer renderer={new MarkdownRenderer()}>
+  <Markdown>
     <Section audience="model">
       <H2>Markdown-only Section</H2>
       <Code language="python">print("Hello")</Code>
     </Section>
-  </Renderer>
+  </Markdown>
 
   {/* Force XML */}
-  <Renderer renderer={new XMLRenderer()}>
+  <XML>
     <Section audience="model">
       <H2>XML-only Section</H2>
       <List>
         <ListItem>Item</ListItem>
       </List>
     </Section>
-  </Renderer>
+  </XML>
 </>;
 ```
 
@@ -658,18 +658,26 @@ import { Renderer, MarkdownRenderer, XMLRenderer } from "aidk";
 Test your components with both renderers:
 
 ``` tsx
-import { MarkdownRenderer, XMLRenderer } from 'aidk';
+import { MarkdownRenderer, XMLRenderer, Markdown, XML } from 'aidk';
 import { render } from './test-utils';
 
 describe('OrderSummary', () => {
   it('renders as Markdown', () => {
-    const output = render(<OrderSummary order={testOrder} />, new MarkdownRenderer());
+    const output = render(
+      <Markdown>
+        <OrderSummary order={testOrder} />
+      </Markdown>
+    );
     expect(output).toContain('## Order Summary');
     expect(output).toContain('| Item | Qty |');
   });
 
   it('renders as XML', () => {
-    const output = render(<OrderSummary order={testOrder} />, new XMLRenderer());
+    const output = render(
+      <XML>
+        <OrderSummary order={testOrder} />
+      </XML>
+    );
     expect(output).toContain('<h2>Order Summary</h2>');
     expect(output).toContain('<table>');
   });

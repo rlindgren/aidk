@@ -542,6 +542,30 @@ disposeSignal(mySignal); // Same as mySignal.dispose()
 
 These hooks are for **function components only**. For class components, use the signal-based APIs above.
 
+### Key Difference from React
+
+**AIDK hooks return Signal objects, NOT `[value, setter]` tuples.**
+
+```tsx
+// React (for comparison)
+const [count, setCount] = useState(0);
+setCount(5);
+setCount(n => n + 1);
+console.log(count);  // Direct value access
+
+// AIDK
+const count = useSignal(0);
+count.set(5);           // .set() method
+count.update(n => n + 1); // .update() method
+console.log(count());   // Call as function to read
+```
+
+This applies to all AIDK state hooks:
+- `useSignal()` → `Signal<T>`
+- `useComState()` → `Signal<T>`
+- `useWatch()` → `ReadonlySignal<T>`
+- `useComputed()` → `ComputedSignal<T>`
+
 ### `useSignal<T>(initialValue): Signal<T>`
 
 Creates a local signal in a function component.

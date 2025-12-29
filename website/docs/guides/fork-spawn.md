@@ -4,11 +4,17 @@ Run agents in parallel or in the background. Coordinate results. Handle independ
 
 ## Fork vs Spawn
 
-|              | Fork                          | Spawn                             |
-| ------------ | ----------------------------- | --------------------------------- |
-| **Waits?**   | Can wait for completion       | Never waits                       |
-| **Result?**  | Returns result to parent      | Fire and forget                   |
-| **Use case** | Parallel research, multi-step | Background logging, notifications |
+|                        | Fork                              | Spawn                           |
+| ---------------------- | --------------------------------- | ------------------------------- |
+| **Parent Required**    | Yes (throws if missing)           | No                              |
+| **State Inheritance**  | Yes (configurable via `inherit`)  | No (blank slate)                |
+| **Hooks Inherited**    | Yes (by default)                  | No                              |
+| **waitUntilComplete**  | Yes                               | Yes                             |
+| **Engine Instance**    | Shares parent's config            | New independent engine          |
+| **Abort Signal**       | Merged with parent's signal       | Independent                     |
+| **Use case**           | Parallel work needing context     | Background tasks, fire-and-forget |
+
+The key difference is **inheritance**: Fork creates a child execution that can inherit timeline, sections, tools, hooks, and context from its parent. Spawn creates a completely independent execution with a fresh engine instance—a true blank slate.
 
 ## Fork: Parallel Execution
 
@@ -66,7 +72,56 @@ class ResearchAgent extends Component {
   onComplete={(result) => {}}   // Callback when done
   onError={(error) => {}}       // Callback on error
   input={{ timeline: [...] }}   // Input for the forked execution
-  inherit={{ state: true }}     // Inherit state from parent
+  inherit={{                    // Inheritance options (see below)
+    timeline: 'copy',
+    sections: 'copy',
+    hooks: true,
+    context: true,
+  }}
+/>
+```
+
+### Fork Inheritance Options
+
+Fork can inherit state from the parent execution:
+
+```tsx
+interface ForkInheritanceOptions {
+  // Timeline inheritance
+  timeline?: 'copy' | 'reference';   // 'copy' = deep copy, 'reference' = shared
+  sections?: 'copy' | 'reference';   // Same as timeline
+
+  // Tools are always shared (not copied)
+  tools?: 'share';
+
+  // Context inheritance
+  channels?: boolean;    // Inherit channels service
+  traceId?: boolean;     // Inherit traceId for distributed tracing
+  context?: boolean;     // Inherit metadata, user, traceId from Kernel context
+
+  // Hooks inheritance (default: true)
+  hooks?: boolean;       // Inherit component, model, tool, engine hooks
+}
+```
+
+**Copy vs Reference:**
+- `'copy'`: Deep copies the data. Changes in the fork don't affect the parent.
+- `'reference'`: Shares the same array/object. Changes in the fork affect the parent (use carefully).
+
+Example with full inheritance:
+
+```tsx
+<Fork
+  agent={<ResearchAgent query={query} />}
+  inherit={{
+    timeline: 'copy',      // Fork gets parent's timeline, changes isolated
+    sections: 'copy',
+    hooks: true,           // Inherits all middleware hooks
+    context: true,         // Inherits user, metadata, traceId
+    channels: true,        // Can communicate via parent's channels
+  }}
+  waitUntilComplete={true}
+  onComplete={(result) => this.results.update(r => [...r, result])}
 />
 ```
 
@@ -99,9 +154,9 @@ Pass data to the forked agent:
 
 The input becomes the `EngineInput` for the forked execution (typically containing a timeline).
 
-## Spawn: Fire and Forget
+## Spawn: Independent Execution
 
-Spawn launches a background agent without waiting.
+Spawn creates a completely independent execution with a fresh engine instance. Unlike Fork, Spawn has no parent relationship and inherits nothing—it's a true blank slate.
 
 ```tsx
 class MainAgent extends Component {
@@ -129,14 +184,30 @@ class MainAgent extends Component {
 ```tsx
 <Spawn
   agent={<BackgroundAgent />}   // Agent to run (or use children)
-  waitUntilComplete={false}     // Whether to wait (usually false for Spawn)
+  waitUntilComplete={false}     // Can wait if needed (default: false)
   onComplete={(result) => {}}   // Callback when done
   onError={(error) => {}}       // Callback on error
   input={{ timeline: [...] }}   // Input for the spawned execution
+  engineConfig={{               // Configure the independent engine
+    maxTicks: 10,
+  }}
 />
 ```
 
+**Note**: Spawn CAN use `waitUntilComplete={true}` when you need to wait for an independent execution. The key difference from Fork is that Spawn has no state inheritance—use it when you want complete isolation.
+
 Like Fork, you can use children instead of the `agent` prop.
+
+### When to Use Fork vs Spawn
+
+| Scenario | Use | Why |
+|----------|-----|-----|
+| Parallel research sharing context | Fork | Need parent's timeline/sections |
+| Background logging | Spawn | No shared state needed |
+| Child agent needing user context | Fork | Inherit context (user, metadata) |
+| Independent job queue processing | Spawn | Complete isolation |
+| Branching with shared hooks | Fork | Inherit middleware |
+| Fire-and-forget notification | Spawn | Don't need results |
 
 ## Coordinating Multiple Forks
 
@@ -279,20 +350,39 @@ Handle errors in forked agents:
 />
 ```
 
-## Context and State Inheritance
+## Context and State Inheritance Summary
 
-Fork can inherit state from the parent execution:
+**Fork** inherits from parent (configurable via `inherit` prop):
+- Timeline entries (copy or reference)
+- Sections (copy or reference)
+- Tools (always shared)
+- Middleware hooks (by default)
+- Kernel context (user, metadata, traceId)
+- Channels service
+- Abort signal (merged with parent's signal)
+
+**Spawn** is completely independent:
+- No timeline inheritance
+- No sections inheritance
+- No hooks inheritance
+- No context inheritance
+- Fresh abort controller
+- New engine instance
 
 ```tsx
+// Fork inherits parent context
 <Fork
   agent={<SubAgent />}
-  inherit={{ state: true }} // Inherit parent's COM state
+  inherit={{ timeline: 'copy', context: true, hooks: true }}
   waitUntilComplete={true}
 />
-```
 
-The forked execution shares the same context (user, traceId, etc.) as the parent.
-Spawn creates an independent execution with a fresh engine instance.
+// Spawn is isolated - starts fresh
+<Spawn
+  agent={<IndependentAgent />}
+  input={{ timeline: [] }}  // Must provide input explicitly
+/>
+```
 
 ## Best Practices
 
