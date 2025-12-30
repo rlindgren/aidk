@@ -1,5 +1,13 @@
 # aidk-react
 
+## 0.1.3
+
+### Patch Changes
+
+- ae37abc: New stream events and fork/spawn apis
+- Updated dependencies [ae37abc]
+  - aidk-client@0.1.3
+
 ## 0.1.2
 
 ### Patch Changes

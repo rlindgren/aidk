@@ -1,6 +1,6 @@
 {
   "name": "aidk",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "React-inspired JSX framework for building AI agents",
   "keywords": [
     "agent",

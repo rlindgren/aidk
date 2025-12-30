@@ -1,6 +1,6 @@
 {
   "name": "aidk-kernel",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Low-level execution primitives for AIDK",
   "keywords": [
     "agent",
