@@ -16,15 +16,24 @@ This will prompt you to:
 2. Choose the bump type (major/minor/patch)
 3. Write a summary of the changes
 
+Commit the generated changeset file with your PR.
+
 ## Releasing
 
-To release new versions:
+Releases are automated via GitHub Actions:
+
+1. When PRs with changesets are merged to `master`, a "chore: version packages" PR is automatically created/updated
+2. This PR contains all version bumps and changelog updates
+3. When you're ready to release, merge the version PR
+4. Merging triggers automatic publishing to npm and creates GitHub releases with tags
+
+### Manual commands (for local testing only)
 
 ```bash
-# Version packages (updates package.json versions and CHANGELOG.md)
+# Preview version changes locally
 pnpm version-packages
 
-# Build and publish to npm
+# Publish (requires NPM_TOKEN - prefer using CI)
 pnpm publish-packages
 ```
 
