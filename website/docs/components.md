@@ -14,23 +14,23 @@ import { Component, COM, TickState, signal, comState } from 'aidk';
 class MyAgent extends Component {
   // Local state (component-only)
   private count = signal(0);
-  
+
   // Shared state (persisted across ticks)
   private timeline = comState<any[]>('timeline', []);
-  
+
   // Lifecycle: Called when component mounts
   async onMount(com: COM) {
     console.log('Component mounted');
     await this.loadInitialState();
   }
-  
+
   // Lifecycle: Called before each tick
   onTickStart(com: COM, state: TickState) {
     if (state.current?.timeline) {
       this.timeline.update(t => [...t, ...state.current.timeline]);
     }
   }
-  
+
   // Required: Render method
   render(com: COM, state: TickState) {
     return (
@@ -44,7 +44,7 @@ class MyAgent extends Component {
       </>
     );
   }
-  
+
   // Lifecycle: Called when component unmounts
   onUnmount(com: COM) {
     console.log('Component unmounting');
@@ -53,6 +53,7 @@ class MyAgent extends Component {
 ```
 
 **Benefits:**
+
 - Full lifecycle hook support
 - Signal-based state management
 - `this` context for methods
@@ -93,21 +94,21 @@ import { useSignal, useComState, useOnMount, useTickStart } from 'aidk';
 function MessageTimeline() {
   // Local state
   const count = useSignal(0);
-  
+
   // Shared state
   const timeline = useComState<Message[]>('timeline', []);
-  
+
   // Lifecycle hooks
   useOnMount((com) => {
     console.log('Timeline mounted');
   });
-  
+
   useTickStart((com, state) => {
     if (state.current?.timeline) {
       timeline.update(t => [...t, ...state.current.timeline]);
     }
   });
-  
+
   return (
     <Timeline>
       {timeline().map((msg, i) => (
@@ -119,6 +120,7 @@ function MessageTimeline() {
 ```
 
 **Benefits:**
+
 - Simple, concise syntax
 - Props-based (fully typed)
 - Great for reusable components
@@ -127,16 +129,17 @@ function MessageTimeline() {
 
 ### When to Use Each
 
-| Use Case | Recommended |
-|----------|-------------|
-| Root agent | Class component (preferred) or functional with hooks |
-| Tool component | Class component or functional with hooks |
-| Stateful component | Either - class with `signal()` or functional with `useSignal()` |
-| Simple presentation | Functional component (no hooks needed) |
-| Reusable UI piece | Functional component |
-| Nested formatting | Functional component |
+| Use Case            | Recommended                                                     |
+| ------------------- | --------------------------------------------------------------- |
+| Root agent          | Class component (preferred) or functional with hooks            |
+| Tool component      | Class component or functional with hooks                        |
+| Stateful component  | Either - class with `signal()` or functional with `useSignal()` |
+| Simple presentation | Functional component (no hooks needed)                          |
+| Reusable UI piece   | Functional component                                            |
+| Nested formatting   | Functional component                                            |
 
 **General Rule:** Both styles have full capabilities. Choose based on preference:
+
 - **Class components:** Traditional OOP style, clear lifecycle methods
 - **Functional components:** Modern hooks style, more concise
 
@@ -168,17 +171,17 @@ function FormattedMessage({ message }: { message: Message }) {
 // Class component using it
 class ChatAgent extends Component {
   private timeline = comState<any[]>('timeline', []);
-  
+
   render(com: COM, state: TickState) {
     return (
       <>
         <AiSdkModel model={openai('gpt-4o')} />
-        
+
         <Timeline>
           {this.timeline().map((entry, index) => (
-            <FormattedMessage 
-              key={`msg-${index}`} 
-              message={entry.message} 
+            <FormattedMessage
+              key={`msg-${index}`}
+              message={entry.message}
             />
           ))}
         </Timeline>
@@ -208,10 +211,10 @@ class MainAgent extends Component {
     return (
       <>
         <AiSdkModel model={openai('gpt-4o')} />
-        
+
         {/* Nested class component */}
         <UserContext />
-        
+
         <Timeline>{/* ... */}</Timeline>
       </>
     );
@@ -246,7 +249,7 @@ function FormattedMessage({ message }: { message: Message }) {
 
 function SlidingWindow({ messages }: { messages: Message[] }) {
   const recent = messages.slice(-10);
-  
+
   return (
     <Timeline>
       {recent.map((msg, i) => (
@@ -258,7 +261,7 @@ function SlidingWindow({ messages }: { messages: Message[] }) {
 
 class ChatAgent extends Component {
   private timeline = comState<Message[]>('timeline', []);
-  
+
   render() {
     return (
       <>
@@ -271,6 +274,7 @@ class ChatAgent extends Component {
 ```
 
 **Component tree:**
+
 ```
 ChatAgent (class)
 └── SlidingWindow (function)
@@ -291,42 +295,42 @@ class LifecycleExample extends Component {
     // Called once when component mounts
     console.log('Mounted');
   }
-  
+
   async onStart(com: COM) {
     // Called before first tick
     console.log('Starting');
   }
-  
+
   onTickStart(com: COM, state: TickState) {
     // Called before each render
     console.log(`Tick ${state.tick} starting`);
   }
-  
+
   render(com: COM, state: TickState) {
     // Called every tick to build context
     return <>{/* ... */}</>;
   }
-  
+
   onAfterCompile(com: COM, compiled: any, state: TickState) {
     // Called after compilation, before model call
     console.log('Context compiled');
   }
-  
+
   onTickEnd(com: COM, state: TickState) {
     // Called after model responds
     console.log(`Tick ${state.tick} complete`);
   }
-  
+
   onComplete(com: COM, finalState: any) {
     // Called when execution finishes
     console.log('Complete');
   }
-  
+
   onUnmount(com: COM) {
     // Called when component is removed
     console.log('Unmounting');
   }
-  
+
   onError(com: COM, error: Error, state: TickState) {
     // Called on errors
     console.error('Error:', error);
@@ -339,13 +343,13 @@ class LifecycleExample extends Component {
 Function components use lifecycle hooks:
 
 ```tsx
-import { 
-  useOnMount, 
-  useOnUnmount, 
-  useTickStart, 
+import {
+  useOnMount,
+  useOnUnmount,
+  useTickStart,
   useTickEnd,
   useInit,
-  useEffect 
+  useEffect
 } from 'aidk';
 
 function LifecycleExample() {
@@ -353,33 +357,33 @@ function LifecycleExample() {
   await useInit(async (com, state) => {
     console.log('Initializing...');
   });
-  
+
   // Mount (non-blocking, runs after first render)
   useOnMount((com) => {
     console.log('Mounted');
   });
-  
+
   // Before each tick
   useTickStart((com, state) => {
     console.log(`Tick ${state.tick} starting`);
   });
-  
+
   // After each tick
   useTickEnd((com, state) => {
     console.log(`Tick ${state.tick} complete`);
   });
-  
+
   // Unmount
   useOnUnmount((com) => {
     console.log('Unmounting');
   });
-  
+
   // Side effects with dependencies
   useEffect(async () => {
     console.log('Effect running');
     return () => console.log('Effect cleanup');
   }, [/* deps */]);
-  
+
   return <Text>Hello</Text>;
 }
 ```
@@ -422,12 +426,12 @@ interface AgentProps {
 class ConfigurableAgent extends Component<AgentProps> {
   render(com: COM, state: TickState) {
     const { model = 'gpt-4o', temperature = 0.7 } = this.props;
-    
+
     return (
       <>
-        <AiSdkModel 
-          model={openai(model)} 
-          temperature={temperature} 
+        <AiSdkModel
+          model={openai(model)}
+          temperature={temperature}
         />
         <Timeline>{/* ... */}</Timeline>
       </>
@@ -458,13 +462,13 @@ function MessageList({ messages }: { messages: Message[] }) {
 // Container (class)
 class ChatContainer extends Component {
   private messages = comState<Message[]>('messages', []);
-  
+
   onTickStart(com, state) {
     if (state.current?.timeline) {
       this.messages.update(m => [...m, ...state.current.timeline]);
     }
   }
-  
+
   render() {
     return (
       <>
@@ -510,12 +514,12 @@ interface DataFetcherProps {
 
 class DataFetcher extends Component<DataFetcherProps> {
   private data = comState<any>('data', null);
-  
+
   async onMount(com) {
     const result = await fetch(this.props.endpoint);
     this.data.set(await result.json());
   }
-  
+
   render() {
     const data = this.data();
     return data ? this.props.children(data) : null;
@@ -540,7 +544,7 @@ class DataFetcher extends Component<DataFetcherProps> {
 // ✅ Good: Agent as class component
 class ChatAgent extends Component {
   private timeline = comState<any[]>('timeline', []);
-  
+
   onTickStart(com, state) { /* ... */ }
   render(com, state) { /* ... */ }
 }
@@ -620,4 +624,3 @@ function UserProfile(props: any) {
 ---
 
 **Next:** [State Management](/docs/state-management)
-

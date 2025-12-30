@@ -1,12 +1,12 @@
-import { createElement, type JSX } from '../jsx-runtime';
-import { type ComponentBaseProps } from '../jsx-types';
-import { MarkdownRenderer } from '../../renderers';
-import { Renderer } from './renderer';
+import { createElement, type JSX } from "../jsx-runtime";
+import { type ComponentBaseProps } from "../jsx-types";
+import { MarkdownRenderer } from "../../renderers";
+import { Renderer } from "./renderer";
 
 /**
  * Markdown renderer component.
  * Provides markdown rendering context for its children.
- * 
+ *
  * Usage:
  * ```jsx
  * <Markdown>
@@ -19,14 +19,13 @@ export interface MarkdownProps extends ComponentBaseProps {
   /**
    * Markdown flavor: 'github', 'commonmark', or 'gfm'
    */
-  flavor?: 'github' | 'commonmark' | 'gfm';
+  flavor?: "github" | "commonmark" | "gfm";
   children?: any;
 }
 
 export function Markdown(props: MarkdownProps): JSX.Element {
-  return createElement(Renderer, { 
+  return createElement(Renderer, {
     instance: new MarkdownRenderer(props.flavor),
-    children: props.children 
+    children: props.children,
   });
 }
-

@@ -7,10 +7,7 @@
  * @module aidk/context
  */
 
-import {
-  Context as KernelContext,
-  type KernelContext as KernelContextType,
-} from "aidk-kernel";
+import { Context as KernelContext, type KernelContext as KernelContextType } from "aidk-kernel";
 import type { EngineContext } from "../types";
 
 /**
@@ -24,9 +21,7 @@ export class Context {
    * Creates a new EngineContext with defaults.
    * Returns EngineContext (KernelContext with Engine augmentations).
    */
-  static create(
-    overrides: Partial<Omit<EngineContext, "events">> = {},
-  ): EngineContext {
+  static create(overrides: Partial<Omit<EngineContext, "events">> = {}): EngineContext {
     // Call Kernel's Context.create() and cast to EngineContext
     // This is safe because EngineContext extends KernelContext and Engine augments it
     return KernelContext.create(

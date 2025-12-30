@@ -9,11 +9,7 @@ import { Observable } from "rxjs";
 import type { Engine } from "aidk";
 import { ENGINE_TOKEN } from "../tokens";
 import { Context } from "aidk";
-import {
-  defaultContextExtractor,
-  attachContext,
-  type RequestContext,
-} from "aidk-server";
+import { defaultContextExtractor, attachContext, type RequestContext } from "aidk-server";
 
 /**
  * Interceptor that sets up execution context for engine operations.

@@ -110,12 +110,7 @@ export interface GCSSource extends BaseMediaSource {
   readonly project?: string;
 }
 
-export type MediaSource =
-  | UrlSource
-  | Base64Source
-  | FileIdSource
-  | S3Source
-  | GCSSource;
+export type MediaSource = UrlSource | Base64Source | FileIdSource | S3Source | GCSSource;
 
 // ============================================================================
 // Content Blocks
@@ -419,11 +414,7 @@ export type AssistantAllowedBlock =
   | GeneratedFileBlock
   | ExecutableCodeBlock
   | CodeExecutionResultBlock;
-export type EventAllowedBlock =
-  | TextBlock
-  | UserActionBlock
-  | SystemEventBlock
-  | StateChangeBlock;
+export type EventAllowedBlock = TextBlock | UserActionBlock | SystemEventBlock | StateChangeBlock;
 
 // ============================================================================
 // Helper Functions
@@ -437,9 +428,7 @@ export function isToolUseBlock(block: ContentBlock): block is ToolUseBlock {
   return block.type === "tool_use";
 }
 
-export function isToolResultBlock(
-  block: ContentBlock,
-): block is ToolResultBlock {
+export function isToolResultBlock(block: ContentBlock): block is ToolResultBlock {
   return block.type === "tool_result";
 }
 
@@ -454,27 +443,19 @@ export function isMediaBlock(block: ContentBlock): block is MediaBlock {
 
 export function isEventBlock(block: ContentBlock): block is EventBlock {
   return (
-    block.type === "user_action" ||
-    block.type === "system_event" ||
-    block.type === "state_change"
+    block.type === "user_action" || block.type === "system_event" || block.type === "state_change"
   );
 }
 
-export function isUserActionBlock(
-  block: ContentBlock,
-): block is UserActionBlock {
+export function isUserActionBlock(block: ContentBlock): block is UserActionBlock {
   return block.type === "user_action";
 }
 
-export function isSystemEventBlock(
-  block: ContentBlock,
-): block is SystemEventBlock {
+export function isSystemEventBlock(block: ContentBlock): block is SystemEventBlock {
   return block.type === "system_event";
 }
 
-export function isStateChangeBlock(
-  block: ContentBlock,
-): block is StateChangeBlock {
+export function isStateChangeBlock(block: ContentBlock): block is StateChangeBlock {
   return block.type === "state_change";
 }
 
@@ -561,9 +542,7 @@ function base64ToUint8Array(base64: string): Uint8Array {
  * ```
  */
 export function bufferToBase64Source(
-  buffer:
-    | Uint8Array
-    | { buffer: ArrayBufferLike; byteOffset: number; byteLength: number },
+  buffer: Uint8Array | { buffer: ArrayBufferLike; byteOffset: number; byteLength: number },
   mimeType?: string,
 ): Base64Source {
   // Convert Buffer-like object to Uint8Array if needed (Node.js)
@@ -639,10 +618,7 @@ export function isUrlString(str: string): boolean {
  * // { type: 'base64', data: 'iVBORw0KGgo...' }
  * ```
  */
-export function stringToMediaSource(
-  str: string,
-  mimeType?: string,
-): UrlSource | Base64Source {
+export function stringToMediaSource(str: string, mimeType?: string): UrlSource | Base64Source {
   if (isUrlString(str)) {
     return { type: "url", url: str, mimeType };
   }

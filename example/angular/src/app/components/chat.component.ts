@@ -1,14 +1,22 @@
-import { Component, OnInit, ViewChild, ElementRef, AfterViewChecked, DestroyRef, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { ExecutionService, Message, ContentBlockComponent } from 'aidk-angular';
-import { Subject } from 'rxjs';
-import { filter, map, switchMap } from 'rxjs/operators';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ScratchpadComponent } from './scratchpad.component';
+import {
+  Component,
+  OnInit,
+  ViewChild,
+  ElementRef,
+  AfterViewChecked,
+  DestroyRef,
+  inject,
+} from "@angular/core";
+import { CommonModule } from "@angular/common";
+import { FormsModule } from "@angular/forms";
+import { ExecutionService, Message, ContentBlockComponent } from "aidk-angular";
+import { Subject } from "rxjs";
+import { filter, map, switchMap } from "rxjs/operators";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import { ScratchpadComponent } from "./scratchpad.component";
 
 @Component({
-  selector: 'app-chat',
+  selector: "app-chat",
   standalone: true,
   imports: [CommonModule, FormsModule, ScratchpadComponent, ContentBlockComponent],
   template: `
@@ -75,7 +83,8 @@ import { ScratchpadComponent } from './scratchpad.component';
       </form>
     </div>
   `,
-  styles: [`
+  styles: [
+    `
     :host {
       display: flex;
       flex-direction: column;
@@ -447,14 +456,15 @@ import { ScratchpadComponent } from './scratchpad.component';
     .input-form button:hover:not(:disabled) {
       background: var(--color-primary-hover);
     }
-  `],
+  `,
+  ],
 })
 export class ChatComponent implements OnInit, AfterViewChecked {
-  @ViewChild('messagesContainer') private messagesContainer!: ElementRef;
+  @ViewChild("messagesContainer") private messagesContainer!: ElementRef;
 
   messages: Message[] = [];
   isStreaming = false;
-  inputValue = '';
+  inputValue = "";
 
   private shouldScrollToBottom = false;
   private sendMessage$ = new Subject<string>();
@@ -463,26 +473,30 @@ export class ChatComponent implements OnInit, AfterViewChecked {
   constructor(private executionService: ExecutionService) {}
 
   ngOnInit(): void {
-    this.executionService.messages$.pipe(
-      takeUntilDestroyed(this.destroyRef),
-      map((messages: Message[]) => messages.filter((message) => message.role !== 'tool'))
-    ).subscribe((messages) => {
-      this.messages = messages;
-      this.shouldScrollToBottom = true;
-    });
+    this.executionService.messages$
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        map((messages: Message[]) => messages.filter((message) => message.role !== "tool")),
+      )
+      .subscribe((messages) => {
+        this.messages = messages;
+        this.shouldScrollToBottom = true;
+      });
 
-    this.executionService.isStreaming$.pipe(
-      takeUntilDestroyed(this.destroyRef)
-    ).subscribe((isStreaming) => {
-      this.isStreaming = isStreaming;
-    });
+    this.executionService.isStreaming$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((isStreaming) => {
+        this.isStreaming = isStreaming;
+      });
 
-    this.sendMessage$.pipe(
-      switchMap(text => this.executionService.sendMessage('task-assistant', text)),
-      takeUntilDestroyed(this.destroyRef)
-    ).subscribe({
-      error: (err) => console.error('Stream error:', err),
-    });
+    this.sendMessage$
+      .pipe(
+        switchMap((text) => this.executionService.sendMessage("task-assistant", text)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        error: (err) => console.error("Stream error:", err),
+      });
   }
 
   ngAfterViewChecked(): void {
@@ -495,7 +509,7 @@ export class ChatComponent implements OnInit, AfterViewChecked {
   sendMessage(): void {
     if (!this.inputValue.trim()) return;
     this.sendMessage$.next(this.inputValue.trim());
-    this.inputValue = '';
+    this.inputValue = "";
   }
 
   clearChat(): void {
@@ -515,16 +529,20 @@ export class ChatComponent implements OnInit, AfterViewChecked {
 
   /** Filter out empty messages */
   get displayMessages(): Message[] {
-    return this.messages.filter(m => m.content.length > 0);
+    return this.messages.filter((m) => m.content.length > 0);
   }
 
   /** Get display label for message role */
   getRoleLabel(message: Message): string {
     switch (message.role) {
-      case 'user': return 'You';
-      case 'tool': return 'Tool Result';
-      case 'system': return 'System';
-      default: return 'Assistant';
+      case "user":
+        return "You";
+      case "tool":
+        return "Tool Result";
+      case "system":
+        return "System";
+      default:
+        return "Assistant";
     }
   }
 }

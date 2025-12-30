@@ -1,15 +1,15 @@
-import { Component, Input } from '@angular/core';
-import type { ContentBlock } from 'aidk-client';
-import { TextBlockComponent } from './text-block.component';
-import { ReasoningBlockComponent } from './reasoning-block.component';
-import { ToolUseBlockComponent } from './tool-use-block.component';
-import { ToolResultBlockComponent } from './tool-result-block.component';
-import { ImageBlockComponent } from './image-block.component';
-import { CodeBlockComponent } from './code-block.component';
-import { PlaceholderBlockComponent } from './placeholder-block.component';
+import { Component, Input } from "@angular/core";
+import type { ContentBlock } from "aidk-client";
+import { TextBlockComponent } from "./text-block.component";
+import { ReasoningBlockComponent } from "./reasoning-block.component";
+import { ToolUseBlockComponent } from "./tool-use-block.component";
+import { ToolResultBlockComponent } from "./tool-result-block.component";
+import { ImageBlockComponent } from "./image-block.component";
+import { CodeBlockComponent } from "./code-block.component";
+import { PlaceholderBlockComponent } from "./placeholder-block.component";
 
 @Component({
-  selector: 'aidk-content-block',
+  selector: "aidk-content-block",
   standalone: true,
   imports: [
     TextBlockComponent,
@@ -69,22 +69,21 @@ export class ContentBlockComponent {
   toImageBlock(block: any) {
     return {
       ...block,
-      type: 'image',
-      source: { type: 'base64', data: block.data },
+      type: "image",
+      source: { type: "base64", data: block.data },
     };
   }
 
   toCodeBlock(block: any, language: string) {
-    return { ...block, type: 'code', language };
+    return { ...block, type: "code", language };
   }
 
   executableToCodeBlock(block: any) {
     return {
       ...block,
-      type: 'code',
+      type: "code",
       text: block.code,
-      language: block.language || 'code',
+      language: block.language || "code",
     };
   }
 }
-

@@ -1,4 +1,9 @@
-import type { ChannelTransport, ChannelEvent, ConnectionMetadata, ChannelTransportConfig } from '../service';
+import type {
+  ChannelTransport,
+  ChannelEvent,
+  ConnectionMetadata,
+  ChannelTransportConfig,
+} from "../service";
 
 /**
  * Configuration for StreamableHTTPTransport
@@ -37,20 +42,20 @@ export interface StreamableHTTPTransportConfig extends ChannelTransportConfig {
 
 /**
  * StreamableHTTPTransport implements bidirectional HTTP communication.
- * 
+ *
  * Architecture:
  * - Client -> Server: HTTP POST requests (with event.target for room routing)
  * - Server -> Client: Server-Sent Events (SSE) stream
- * 
+ *
  * Room management:
  * - Client sends join-room/leave-room requests
  * - Server tracks room membership
  * - Events with target.rooms are routed by server
- * 
+ *
  * This follows the MCP Streamable HTTP pattern but adapted for channels.
  */
 export class StreamableHTTPTransport implements ChannelTransport {
-  public readonly name = 'streamable-http';
+  public readonly name = "streamable-http";
 
   private config: StreamableHTTPTransportConfig & {
     headers: Record<string, string>;
@@ -79,18 +84,21 @@ export class StreamableHTTPTransport implements ChannelTransport {
 
     // Add auth header if token provided
     if (this.config.token) {
-      this.config.headers['Authorization'] = `Bearer ${this.config.token}`;
+      this.config.headers["Authorization"] = `Bearer ${this.config.token}`;
     }
 
     // Set content type for POST requests
-    this.config.headers['Content-Type'] = 'application/json';
+    this.config.headers["Content-Type"] = "application/json";
   }
 
   /**
    * Connect to the transport with optional metadata.
    * Opens SSE connection for receiving events.
    */
-  async connect(connectionId: string, metadata?: ConnectionMetadata & { channels?: string[] }): Promise<void> {
+  async connect(
+    connectionId: string,
+    metadata?: ConnectionMetadata & { channels?: string[] },
+  ): Promise<void> {
     this.currentConnectionId = connectionId;
     this.connectionMetadata = metadata;
     this.channelFilter = metadata?.channels as string[] | undefined;
@@ -103,7 +111,7 @@ export class StreamableHTTPTransport implements ChannelTransport {
    */
   private async connectSSE(): Promise<void> {
     if (!this.currentConnectionId) {
-      throw new Error('Connection ID required for connection');
+      throw new Error("Connection ID required for connection");
     }
 
     // Close existing connection if any
@@ -112,17 +120,17 @@ export class StreamableHTTPTransport implements ChannelTransport {
     try {
       // Build SSE URL with connection ID and metadata
       const url = new URL(`${this.config.url}/sse`);
-      url.searchParams.set('connectionId', this.currentConnectionId);
+      url.searchParams.set("connectionId", this.currentConnectionId);
       if (this.channelFilter && this.channelFilter.length > 0) {
-        url.searchParams.set('channels', this.channelFilter.join(','));
+        url.searchParams.set("channels", this.channelFilter.join(","));
       }
       if (this.connectionMetadata?.userId) {
-        url.searchParams.set('userId', this.connectionMetadata.userId as string);
+        url.searchParams.set("userId", this.connectionMetadata.userId as string);
       }
       const sseUrl = url.toString();
-      
+
       // Create EventSource for SSE (browser) or use fetch with streaming (Node.js)
-      if (typeof EventSource !== 'undefined') {
+      if (typeof EventSource !== "undefined") {
         // Browser environment
         this.eventSource = new EventSource(sseUrl, {
           withCredentials: false,
@@ -131,30 +139,35 @@ export class StreamableHTTPTransport implements ChannelTransport {
         this.eventSource.onmessage = (event) => {
           try {
             const channelEvent: ChannelEvent = JSON.parse(event.data);
-            
+
             // Apply excludeSender filtering
-            const sourceConnectionId = channelEvent.metadata?.['sourceConnectionId'] as string | undefined;
-            if (channelEvent.target?.excludeSender && sourceConnectionId === this.currentConnectionId) {
+            const sourceConnectionId = channelEvent.metadata?.["sourceConnectionId"] as
+              | string
+              | undefined;
+            if (
+              channelEvent.target?.excludeSender &&
+              sourceConnectionId === this.currentConnectionId
+            ) {
               return; // Skip - we're the sender
             }
-            
+
             if (this.receiveHandler) {
               this.receiveHandler(channelEvent);
             }
           } catch (error) {
-            console.error('Failed to parse SSE event:', error);
+            console.error("Failed to parse SSE event:", error);
           }
         };
 
         this.eventSource.onerror = (error) => {
-          console.error('SSE connection error:', error);
+          console.error("SSE connection error:", error);
           this.handleReconnect();
         };
 
         this.eventSource.onopen = () => {
           this.isConnected = true;
           this.reconnectAttempts = 0;
-          
+
           // Auto-join rooms after connection
           if (this.config.autoJoinRooms && this.connectionMetadata) {
             const autoRooms = this.config.autoJoinRooms(this.connectionMetadata);
@@ -170,7 +183,7 @@ export class StreamableHTTPTransport implements ChannelTransport {
         await this.connectSSENode();
       }
     } catch (error) {
-      console.error('Failed to connect SSE:', error);
+      console.error("Failed to connect SSE:", error);
       this.handleReconnect();
       throw error;
     }
@@ -181,26 +194,26 @@ export class StreamableHTTPTransport implements ChannelTransport {
    */
   private async connectSSENode(): Promise<void> {
     if (!this.currentConnectionId) {
-      throw new Error('Connection ID required for connection');
+      throw new Error("Connection ID required for connection");
     }
 
     // Build SSE URL with connection ID and metadata
     const url = new URL(`${this.config.url}/sse`);
-    url.searchParams.set('connectionId', this.currentConnectionId);
+    url.searchParams.set("connectionId", this.currentConnectionId);
     if (this.channelFilter && this.channelFilter.length > 0) {
-      url.searchParams.set('channels', this.channelFilter.join(','));
+      url.searchParams.set("channels", this.channelFilter.join(","));
     }
     if (this.connectionMetadata?.userId) {
-      url.searchParams.set('userId', this.connectionMetadata.userId as string);
+      url.searchParams.set("userId", this.connectionMetadata.userId as string);
     }
     const sseUrl = url.toString();
-    
+
     try {
       const response = await fetch(sseUrl, {
-        method: 'GET',
+        method: "GET",
         headers: {
           ...this.config.headers,
-          Accept: 'text/event-stream',
+          Accept: "text/event-stream",
         },
         signal: AbortSignal.timeout(this.config.timeout),
       });
@@ -210,7 +223,7 @@ export class StreamableHTTPTransport implements ChannelTransport {
       }
 
       if (!response.body) {
-        throw new Error('SSE stream body is null');
+        throw new Error("SSE stream body is null");
       }
 
       this.isConnected = true;
@@ -229,13 +242,13 @@ export class StreamableHTTPTransport implements ChannelTransport {
       // Read SSE stream
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
-      let buffer = '';
+      let buffer = "";
 
       const readStream = async () => {
         try {
           while (true) {
             const { done, value } = await reader.read();
-            
+
             if (done) {
               this.isConnected = false;
               this.handleReconnect();
@@ -243,32 +256,37 @@ export class StreamableHTTPTransport implements ChannelTransport {
             }
 
             buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split('\n');
-            buffer = lines.pop() || '';
+            const lines = buffer.split("\n");
+            buffer = lines.pop() || "";
 
             for (const line of lines) {
-              if (line.startsWith('data: ')) {
+              if (line.startsWith("data: ")) {
                 try {
                   const data = line.slice(6);
                   const channelEvent: ChannelEvent = JSON.parse(data);
-                  
+
                   // Apply excludeSender filtering
-                  const sourceConnectionId = channelEvent.metadata?.['sourceConnectionId'] as string | undefined;
-                  if (channelEvent.target?.excludeSender && sourceConnectionId === this.currentConnectionId) {
+                  const sourceConnectionId = channelEvent.metadata?.["sourceConnectionId"] as
+                    | string
+                    | undefined;
+                  if (
+                    channelEvent.target?.excludeSender &&
+                    sourceConnectionId === this.currentConnectionId
+                  ) {
                     continue;
                   }
-                  
+
                   if (this.receiveHandler) {
                     this.receiveHandler(channelEvent);
                   }
                 } catch (error) {
-                  console.error('Failed to parse SSE event:', error);
+                  console.error("Failed to parse SSE event:", error);
                 }
               }
             }
           }
         } catch (error) {
-          console.error('Error reading SSE stream:', error);
+          console.error("Error reading SSE stream:", error);
           this.isConnected = false;
           this.handleReconnect();
         }
@@ -286,7 +304,7 @@ export class StreamableHTTPTransport implements ChannelTransport {
    */
   private handleReconnect(): void {
     if (this.reconnectAttempts >= this.config.maxReconnectAttempts) {
-      console.error('Max reconnection attempts reached');
+      console.error("Max reconnection attempts reached");
       return;
     }
 
@@ -296,7 +314,7 @@ export class StreamableHTTPTransport implements ChannelTransport {
     this.reconnectTimer = setTimeout(() => {
       if (this.currentConnectionId) {
         this.connectSSE().catch((error) => {
-          console.error('Reconnection failed:', error);
+          console.error("Reconnection failed:", error);
         });
       }
     }, delay);
@@ -308,7 +326,7 @@ export class StreamableHTTPTransport implements ChannelTransport {
   async join(connectionId: string, room: string): Promise<void> {
     try {
       const response = await fetch(`${this.config.url}/rooms/join`, {
-        method: 'POST',
+        method: "POST",
         headers: this.config.headers,
         body: JSON.stringify({
           connectionId: this.currentConnectionId,
@@ -335,7 +353,7 @@ export class StreamableHTTPTransport implements ChannelTransport {
   async leave(connectionId: string, room: string): Promise<void> {
     try {
       const response = await fetch(`${this.config.url}/rooms/leave`, {
-        method: 'POST',
+        method: "POST",
         headers: this.config.headers,
         body: JSON.stringify({
           connectionId: this.currentConnectionId,
@@ -369,7 +387,7 @@ export class StreamableHTTPTransport implements ChannelTransport {
   async disconnect(_connectionId?: string): Promise<void> {
     this.isConnected = false;
     this.joinedRooms.clear();
-    
+
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = undefined;
@@ -390,12 +408,12 @@ export class StreamableHTTPTransport implements ChannelTransport {
    */
   async send(event: ChannelEvent): Promise<void> {
     if (!this.currentConnectionId) {
-      throw new Error('Not connected. Call connect() first.');
+      throw new Error("Not connected. Call connect() first.");
     }
 
     try {
       const response = await fetch(`${this.config.url}/events`, {
-        method: 'POST',
+        method: "POST",
         headers: this.config.headers,
         body: JSON.stringify({
           ...event,
@@ -411,7 +429,7 @@ export class StreamableHTTPTransport implements ChannelTransport {
         throw new Error(`Failed to send event: ${response.status} ${response.statusText}`);
       }
     } catch (error) {
-      console.error('Failed to send event:', error);
+      console.error("Failed to send event:", error);
       throw error;
     }
   }

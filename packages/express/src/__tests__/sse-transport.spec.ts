@@ -161,9 +161,7 @@ describe("SSETransport", () => {
 
       await transport.connect("conn-1", {});
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining("without Response object"),
-      );
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("without Response object"));
       expect(transport.isConnected("conn-1")).toBe(false);
 
       consoleSpy.mockRestore();
@@ -210,10 +208,7 @@ describe("SSETransport", () => {
 
     it("should auto-join rooms based on metadata", async () => {
       const autoJoinTransport = new SSETransport({
-        autoJoinRooms: (meta) => [
-          `user:${meta.userId}`,
-          `tenant:${meta.tenantId}`,
-        ],
+        autoJoinRooms: (meta) => [`user:${meta.userId}`, `tenant:${meta.tenantId}`],
       });
       const mockRes = createMockResponse();
 
@@ -354,9 +349,7 @@ describe("SSETransport", () => {
 
       await transport.join("unknown-conn", "room-1");
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining("not found"),
-      );
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("not found"));
 
       consoleSpy.mockRestore();
     });
@@ -519,9 +512,7 @@ describe("SSETransport", () => {
 
       jest.advanceTimersByTime(10000);
 
-      const heartbeats = mockRes._written.filter((w) =>
-        w.includes("heartbeat"),
-      );
+      const heartbeats = mockRes._written.filter((w) => w.includes("heartbeat"));
       expect(heartbeats.length).toBeGreaterThan(0);
 
       heartbeatTransport.disconnect();
@@ -535,9 +526,7 @@ describe("SSETransport", () => {
       // Default is 30000ms
       jest.advanceTimersByTime(30000);
 
-      const heartbeats = mockRes._written.filter((w) =>
-        w.includes("heartbeat"),
-      );
+      const heartbeats = mockRes._written.filter((w) => w.includes("heartbeat"));
       expect(heartbeats.length).toBeGreaterThan(0);
     });
   });
@@ -574,9 +563,7 @@ describe("SSETransport", () => {
       expect(mockRes2._ended).toBe(true);
 
       // Should have sent shutdown event
-      expect(mockRes1._written.some((w) => w.includes("server_shutdown"))).toBe(
-        true,
-      );
+      expect(mockRes1._written.some((w) => w.includes("server_shutdown"))).toBe(true);
     });
   });
 

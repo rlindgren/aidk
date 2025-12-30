@@ -186,9 +186,7 @@ describe("TickState.queuedMessages", () => {
     const tickState: TickState = {
       tick: 1,
       stop: jest.fn(),
-      queuedMessages: [
-        { id: "msg_1", timestamp: Date.now(), type: "test", content: {} },
-      ],
+      queuedMessages: [{ id: "msg_1", timestamp: Date.now(), type: "test", content: {} }],
     } as unknown as TickState;
 
     expect(tickState.queuedMessages).toBeDefined();

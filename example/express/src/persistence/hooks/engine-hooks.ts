@@ -1,21 +1,21 @@
 /**
  * Engine Hooks - Persistence for engine.execute and engine.stream
- * 
+ *
  * These hooks handle top-level execution tracking. When an agent runs,
  * we create execution and interaction records, track status, and
  * persist messages from the stream.
  */
 
-import type { EngineHookArgs, EngineHookMiddleware } from 'aidk';
-import type { Message as EngineMessage } from 'aidk/content';
+import type { EngineHookArgs, EngineHookMiddleware } from "aidk";
+import type { Message as EngineMessage } from "aidk/content";
 import type {
   ExecutionRepository,
   MetricsRepository,
   MessageRepository,
   MessageBlockRepository,
   InteractionRepository,
-} from '../repositories';
-import { generateUUID, getRootNameFromJSX, tryGetExecutionContext } from './utils';
+} from "../repositories";
+import { generateUUID, getRootNameFromJSX, tryGetExecutionContext } from "./utils";
 
 export interface EngineHooksConfig {
   executionRepo: ExecutionRepository;
@@ -28,7 +28,7 @@ export interface EngineHooksConfig {
 /**
  * Create engine.execute hook
  */
-export function createExecuteHook(config: EngineHooksConfig): EngineHookMiddleware<'execute'> {
+export function createExecuteHook(config: EngineHooksConfig): EngineHookMiddleware<"execute"> {
   const { executionRepo, metricsRepo, interactionRepo } = config;
 
   return async (args, _envelope, next) => {
@@ -44,9 +44,9 @@ export function createExecuteHook(config: EngineHooksConfig): EngineHookMiddlewa
     // Create interaction record
     await interactionRepo.create({
       id: interactionId,
-      type: 'agent',
-      origin: 'user_request',
-      app_origin: 'example-app',
+      type: "agent",
+      origin: "user_request",
+      app_origin: "example-app",
       agent_id: agentId,
       thread_id: threadId,
       root_executionId: executionId,
@@ -57,8 +57,8 @@ export function createExecuteHook(config: EngineHooksConfig): EngineHookMiddlewa
     // Create execution record
     const execution = await executionRepo.create({
       id: executionId,
-      type: 'agent',
-      status: 'running',
+      type: "agent",
+      status: "running",
       root_id: executionId,
       thread_id: threadId,
       user_id: userId,
@@ -98,13 +98,13 @@ export function createExecuteHook(config: EngineHooksConfig): EngineHookMiddlewa
     try {
       const result = await next();
       await executionRepo.update(executionId, {
-        status: 'completed',
+        status: "completed",
         completed_at: new Date(),
       });
       return result;
     } catch (error: any) {
       await executionRepo.update(executionId, {
-        status: 'failed',
+        status: "failed",
         error: JSON.stringify({ message: error.message, stack: error.stack }),
         completed_at: new Date(),
       });
@@ -116,7 +116,7 @@ export function createExecuteHook(config: EngineHooksConfig): EngineHookMiddlewa
 /**
  * Create engine.stream hook
  */
-export function createStreamHook(config: EngineHooksConfig): EngineHookMiddleware<'stream'> {
+export function createStreamHook(config: EngineHooksConfig): EngineHookMiddleware<"stream"> {
   const { executionRepo, metricsRepo, messageRepo, messageBlockRepo, interactionRepo } = config;
 
   return async (args, _envelope, next) => {
@@ -132,9 +132,9 @@ export function createStreamHook(config: EngineHooksConfig): EngineHookMiddlewar
     // Create interaction record
     await interactionRepo.create({
       id: interactionId,
-      type: 'agent',
-      origin: 'user_request',
-      app_origin: 'example-app',
+      type: "agent",
+      origin: "user_request",
+      app_origin: "example-app",
       agent_id: agentId,
       thread_id: threadId,
       root_executionId: executionId,
@@ -145,8 +145,8 @@ export function createStreamHook(config: EngineHooksConfig): EngineHookMiddlewar
     // Create execution record
     const execution = await executionRepo.create({
       id: executionId,
-      type: 'agent',
-      status: 'running',
+      type: "agent",
+      status: "running",
       root_id: executionId,
       thread_id: threadId,
       user_id: userId,
@@ -184,10 +184,10 @@ export function createStreamHook(config: EngineHooksConfig): EngineHookMiddlewar
     (handle as any).operationContext = { userId, tenantId, threadId };
 
     // Helper to persist a single message
-    async function persistMessage(message: EngineMessage, source: 'user' | 'agent') {
+    async function persistMessage(message: EngineMessage, source: "user" | "agent") {
       const messageId = generateUUID();
       console.log(`💾 Saving: role=${message.role}, blocks=${message.content?.length || 0}`);
-      
+
       await messageRepo.create({
         id: messageId,
         execution_id: executionId,
@@ -215,58 +215,62 @@ export function createStreamHook(config: EngineHooksConfig): EngineHookMiddlewar
       const stream = await next();
       let userInputPersisted = false;
       const toolResultsForTick: any[] = [];
-      
+
       return (async function* () {
         for await (const event of stream) {
           // On first tick_end, persist user input messages
-          if (event.type === 'tick_end' && event.tick === 1 && !userInputPersisted) {
+          if (event.type === "tick_end" && event.tick === 1 && !userInputPersisted) {
             userInputPersisted = true;
-            
+
             const userMessages = ((input as any).timeline || []).filter((entry: any) => {
-              if (entry.kind !== 'message') return false;
-              return entry.message?.role === 'user';
+              if (entry.kind !== "message") return false;
+              return entry.message?.role === "user";
             });
-            
+
             for (const entry of userMessages) {
-              await persistMessage(entry.message as EngineMessage, 'user');
+              await persistMessage(entry.message as EngineMessage, "user");
             }
           }
-          
+
           // Collect tool results as they stream
-          if (event.type === 'tool_result' && event.result) {
+          if (event.type === "tool_result" && event.result) {
             toolResultsForTick.push(event.result);
           }
-          
+
           // Persist model output at every tick_end
-          if (event.type === 'tick_end' && event.response?.newTimelineEntries) {
+          if (event.type === "tick_end" && event.response?.newTimelineEntries) {
             const newEntries = event.response.newTimelineEntries;
-            
+
             // Filter: only message entries with content, skip system messages and empty messages
             const messagesToPersist = newEntries.filter((entry: any) => {
-              if (entry.kind !== 'message') return false;
+              if (entry.kind !== "message") return false;
               const msg = entry.message;
-              if (!msg || msg.role === 'system') return false;
+              if (!msg || msg.role === "system") return false;
               // Skip messages with empty content
               if (!msg.content || msg.content.length === 0) return false;
               return true;
             });
-            
+
             if (messagesToPersist.length > 0) {
-              console.log(`💾 Persisting ${messagesToPersist.length} model messages (tick ${event.tick})`);
+              console.log(
+                `💾 Persisting ${messagesToPersist.length} model messages (tick ${event.tick})`,
+              );
             }
-            
+
             for (const entry of messagesToPersist) {
-              await persistMessage(entry.message as EngineMessage, 'agent');
+              await persistMessage(entry.message as EngineMessage, "agent");
             }
-            
+
             // Persist tool results collected during this tick
             if (toolResultsForTick.length > 0) {
-              console.log(`💾 Persisting ${toolResultsForTick.length} tool results (tick ${event.tick})`);
-              
+              console.log(
+                `💾 Persisting ${toolResultsForTick.length} tool results (tick ${event.tick})`,
+              );
+
               const toolResultMessage: EngineMessage = {
-                role: 'tool',
-                content: toolResultsForTick.map(r => ({
-                  type: 'tool_result' as const,
+                role: "tool",
+                content: toolResultsForTick.map((r) => ({
+                  type: "tool_result" as const,
                   toolUseId: r.toolUseId,
                   id: r.id,
                   name: r.name,
@@ -274,23 +278,23 @@ export function createStreamHook(config: EngineHooksConfig): EngineHookMiddlewar
                   isError: !r.success,
                 })),
               };
-              
-              await persistMessage(toolResultMessage, 'agent');
+
+              await persistMessage(toolResultMessage, "agent");
               toolResultsForTick.length = 0;
             }
           }
-          
+
           yield event;
         }
-        
+
         await executionRepo.update(executionId, {
-          status: 'completed',
+          status: "completed",
           completed_at: new Date(),
         });
       })();
     } catch (error: any) {
       await executionRepo.update(executionId, {
-        status: 'failed',
+        status: "failed",
         error: JSON.stringify({ message: error.message, stack: error.stack }),
         completed_at: new Date(),
       });
@@ -298,4 +302,3 @@ export function createStreamHook(config: EngineHooksConfig): EngineHookMiddlewar
     }
   };
 }
-

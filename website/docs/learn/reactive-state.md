@@ -6,10 +6,10 @@ This tutorial covers state management patterns in AIDK—from simple COM state t
 
 AIDK provides two complementary state systems:
 
-| System | Use Case | Reactivity |
-|--------|----------|------------|
-| **COM State** | Shared state across components | Manual |
-| **Signals** | Component-local reactive state | Automatic |
+| System        | Use Case                       | Reactivity |
+| ------------- | ------------------------------ | ---------- |
+| **COM State** | Shared state across components | Manual     |
+| **Signals**   | Component-local reactive state | Automatic  |
 
 ## COM State
 

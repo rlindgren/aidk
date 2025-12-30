@@ -1,13 +1,17 @@
-import type { Middleware } from 'aidk-kernel';
-import type { ContentBlock } from 'aidk-shared';
-import { BaseHookRegistry } from '../hooks/base-hook-registry';
-import type { ComponentHookArgs, ComponentHookName, ComponentHookReturn } from '../component/component-hooks';
-import { getGlobalHooks } from '../config';
+import type { Middleware } from "aidk-kernel";
+import type { ContentBlock } from "aidk-shared";
+import { BaseHookRegistry } from "../hooks/base-hook-registry";
+import type {
+  ComponentHookArgs,
+  ComponentHookName,
+  ComponentHookReturn,
+} from "../component/component-hooks";
+import { getGlobalHooks } from "../config";
 
 /**
  * Tool operation names.
  */
-export type ToolHookName = 'run';
+export type ToolHookName = "run";
 
 /**
  * Tool selector for hook registration.
@@ -26,12 +30,14 @@ export type ToolHookMiddleware<T extends ToolHookName | ComponentHookName> = Mid
 /**
  * Arguments for tool hooks.
  */
-export type ToolHookArgs<T extends ToolHookName> = T extends 'run' ? [input: unknown] : never;
+export type ToolHookArgs<T extends ToolHookName> = T extends "run" ? [input: unknown] : never;
 
 /**
  * Return type for tool hooks.
  */
-export type ToolHookReturn<T extends ToolHookName | ComponentHookName> = T extends ToolHookName ? Promise<ContentBlock[]> : ComponentHookReturn<Extract<T, ComponentHookName>>;
+export type ToolHookReturn<T extends ToolHookName | ComponentHookName> = T extends ToolHookName
+  ? Promise<ContentBlock[]>
+  : ComponentHookReturn<Extract<T, ComponentHookName>>;
 
 /**
  * Tool-specific hook registry.
@@ -43,16 +49,16 @@ export class ToolHookRegistry extends BaseHookRegistry<
   ToolHookMiddleware<ToolHookName | ComponentHookName>
 > {
   protected getAllHookNames(): readonly (ToolHookName | ComponentHookName)[] {
-    const toolHookNames: ToolHookName[] = ['run'];
+    const toolHookNames: ToolHookName[] = ["run"];
     const componentHookNames: ComponentHookName[] = [
-      'onMount',
-      'onUnmount',
-      'onStart',
-      'onTickStart',
-      'render',
-      'onTickEnd',
-      'onComplete',
-      'onError',
+      "onMount",
+      "onUnmount",
+      "onStart",
+      "onTickStart",
+      "render",
+      "onTickEnd",
+      "onComplete",
+      "onError",
     ];
     return [...toolHookNames, ...componentHookNames] as const;
   }
@@ -61,25 +67,28 @@ export class ToolHookRegistry extends BaseHookRegistry<
    * Get all middleware for a tool hook.
    * Merges global hooks (from configureEngine) with instance-specific hooks.
    * Global hooks are applied first, then instance hooks.
-   * 
+   *
    * Note: Global hooks only apply to ToolHookName ('run'), not ComponentHookName hooks.
    */
-  getMiddleware(hookName: ToolHookName | ComponentHookName): ToolHookMiddleware<ToolHookName | ComponentHookName>[] {
+  getMiddleware(
+    hookName: ToolHookName | ComponentHookName,
+  ): ToolHookMiddleware<ToolHookName | ComponentHookName>[] {
     const instanceHooks = this.registry.getMiddleware(
       hookName,
-      () => [] // No selectors for now - only global hooks
+      () => [], // No selectors for now - only global hooks
     );
-    
+
     // Merge global hooks (if any) - only for ToolHookName, not ComponentHookName
     // Global hooks are applied first, then instance hooks
-    if (hookName === 'run') {
+    if (hookName === "run") {
       const globalHooks = getGlobalHooks()?.tool?.[hookName];
       if (globalHooks && globalHooks.length > 0) {
-        return [...globalHooks, ...instanceHooks] as ToolHookMiddleware<ToolHookName | ComponentHookName>[];
+        return [...globalHooks, ...instanceHooks] as ToolHookMiddleware<
+          ToolHookName | ComponentHookName
+        >[];
       }
     }
-    
+
     return instanceHooks;
   }
 }
-

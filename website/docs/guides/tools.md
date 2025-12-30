@@ -5,6 +5,7 @@
 This is the key insight. In AIDK, tools aren't just functions that execute when called—they're **full components** with lifecycle hooks, state management, and the ability to render context for the model.
 
 A tool can:
+
 - **Load data on mount** — Initialize state when the agent starts
 - **Render context** — Show the model its current state on every tick
 - **React to lifecycle events** — onTickStart, onTickEnd, onComplete
@@ -37,12 +38,12 @@ export const CalculatorTool = createTool({
     const result = eval(input.expression);
     return [{ type: 'text', text: `${result}` }];
   },
-  
+
   // Tools can have lifecycle hooks
   onMount(com) {
     console.log('Calculator tool mounted');
   },
-  
+
   // Tools can render context
   render(com, state) {
     const history = com.getState<CalcEntry[]>('calc_history') || [];
@@ -64,7 +65,7 @@ export const CalculatorTool = createTool({
 
 For basic tools, just define handler and schema:
 
-``` tsx
+```tsx
 import { createTool } from 'aidk';
 import { z } from 'zod';
 
@@ -107,14 +108,14 @@ class MyAgent extends Component {
 Tools can be full components with lifecycle and rendering:
 
 ```tsx
-import { 
-  createTool, 
-  Context, 
-  COM, 
+import {
+  createTool,
+  Context,
+  COM,
   TickState,
-  Section, 
-  Paragraph, 
-  List, 
+  Section,
+  Paragraph,
+  List,
   ListItem,
   Grounding
 } from 'aidk';
@@ -128,18 +129,18 @@ export const ScratchpadTool = createTool({
     note_id: z.string().optional(),
     text: z.string().optional(),
   }),
-  
+
   // Handler - executes when tool is called
   handler: async (input) => {
     const ctx = context();
     const notes = await NotesService.perform(
-      input.action, 
-      input.text, 
+      input.action,
+      input.text,
       ctx.metadata.threadId
     );
     return [{ type: 'text', text: `Note ${input.action} successful` }];
   },
-  
+
   // Lifecycle: Called when tool is added to agent
   async onMount(com: COM) {
     const ctx = context();
@@ -223,13 +224,13 @@ import { ScratchpadTool } from './tools/scratchpad';
 class MathAgent extends Component {
   // Static tool member - automatically registered
   static tool = CalculatorTool;
-  
+
   render(com: COM, state: TickState) {
     return (
       <>
         <AiSdkModel model={openai('gpt-4o')} />
         <Timeline>{/* ... */}</Timeline>
-        
+
         {/* Tool is automatically available - no need to declare it */}
         <Section audience="model">
           You can use the calculator tool to perform calculations.
@@ -242,12 +243,13 @@ class MathAgent extends Component {
 // Or multiple tools
 class MultiToolAgent extends Component {
   static tools = [CalculatorTool, ScratchpadTool];
-  
+
   render() { /* ... */ }
 }
 ```
 
 **Benefits:**
+
 - Tools declared alongside the component that uses them
 - Automatic registration - no manual `<Tool>` component needed
 - Clear dependencies - tools are part of the component definition
@@ -257,48 +259,48 @@ class MultiToolAgent extends Component {
 
 Tools support the same lifecycle hooks as components:
 
-``` tsx
+```tsx
 export const MyTool = createTool({
   name: 'my_tool',
   description: 'Example tool',
   parameters: z.object({ /* ... */ }),
   handler: async (input) => { /* ... */ },
-  
+
   // Called when tool is added to agent
   async onMount(com: COM) {
     console.log('Tool mounted');
     // Initialize resources
     await loadInitialState(com);
   },
-  
+
   // Called before each tick
   onTickStart(com: COM, state: TickState) {
     console.log(`Tick ${state.tick} starting`);
     // Update state before render
   },
-  
+
   // Called on each tick to render context
   render(com: COM, state: TickState) {
     return <Section>{/* Tool-specific context */}</Section>;
   },
-  
+
   // Called after each tick
   onTickEnd(com: COM, state: TickState) {
     console.log(`Tick ${state.tick} complete`);
   },
-  
+
   // Called when execution completes
   onComplete(com: COM, finalState: any) {
     console.log('Execution complete');
     // Save final state
   },
-  
+
   // Called when tool is removed
   async onUnmount() {
     console.log('Tool unmounting');
     // Cleanup resources
   },
-  
+
   // Called on errors
   onError(com: COM, error: Error, state: TickState) {
     console.error('Tool error:', error);
@@ -312,14 +314,14 @@ export const MyTool = createTool({
 A complete tool with state, lifecycle, and rendering:
 
 ```tsx
-import { 
-  createTool, 
-  Context, 
-  COM, 
+import {
+  createTool,
+  Context,
+  COM,
   TickState,
-  Section, 
+  Section,
   Table,
-  Paragraph 
+  Paragraph
 } from 'aidk';
 import { z } from 'zod';
 
@@ -338,11 +340,11 @@ export const TodoListTool = createTool({
     todo_id: z.string().optional(),
     text: z.string().optional(),
   }),
-  
+
   handler: async (input) => {
     const ctx = context();
     const threadId = ctx.metadata.threadId;
-    
+
     let result;
     switch (input.action) {
       case 'add':
@@ -358,13 +360,13 @@ export const TodoListTool = createTool({
         result = await TodoService.list(threadId);
         break;
     }
-    
-    return [{ 
-      type: 'text', 
-      text: `Todo ${input.action}: ${result.message}` 
+
+    return [{
+      type: 'text',
+      text: `Todo ${input.action}: ${result.message}`
     }];
   },
-  
+
   async onMount(com: COM) {
     const ctx = context();
     const threadId = ctx.metadata.threadId;
@@ -389,7 +391,7 @@ export const TodoListTool = createTool({
     const todos = com.getState<Todo[]>('todos') || [];
     const pending = todos.filter(t => !t.completed);
     const completed = todos.filter(t => t.completed);
-    
+
     return (
       <>
         {/* Tool instructions */}
@@ -398,13 +400,13 @@ export const TodoListTool = createTool({
             You have a <inlineCode>todo_list</inlineCode> tool for managing tasks.
           </Paragraph>
         </Section>
-        
+
         {/* Current state */}
         <Section id="todo-state" audience="model">
           <Paragraph>
             <strong>Current Todo List:</strong>
           </Paragraph>
-          
+
           {pending.length > 0 && (
             <>
               <Paragraph><strong>Pending ({pending.length}):</strong></Paragraph>
@@ -418,7 +420,7 @@ export const TodoListTool = createTool({
               />
             </>
           )}
-          
+
           {completed.length > 0 && (
             <>
               <Paragraph><strong>Completed ({completed.length}):</strong></Paragraph>
@@ -431,7 +433,7 @@ export const TodoListTool = createTool({
               />
             </>
           )}
-          
+
           {todos.length === 0 && (
             <Paragraph><em>No todos yet. Add one to get started.</em></Paragraph>
           )}
@@ -465,7 +467,7 @@ class TaskAssistant extends Component {
       <>
         <AiSdkModel model={openai('gpt-4o')} />
         <Timeline>{/* ... */}</Timeline>
-        
+
         {/* Use tools as JSX components */}
         <TodoListTool />
         <ScratchpadTool />
@@ -477,6 +479,7 @@ class TaskAssistant extends Component {
 ```
 
 **Why this is clean:**
+
 - Tools are components, so use them like components
 - Clear, declarative syntax
 - Easy to see what tools are available
@@ -489,7 +492,7 @@ Attach tools to the component class:
 ```tsx
 class MyAgent extends Component {
   static tool = CalculatorTool;
-  
+
   render() {
     return (
       <>
@@ -502,6 +505,7 @@ class MyAgent extends Component {
 ```
 
 **When to use:**
+
 - Tool is tightly coupled to the component
 - You want automatic registration
 - Tool doesn't need to be conditionally rendered
@@ -511,7 +515,7 @@ class MyAgent extends Component {
 ```tsx
 class MyAgent extends Component {
   static tools = [CalculatorTool, ScratchpadTool, TodoListTool];
-  
+
   render() { /* ... */ }
 }
 ```
@@ -539,17 +543,17 @@ class MyAgent extends Component {
 class MyAgent extends Component {
   render(com, state) {
     const ctx = context();
-    
+
     return (
       <>
         <AiSdkModel model={openai('gpt-4o')} />
-        
+
         {/* Always available */}
         <CalculatorTool />
-        
+
         {/* Conditional on user tier */}
         {ctx.user.isPremium && <AdvancedAnalyticsTool />}
-        
+
         {/* Conditional on state */}
         {state.tick > 5 && <DeepAnalysisTool />}
       </>
@@ -562,7 +566,7 @@ class MyAgent extends Component {
 
 Tools manage state via lifecycle hooks, not in the handler:
 
-``` tsx
+```tsx
 export const StatefulTool = createTool({
   name: 'stateful',
   parameters: z.object({ action: z.string() }),
@@ -611,34 +615,34 @@ Note: The handler only receives `input` and returns `ContentBlock[]`. State upda
 
 Tools have full access to execution context:
 
-``` tsx
+```tsx
 import { Context } from 'aidk';
 
 export const ContextAwareTool = createTool({
   name: 'context_aware',
   parameters: z.object({ /* ... */ }),
-  
+
   handler: async (input) => {
     // Access execution context
     const ctx = context();
-    
+
     // User information
     const userId = ctx.user.id;
     const userName = ctx.user.name;
-    
+
     // Metadata
     const threadId = ctx.metadata.threadId;
     const sessionId = ctx.metadata.sessionId;
-    
+
     // Perform action with context
     await logAction(userId, input);
-    
+
     return [{ type: 'text', text: 'Action completed' }];
   },
-  
+
   render(com) {
     const ctx = context();
-    
+
     return (
       <Section audience="model">
         <Paragraph>
@@ -654,11 +658,11 @@ export const ContextAwareTool = createTool({
 
 Tools can use other tools:
 
-``` tsx
+```tsx
 export const CompositeTool = createTool({
   name: 'composite',
   parameters: z.object({ /* ... */ }),
-  
+
   async onMount(com) {
     // Ensure dependencies are mounted
     const calculator = com.getState('calculator_tool');
@@ -666,17 +670,17 @@ export const CompositeTool = createTool({
       throw new Error('CompositeTool requires CalculatorTool');
     }
   },
-  
+
   handler: async (input) => {
     // Use another tool's functionality
-    const calcResult = await CalculatorTool.handler({ 
-      expression: input.calculation 
+    const calcResult = await CalculatorTool.handler({
+      expression: input.calculation
     });
-    
+
     // Build on top of it
-    return [{ 
-      type: 'text', 
-      text: `Composite result: ${calcResult}` 
+    return [{
+      type: 'text',
+      text: `Composite result: ${calcResult}`
     }];
   }
 });
@@ -686,7 +690,7 @@ export const CompositeTool = createTool({
 
 Test tools like components:
 
-``` tsx
+```tsx
 import { CalculatorTool } from './calculator';
 
 describe('CalculatorTool', () => {
@@ -694,13 +698,13 @@ describe('CalculatorTool', () => {
     const result = await CalculatorTool.handler({ expression: '2 + 2' });
     expect(result[0].text).toContain('4');
   });
-  
+
   it('renders context', () => {
     const com = createMockCOM();
     const rendered = CalculatorTool.render?.(com, createMockState());
     expect(rendered).toBeDefined();
   });
-  
+
   it('initializes on mount', async () => {
     const com = createMockCOM();
     await CalculatorTool.onMount?.(com);
@@ -780,4 +784,3 @@ render(com) {
 ---
 
 **Next:** [Real-time Channels](/docs/guides/channels)
-

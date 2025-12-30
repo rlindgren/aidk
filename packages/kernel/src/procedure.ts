@@ -168,12 +168,7 @@ export interface ExecutionHandle<TOutput> {
 export type HandleFactory<
   THandle extends ExecutionHandle<any> = ExecutionHandle<any>,
   TContext extends KernelContext = KernelContext,
-> = (
-  events: EventEmitter,
-  traceId: string,
-  result: Promise<any>,
-  context: TContext,
-) => THandle;
+> = (events: EventEmitter, traceId: string, result: Promise<any>, context: TContext) => THandle;
 
 /**
  * Configuration options for creating a procedure.
@@ -299,9 +294,7 @@ export interface Procedure<THandler extends (...args: any[]) => any> {
    * Add a single middleware. Returns a new Procedure.
    * Convenience method equivalent to `.use(mw)`.
    */
-  withMiddleware(
-    mw: Middleware<ExtractArgs<THandler>> | MiddlewarePipeline,
-  ): Procedure<THandler>;
+  withMiddleware(mw: Middleware<ExtractArgs<THandler>> | MiddlewarePipeline): Procedure<THandler>;
 
   /**
    * Create a procedure variant with a timeout. Returns a new Procedure.
@@ -326,9 +319,7 @@ export interface Procedure<THandler extends (...args: any[]) => any> {
    */
   pipe<TNext extends (arg: ExtractReturn<THandler>) => any>(
     next: Procedure<TNext>,
-  ): Procedure<
-    (...args: ExtractArgs<THandler>) => Promise<ExtractReturn<TNext>>
-  >;
+  ): Procedure<(...args: ExtractArgs<THandler>) => Promise<ExtractReturn<TNext>>>;
 }
 
 /**
@@ -407,10 +398,7 @@ export type ExtractArgs<T> = T extends {
       }
     ? Args
     : T extends {
-          (
-            this: infer _This,
-            ...args: infer Args
-          ): Generator<infer _Y, infer _R, infer _N>;
+          (this: infer _This, ...args: infer Args): Generator<infer _Y, infer _R, infer _N>;
         }
       ? Args
       : T extends {
@@ -425,9 +413,7 @@ export type ExtractArgs<T> = T extends {
             }
           ? Args
           : T extends {
-                (
-                  ...args: infer Args
-                ): AsyncGenerator<infer _Y, infer _R, infer _N>;
+                (...args: infer Args): AsyncGenerator<infer _Y, infer _R, infer _N>;
               }
             ? Args
             : never;
@@ -500,9 +486,7 @@ export type AsProcedure<T extends (...args: any[]) => any> = Procedure<T>;
  * ```
  */
 export type WithProcedures<T> = {
-  [K in keyof T]: T[K] extends (...args: any[]) => any
-    ? AsProcedure<T[K]>
-    : T[K];
+  [K in keyof T]: T[K] extends (...args: any[]) => any ? AsProcedure<T[K]> : T[K];
 };
 
 // ============================================================================
@@ -563,9 +547,7 @@ export interface MiddlewarePipeline {
  *
  * @see {@link MiddlewarePipeline} - The pipeline interface
  */
-export function createPipeline(
-  middleware: Middleware<any[]>[] = [],
-): MiddlewarePipeline {
+export function createPipeline(middleware: Middleware<any[]>[] = []): MiddlewarePipeline {
   const middlewares: Middleware<any[]>[] = [...middleware];
 
   return {
@@ -637,10 +619,7 @@ class ProcedureImpl<
   TArgs extends any[] = any[],
   THandler extends (...args: TArgs) => any = (...args: TArgs) => any,
 > {
-  private internalMiddlewares: InternalMiddleware<
-    TArgs,
-    ExtractReturn<THandler>
-  >[] = [];
+  private internalMiddlewares: InternalMiddleware<TArgs, ExtractReturn<THandler>>[] = [];
   private middlewares: Middleware<TArgs>[] = [];
   private schema?: z.ZodType<any>;
   private procedureName?: string;
@@ -662,19 +641,17 @@ class ProcedureImpl<
 
     if (options.middleware) {
       this.middlewares = flattenMiddleware(
-        options.middleware as unknown as (
-          | Middleware<TArgs>
-          | MiddlewarePipeline
-        )[],
+        options.middleware as unknown as (Middleware<TArgs> | MiddlewarePipeline)[],
       );
     }
 
     // Adapt Procedure middleware to internal middleware format
     for (const mw of this.middlewares) {
-      const adaptedMw: InternalMiddleware<
-        TArgs,
-        ExtractReturn<THandler>
-      > = async (args, ctx, nextFn) => {
+      const adaptedMw: InternalMiddleware<TArgs, ExtractReturn<THandler>> = async (
+        args,
+        ctx,
+        nextFn,
+      ) => {
         const envelope: ProcedureEnvelope<TArgs> = {
           sourceType: this.sourceType,
           sourceId: this.sourceId,
@@ -698,17 +675,12 @@ class ProcedureImpl<
   /**
    * Set the handler function. Returns a new Procedure with the handler set.
    */
-  setHandler<TNewHandler extends (...args: TArgs) => any>(
-    fn: TNewHandler,
-  ): Procedure<TNewHandler> {
+  setHandler<TNewHandler extends (...args: TArgs) => any>(fn: TNewHandler): Procedure<TNewHandler> {
     return createProcedureFromImpl<TArgs, TNewHandler>(
       {
         name: this.procedureName,
         schema: this.schema,
-        middleware: this.middlewares as unknown as (
-          | Middleware<any[]>
-          | MiddlewarePipeline
-        )[],
+        middleware: this.middlewares as unknown as (Middleware<any[]> | MiddlewarePipeline)[],
         handleFactory: this.handleFactory,
         sourceType: this.sourceType,
         sourceId: this.sourceId,
@@ -735,8 +707,7 @@ class ProcedureImpl<
     return ExecutionTracker.track(
       context,
       {
-        name:
-          this.procedureName || `procedure:${this.handler.name || "anonymous"}`,
+        name: this.procedureName || `procedure:${this.handler.name || "anonymous"}`,
         parentPid: context.procedurePid,
         metadata: this.metadata, // Pass metadata to ExecutionTracker for span attributes
       },
@@ -765,11 +736,7 @@ class ProcedureImpl<
 
           if (index < this.internalMiddlewares.length) {
             const middleware = this.internalMiddlewares[index++];
-            const result = await middleware(
-              currentInput,
-              context,
-              runMiddleware,
-            );
+            const result = await middleware(currentInput, context, runMiddleware);
             // Check Abort Signal after middleware execution (middleware might have aborted)
             if (context?.signal?.aborted) {
               throw new AbortError();
@@ -840,12 +807,7 @@ class ProcedureImpl<
       const events = opEvents || context.events || new EventEmitter();
       const traceId = context.traceId || randomUUID();
       const resultPromise = Promise.resolve() as Promise<any>;
-      const handle = this.handleFactory(
-        events,
-        traceId,
-        resultPromise,
-        context,
-      );
+      const handle = this.handleFactory(events, traceId, resultPromise, context);
       context.executionHandle = handle as any as EventEmitter;
     }
 
@@ -877,16 +839,13 @@ class ProcedureImpl<
               const currentCtx = capturedIsRoot
                 ? Context.tryGet() || capturedContext
                 : capturedContext;
-              const signalToCheck =
-                capturedContext?.signal || currentCtx?.signal;
+              const signalToCheck = capturedContext?.signal || currentCtx?.signal;
               if (signalToCheck?.aborted) {
                 throw new AbortError();
               }
 
               if (capturedIsRoot) {
-                next = await Context.run(capturedContext, async () =>
-                  iterator.next(),
-                );
+                next = await Context.run(capturedContext, async () => iterator.next());
               } else {
                 next = await iterator.next();
               }
@@ -896,8 +855,7 @@ class ProcedureImpl<
               const postCheckCtx = capturedIsRoot
                 ? Context.tryGet() || capturedContext
                 : capturedContext;
-              const postSignalToCheck =
-                capturedContext?.signal || postCheckCtx?.signal;
+              const postSignalToCheck = capturedContext?.signal || postCheckCtx?.signal;
               if (postSignalToCheck?.aborted) {
                 throw new AbortError();
               }
@@ -934,9 +892,7 @@ class ProcedureImpl<
           } finally {
             if (iterator.return) {
               if (capturedIsRoot) {
-                await Context.run(capturedContext, async () =>
-                  iterator.return!(),
-                );
+                await Context.run(capturedContext, async () => iterator.return!());
               } else {
                 await iterator.return!();
               }
@@ -968,10 +924,7 @@ class ProcedureImpl<
   /**
    * Race execution against a timeout.
    */
-  private async withTimeoutRace<T>(
-    promise: Promise<T>,
-    timeoutMs: number,
-  ): Promise<T> {
+  private async withTimeoutRace<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
     let timeoutId: NodeJS.Timeout;
 
     const timeoutPromise = new Promise<never>((_, reject) => {
@@ -1006,9 +959,7 @@ class ProcedureImpl<
   /**
    * Add middleware to the procedure. Returns a new Procedure.
    */
-  use(
-    ...middleware: (Middleware<TArgs> | MiddlewarePipeline)[]
-  ): Procedure<THandler> {
+  use(...middleware: (Middleware<TArgs> | MiddlewarePipeline)[]): Procedure<THandler> {
     const flattened = flattenMiddleware(
       middleware as unknown as (Middleware<TArgs> | MiddlewarePipeline)[],
     );
@@ -1056,12 +1007,7 @@ class ProcedureImpl<
       }
 
       const handle = proc.handleFactory
-        ? proc.handleFactory(
-            events,
-            traceId,
-            Promise.resolve() as Promise<any>,
-            context,
-          )
+        ? proc.handleFactory(events, traceId, Promise.resolve() as Promise<any>, context)
         : ({
             events,
             traceId,
@@ -1073,9 +1019,7 @@ class ProcedureImpl<
       const resultPromise = validatedArgsPromise.then(
         async (validatedArgs): Promise<ExtractReturn<THandler>> => {
           const hookResult = await (context !== Context.tryGet()
-            ? Context.run(context, async () =>
-                proc.execute(validatedArgs, undefined, events),
-              )
+            ? Context.run(context, async () => proc.execute(validatedArgs, undefined, events))
             : proc.execute(validatedArgs, undefined, events));
           return hookResult;
         },
@@ -1144,9 +1088,7 @@ class ProcedureImpl<
   /**
    * Add a single middleware. Returns a new Procedure.
    */
-  withMiddleware(
-    mw: Middleware<TArgs> | MiddlewarePipeline,
-  ): Procedure<THandler> {
+  withMiddleware(mw: Middleware<TArgs> | MiddlewarePipeline): Procedure<THandler> {
     return this.use(mw);
   }
 
@@ -1161,10 +1103,7 @@ class ProcedureImpl<
       {
         name: this.procedureName,
         schema: this.schema,
-        middleware: this.middlewares as unknown as (
-          | Middleware<any[]>
-          | MiddlewarePipeline
-        )[],
+        middleware: this.middlewares as unknown as (Middleware<any[]> | MiddlewarePipeline)[],
         handleFactory: this.handleFactory,
         sourceType: this.sourceType,
         sourceId: this.sourceId,
@@ -1183,9 +1122,7 @@ class ProcedureImpl<
     next: Procedure<TNext>,
   ): Procedure<(...args: TArgs) => Promise<ExtractReturn<TNext>>> {
     const self = this;
-    const pipedHandler = async (
-      ...args: TArgs
-    ): Promise<ExtractReturn<TNext>> => {
+    const pipedHandler = async (...args: TArgs): Promise<ExtractReturn<TNext>> => {
       const firstResult = await self.execute(args);
       const secondResult = await (next as any)(firstResult);
       return secondResult;
@@ -1193,9 +1130,7 @@ class ProcedureImpl<
 
     return createProcedureFromImpl<TArgs, typeof pipedHandler>(
       {
-        name: this.procedureName
-          ? `${this.procedureName}.pipe`
-          : "piped-procedure",
+        name: this.procedureName ? `${this.procedureName}.pipe` : "piped-procedure",
         sourceType: this.sourceType,
         sourceId: this.sourceId,
         metadata: this.metadata,
@@ -1209,10 +1144,10 @@ class ProcedureImpl<
 /**
  * Helper to create a callable Procedure from ProcedureImpl.
  */
-function createProcedureFromImpl<
-  TArgs extends any[],
-  THandler extends (...args: TArgs) => any,
->(options: ProcedureOptions, handler?: THandler): Procedure<THandler> {
+function createProcedureFromImpl<TArgs extends any[], THandler extends (...args: TArgs) => any>(
+  options: ProcedureOptions,
+  handler?: THandler,
+): Procedure<THandler> {
   const impl = new ProcedureImpl<TArgs, THandler>(options, handler);
 
   // Create a callable function with methods attached
@@ -1259,9 +1194,7 @@ function createProcedureFromImpl<
   proc.use = impl.use.bind(impl) as Procedure<THandler>["use"];
   proc.withHandle = impl.withHandle.bind(impl);
   proc.withContext = impl.withContext.bind(impl);
-  proc.withMiddleware = impl.withMiddleware.bind(
-    impl,
-  ) as Procedure<THandler>["withMiddleware"];
+  proc.withMiddleware = impl.withMiddleware.bind(impl) as Procedure<THandler>["withMiddleware"];
   proc.withTimeout = impl.withTimeout.bind(impl);
   proc.pipe = impl.pipe.bind(impl) as Procedure<THandler>["pipe"];
 
@@ -1279,11 +1212,7 @@ type Handler<TArgs extends any[]> =
   | ((...args: TArgs) => any)
   | ((this: any, ...args: TArgs) => any);
 
-export function generatorProcedure<
-  TThis,
-  TArgs extends any[],
-  THandler extends Handler<TArgs>,
->(
+export function generatorProcedure<TThis, TArgs extends any[], THandler extends Handler<TArgs>>(
   optionsOrFn?: ProcedureOptions | THandler,
   fn?: THandler,
 ): Procedure<THandler> {
@@ -1348,10 +1277,7 @@ export function createProcedure<THandler extends (...args: any[]) => any>(
     throw ValidationError.required("handler");
   }
 
-  return createProcedureFromImpl<ExtractArgs<THandler>, THandler>(
-    options,
-    handler,
-  ) as any;
+  return createProcedureFromImpl<ExtractArgs<THandler>, THandler>(options, handler) as any;
 }
 
 /**
@@ -1368,9 +1294,7 @@ export function createProcedure<THandler extends (...args: any[]) => any>(
  * const result = await pipeline('{"name": "test"}');
  * ```
  */
-export function pipe<T1 extends (...args: any[]) => any>(
-  p1: Procedure<T1>,
-): Procedure<T1>;
+export function pipe<T1 extends (...args: any[]) => any>(p1: Procedure<T1>): Procedure<T1>;
 export function pipe<
   T1 extends (...args: any[]) => any,
   T2 extends (arg: ExtractReturn<T1>) => any,
@@ -1413,10 +1337,7 @@ export function pipe<
 ): Procedure<(...args: ExtractArgs<T1>) => Promise<ExtractReturn<T5>>>;
 export function pipe(...procedures: Procedure<any>[]): Procedure<any> {
   if (procedures.length === 0) {
-    throw new ValidationError(
-      "pipe requires at least one procedure",
-      "procedures",
-    );
+    throw new ValidationError("pipe requires at least one procedure", "procedures");
   }
   if (procedures.length === 1) {
     return procedures[0];
@@ -1485,11 +1406,7 @@ function getStaticMiddleware(
   constructor: any,
   procedureName: string,
 ): (Middleware<any[]> | MiddlewarePipeline)[] {
-  if (
-    constructor &&
-    constructor.middleware &&
-    typeof constructor.middleware === "object"
-  ) {
+  if (constructor && constructor.middleware && typeof constructor.middleware === "object") {
     const staticMw = constructor.middleware as StaticMiddleware;
     return staticMw[procedureName] || [];
   }
@@ -1514,8 +1431,7 @@ export function procedureDecorator(options?: ProcedureOptions) {
     }
 
     const originalMethod = descriptor.value;
-    const inferredName =
-      options?.name || inferNameFromMethod(target, propertyKey);
+    const inferredName = options?.name || inferNameFromMethod(target, propertyKey);
     const className = target.constructor.name;
     const constructor = target.constructor;
 
@@ -1550,8 +1466,7 @@ export function hookDecorator(options?: ProcedureOptions) {
     }
 
     const originalMethod = descriptor.value;
-    const inferredName =
-      options?.name || inferNameFromMethod(target, propertyKey);
+    const inferredName = options?.name || inferNameFromMethod(target, propertyKey);
     const className = target.constructor.name;
     const constructor = target.constructor;
 
@@ -1620,9 +1535,7 @@ export function applyMiddleware<TArgs extends any[], TOutput>(
  * // Types are preserved and validated
  * ```
  */
-export function applyRegistryMiddleware<
-  THandler extends (...args: any[]) => any,
->(
+export function applyRegistryMiddleware<THandler extends (...args: any[]) => any>(
   procedure: Procedure<THandler>,
   ...middleware: (Middleware<any[]> | MiddlewarePipeline)[]
 ): Procedure<THandler> {
@@ -1631,10 +1544,7 @@ export function applyRegistryMiddleware<
   // We accept Procedure<any, any> to handle cases where createEngineProcedure
   // returns a generic Procedure type that needs to be narrowed.
   return (procedure as Procedure<THandler>).use(
-    ...(middleware as (
-      | Middleware<ExtractArgs<THandler>>
-      | MiddlewarePipeline
-    )[]),
+    ...(middleware as (Middleware<ExtractArgs<THandler>> | MiddlewarePipeline)[]),
   );
 }
 

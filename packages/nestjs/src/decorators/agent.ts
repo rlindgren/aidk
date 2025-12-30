@@ -1,20 +1,25 @@
-import { SetMetadata } from '@nestjs/common';
-import type { JSX } from 'aidk/jsx-runtime';
-import { AGENT_TOKEN } from '../tokens';
+import { SetMetadata } from "@nestjs/common";
+import type { JSX } from "aidk/jsx-runtime";
+import { ROOT_TOKEN } from "../tokens";
 
 /**
- * Decorator to mark a route handler for agent streaming.
- * The handler should return EngineInput, and the agent JSX will be provided via metadata.
+ * Decorator to mark a route handler for streaming execution.
+ * The handler should return EngineInput, and the root JSX will be provided via metadata.
  */
-export function StreamAgent(agent?: JSX.Element) {
-  return SetMetadata(AGENT_TOKEN, { type: 'stream', agent });
+export function Stream(root?: JSX.Element) {
+  return SetMetadata(ROOT_TOKEN, { type: "stream", root });
 }
 
 /**
- * Decorator to mark a route handler for agent execution.
- * The handler should return EngineInput, and the agent JSX will be provided via metadata.
+ * Decorator to mark a route handler for execution.
+ * The handler should return EngineInput, and the root JSX will be provided via metadata.
  */
-export function ExecuteAgent(agent?: JSX.Element) {
-  return SetMetadata(AGENT_TOKEN, { type: 'execute', agent });
+export function Execute(root?: JSX.Element) {
+  return SetMetadata(ROOT_TOKEN, { type: "execute", root });
 }
 
+/** @deprecated Use Stream instead */
+export const StreamAgent = Stream;
+
+/** @deprecated Use Execute instead */
+export const ExecuteAgent = Execute;

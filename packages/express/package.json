@@ -2,28 +2,33 @@
   "name": "aidk-express",
   "version": "0.1.0",
   "description": "Express middleware for AIDK agents",
-  "type": "module",
-  "main": "src/index.ts",
-  "files": [
-    "dist"
-  ],
   "keywords": [
-    "ai",
     "agent",
+    "ai",
     "express",
     "middleware"
   ],
-  "author": "Ryan Lindgren",
+  "homepage": "https://github.com/rlindgren/aidk#readme",
+  "bugs": {
+    "url": "https://github.com/rlindgren/aidk/issues"
+  },
   "license": "ISC",
+  "author": "Ryan Lindgren",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/rlindgren/aidk.git",
     "directory": "packages/express"
   },
-  "bugs": {
-    "url": "https://github.com/rlindgren/aidk/issues"
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "main": "src/index.ts",
+  "publishConfig": {
+    "access": "public",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts"
   },
-  "homepage": "https://github.com/rlindgren/aidk#readme",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "test": "jest",
@@ -35,18 +40,13 @@
     "dev": "tsc --watch"
   },
   "dependencies": {
-    "aidk-server": "workspace:*",
-    "aidk": "workspace:*"
+    "aidk": "workspace:*",
+    "aidk-server": "workspace:*"
   },
   "devDependencies": {
     "@types/express": "^5.0.0"
   },
   "peerDependencies": {
     "express": "^5.0.0"
-  },
-  "publishConfig": {
-    "access": "public",
-    "main": "./dist/index.js",
-    "types": "./dist/index.d.ts"
   }
 }

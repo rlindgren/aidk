@@ -116,7 +116,9 @@ describe("Message Helpers", () => {
     });
 
     it("should throw for invalid input", () => {
-      expect(() => normalizeMessageInput(123 as any)).toThrow("input must be string | Message | Message[] | ContentBlock[], received number");
+      expect(() => normalizeMessageInput(123 as any)).toThrow(
+        "input must be string | Message | Message[] | ContentBlock[], received number",
+      );
     });
   });
 });
@@ -216,9 +218,7 @@ describe("StreamProcessor", () => {
       );
 
       const messages = processor.getMessages();
-      const assistantContent = messages.find(
-        (m) => m.id === context.assistantMessageId,
-      )?.content;
+      const assistantContent = messages.find((m) => m.id === context.assistantMessageId)?.content;
 
       expect(assistantContent).toContainEqual(
         expect.objectContaining({
@@ -269,11 +269,7 @@ describe("StreamProcessor", () => {
       const context = createContext();
       const result = { output: "done" };
 
-      processor.processEvent(
-        { type: "agent_end", output: result } as any,
-        context,
-        false,
-      );
+      processor.processEvent({ type: "agent_end", output: result } as any, context, false);
 
       expect(onComplete).toHaveBeenCalledWith(result);
     });
@@ -386,9 +382,7 @@ describe("ExecutionHandler", () => {
         throw streamError;
       });
 
-      await expect(handler.sendMessage("test-agent", "Hello")).rejects.toThrow(
-        "Stream failed",
-      );
+      await expect(handler.sendMessage("test-agent", "Hello")).rejects.toThrow("Stream failed");
 
       expect(onErrorChange).toHaveBeenCalledWith(streamError);
       expect(handler.getIsStreaming()).toBe(false);

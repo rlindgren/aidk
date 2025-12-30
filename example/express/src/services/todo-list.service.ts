@@ -1,9 +1,8 @@
-import { getToolStateRepository } from '../persistence/repositories/tool-state';
-import { getMessageRepository } from '../persistence/repositories/messages';
-import { generateUUID } from 'aidk-express';
-import { getEngine } from '../setup';
-import { type UserActionBlock, createEventMessage } from 'aidk';
-
+import { getToolStateRepository } from "../persistence/repositories/tool-state";
+import { getMessageRepository } from "../persistence/repositories/messages";
+import { generateUUID } from "aidk-express";
+import { getEngine } from "../setup";
+import { type UserActionBlock, createEventMessage } from "aidk";
 
 // ============================================================================
 // Constants
@@ -11,24 +10,23 @@ import { type UserActionBlock, createEventMessage } from 'aidk';
 
 /**
  * Nil UUID (RFC 4122) used for user-global events.
- * 
+ *
  * Event messages with this threadId are user-scoped, not thread-scoped.
  * They represent actions that happened "outside" any specific conversation
  * (e.g., UI-initiated task completion, external system events).
- * 
+ *
  * When loading conversation history, query:
  *   WHERE userId = ? AND (threadId = ? OR threadId = GLOBAL_THREAD_ID)
- * 
+ *
  * This ensures all threads for a user see global events, properly ordered
  * by timestamp alongside thread-specific messages.
- * 
+ *
  * Why not nullable threadId?
  * - Works with UUID-typed columns (no schema change needed)
  * - Avoids NULL handling complexity in ORMs
  * - Clear semantic: nil UUID = "belongs to user, not to any specific thread"
  */
-export const GLOBAL_THREAD_ID = '00000000-0000-0000-0000-000000000000';
-
+export const GLOBAL_THREAD_ID = "00000000-0000-0000-0000-000000000000";
 
 // ============================================================================
 // Types
@@ -51,7 +49,7 @@ export interface TodoActionResult {
 }
 
 export interface TodoActionOptions {
-  /** 
+  /**
    * Inject a user-global event message for this action.
    * Events are user-scoped (not thread-scoped) and visible to all conversations.
    * @see GLOBAL_THREAD_ID
@@ -76,22 +74,21 @@ const messageRepo = () => getMessageRepository();
 // ============================================================================
 
 export class TodoListService {
-
   static get channel() {
-    return getEngine().channels?.getRouter('todo-list');
+    return getEngine().channels?.getRouter("todo-list");
   }
-  
+
   /**
    * Load tasks from persistence (scoped by userId)
    */
   static async getTasks(userId: string): Promise<TodoTask[]> {
-    const state = await toolStateRepo().findByToolAndThread('todo_list', userId);
+    const state = await toolStateRepo().findByToolAndThread("todo_list", userId);
     if (!state?.state_data) return [];
-    
+
     const tasks = JSON.parse(state.state_data) as TodoTask[];
-    return tasks.map(t => ({
+    return tasks.map((t) => ({
       ...t,
-      created_at: typeof t.created_at === 'string' ? new Date(t.created_at) : t.created_at
+      created_at: typeof t.created_at === "string" ? new Date(t.created_at) : t.created_at,
     }));
   }
 
@@ -100,10 +97,10 @@ export class TodoListService {
    */
   private static async saveTasks(userId: string, tasks: TodoTask[]): Promise<void> {
     await toolStateRepo().upsert({
-      tool_id: 'todo_list',
+      tool_id: "todo_list",
       thread_id: userId,
       user_id: userId,
-      tenant_id: 'default',
+      tenant_id: "default",
       state_data: JSON.stringify(tasks),
       updated_at: new Date(),
     });
@@ -112,61 +109,62 @@ export class TodoListService {
   /**
    * Broadcast state change to user's devices via SSE rooms.
    * Uses the todoListChannel router for clean room-based routing.
-   * 
+   *
    * Note: sourceConnectionId is automatically pulled from Context.sessionId
    * when excludeSender is true, so no need to pass it explicitly.
    */
-  static broadcast(
-    tasks: TodoTask[], 
-    options: { userId?: string; excludeSender?: boolean }
-  ): void {
+  static broadcast(tasks: TodoTask[], options: { userId?: string; excludeSender?: boolean }): void {
     if (!options.userId) {
-      console.warn('TodoListService.broadcast: userId required for room-based routing');
+      console.warn("TodoListService.broadcast: userId required for room-based routing");
       return;
     }
-    
-    console.log(`📢 TodoListService.broadcast: userId=${options.userId}, excludeSender=${options.excludeSender}, tasks=${tasks.length}`);
-    
-    const event = { type: 'state_changed', payload: { tasks } };
+
+    console.log(
+      `📢 TodoListService.broadcast: userId=${options.userId}, excludeSender=${options.excludeSender}, tasks=${tasks.length}`,
+    );
+
+    const event = { type: "state_changed", payload: { tasks } };
     const target = TodoListService.channel?.publisher().to(options.userId);
 
     if (!target) {
       return;
     }
-    
+
     if (options.excludeSender) {
-      target.broadcast(event)
-        .then(() => console.log('📢 Broadcast sent (excludeSender)'))
-        .catch((err: unknown) => console.error('Failed to broadcast todo list update:', err));
+      target
+        .broadcast(event)
+        .then(() => console.log("📢 Broadcast sent (excludeSender)"))
+        .catch((err: unknown) => console.error("Failed to broadcast todo list update:", err));
     } else {
-      target.send(event)
-        .then(() => console.log('📢 Send sent'))
-        .catch((err: unknown) => console.error('Failed to send todo list update:', err));
+      target
+        .send(event)
+        .then(() => console.log("📢 Send sent"))
+        .catch((err: unknown) => console.error("Failed to send todo list update:", err));
     }
   }
 
   /**
    * Inject a user-global event message for UI-initiated actions.
-   * 
+   *
    * These events are user-scoped (not thread-scoped) because they represent
    * actions that happen "outside" any specific conversation. Using GLOBAL_THREAD_ID
    * (nil UUID) allows all threads for this user to see the event.
-   * 
+   *
    * The agent in any conversation will see these events when loading history,
    * properly ordered by timestamp alongside thread-specific messages.
-   * 
+   *
    * @see GLOBAL_THREAD_ID for the nil UUID pattern explanation
    */
   private static async injectActionMessage(
     userId: string,
     action: string,
-    details: string
+    details: string,
   ): Promise<void> {
     const block: UserActionBlock = {
-      type: 'user_action',
+      type: "user_action",
       action,
-      actor: 'user',
-      target: 'todo_list',
+      actor: "user",
+      target: "todo_list",
       details: {
         description: details,
         timestamp: new Date().toISOString(),
@@ -176,21 +174,21 @@ export class TodoListService {
       text: `User ${action} on todo list: ${details}`,
     };
 
-    const eventMessage = createEventMessage(
-      [block],
-      'user_action',
-      { ui_action: true, action_type: action, userId: userId }
-    );
+    const eventMessage = createEventMessage([block], "user_action", {
+      ui_action: true,
+      action_type: action,
+      userId: userId,
+    });
 
     await messageRepo().create({
       id: generateUUID(),
-      execution_id: 'ui-action',  // Sentinel: UI action, not part of an execution
-      interaction_id: 'ui-action',
-      thread_id: GLOBAL_THREAD_ID,  // Nil UUID = user-global, visible to all threads
+      execution_id: "ui-action", // Sentinel: UI action, not part of an execution
+      interaction_id: "ui-action",
+      thread_id: GLOBAL_THREAD_ID, // Nil UUID = user-global, visible to all threads
       user_id: userId,
       role: eventMessage.role,
       content: JSON.stringify(eventMessage.content),
-      source: 'user',
+      source: "user",
       metadata: eventMessage.metadata ? JSON.stringify(eventMessage.metadata) : undefined,
     });
   }
@@ -202,10 +200,10 @@ export class TodoListService {
     userId: string,
     title: string,
     description?: string,
-    options: TodoActionOptions = {}
+    options: TodoActionOptions = {},
   ): Promise<TodoActionResult> {
     if (!title) {
-      return { success: false, tasks: [], message: 'Error: title is required', action: 'create' };
+      return { success: false, tasks: [], message: "Error: title is required", action: "create" };
     }
 
     const tasks = await TodoListService.getTasks(userId);
@@ -217,30 +215,30 @@ export class TodoListService {
       created_at: new Date(),
       user_id: userId,
     };
-    
+
     tasks.push(newTask);
     await TodoListService.saveTasks(userId, tasks);
-    
+
     if (options.broadcast !== false) {
-      TodoListService.broadcast(tasks, { 
-        userId, 
+      TodoListService.broadcast(tasks, {
+        userId,
         excludeSender: options.excludeSender,
       });
     }
-    
+
     if (options.createEvent) {
       await TodoListService.injectActionMessage(
         userId,
-        'Created task',
-        `"${title}"${description ? ` - ${description}` : ''}`
+        "Created task",
+        `"${title}"${description ? ` - ${description}` : ""}`,
       );
     }
-    
+
     return {
       success: true,
       tasks,
       message: `Created task: ${title} (ID: ${newTask.id})`,
-      action: 'create',
+      action: "create",
     };
   }
 
@@ -251,19 +249,19 @@ export class TodoListService {
     userId: string,
     taskId: string,
     updates: { title?: string; description?: string; completed?: boolean },
-    options: TodoActionOptions = {}
+    options: TodoActionOptions = {},
   ): Promise<TodoActionResult> {
     if (!taskId) {
-      return { success: false, tasks: [], message: 'Error: task_id is required', action: 'update' };
+      return { success: false, tasks: [], message: "Error: task_id is required", action: "update" };
     }
 
     const tasks = await TodoListService.getTasks(userId);
-    const index = tasks.findIndex(t => t.id === taskId);
-    
+    const index = tasks.findIndex((t) => t.id === taskId);
+
     if (index < 0) {
-      return { success: false, tasks, message: `Task not found: ${taskId}`, action: 'update' };
+      return { success: false, tasks, message: `Task not found: ${taskId}`, action: "update" };
     }
-    
+
     const oldTask = tasks[index];
     const newTask = { ...oldTask };
     if (updates.title !== undefined) newTask.title = updates.title;
@@ -271,32 +269,34 @@ export class TodoListService {
     if (updates.completed !== undefined) newTask.completed = updates.completed;
     tasks[index] = { ...newTask };
     await TodoListService.saveTasks(userId, tasks);
-    
+
     if (options.broadcast !== false) {
-      TodoListService.broadcast(tasks, { 
-        userId, 
+      TodoListService.broadcast(tasks, {
+        userId,
         excludeSender: options.excludeSender,
       });
     }
-    
+
     if (options.createEvent) {
       const changes: string[] = [];
       if (updates.title !== undefined) changes.push(`title to "${updates.title}"`);
-      if (updates.description !== undefined) changes.push(`description to "${updates.description}"`);
-      if (updates.completed !== undefined) changes.push(updates.completed ? 'marked complete' : 'marked incomplete');
-      
+      if (updates.description !== undefined)
+        changes.push(`description to "${updates.description}"`);
+      if (updates.completed !== undefined)
+        changes.push(updates.completed ? "marked complete" : "marked incomplete");
+
       await TodoListService.injectActionMessage(
         userId,
-        'Updated task',
-        `"${oldTask.title}" - ${changes.join(', ')}`
+        "Updated task",
+        `"${oldTask.title}" - ${changes.join(", ")}`,
       );
     }
-    
+
     return {
       success: true,
       tasks,
       message: `Updated task: ${tasks[index].title}`,
-      action: 'update',
+      action: "update",
     };
   }
 
@@ -306,39 +306,39 @@ export class TodoListService {
   static async toggleComplete(
     userId: string,
     taskId: string,
-    options: TodoActionOptions = {}
+    options: TodoActionOptions = {},
   ): Promise<TodoActionResult> {
     const tasks = await TodoListService.getTasks(userId);
-    const index = tasks.findIndex(t => t.id === taskId);
-    
+    const index = tasks.findIndex((t) => t.id === taskId);
+
     if (index < 0) {
-      return { success: false, tasks, message: `Task not found: ${taskId}`, action: 'toggle' };
+      return { success: false, tasks, message: `Task not found: ${taskId}`, action: "toggle" };
     }
-    
+
     const newCompleted = !tasks[index].completed;
     tasks[index] = { ...tasks[index], completed: newCompleted };
     await TodoListService.saveTasks(userId, tasks);
-    
+
     if (options.broadcast !== false) {
-      TodoListService.broadcast(tasks, { 
-        userId, 
+      TodoListService.broadcast(tasks, {
+        userId,
         excludeSender: options.excludeSender,
       });
     }
-    
+
     if (options.createEvent) {
       await TodoListService.injectActionMessage(
         userId,
-        newCompleted ? 'Completed task' : 'Reopened task',
-        `"${tasks[index].title}"`
+        newCompleted ? "Completed task" : "Reopened task",
+        `"${tasks[index].title}"`,
       );
     }
-    
+
     return {
       success: true,
       tasks,
-      message: `${newCompleted ? 'Completed' : 'Reopened'} task: ${tasks[index].title}`,
-      action: 'toggle',
+      message: `${newCompleted ? "Completed" : "Reopened"} task: ${tasks[index].title}`,
+      action: "toggle",
     };
   }
 
@@ -348,39 +348,39 @@ export class TodoListService {
   static async deleteTask(
     userId: string,
     taskId: string,
-    options: TodoActionOptions = {}
+    options: TodoActionOptions = {},
   ): Promise<TodoActionResult> {
     if (!taskId) {
-      return { success: false, tasks: [], message: 'Error: task_id is required', action: 'delete' };
+      return { success: false, tasks: [], message: "Error: task_id is required", action: "delete" };
     }
 
     const tasks = await TodoListService.getTasks(userId);
-    const index = tasks.findIndex(t => t.id === taskId);
-    
+    const index = tasks.findIndex((t) => t.id === taskId);
+
     if (index < 0) {
-      return { success: false, tasks, message: `Task not found: ${taskId}`, action: 'delete' };
+      return { success: false, tasks, message: `Task not found: ${taskId}`, action: "delete" };
     }
-    
+
     const deletedTask = tasks[index];
     tasks.splice(index, 1);
     await TodoListService.saveTasks(userId, tasks);
-    
+
     if (options.broadcast !== false) {
-      TodoListService.broadcast(tasks, { 
-        userId, 
+      TodoListService.broadcast(tasks, {
+        userId,
         excludeSender: options.excludeSender,
       });
     }
-    
+
     if (options.createEvent) {
-      await TodoListService.injectActionMessage(userId, 'Deleted task', `"${deletedTask.title}"`);
+      await TodoListService.injectActionMessage(userId, "Deleted task", `"${deletedTask.title}"`);
     }
-    
+
     return {
       success: true,
       tasks,
       message: `Deleted task: ${deletedTask.title}`,
-      action: 'delete',
+      action: "delete",
     };
   }
 
@@ -392,10 +392,8 @@ export class TodoListService {
     return {
       success: true,
       tasks,
-      message: tasks.length > 0 ? `Found ${tasks.length} task(s)` : 'No tasks found',
-      action: 'list',
+      message: tasks.length > 0 ? `Found ${tasks.length} task(s)` : "No tasks found",
+      action: "list",
     };
   }
-
 }
-

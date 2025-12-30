@@ -49,11 +49,7 @@ export {
   writeSSEEvent,
   writeSSEEventSafe,
 } from "./middleware/engine";
-export type {
-  EngineRequest,
-  ExpressEngineConfig,
-  TransportConfig,
-} from "./middleware/engine";
+export type { EngineRequest, ExpressEngineConfig, TransportConfig } from "./middleware/engine";
 
 // Re-export from server
 export * from "aidk-server";

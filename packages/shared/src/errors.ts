@@ -187,10 +187,7 @@ export class AIDKError extends Error {
 export class AbortError extends AIDKError {
   constructor(
     message: string = "Operation aborted",
-    code:
-      | "ABORT_CANCELLED"
-      | "ABORT_TIMEOUT"
-      | "ABORT_SIGNAL" = "ABORT_CANCELLED",
+    code: "ABORT_CANCELLED" | "ABORT_TIMEOUT" | "ABORT_SIGNAL" = "ABORT_CANCELLED",
     details: Record<string, unknown> = {},
     cause?: Error,
   ) {
@@ -207,9 +204,7 @@ export class AbortError extends AIDKError {
       return reason;
     }
     const message =
-      reason instanceof Error
-        ? reason.message
-        : String(reason || "Operation aborted");
+      reason instanceof Error ? reason.message : String(reason || "Operation aborted");
     return new AbortError(
       message,
       "ABORT_SIGNAL",
@@ -222,11 +217,9 @@ export class AbortError extends AIDKError {
    * Create a timeout abort error
    */
   static timeout(timeoutMs: number): AbortError {
-    return new AbortError(
-      `Operation timed out after ${timeoutMs}ms`,
-      "ABORT_TIMEOUT",
-      { timeoutMs },
-    );
+    return new AbortError(`Operation timed out after ${timeoutMs}ms`, "ABORT_TIMEOUT", {
+      timeoutMs,
+    });
   }
 }
 
@@ -266,12 +259,7 @@ export class NotFoundError extends AIDKError {
   /** Identifier of the resource */
   readonly resourceId: string;
 
-  constructor(
-    resourceType: ResourceType,
-    resourceId: string,
-    message?: string,
-    cause?: Error,
-  ) {
+  constructor(resourceType: ResourceType, resourceId: string, message?: string, cause?: Error) {
     const codeMap: Record<ResourceType, AIDKErrorCode> = {
       model: "NOT_FOUND_MODEL",
       tool: "NOT_FOUND_TOOL",
@@ -365,11 +353,7 @@ export class ValidationError extends AIDKError {
   /**
    * Create a "type mismatch" validation error
    */
-  static type(
-    field: string,
-    expected: string,
-    received?: string,
-  ): ValidationError {
+  static type(field: string, expected: string, received?: string): ValidationError {
     const msg = received
       ? `${field} must be ${expected}, received ${received}`
       : `${field} must be ${expected}`;
@@ -412,12 +396,7 @@ export class StateError extends AIDKError {
       | "STATE_ALREADY_COMPLETE" = "STATE_INVALID",
     cause?: Error,
   ) {
-    super(
-      code,
-      message,
-      { current, ...(expectedState && { expectedState }) },
-      cause,
-    );
+    super(code, message, { current, ...(expectedState && { expectedState }) }, cause);
     this.name = "StateError";
     this.current = current;
     this.expectedState = expectedState;
@@ -506,32 +485,20 @@ export class TransportError extends AIDKError {
    * Create a timeout error
    */
   static timeout(timeoutMs: number, url?: string): TransportError {
-    return new TransportError(
-      "timeout",
-      `Request timeout after ${timeoutMs}ms`,
-      { url },
-    );
+    return new TransportError("timeout", `Request timeout after ${timeoutMs}ms`, { url });
   }
 
   /**
    * Create a connection error
    */
-  static connection(
-    message: string,
-    url?: string,
-    cause?: Error,
-  ): TransportError {
+  static connection(message: string, url?: string, cause?: Error): TransportError {
     return new TransportError("connection", message, { url }, cause);
   }
 
   /**
    * Create an HTTP error (non-2xx response)
    */
-  static http(
-    statusCode: number,
-    url: string,
-    message?: string,
-  ): TransportError {
+  static http(statusCode: number, url: string, message?: string): TransportError {
     return new TransportError("response", message || `HTTP ${statusCode}`, {
       statusCode,
       url,
@@ -584,9 +551,7 @@ export class AdapterError extends AIDKError {
   static rateLimit(provider: string, retryAfter?: number): AdapterError {
     return new AdapterError(
       provider,
-      retryAfter
-        ? `Rate limit exceeded. Retry after ${retryAfter}s`
-        : "Rate limit exceeded",
+      retryAfter ? `Rate limit exceeded. Retry after ${retryAfter}s` : "Rate limit exceeded",
       "ADAPTER_RATE_LIMIT",
       { retryAfter },
     );

@@ -8,7 +8,7 @@
 
 ## Not a template system. A runtime.
 
-AIDK is a **runtime execution engine**—not a prompt builder, not a template system. It manages component lifecycle, shared state, and tick loops. Your code runs *between* model calls, with full visibility into what happened and complete control over what comes next.
+AIDK is a **runtime execution engine**—not a prompt builder, not a template system. It manages component lifecycle, shared state, and tick loops. Your code runs _between_ model calls, with full visibility into what happened and complete control over what comes next.
 
 ```mermaid
 flowchart LR
@@ -378,18 +378,18 @@ render(com: COM, state: TickState) {
 
       {/* Parallel research, wait for both */}
       <Fork
-        agent={<ResearchAgent topic="market" />}
+        root={<ResearchAgent topic="market" />}
         waitUntilComplete={true}
         onComplete={(r) => this.marketData.set(r)}
       />
       <Fork
-        agent={<ResearchAgent topic="competitors" />}
+        root={<ResearchAgent topic="competitors" />}
         waitUntilComplete={true}
         onComplete={(r) => this.competitorData.set(r)}
       />
 
       {/* Background work, don't wait */}
-      <Spawn agent={<AuditLogger />} />
+      <Spawn root={<AuditLogger />} />
     </>
   );
 }
@@ -630,15 +630,15 @@ class ResearchCoordinator extends Component {
         <>
           {/* Parallel research agents */}
           <Fork
-            agent={<WebResearchAgent />}
+            root={<WebResearchAgent />}
             onComplete={(r) => this.webResults.set(r)}
           />
           <Fork
-            agent={<DatabaseAgent />}
+            root={<DatabaseAgent />}
             onComplete={(r) => this.dbResults.set(r)}
           />
           <Fork
-            agent={<APIAgent />}
+            root={<APIAgent />}
             onComplete={(r) => this.apiResults.set(r)}
           />
         </>
@@ -736,7 +736,7 @@ for chunk in agent.stream(input):
 
 AIDK: streaming is the primitive. Everything flows through it.
 
-``` tsx
+```tsx
 // Pure streaming — iterate events
 for await (const event of engine.stream(input, <Agent />)) {
   // tick_start, content_delta, tool_call, tick_end, complete
@@ -750,7 +750,7 @@ const result = await engine.execute(input, <Agent />);
 
 Sometimes you want both: subscribe to events AND get the final result. Use `.withHandle()`:
 
-``` tsx
+```tsx
 const { handle, result } = await engine.execute
   .withContext({ user, tenantId, metadata })
   .withHandle()
@@ -771,7 +771,7 @@ console.log('Done:', output);
 
 Chain modifiers for full control:
 
-``` tsx
+```tsx
 const { handle, result } = await engine.execute
   .use(loggingMiddleware)           // Per-call middleware
   .use(rateLimitMiddleware)         // Stack them
@@ -789,7 +789,7 @@ const { handle, result } = await engine.execute
 
 Models and tools are Procedures. They have the same fluent API:
 
-``` tsx
+```tsx
 import { createAiSdkModel } from "aidk-ai-sdk";
 import { openai } from "@ai-sdk/openai";
 
@@ -825,7 +825,7 @@ Events flow. Your client connects. Updates stream in real-time. This isn't a fea
 
 Create model instances outside of JSX. Call them directly with the full Procedure API.
 
-``` tsx
+```tsx
 import { createAiSdkModel } from 'aidk-ai-sdk';
 import { openai } from '@ai-sdk/openai';
 
@@ -865,7 +865,7 @@ for await (const chunk of stream) {
 
 Set middleware at the engine level. It runs for every execution, model call, or tool call.
 
-``` tsx
+```tsx
 const engine = createEngine({
   middleware: {
     // Runs on every agent execution
@@ -885,7 +885,7 @@ engine.use("tool", sandboxMiddleware);
 
 Per-call middleware stacks on top:
 
-``` tsx
+```tsx
 // Global middleware + per-call middleware
 const result = await engine.execute
   .use(requestSpecificMiddleware)  // Added for this call only
@@ -896,7 +896,7 @@ const result = await engine.execute
 
 Run one engine for your whole application:
 
-``` tsx
+```tsx
 // Singleton engine for your app
 export const engine = createEngine({ middleware: {...} });
 
@@ -908,7 +908,7 @@ app.post('/chat', (req, res) => {
 
 Or create engines for isolated execution:
 
-``` tsx
+```tsx
 // One-off engine for a specific task
 const isolatedEngine = createEngine({
   middleware: { execute: [specialMiddleware] },
@@ -923,27 +923,27 @@ Use JSX or call directly:
 
 ```tsx
 // JSX style
-<Fork agent={<ResearchAgent />} waitUntilComplete={true} onComplete={(r) => {...}} />
-<Spawn agent={<BackgroundAgent />} />
+<Fork root={<ResearchAgent />} waitUntilComplete={true} onComplete={(r) => {...}} />
+<Spawn root={<BackgroundAgent />} />
 
 // Programmatic style
-const forkedHandle = await engine.fork({
-  agent: <ResearchAgent />,
-  input: { query: 'market analysis' },
-  inheritContext: true,
-});
+const forkedHandle = await engine.fork(
+  <ResearchAgent />,
+  { query: 'market analysis' },
+  { inherit: { context: true } }
+);
 
-const spawnedHandle = await engine.spawn({
-  agent: <BackgroundAgent />,
-  input: { task: 'cleanup' },
-});
+const spawnedHandle = await engine.spawn(
+  <BackgroundAgent />,
+  { task: 'cleanup' }
+);
 ```
 
 ### Send messages to running executions
 
 Send messages to running executions and handle them in your agent:
 
-``` tsx
+```tsx
 const { handle } = await engine.execute
   .withHandle()
   .run(input, <InteractiveAgent />);
@@ -998,7 +998,7 @@ class InteractiveAgent extends Component {
 
 See how agents, forks, and spawns relate:
 
-``` tsx
+```tsx
 const { handle, result } = await engine.execute
   .withHandle()
   .run(input, <OrchestratorAgent />);
@@ -1027,7 +1027,7 @@ console.log(graph);
 
 Plug in your OTel provider. Every tick, model call, and tool call becomes a span.
 
-``` tsx
+```tsx
 import { NodeTracerProvider } from "@opentelemetry/sdk-trace-node";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
 
@@ -1150,7 +1150,7 @@ No separate config to keep in sync. No runtime loading. No "where is that settin
 | Nested component trees       | Components render components                               |
 | Agent routing                | Render different agent based on state                      |
 | Reusable components          | Same component works in any agent                          |
-| Context everywhere           | `context()`                                            |
+| Context everywhere           | `context()`                                                |
 | Full lifecycle hooks         | `onMount`, `onTickStart`, `onComplete`, etc.               |
 | Execution handles            | `.withHandle()` → `{ handle, result }`                     |
 | Fluent API                   | `.use().withContext().withHandle().run()`                  |

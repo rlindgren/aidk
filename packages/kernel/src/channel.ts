@@ -180,10 +180,7 @@ export class Channel {
    * @param timeoutMs Timeout in milliseconds (default: 30000)
    * @returns Promise that resolves when response is received
    */
-  waitForResponse(
-    requestId: string,
-    timeoutMs: number = 30000,
-  ): Promise<ChannelEvent> {
+  waitForResponse(requestId: string, timeoutMs: number = 30000): Promise<ChannelEvent> {
     return new Promise((resolve, reject) => {
       // Check if response was already received (race condition: response before wait)
       const cachedResponse = this.recentResponses.get(requestId);
@@ -235,9 +232,7 @@ export class Channel {
     for (const [requestId, pending] of this.pendingRequests.entries()) {
       clearTimeout(pending.timeout);
       pending.reject(
-        new Error(
-          `Channel "${this.name}" destroyed while waiting for request "${requestId}"`,
-        ),
+        new Error(`Channel "${this.name}" destroyed while waiting for request "${requestId}"`),
       );
     }
     this.pendingRequests.clear();
@@ -329,11 +324,7 @@ export interface ChannelServiceInterface {
   /**
    * Publish an event to a channel.
    */
-  publish(
-    ctx: KernelContext,
-    channelName: string,
-    event: Omit<ChannelEvent, "channel">,
-  ): void;
+  publish(ctx: KernelContext, channelName: string, event: Omit<ChannelEvent, "channel">): void;
 
   /**
    * Subscribe to events on a channel.

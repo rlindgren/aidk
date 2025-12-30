@@ -76,19 +76,14 @@ export function isContentBlock(value: unknown): value is ContentBlock {
     return false;
   }
   const obj = value as Record<string, unknown>;
-  return typeof obj['type'] === "string" && VALID_BLOCK_TYPES.has(obj['type']);
+  return typeof obj["type"] === "string" && VALID_BLOCK_TYPES.has(obj["type"]);
 }
 
 /**
  * Check if value is a Message
  */
 export function isMessage(value: unknown): value is Message {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    "role" in value &&
-    "content" in value
-  );
+  return typeof value === "object" && value !== null && "role" in value && "content" in value;
 }
 
 // ============================================================================
@@ -105,12 +100,8 @@ export function normalizeContentInput(input: ContentInput): ContentBlock {
 /**
  * Normalize ContentInputArray to ContentBlock[]
  */
-export function normalizeContentArray(
-  input: ContentInputArray,
-): ContentBlock[] {
-  return Array.isArray(input)
-    ? input.map(normalizeContentInput)
-    : [normalizeContentInput(input)];
+export function normalizeContentArray(input: ContentInputArray): ContentBlock[] {
+  return Array.isArray(input) ? input.map(normalizeContentInput) : [normalizeContentInput(input)];
 }
 
 /**

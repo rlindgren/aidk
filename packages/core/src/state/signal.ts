@@ -1,49 +1,53 @@
 /**
  * Signal implementation for reactive state management.
- * 
+ *
  * Signals provide a lightweight, framework-agnostic way to manage reactive state.
  * Similar to Angular/SolidJS signals.
- * 
+ *
  * **Important:** Signals only work in class components (`EngineComponent`).
  * They do NOT work in pure function components. See `use-state.ts` for details.
- * 
+ *
  * @example
  * ```typescript
  * // Create a signal
  * const count = signal(0);
- * 
+ *
  * // Read value
  * console.log(count()); // 0
- * 
+ *
  * // Update value
  * count.set(10);
  * console.log(count()); // 10
- * 
+ *
  * // Update with function
  * count.update(n => n + 1);
  * console.log(count()); // 11
- * 
+ *
  * // Computed signal (memoized, auto-updates)
  * const doubled = computed(() => count() * 2);
  * console.log(doubled()); // 22
- * 
+ *
  * // Cleanup when done
  * count.dispose();
  * ```
- * 
+ *
  * @see docs/state-management.md for full documentation
  */
 
 // Import for render phase detection
-import { isCompilerRendering, shouldSkipRecompile, getActiveCompiler } from '../compiler/fiber-compiler';
+import {
+  isCompilerRendering,
+  shouldSkipRecompile,
+  getActiveCompiler,
+} from "../compiler/fiber-compiler";
 
 // ============================================================================
 // Types
 // ============================================================================
 
-export const SIGNAL_SYMBOL = Symbol.for('aidk.signal');
-export const COMPUTED_SYMBOL = Symbol.for('aidk.computed');
-export const EFFECT_SYMBOL = Symbol.for('aidk.effect');
+export const SIGNAL_SYMBOL = Symbol.for("aidk.signal");
+export const COMPUTED_SYMBOL = Symbol.for("aidk.computed");
+export const EFFECT_SYMBOL = Symbol.for("aidk.effect");
 
 type EqualityFn<T> = (a: T, b: T) => boolean;
 type CleanupFn = () => void;
@@ -114,7 +118,7 @@ let flushScheduled = false;
 /**
  * Batch multiple signal updates together.
  * Effects only run once after all updates complete.
- * 
+ *
  * @example
  * ```typescript
  * batch(() => {
@@ -141,7 +145,7 @@ function scheduleEffect(effectFn: () => void): void {
     pendingEffects.add(effectFn);
     return;
   }
-  
+
   // Schedule microtask flush if not already scheduled
   pendingEffects.add(effectFn);
   if (!flushScheduled) {
@@ -154,12 +158,12 @@ function flushPendingEffects(): void {
   flushScheduled = false;
   const effects = [...pendingEffects];
   pendingEffects.clear();
-  
+
   for (const effectFn of effects) {
     try {
       effectFn();
     } catch (error) {
-      console.error('Error in signal effect:', error);
+      console.error("Error in signal effect:", error);
     }
   }
 }
@@ -210,7 +214,7 @@ function popTrackingContext(): void {
 
 /**
  * Creates a writable signal with an initial value.
- * 
+ *
  * @example
  * ```typescript
  * const count = signal(0);
@@ -238,7 +242,7 @@ export function signal<T>(initialValue: T, options?: SignalOptions<T>): Signal<T
       notify: notifyFn,
       dispose: () => {
         subscriptions.delete(subscription);
-      }
+      },
     };
     subscriptions.add(subscription);
     return subscription;
@@ -248,26 +252,25 @@ export function signal<T>(initialValue: T, options?: SignalOptions<T>): Signal<T
     if (isDisposed) {
       return value;
     }
-    
+
     // Track this signal as a dependency of current computed/effect
     const context = getCurrentTrackingContext();
     if (context) {
       context.onDependency({ _subscribe } as ReactiveSource);
     }
-    
+
     return value;
   };
 
   const setter = (newValue: T | ((prev: T) => T)): void => {
     if (isDisposed) {
-      console.warn('Attempted to set disposed signal');
+      console.warn("Attempted to set disposed signal");
       return;
     }
-    
-    const nextValue = typeof newValue === 'function' 
-      ? (newValue as (prev: T) => T)(value)
-      : newValue;
-    
+
+    const nextValue =
+      typeof newValue === "function" ? (newValue as (prev: T) => T)(value) : newValue;
+
     if (!equal(nextValue, value)) {
       value = nextValue;
       notify();
@@ -289,14 +292,14 @@ export function signal<T>(initialValue: T, options?: SignalOptions<T>): Signal<T
   signalFn.dispose = dispose;
   signalFn._subscribe = _subscribe;
   (signalFn as any)[SIGNAL_SYMBOL] = true;
-  
-  Object.defineProperty(signalFn, 'value', {
+
+  Object.defineProperty(signalFn, "value", {
     get: getter,
     enumerable: true,
     configurable: true,
   });
-  
-  Object.defineProperty(signalFn, 'disposed', {
+
+  Object.defineProperty(signalFn, "disposed", {
     get: () => isDisposed,
     enumerable: true,
     configurable: true,
@@ -312,12 +315,12 @@ export function signal<T>(initialValue: T, options?: SignalOptions<T>): Signal<T
 /**
  * Creates a computed signal that derives its value from other signals.
  * Computed values are memoized and only recompute when dependencies change.
- * 
+ *
  * @example
  * ```typescript
  * const count = signal(0);
  * const doubled = computed(() => count() * 2);
- * 
+ *
  * doubled();  // 0
  * count.set(5);
  * doubled();  // 10 (recomputed)
@@ -330,7 +333,7 @@ export function computed<T>(computation: () => T, options?: SignalOptions<T>): C
   let isDisposed = false;
   let isComputing = false;
   const _equal = options?.equal ?? Object.is;
-  
+
   // Subscriptions to our dependencies (signals we read)
   const dependencySubscriptions = new Set<Subscription>();
   // Subscriptions from our dependents (things that read us)
@@ -352,7 +355,7 @@ export function computed<T>(computation: () => T, options?: SignalOptions<T>): C
       notify: notifyFn,
       dispose: () => {
         dependentSubscriptions.delete(subscription);
-      }
+      },
     };
     dependentSubscriptions.add(subscription);
     return subscription;
@@ -368,24 +371,24 @@ export function computed<T>(computation: () => T, options?: SignalOptions<T>): C
 
   const recompute = (): T => {
     if (isComputing) {
-      throw new Error('Circular dependency detected in computed signal');
+      throw new Error("Circular dependency detected in computed signal");
     }
-    
+
     isComputing = true;
-    
+
     // Clear old dependencies
     clearDependencies();
-    
+
     // Set up tracking context to capture new dependencies
     const trackingContext: TrackingContext = {
       onDependency: (source: ReactiveSource) => {
         // Subscribe to this dependency
         const subscription = source._subscribe(markDirty);
         dependencySubscriptions.add(subscription);
-      }
+      },
     };
     pushTrackingContext(trackingContext);
-    
+
     try {
       const newValue = computation();
       cachedValue = newValue;
@@ -401,30 +404,30 @@ export function computed<T>(computation: () => T, options?: SignalOptions<T>): C
     if (isDisposed) {
       return cachedValue;
     }
-    
+
     // Track this computed as dependency of parent computed/effect
     const context = getCurrentTrackingContext();
     if (context) {
       context.onDependency({ _subscribe } as ReactiveSource);
     }
-    
+
     // Recompute if dirty (lazy evaluation)
     if (isDirty) {
       recompute();
     }
-    
+
     return cachedValue;
   };
 
   const dispose = (): void => {
     if (isDisposed) return;
-    
+
     isDisposed = true;
     isDirty = false;
-    
+
     // Unsubscribe from all dependencies - THIS FIXES THE MEMORY LEAK
     clearDependencies();
-    
+
     // Clear our dependents (they'll get undefined on next read)
     dependentSubscriptions.clear();
   };
@@ -433,14 +436,14 @@ export function computed<T>(computation: () => T, options?: SignalOptions<T>): C
   computedFn.dispose = dispose;
   computedFn._subscribe = _subscribe;
   (computedFn as any)[COMPUTED_SYMBOL] = true;
-  
-  Object.defineProperty(computedFn, 'value', {
+
+  Object.defineProperty(computedFn, "value", {
     get: getter,
     enumerable: true,
     configurable: true,
   });
-  
-  Object.defineProperty(computedFn, 'disposed', {
+
+  Object.defineProperty(computedFn, "disposed", {
     get: () => isDisposed,
     enumerable: true,
     configurable: true,
@@ -456,23 +459,25 @@ export function computed<T>(computation: () => T, options?: SignalOptions<T>): C
 /**
  * Runs an effect that automatically re-runs when dependencies change.
  * Use sparingly - prefer computed() for derived values.
- * 
+ *
  * Best for: syncing to external APIs (localStorage, canvas, DOM, etc.)
- * 
+ *
  * @example
  * ```typescript
  * const count = signal(0);
- * 
+ *
  * const ref = effect(() => {
  *   console.log('Count:', count());
  * });
- * 
+ *
  * count.set(5);  // logs "Count: 5"
- * 
+ *
  * ref.dispose();  // stop the effect
  * ```
  */
-export function effect(fn: (onCleanup: (cleanup: CleanupFn) => void) => void | CleanupFn): EffectRef {
+export function effect(
+  fn: (onCleanup: (cleanup: CleanupFn) => void) => void | CleanupFn,
+): EffectRef {
   let isDisposed = false;
   let cleanupFn: CleanupFn | undefined;
   const dependencySubscriptions = new Set<Subscription>();
@@ -486,39 +491,39 @@ export function effect(fn: (onCleanup: (cleanup: CleanupFn) => void) => void | C
 
   const runEffect = () => {
     if (isDisposed) return;
-    
+
     // Run cleanup from previous execution
     if (cleanupFn) {
       try {
         cleanupFn();
       } catch (error) {
-        console.error('Error in effect cleanup:', error);
+        console.error("Error in effect cleanup:", error);
       }
       cleanupFn = undefined;
     }
-    
+
     // Clear old dependencies
     clearDependencies();
-    
+
     // Set up tracking context
     const trackingContext: TrackingContext = {
       onDependency: (source: ReactiveSource) => {
         const subscription = source._subscribe(runEffect);
         dependencySubscriptions.add(subscription);
-      }
+      },
     };
     pushTrackingContext(trackingContext);
-    
+
     try {
       // Allow effect to register cleanup via callback or return value
       const onCleanup = (cleanup: CleanupFn) => {
         cleanupFn = cleanup;
       };
-      
+
       const result = fn(onCleanup);
-      
+
       // Also accept cleanup as return value (like React useEffect)
-      if (typeof result === 'function') {
+      if (typeof result === "function") {
         cleanupFn = result;
       }
     } finally {
@@ -528,18 +533,18 @@ export function effect(fn: (onCleanup: (cleanup: CleanupFn) => void) => void | C
 
   const dispose = (): void => {
     if (isDisposed) return;
-    
+
     isDisposed = true;
-    
+
     // Unsubscribe from all dependencies
     clearDependencies();
-    
+
     // Run final cleanup
     if (cleanupFn) {
       try {
         cleanupFn();
       } catch (error) {
-        console.error('Error in effect cleanup:', error);
+        console.error("Error in effect cleanup:", error);
       }
       cleanupFn = undefined;
     }
@@ -552,12 +557,12 @@ export function effect(fn: (onCleanup: (cleanup: CleanupFn) => void) => void | C
     dispose,
     get disposed() {
       return isDisposed;
-    }
+    },
   };
-  
+
   // Mark as effect for cleanup detection
   (effectRef as any)[EFFECT_SYMBOL] = true;
-  
+
   return effectRef;
 }
 
@@ -569,7 +574,7 @@ export function effect(fn: (onCleanup: (cleanup: CleanupFn) => void) => void | C
  * Read a signal without tracking it as a dependency.
  * Useful when you want to read a value in a computed/effect without
  * triggering re-runs when that value changes.
- * 
+ *
  * @example
  * ```typescript
  * effect(() => {
@@ -583,7 +588,7 @@ export function untracked<T>(fn: () => T): T {
   // Temporarily remove tracking context
   const savedStack = [...trackingStack];
   trackingStack.length = 0;
-  
+
   try {
     return fn();
   } finally {
@@ -595,50 +600,50 @@ export function untracked<T>(fn: () => T): T {
  * Check if a value is a signal.
  */
 export function isSignal(value: unknown): value is Signal<unknown> {
-  return typeof value === 'function' && (value as any)[SIGNAL_SYMBOL] === true;
+  return typeof value === "function" && (value as any)[SIGNAL_SYMBOL] === true;
 }
 
 /**
  * Check if a value is a computed signal.
  */
 export function isComputed(value: unknown): value is ComputedSignal<unknown> {
-  return typeof value === 'function' && (value as any)[COMPUTED_SYMBOL] === true;
+  return typeof value === "function" && (value as any)[COMPUTED_SYMBOL] === true;
 }
 
 /**
  * Check if a value is an effect ref.
  */
 export function isEffect(value: unknown): value is EffectRef {
-  return value !== null && typeof value === 'object' && (value as any)[EFFECT_SYMBOL] === true;
+  return value !== null && typeof value === "object" && (value as any)[EFFECT_SYMBOL] === true;
 }
 
 // ============================================================================
 // COM State Signal
 // ============================================================================
 
-export const COM_SIGNAL_SYMBOL = Symbol.for('aidk.comSignal');
+export const COM_SIGNAL_SYMBOL = Symbol.for("aidk.comSignal");
 
 /**
  * Creates a signal bound to COM state.
  * Changes sync bidirectionally between signal and COM.
- * 
+ *
  * @internal Used by comState() after COM is available
  */
 export function createCOMStateSignal<T>(
-  com: { 
-    getState: (key: string) => T | undefined; 
-    setState: (key: string, value: unknown) => void; 
-    on: (event: any, handler: (...args: any[]) => void) => any; 
+  com: {
+    getState: (key: string) => T | undefined;
+    setState: (key: string, value: unknown) => void;
+    on: (event: any, handler: (...args: any[]) => void) => any;
     off?: (event: any, handler: (...args: any[]) => void) => any;
   },
   key: string,
-  initialValue?: T
+  initialValue?: T,
 ): Signal<T | undefined> {
   const sig = signal<T | undefined>(com.getState(key) ?? initialValue);
-  
+
   // Flag to prevent circular updates
   let isUpdatingFromCOM = false;
-  
+
   // Listen for COM state changes from other sources
   const handler = (changedKey: string, value: unknown) => {
     if (changedKey === key && !isUpdatingFromCOM) {
@@ -647,7 +652,7 @@ export function createCOMStateSignal<T>(
         // Update signal without triggering our own setter logic
         const internalSet = sig.set;
         internalSet(value as T);
-        
+
         // AUTOMATIC RECOMPILATION: If COM state changes during render phase,
         // request recompile to ensure consistency across sibling components
         // BUT: Skip in phases where recompile is unnecessary
@@ -665,9 +670,9 @@ export function createCOMStateSignal<T>(
       }
     }
   };
-  
-  com.on('state:changed', handler);
-  
+
+  com.on("state:changed", handler);
+
   // Override set to also update COM
   const originalSet = sig.set;
   sig.set = (value) => {
@@ -675,27 +680,28 @@ export function createCOMStateSignal<T>(
       originalSet.call(sig, value);
       return;
     }
-    
+
     const currentValue = sig();
-    const nextValue = typeof value === 'function' 
-      ? (value as (prev: T | undefined) => T | undefined)(currentValue)
-      : value;
-    
+    const nextValue =
+      typeof value === "function"
+        ? (value as (prev: T | undefined) => T | undefined)(currentValue)
+        : value;
+
     // Bailout if value hasn't changed
     if (Object.is(currentValue, nextValue)) {
       return;
     }
-    
+
     // DEV WARNING: Setting comState during render
-    if (process.env['NODE_ENV'] === 'development' && isCompilerRendering()) {
+    if (process.env["NODE_ENV"] === "development" && isCompilerRendering()) {
       console.warn(
         `[AIDK] comState '${key}' is being set during render phase.\n` +
-        `This may cause sibling components to see stale data in the current iteration.\n` +
-        `Consider updating state in lifecycle methods (onTickStart, onMount) instead.\n` +
-        `An automatic recompile will be triggered to ensure consistency.`
+          `This may cause sibling components to see stale data in the current iteration.\n` +
+          `Consider updating state in lifecycle methods (onTickStart, onMount) instead.\n` +
+          `An automatic recompile will be triggered to ensure consistency.`,
       );
     }
-    
+
     // Update COM first (will trigger handler, but flag prevents circular)
     isUpdatingFromCOM = true;
     try {
@@ -703,10 +709,10 @@ export function createCOMStateSignal<T>(
     } finally {
       isUpdatingFromCOM = false;
     }
-    
+
     // Then update signal
     originalSet.call(sig, nextValue);
-    
+
     // AUTOMATIC RECOMPILATION: Request recompile after state change
     // This ensures useComState behaves like useState for triggering re-renders
     // BUT: Skip recompile in certain phases where it's unnecessary:
@@ -715,7 +721,7 @@ export function createCOMStateSignal<T>(
     // - complete: Execution is complete, no more renders
     // - unmount: Component is being removed
     // - render (class onMount): Class component onMount runs during render, before render() is called
-    // 
+    //
     // ALLOW recompile in:
     // - mount (useOnMount): Function component useOnMount runs after first render, can trigger recompile
     if (!shouldSkipRecompile()) {
@@ -725,51 +731,51 @@ export function createCOMStateSignal<T>(
       }
     }
   };
-  
+
   // Override dispose to cleanup COM listener
   const originalDispose = sig.dispose;
   sig.dispose = () => {
     if (com.off) {
-      com.off('state:changed', handler);
+      com.off("state:changed", handler);
     }
     originalDispose.call(sig);
   };
-  
+
   // Mark as COM signal
   (sig as any)[COM_SIGNAL_SYMBOL] = key;
-  
+
   return sig;
 }
 
-export const WATCH_SIGNAL_SYMBOL = Symbol.for('aidk.watchSignal');
-export const PROPS_SIGNAL_SYMBOL = Symbol.for('aidk.propsSignal');
-export const REQUIRED_INPUT_SYMBOL = Symbol.for('aidk.requiredInput');
+export const WATCH_SIGNAL_SYMBOL = Symbol.for("aidk.watchSignal");
+export const PROPS_SIGNAL_SYMBOL = Symbol.for("aidk.propsSignal");
+export const REQUIRED_INPUT_SYMBOL = Symbol.for("aidk.requiredInput");
 
 /**
  * Creates a read-only signal that watches COM state.
  * The signal updates when COM state changes, but cannot modify it.
- * 
+ *
  * @internal Used by watchComState() and watch()
  */
 export function createReadonlyCOMStateSignal<T>(
-  com: { 
-    getState: (key: string) => T | undefined; 
-    on: (event: any, handler: (...args: any[]) => void) => any; 
+  com: {
+    getState: (key: string) => T | undefined;
+    on: (event: any, handler: (...args: any[]) => void) => any;
     off?: (event: any, handler: (...args: any[]) => void) => any;
   },
   key: string,
-  defaultValue?: T
+  defaultValue?: T,
 ): ReadonlySignal<T | undefined> {
   let value: T | undefined = com.getState(key) ?? defaultValue;
   let isDisposed = false;
-  
+
   // Listen for COM state changes
   const handler = (changedKey: string, newValue: unknown) => {
     if (changedKey === key && !isDisposed) {
       value = newValue as T;
       // Notify any computed/effects that depend on this
-      scheduleEffect(() => {});  // Force reactivity check
-      
+      scheduleEffect(() => {}); // Force reactivity check
+
       // AUTOMATIC RECOMPILATION: If watched COM state changes during render,
       // request recompile to ensure consistency across sibling components
       // BUT: Skip in phases where recompile is unnecessary
@@ -784,12 +790,12 @@ export function createReadonlyCOMStateSignal<T>(
       }
     }
   };
-  
-  com.on('state:changed', handler);
-  
+
+  com.on("state:changed", handler);
+
   const getter = (): T | undefined => {
     if (isDisposed) return value;
-    
+
     // Track as dependency if inside computed/effect
     const context = getCurrentTrackingContext();
     if (context) {
@@ -797,30 +803,34 @@ export function createReadonlyCOMStateSignal<T>(
       context.onDependency({
         _subscribe: (notify: () => void) => ({
           notify,
-          dispose: () => {}
-        })
+          dispose: () => {},
+        }),
       } as any);
     }
-    
+
     return value;
   };
-  
+
   const dispose = (): void => {
     if (isDisposed) return;
     isDisposed = true;
     if (com.off) {
-      com.off('state:changed', handler);
+      com.off("state:changed", handler);
     }
   };
-  
+
   const readonlySignal: ReadonlySignal<T | undefined> = Object.assign(getter, {
     dispose,
-    get value() { return getter(); },
-    get disposed() { return isDisposed; }
+    get value() {
+      return getter();
+    },
+    get disposed() {
+      return isDisposed;
+    },
   });
-  
+
   // Mark for cleanup detection
   (readonlySignal as any)[WATCH_SIGNAL_SYMBOL] = key;
-  
+
   return readonlySignal;
 }

@@ -161,9 +161,7 @@ function mountOrUpdateHook(tag: HookTag): HookState {
  * Extract signal values for dependency comparison.
  * Signals/computed values are unwrapped to their current value.
  */
-function unwrapDeps(
-  deps: unknown[] | undefined | null,
-): unknown[] | undefined | null {
+function unwrapDeps(deps: unknown[] | undefined | null): unknown[] | undefined | null {
   if (!deps) return deps;
 
   return deps.map((dep) => {
@@ -231,13 +229,7 @@ export function useReducer<S, A>(
     hook.queue = queue as unknown as UpdateQueue;
 
     const dispatch = (action: A) => {
-      dispatchAction(
-        fiber,
-        hook,
-        queue as unknown as UpdateQueue<A>,
-        reducer,
-        action,
-      );
+      dispatchAction(fiber, hook, queue as unknown as UpdateQueue<A>, reducer, action);
     };
     queue.dispatch = dispatch as unknown as Dispatch<A>;
   } else {
@@ -258,10 +250,7 @@ export function useReducer<S, A>(
     queue.lastRenderedState = newState as unknown as A;
   }
 
-  return [
-    hook.memoizedState as S,
-    hook.queue!.dispatch as unknown as (action: A) => void,
-  ];
+  return [hook.memoizedState as S, hook.queue!.dispatch as unknown as (action: A) => void];
 }
 
 function dispatchAction<S, A>(
@@ -395,10 +384,7 @@ export function useComState<T>(key: string, initialValue: T): Signal<T> {
  * }
  * ```
  */
-export function useWatch<T>(
-  key: string,
-  defaultValue?: T,
-): ReadonlySignal<T | undefined> {
+export function useWatch<T>(key: string, defaultValue?: T): ReadonlySignal<T | undefined> {
   const hook = mountOrUpdateHook(HookTag.WatchState);
   const ctx = getCurrentContext();
 
@@ -530,9 +516,7 @@ export async function useInit(
  * }
  * ```
  */
-export function useOnMount(
-  callback: (com: COM) => void | Promise<void>,
-): void {
+export function useOnMount(callback: (com: COM) => void | Promise<void>): void {
   const ctx = getCurrentContext();
 
   useEffect(() => {
@@ -543,9 +527,7 @@ export function useOnMount(
 /**
  * useOnUnmount - Run once when component unmounts.
  */
-export function useOnUnmount(
-  callback: (com: COM) => void | Promise<void>,
-): void {
+export function useOnUnmount(callback: (com: COM) => void | Promise<void>): void {
   const ctx = getCurrentContext();
 
   useEffect(() => {
@@ -556,9 +538,7 @@ export function useOnUnmount(
 /**
  * useTickStart - Run at start of each tick, before render.
  */
-export function useTickStart(
-  callback: (com: COM, state: TickState) => void | Promise<void>,
-): void {
+export function useTickStart(callback: (com: COM, state: TickState) => void | Promise<void>): void {
   const hook = mountOrUpdateHook(HookTag.TickStart);
   const ctx = getCurrentContext();
 
@@ -577,9 +557,7 @@ export function useTickStart(
 /**
  * useTickEnd - Run at end of each tick, after model execution.
  */
-export function useTickEnd(
-  callback: (com: COM, state: TickState) => void | Promise<void>,
-): void {
+export function useTickEnd(callback: (com: COM, state: TickState) => void | Promise<void>): void {
   const hook = mountOrUpdateHook(HookTag.TickEnd);
   const ctx = getCurrentContext();
 
@@ -598,11 +576,7 @@ export function useTickEnd(
  * useAfterCompile - Run after compile, can request recompile.
  */
 export function useAfterCompile(
-  callback: (
-    com: COM,
-    compiled: CompiledStructure,
-    state: TickState,
-  ) => void,
+  callback: (com: COM, compiled: CompiledStructure, state: TickState) => void,
 ): void {
   const hook = mountOrUpdateHook(HookTag.AfterCompile);
   const _ctx = getCurrentContext();
@@ -652,11 +626,7 @@ export function useAfterCompile(
  * ```
  */
 export function useOnMessage(
-  callback: (
-    com: COM,
-    message: ExecutionMessage,
-    state: TickState,
-  ) => void | Promise<void>,
+  callback: (com: COM, message: ExecutionMessage, state: TickState) => void | Promise<void>,
 ): void {
   const hook = mountOrUpdateHook(HookTag.OnMessage);
 
@@ -700,10 +670,7 @@ export function useOnMessage(
  * }
  * ```
  */
-export function useAsync<T>(
-  asyncFn: () => Promise<T>,
-  deps: unknown[],
-): AsyncResult<T> {
+export function useAsync<T>(asyncFn: () => Promise<T>, deps: unknown[]): AsyncResult<T> {
   const [state, setState] = useState<AsyncResult<T>>({
     data: undefined,
     loading: true,
@@ -712,8 +679,7 @@ export function useAsync<T>(
 
   // Track if deps changed
   const prevDeps = useRef<unknown[] | null>(null);
-  const depsChanged =
-    prevDeps.current === null || !areHookInputsEqual(deps, prevDeps.current);
+  const depsChanged = prevDeps.current === null || !areHookInputsEqual(deps, prevDeps.current);
   prevDeps.current = deps;
 
   // Only trigger on deps change
@@ -782,15 +748,10 @@ export function useMemo<T>(factory: () => T, deps: unknown[]): T {
  * const messages = recentMessages();  // or recentMessages.value
  * ```
  */
-export function useComputed<T>(
-  computation: () => T,
-  deps: unknown[],
-): ComputedSignal<T> {
+export function useComputed<T>(computation: () => T, deps: unknown[]): ComputedSignal<T> {
   const hook = mountOrUpdateHook(HookTag.Memo);
 
-  const memoState = hook.memoizedState as
-    | [ComputedSignal<T>, unknown[]]
-    | undefined;
+  const memoState = hook.memoizedState as [ComputedSignal<T>, unknown[]] | undefined;
   const prevDeps = memoState?.[1];
 
   // If deps haven't changed, return existing computed
@@ -903,10 +864,7 @@ export function useAbortSignal(): AbortSignal | undefined {
 /**
  * useDebugValue - Display value in devtools (no-op in production).
  */
-export function useDebugValue<T>(
-  value: T,
-  formatter?: (value: T) => unknown,
-): void {
+export function useDebugValue<T>(value: T, formatter?: (value: T) => unknown): void {
   if (process.env["NODE_ENV"] === "development") {
     const ctx = getCurrentContext();
     ctx.fiber.debugName = String(formatter ? formatter(value) : value);
@@ -917,16 +875,10 @@ export function useDebugValue<T>(
 // Helpers
 // ============================================================================
 
-function areHookInputsEqual(
-  nextDeps: unknown[],
-  prevDeps: unknown[] | null,
-): boolean {
+function areHookInputsEqual(nextDeps: unknown[], prevDeps: unknown[] | null): boolean {
   if (prevDeps === null) return false;
 
-  if (
-    process.env["NODE_ENV"] === "development" &&
-    nextDeps.length !== prevDeps.length
-  ) {
+  if (process.env["NODE_ENV"] === "development" && nextDeps.length !== prevDeps.length) {
     console.warn(
       "Hook dependency array changed size between renders. " +
         "The array must remain constant in length.",

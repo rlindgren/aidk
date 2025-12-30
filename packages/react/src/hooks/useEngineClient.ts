@@ -1,16 +1,16 @@
 /**
  * React hook for Engine Client
- * 
+ *
  * Provides a React-friendly wrapper around the Engine Client with:
  * - Automatic cleanup on unmount
  * - Stable client reference (survives StrictMode)
  * - Configuration updates
- * 
+ *
  * Supports custom transports and channel clients via config:
  * @example
  * ```tsx
  * import { SSETransport } from '../client/core';
- * 
+ *
  * const transport = new SSETransport({ ... });
  * const { client } = useEngineClient({
  *   transport,  // Use custom transport
@@ -19,8 +19,8 @@
  * ```
  */
 
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { EngineClient, createEngineClient, type EngineClientConfig } from 'aidk-client';
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { EngineClient, createEngineClient, type EngineClientConfig } from "aidk-client";
 
 export interface UseEngineClientOptions extends EngineClientConfig {
   /** Skip automatic channel connection (for manual control) */
@@ -52,9 +52,9 @@ interface CachedClient {
 const clientCache = new Map<string, CachedClient>();
 
 function generateUUID(): string {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
     const r = (Math.random() * 16) | 0;
-    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
     return v.toString(16);
   });
 }
@@ -65,15 +65,15 @@ function generateUUID(): string {
  * If sessionId is explicitly provided, include it to allow multiple sessions.
  */
 function getClientCacheKey(options: UseEngineClientOptions): string {
-  const base = options.baseUrl || 'default';
+  const base = options.baseUrl || "default";
   // Only include sessionId in key if explicitly provided (not auto-generated)
-  const session = options.sessionId || '';
+  const session = options.sessionId || "";
   return `${base}:${session}`;
 }
 
 /**
  * Hook to get an Engine Client instance
- * 
+ *
  * @example
  * ```tsx
  * function App() {
@@ -81,7 +81,7 @@ function getClientCacheKey(options: UseEngineClientOptions): string {
  *     baseUrl: 'http://localhost:3001',
  *     userId: user?.id,
  *   });
- *   
+ *
  *   // Use client for execution
  *   const handleSubmit = async (message: string) => {
  *     for await (const event of client.stream('task-assistant', { messages: [...] })) {
@@ -97,13 +97,13 @@ export function useEngineClient(options: UseEngineClientOptions = {}): UseEngine
 
   // Generate a stable cache key
   const cacheKey = useMemo(() => getClientCacheKey(options), [options]);
-  
+
   // Get or create client from cache
   // This runs during render to ensure client is available immediately
   let cached = clientCache.get(cacheKey);
-  
+
   if (!cached) {
-    console.log('[useEngineClient] Creating new client instance');
+    console.log("[useEngineClient] Creating new client instance");
     const sessionId = options.sessionId || generateUUID();
     const client = createEngineClient({
       baseUrl: options.baseUrl,
@@ -121,16 +121,16 @@ export function useEngineClient(options: UseEngineClientOptions = {}): UseEngine
       maxReconnectAttempts: options.maxReconnectAttempts,
       callbacks: options.callbacks,
     });
-    
+
     cached = { client, refCount: 0, sessionId };
     clientCache.set(cacheKey, cached);
   } else {
-    console.log('[useEngineClient] Reusing cached client instance');
+    console.log("[useEngineClient] Reusing cached client instance");
   }
-  
+
   const client = cached.client;
   const sessionId = cached.sessionId;
-  
+
   // Increment ref count on mount, decrement on unmount
   useEffect(() => {
     const entry = clientCache.get(cacheKey);
@@ -138,13 +138,13 @@ export function useEngineClient(options: UseEngineClientOptions = {}): UseEngine
       entry.refCount++;
       console.log(`[useEngineClient] Ref count for ${cacheKey}: ${entry.refCount}`);
     }
-    
+
     return () => {
       const entry = clientCache.get(cacheKey);
       if (entry) {
         entry.refCount--;
         console.log(`[useEngineClient] Ref count for ${cacheKey}: ${entry.refCount}`);
-        
+
         // Only dispose when truly no longer needed
         // Use setTimeout to handle StrictMode's rapid mount/unmount
         if (entry.refCount <= 0) {
@@ -168,12 +168,12 @@ export function useEngineClient(options: UseEngineClientOptions = {}): UseEngine
     tenantId?: string;
     threadId?: string;
   }>({});
-  
+
   useEffect(() => {
     const prev = prevOptionsRef.current;
     const updates: Partial<EngineClientConfig> = {};
     let hasChanges = false;
-    
+
     // Only include changed values to avoid unnecessary reconnects
     if (options.userId !== prev.userId) {
       updates.userId = options.userId;
@@ -187,11 +187,11 @@ export function useEngineClient(options: UseEngineClientOptions = {}): UseEngine
       updates.threadId = options.threadId;
       hasChanges = true;
     }
-    
+
     if (hasChanges) {
       client.updateConfig(updates);
     }
-    
+
     // Update prev ref
     prevOptionsRef.current = {
       userId: options.userId,
@@ -205,7 +205,7 @@ export function useEngineClient(options: UseEngineClientOptions = {}): UseEngine
     (updates: Partial<EngineClientConfig>) => {
       client.updateConfig(updates);
     },
-    [client]
+    [client],
   );
 
   return {
@@ -215,4 +215,3 @@ export function useEngineClient(options: UseEngineClientOptions = {}): UseEngine
     updateConfig,
   };
 }
-

@@ -1,4 +1,4 @@
 packages:
-  - 'express'
-  - 'react'
-  - 'angular'
+  - "express"
+  - "react"
+  - "angular"

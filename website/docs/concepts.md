@@ -11,7 +11,7 @@ The Engine is the orchestrator that executes agents. It manages:
 - **Tool execution** - Running tools and returning results
 - **Streaming** - Emitting events as execution progresses
 
-``` tsx
+```tsx
 import { createEngine } from 'aidk';
 
 const engine = createEngine();
@@ -39,7 +39,7 @@ class MyAgent extends Component {
   async onMount(com: COM) {
     // Called once when component mounts
   }
-  
+
   render(com: COM, state: TickState): JSX.Element {
     // Called on each tick
     return <>{/* ... */}</>;
@@ -76,7 +76,7 @@ The COM is a structured representation of the current agent state, providing:
 render(com: COM, state: TickState) {
   // Get user input
   const input = com.getUserInput();
-  
+
   return <>{/* ... */}</>;
 }
 ```
@@ -85,10 +85,10 @@ render(com: COM, state: TickState) {
 
 AIDK provides a signal-based reactive state system for managing component state. There are two layers:
 
-| Type | Function | Scope | Persisted? |
-|------|----------|-------|------------|
-| **Local State** | `signal()` | Single component instance | No |
-| **COM State** | `comState()` | Shared across all components | Yes (across ticks) |
+| Type            | Function     | Scope                        | Persisted?         |
+| --------------- | ------------ | ---------------------------- | ------------------ |
+| **Local State** | `signal()`   | Single component instance    | No                 |
+| **COM State**   | `comState()` | Shared across all components | Yes (across ticks) |
 
 ### Signals in Components
 
@@ -98,10 +98,10 @@ import { EngineComponent, signal, comState, computed } from 'aidk';
 class TimelineComponent extends Component {
   // Local state - only this component can access
   private startedAt = signal(new Date());
-  
+
   // COM state - shared across components, persisted across ticks
   private timeline = comState<COMTimelineEntry[]>('timeline', []);
-  
+
   // Derived state - memoized, auto-updates when dependencies change
   private messageCount = computed(() => this.timeline().length);
 
@@ -126,8 +126,8 @@ class TimelineComponent extends Component {
 
 ### Understanding previous vs current
 
-- **`state.current`** - Output from the *last* model call (new messages, tool calls)
-- **`state.previous`** - The compiled state from the *previous* tick
+- **`state.current`** - Output from the _last_ model call (new messages, tool calls)
+- **`state.previous`** - The compiled state from the _previous_ tick
 
 **The correct pattern** is to use signals to accumulate state:
 
@@ -159,6 +159,7 @@ render(com, state) {
 ```
 
 **Why signals are better:**
+
 - Clear separation of accumulation logic (`onTickStart`) and rendering (`render`)
 - No duplication issues
 - State persists correctly across ticks
@@ -182,8 +183,8 @@ The timeline represents the conversation history:
 
 Content is represented as blocks:
 
-``` tsx
-type ContentBlock = 
+```tsx
+type ContentBlock =
   | { type: 'text'; text: string }
   | { type: 'image'; source: MediaSource }
   | { type: 'tool_use'; id: string; name: string; input: any }
@@ -216,7 +217,7 @@ Sections organize content for different audiences:
 
 Tools give agents capabilities to interact with the world. **Tools are components** with full lifecycle support.
 
-``` tsx
+```tsx
 const myTool = createTool({
   name: 'tool_name',
   description: 'What the tool does',
@@ -268,12 +269,13 @@ Each model adapter can broadcast its preferred renderer format. AIDK automatical
 <AiSdkModel model={anthropic('claude-3-5-sonnet-20241022')} />
 // Your JSX → XML automatically
 
-// GPT prefers Markdown  
+// GPT prefers Markdown
 <AiSdkModel model={openai('gpt-4o')} />
 // Your JSX → Markdown automatically
 ```
 
 **You write this once:**
+
 ```tsx
 <Section audience="model">
   <H2>Status</H2>
@@ -285,6 +287,7 @@ Each model adapter can broadcast its preferred renderer format. AIDK automatical
 ```
 
 **For Claude, renders as XML:**
+
 ```xml
 <section>
   <h2>Status</h2>
@@ -293,6 +296,7 @@ Each model adapter can broadcast its preferred renderer format. AIDK automatical
 ```
 
 **For GPT, renders as Markdown:**
+
 ```markdown
 ## Status
 
@@ -308,7 +312,7 @@ See the [Renderers Guide](/docs/guides/renderers) for complete documentation.
 
 Hooks provide middleware-style extension points:
 
-``` tsx
+```tsx
 // Engine-level hooks
 engine.hooks.on('execute', async (args, envelope, next) => {
   console.log('Execution starting');
@@ -334,7 +338,7 @@ engine.hooks.on('tool.execute', async (args, envelope, next) => {
 
 Channels enable real-time communication between server and client:
 
-``` tsx
+```tsx
 // Define a channel
 const todoChannel = defineChannel({
   name: 'todos',
@@ -357,7 +361,7 @@ client.channels.subscribe('todos', (event) => {
 ## Execution Flow
 
 1. **Initialize** - Engine creates execution context
-2. **Mount** - Components call `onMount()` 
+2. **Mount** - Components call `onMount()`
 3. **Tick 1** - First render, compile to model input
 4. **Generate** - Model produces response
 5. **Process** - Handle tool calls, update state
@@ -393,4 +397,3 @@ For deeper understanding, see these concept guides:
 - [Ephemeral vs Persisted](./guides/ephemeral-content.md) - Grounding vs Section content
 - [Fork & Spawn](./guides/fork-spawn.md) - Parallel and background agents
 - [Channels Guide](./guides/channels.md) - Real-time updates
-

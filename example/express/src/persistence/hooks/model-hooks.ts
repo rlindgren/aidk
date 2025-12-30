@@ -1,13 +1,23 @@
 /**
  * Model Hooks - Persistence for model.generate and model.stream
- * 
+ *
  * These hooks track model executions. When nested inside an engine execution,
  * they link to the parent. When standalone, they create their own execution record.
  */
 
-import type { ModelHookMiddleware } from 'aidk';
-import type { ExecutionRepository, MetricsRepository, InteractionRepository } from '../repositories';
-import { generateUUID, tryGetExecutionContext, getParentExecution, getInteraction, isWithinEngine } from './utils';
+import type { ModelHookMiddleware } from "aidk";
+import type {
+  ExecutionRepository,
+  MetricsRepository,
+  InteractionRepository,
+} from "../repositories";
+import {
+  generateUUID,
+  tryGetExecutionContext,
+  getParentExecution,
+  getInteraction,
+  isWithinEngine,
+} from "./utils";
 
 export interface ModelHooksConfig {
   executionRepo: ExecutionRepository;
@@ -18,7 +28,7 @@ export interface ModelHooksConfig {
 /**
  * Create model.generate hook
  */
-export function createModelGenerateHook(config: ModelHooksConfig): ModelHookMiddleware<'generate'> {
+export function createModelGenerateHook(config: ModelHooksConfig): ModelHookMiddleware<"generate"> {
   const { executionRepo, metricsRepo, interactionRepo } = config;
 
   return async ([_input], _envelope, next) => {
@@ -40,19 +50,19 @@ export function createModelGenerateHook(config: ModelHooksConfig): ModelHookMidd
       // Standalone model call - create interaction and execution
       effectiveThreadId = threadId;
       const interactionId = generateUUID();
-      
+
       await interactionRepo.create({
         id: interactionId,
-        type: 'agent',
-        origin: 'user_request',
-        app_origin: 'example-app',
-        agent_id: 'model-standalone',
+        type: "agent",
+        origin: "user_request",
+        app_origin: "example-app",
+        agent_id: "model-standalone",
         thread_id: effectiveThreadId,
         root_executionId: generateUUID(),
         user_id: userId,
         tenant_id: tenantId,
       });
-      
+
       modelExecutionId = generateUUID();
       rootId = modelExecutionId;
       parentId = undefined;
@@ -66,8 +76,8 @@ export function createModelGenerateHook(config: ModelHooksConfig): ModelHookMidd
 
     await executionRepo.create({
       id: modelExecutionId,
-      type: 'model',
-      status: 'running',
+      type: "model",
+      status: "running",
       root_id: rootId,
       parent_id: parentId,
       thread_id: effectiveThreadId,
@@ -75,8 +85,8 @@ export function createModelGenerateHook(config: ModelHooksConfig): ModelHookMidd
       tenant_id: tenantId,
       interaction_id: parentInteraction?.id,
       metadata: {
-        model: ctx.metadata['model_name'] || 'unknown',
-        provider: ctx.metadata['provider_name'] || 'unknown',
+        model: ctx.metadata["model_name"] || "unknown",
+        provider: ctx.metadata["provider_name"] || "unknown",
         engine_pid: handle.pid,
       },
     });
@@ -103,13 +113,13 @@ export function createModelGenerateHook(config: ModelHooksConfig): ModelHookMidd
     try {
       const result = await next();
       await executionRepo.update(modelExecutionId, {
-        status: 'completed',
+        status: "completed",
         completed_at: new Date(),
       });
       return result;
     } catch (error: any) {
       await executionRepo.update(modelExecutionId, {
-        status: 'failed',
+        status: "failed",
         error: JSON.stringify({ message: error.message, stack: error.stack }),
         completed_at: new Date(),
       });
@@ -121,7 +131,7 @@ export function createModelGenerateHook(config: ModelHooksConfig): ModelHookMidd
 /**
  * Create model.stream hook
  */
-export function createModelStreamHook(config: ModelHooksConfig): ModelHookMiddleware<'stream'> {
+export function createModelStreamHook(config: ModelHooksConfig): ModelHookMiddleware<"stream"> {
   const { executionRepo, metricsRepo } = config;
 
   return async (_input, _envelope, next) => {
@@ -153,8 +163,8 @@ export function createModelStreamHook(config: ModelHooksConfig): ModelHookMiddle
 
     await executionRepo.create({
       id: modelExecutionId,
-      type: 'model',
-      status: 'running',
+      type: "model",
+      status: "running",
       root_id: rootId,
       parent_id: parentId,
       thread_id: effectiveThreadId,
@@ -162,8 +172,8 @@ export function createModelStreamHook(config: ModelHooksConfig): ModelHookMiddle
       tenant_id: tenantId,
       interaction_id: parentInteraction?.id,
       metadata: {
-        model: ctx.metadata['model_name'] || 'unknown',
-        provider: ctx.metadata['provider_name'] || 'unknown',
+        model: ctx.metadata["model_name"] || "unknown",
+        provider: ctx.metadata["provider_name"] || "unknown",
         engine_pid: handle.pid,
       },
     });
@@ -194,13 +204,13 @@ export function createModelStreamHook(config: ModelHooksConfig): ModelHookMiddle
           yield chunk;
         }
         await executionRepo.update(modelExecutionId, {
-          status: 'completed',
+          status: "completed",
           completed_at: new Date(),
         });
       })();
     } catch (error: any) {
       await executionRepo.update(modelExecutionId, {
-        status: 'failed',
+        status: "failed",
         error: JSON.stringify({ message: error.message, stack: error.stack }),
         completed_at: new Date(),
       });
@@ -208,4 +218,3 @@ export function createModelStreamHook(config: ModelHooksConfig): ModelHookMiddle
     }
   };
 }
-

@@ -183,9 +183,7 @@ describe("withEngine middleware", () => {
     middleware(req as Request, res as Response, next);
 
     const engineReq = req as unknown as EngineRequest;
-    expect(engineReq.engineContext.input.messages).toEqual([
-      { role: "user", content: "Custom" },
-    ]);
+    expect(engineReq.engineContext.input.messages).toEqual([{ role: "user", content: "Custom" }]);
     expect(engineReq.engineContext.input.metadata?.custom).toBe(true);
   });
 
@@ -233,9 +231,7 @@ describe("withEngine middleware", () => {
 
     const engineReq1 = req1 as unknown as EngineRequest;
     const engineReq2 = req2 as unknown as EngineRequest;
-    expect(engineReq1.engineContext.executionId).not.toBe(
-      engineReq2.engineContext.executionId,
-    );
+    expect(engineReq1.engineContext.executionId).not.toBe(engineReq2.engineContext.executionId);
   });
 });
 
@@ -260,9 +256,7 @@ describe("withTransport middleware", () => {
     await middleware(req as Request, res as Response, next);
 
     expect(next).toHaveBeenCalledWith(expect.any(Error));
-    expect((next as jest.Mock).mock.calls[0][0].message).toContain(
-      "withEngine middleware first",
-    );
+    expect((next as jest.Mock).mock.calls[0][0].message).toContain("withEngine middleware first");
   });
 
   it("should attach transport to context", async () => {
@@ -327,10 +321,7 @@ describe("withTransport middleware", () => {
 
     await middleware(req as unknown as Request, res as Response, next);
 
-    expect(joinSpy).toHaveBeenCalledWith(
-      "session-1",
-      "org:tenant-1:user:user-1",
-    );
+    expect(joinSpy).toHaveBeenCalledWith("session-1", "org:tenant-1:user:user-1");
   });
 
   it("should not join room if session not connected", async () => {
@@ -376,9 +367,7 @@ describe("SSE Helper Functions", () => {
 
       writeSSEEvent(res as Response, { type: "test", data: { key: "value" } });
 
-      expect(res._written).toContainEqual(
-        'data: {"type":"test","data":{"key":"value"}}\n\n',
-      );
+      expect(res._written).toContainEqual('data: {"type":"test","data":{"key":"value"}}\n\n');
     });
 
     it("should handle primitive values", () => {
@@ -413,9 +402,7 @@ describe("SSE Helper Functions", () => {
 
       writeSSEEventSafe(res as Response, { type: "data", value: 123 });
 
-      expect(res._written).toContainEqual(
-        'data: {"type":"data","value":123}\n\n',
-      );
+      expect(res._written).toContainEqual('data: {"type":"data","value":123}\n\n');
     });
 
     it("should handle objects without error property", () => {
@@ -423,9 +410,7 @@ describe("SSE Helper Functions", () => {
 
       writeSSEEventSafe(res as Response, { type: "success", data: "ok" });
 
-      expect(res._written).toContainEqual(
-        'data: {"type":"success","data":"ok"}\n\n',
-      );
+      expect(res._written).toContainEqual('data: {"type":"success","data":"ok"}\n\n');
     });
   });
 });

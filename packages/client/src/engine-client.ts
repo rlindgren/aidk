@@ -57,9 +57,13 @@ export type EngineClientCallbacks = TransportCallbacks;
 // =============================================================================
 
 export interface EngineRoutes {
-  /** Agent execute endpoint: (agentId) => path */
+  /** Execute endpoint: (id) => path */
+  execute?: (id: string) => string;
+  /** Stream endpoint: (id) => path */
+  stream?: (id: string) => string;
+  /** @deprecated Use execute instead */
   agentExecute?: (agentId: string) => string;
-  /** Agent stream endpoint: (agentId) => path */
+  /** @deprecated Use stream instead */
   agentStream?: (agentId: string) => string;
   /** Channels SSE endpoint: () => path */
   channelsSse?: () => string;
@@ -86,9 +90,7 @@ export interface EngineClientApi {
   /** Custom single execution fetcher */
   getExecution?: (id: string) => Promise<Execution>;
   /** Custom metrics fetcher */
-  getMetrics?: (
-    params?: Record<string, unknown>,
-  ) => Promise<ExecutionMetrics[]>;
+  getMetrics?: (params?: Record<string, unknown>) => Promise<ExecutionMetrics[]>;
 }
 
 export interface EngineClientConfig {
@@ -162,8 +164,10 @@ export interface EngineClientConfig {
 
 // Default route builders
 const DEFAULT_ROUTES: Required<EngineRoutes> = {
-  agentExecute: (agentId) => `/api/agents/${agentId}/execute`,
-  agentStream: (agentId) => `/api/agents/${agentId}/stream`,
+  execute: (id) => `/api/run/${id}/execute`,
+  stream: (id) => `/api/run/${id}/stream`,
+  agentExecute: (id) => `/api/run/${id}/execute`, // Deprecated alias
+  agentStream: (id) => `/api/run/${id}/stream`, // Deprecated alias
   channelsSse: () => "/api/channels/sse",
   channelsPublish: () => "/api/channels/events",
   toolResults: () => "/api/channels/tool-results",
@@ -296,12 +300,7 @@ export class EngineClient {
    */
   private enrichChannelEvent(data: unknown): unknown {
     // If it's a channel event structure, enrich it
-    if (
-      typeof data === "object" &&
-      data !== null &&
-      "channel" in data &&
-      "type" in data
-    ) {
+    if (typeof data === "object" && data !== null && "channel" in data && "type" in data) {
       return {
         ...(data as Record<string, unknown>),
         sessionId: this.config.sessionId,
@@ -323,11 +322,9 @@ export class EngineClient {
    */
   updateConfig(updates: Partial<EngineClientConfig>): void {
     // Check if identity values actually changed BEFORE applying updates
-    const userIdChanged =
-      updates.userId !== undefined && updates.userId !== this.config.userId;
+    const userIdChanged = updates.userId !== undefined && updates.userId !== this.config.userId;
     const threadIdChanged =
-      updates.threadId !== undefined &&
-      updates.threadId !== this.config.threadId;
+      updates.threadId !== undefined && updates.threadId !== this.config.threadId;
 
     // Apply callback/route/api updates
     if (updates.callbacks) {
@@ -344,7 +341,14 @@ export class EngineClient {
     }
 
     // Apply scalar updates
-    const { callbacks: _callbacks, routes: _routes, api: _api, channels: _channels, transport: _transport, ...rest } = updates;
+    const {
+      callbacks: _callbacks,
+      routes: _routes,
+      api: _api,
+      channels: _channels,
+      transport: _transport,
+      ...rest
+    } = updates;
     Object.assign(this.config, rest);
 
     // Only reconnect if identity actually changed - room memberships depend on these
@@ -369,10 +373,7 @@ export class EngineClient {
    * Fetch with timeout support.
    * If requestTimeout is 0, no timeout is applied.
    */
-  private async fetchWithTimeout(
-    url: string,
-    options: RequestInit = {},
-  ): Promise<Response> {
+  private async fetchWithTimeout(url: string, options: RequestInit = {}): Promise<Response> {
     const timeout = this.config.requestTimeout;
 
     if (timeout <= 0) {
@@ -399,15 +400,16 @@ export class EngineClient {
   }
 
   // ===========================================================================
-  // Agent Execution
+  // Execution
   // ===========================================================================
 
   /**
-   * Execute an agent (non-streaming)
+   * Execute (non-streaming)
    */
-  async execute(agentId: string, input: EngineInput): Promise<ExecutionResult> {
+  async execute(id: string, input: EngineInput): Promise<ExecutionResult> {
     const enrichedInput = this.enrichInput(input);
-    const url = `${this.config.baseUrl}${this.config.routes.agentExecute(agentId)}`;
+    const executeRoute = this.config.routes.execute || this.config.routes.agentExecute;
+    const url = `${this.config.baseUrl}${executeRoute!(id)}`;
 
     const response = await this.fetchWithTimeout(url, {
       method: "POST",
@@ -416,30 +418,22 @@ export class EngineClient {
     });
 
     if (!response.ok) {
-      const error = (await response
-        .json()
-        .catch(() => ({ message: response.statusText }))) as {
+      const error = (await response.json().catch(() => ({ message: response.statusText }))) as {
         message: string;
       };
-      throw TransportError.http(
-        response.status,
-        url,
-        error.message || "Execution failed",
-      );
+      throw TransportError.http(response.status, url, error.message || "Execution failed");
     }
 
     return response.json() as Promise<ExecutionResult>;
   }
 
   /**
-   * Stream agent execution
+   * Stream execution
    */
-  async *stream(
-    agentId: string,
-    input: EngineInput,
-  ): AsyncGenerator<EngineStreamEvent> {
+  async *stream(id: string, input: EngineInput): AsyncGenerator<EngineStreamEvent> {
     const enrichedInput = this.enrichInput(input);
-    const url = `${this.config.baseUrl}${this.config.routes.agentStream(agentId)}`;
+    const streamRoute = this.config.routes.stream || this.config.routes.agentStream;
+    const url = `${this.config.baseUrl}${streamRoute!(id)}`;
 
     const response = await this.fetchWithTimeout(url, {
       method: "POST",
@@ -448,16 +442,10 @@ export class EngineClient {
     });
 
     if (!response.ok) {
-      const error = (await response
-        .json()
-        .catch(() => ({ message: response.statusText }))) as {
+      const error = (await response.json().catch(() => ({ message: response.statusText }))) as {
         message: string;
       };
-      throw TransportError.http(
-        response.status,
-        url,
-        error.message || "Stream failed",
-      );
+      throw TransportError.http(response.status, url, error.message || "Stream failed");
     }
 
     const reader = response.body?.getReader();
@@ -511,10 +499,7 @@ export class EngineClient {
   /**
    * Subscribe to channel events
    */
-  subscribe(
-    channelFilter: string | string[],
-    handler: (event: ChannelEvent) => void,
-  ): () => void {
+  subscribe(channelFilter: string | string[], handler: (event: ChannelEvent) => void): () => void {
     return this.channels.subscribe(channelFilter, handler);
   }
 
@@ -562,16 +547,10 @@ export class EngineClient {
     });
 
     if (!response.ok) {
-      const error = (await response
-        .json()
-        .catch(() => ({ message: response.statusText }))) as {
+      const error = (await response.json().catch(() => ({ message: response.statusText }))) as {
         message: string;
       };
-      throw TransportError.http(
-        response.status,
-        url,
-        error.message || "Failed to publish event",
-      );
+      throw TransportError.http(response.status, url, error.message || "Failed to publish event");
     }
 
     return response.json() as Promise<T>;
@@ -627,9 +606,7 @@ export class EngineClient {
     });
 
     if (!response.ok) {
-      const error = (await response
-        .json()
-        .catch(() => ({ message: response.statusText }))) as {
+      const error = (await response.json().catch(() => ({ message: response.statusText }))) as {
         message: string;
       };
       throw TransportError.http(
@@ -692,9 +669,7 @@ export class EngineClient {
     });
 
     if (!response.ok) {
-      const error = (await response
-        .json()
-        .catch(() => ({ message: response.statusText }))) as {
+      const error = (await response.json().catch(() => ({ message: response.statusText }))) as {
         message: string;
       };
       throw TransportError.http(
@@ -814,11 +789,7 @@ export class EngineClient {
     const response = await this.fetchWithTimeout(url);
 
     if (!response.ok) {
-      throw TransportError.http(
-        response.status,
-        url,
-        "Failed to fetch executions",
-      );
+      throw TransportError.http(response.status, url, "Failed to fetch executions");
     }
 
     return response.json() as Promise<Execution[]>;
@@ -835,19 +806,13 @@ export class EngineClient {
     const response = await this.fetchWithTimeout(url);
 
     if (!response.ok) {
-      throw TransportError.http(
-        response.status,
-        url,
-        "Failed to fetch execution",
-      );
+      throw TransportError.http(response.status, url, "Failed to fetch execution");
     }
 
     return response.json() as Promise<Execution>;
   }
 
-  async getMetrics(
-    params?: Record<string, unknown>,
-  ): Promise<ExecutionMetrics[]> {
+  async getMetrics(params?: Record<string, unknown>): Promise<ExecutionMetrics[]> {
     // Use custom implementation if provided
     if (this.config.api.getMetrics) {
       return this.config.api.getMetrics(params);
@@ -867,11 +832,7 @@ export class EngineClient {
     const response = await this.fetchWithTimeout(url);
 
     if (!response.ok) {
-      throw TransportError.http(
-        response.status,
-        url,
-        "Failed to fetch metrics",
-      );
+      throw TransportError.http(response.status, url, "Failed to fetch metrics");
     }
 
     return response.json() as Promise<ExecutionMetrics[]>;

@@ -1,8 +1,8 @@
 {
   "name": "aidk-website",
   "version": "1.0.0",
-  "type": "module",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "vitepress dev",
     "build": "pnpm run docs:api && vitepress build",

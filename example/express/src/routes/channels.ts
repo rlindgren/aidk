@@ -74,8 +74,7 @@ router.get("/sse", (req: Request, res: Response) => {
  */
 router.post("/events", async (req: Request, res: Response) => {
   // TODO: Standardize on snake_case (userId) for API contract
-  const { sessionId, userId, channel, type, payload, threadId, ...rest } =
-    req.body;
+  const { sessionId, userId, channel, type, payload, threadId, ...rest } = req.body;
   const effectiveUserId = userId;
   console.log(
     `📮 /events: channel=${channel}, type=${type}, userId=${userId}, effectiveUserId=${effectiveUserId}`,
@@ -207,9 +206,7 @@ router.post("/tool-results", async (req: Request, res: Response) => {
     contentBlocks = [{ type: "text" as const, text: content }];
   } else {
     // Assume it's a single content block or data object
-    contentBlocks = [
-      { type: "json" as const, text: JSON.stringify(content), data: content },
-    ];
+    contentBlocks = [{ type: "json" as const, text: JSON.stringify(content), data: content }];
   }
 
   const resolved = coordinator.resolveResult(toolUseId, {
@@ -264,11 +261,7 @@ router.post("/tool-confirmation", async (req: Request, res: Response) => {
 
   // Resolve the confirmation with full result
   // Note: toolName will be filled in by the coordinator's waitForConfirmation
-  const result = coordinator.resolveConfirmation(
-    toolUseId,
-    confirmed,
-    always ?? false,
-  );
+  const result = coordinator.resolveConfirmation(toolUseId, confirmed, always ?? false);
 
   if (!result) {
     return res.status(404).json({

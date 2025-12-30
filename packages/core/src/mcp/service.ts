@@ -41,10 +41,7 @@ export class MCPService {
   /**
    * Discover tools from an MCP server and register them with the COM
    */
-  async discoverAndRegister(
-    config: MCPConfig,
-    com: COM,
-  ): Promise<void> {
+  async discoverAndRegister(config: MCPConfig, com: COM): Promise<void> {
     const tools = await this.connectAndDiscover(config);
 
     for (const mcpToolDef of tools) {
@@ -65,11 +62,7 @@ export class MCPService {
   /**
    * Register a single MCP tool (useful for manual registration)
    */
-  registerMCPTool(
-    config: MCPConfig,
-    mcpToolDef: MCPToolDefinition,
-    com: COM,
-  ): void {
+  registerMCPTool(config: MCPConfig, mcpToolDef: MCPToolDefinition, com: COM): void {
     const tool = new MCPTool(this.mcpClient, config.serverName, mcpToolDef, {
       serverUrl: config.connection.url,
       serverName: config.serverName,
@@ -83,10 +76,7 @@ export class MCPService {
    * Disconnect from an MCP server and remove its tools.
    * Finds tools belonging to this server by checking metadata.mcpConfig.serverName.
    */
-  async disconnectAndUnregister(
-    serverName: string,
-    com: COM,
-  ): Promise<void> {
+  async disconnectAndUnregister(serverName: string, com: COM): Promise<void> {
     // Find all tools that belong to this MCP server
     const allTools = com.getTools();
     const toolsToRemove = allTools

@@ -1,17 +1,17 @@
 /**
  * Angular Service for Channel Subscriptions
- * 
+ *
  * Provides RxJS-based channel subscription management with:
  * - Observable-based event streams
  * - Automatic cleanup
  * - Type-safe event handling
  */
 
-import { Injectable, type OnDestroy } from '@angular/core';
-import { Observable, Subject } from 'rxjs';
-import { takeUntil, share } from 'rxjs/operators';
-import { EngineService } from './engine.service';
-import type { ChannelEvent } from 'aidk-client';
+import { Injectable, type OnDestroy } from "@angular/core";
+import { Observable, Subject } from "rxjs";
+import { takeUntil, share } from "rxjs/operators";
+import { EngineService } from "./engine.service";
+import type { ChannelEvent } from "aidk-client";
 
 @Injectable()
 export class ChannelsService implements OnDestroy {
@@ -31,18 +31,17 @@ export class ChannelsService implements OnDestroy {
    * Returns a shared Observable that multicasts to all subscribers.
    */
   subscribe(channels: string | string[]): Observable<ChannelEvent> {
-    const key = Array.isArray(channels) ? channels.sort().join(',') : channels;
-    
+    const key = Array.isArray(channels) ? channels.sort().join(",") : channels;
+
     // Return cached stream if exists
     if (this.channelStreams.has(key)) {
       return this.channelStreams.get(key)!;
     }
 
     // Create new shared stream
-    const stream$ = this.engineService.subscribeToChannel(channels).pipe(
-      share(),
-      takeUntil(this.destroy$)
-    );
+    const stream$ = this.engineService
+      .subscribeToChannel(channels)
+      .pipe(share(), takeUntil(this.destroy$));
 
     this.channelStreams.set(key, stream$);
     return stream$;

@@ -288,30 +288,21 @@ export class ContextObjectModel extends EventEmitter {
   /**
    * Type-safe event listener registration
    */
-  on<K extends keyof COMEventMap>(
-    event: K,
-    listener: (...args: COMEventMap[K]) => void,
-  ): this {
+  on<K extends keyof COMEventMap>(event: K, listener: (...args: COMEventMap[K]) => void): this {
     return super.on(event, listener);
   }
 
   /**
    * Type-safe one-time event listener registration
    */
-  once<K extends keyof COMEventMap>(
-    event: K,
-    listener: (...args: COMEventMap[K]) => void,
-  ): this {
+  once<K extends keyof COMEventMap>(event: K, listener: (...args: COMEventMap[K]) => void): this {
     return super.once(event, listener);
   }
 
   /**
    * Type-safe event emission
    */
-  emit<K extends keyof COMEventMap>(
-    event: K,
-    ...args: COMEventMap[K]
-  ): boolean {
+  emit<K extends keyof COMEventMap>(event: K, ...args: COMEventMap[K]): boolean {
     return super.emit(event, ...args);
   }
 
@@ -458,9 +449,7 @@ export class ContextObjectModel extends EventEmitter {
    */
   addSystemMessage(message: Message): void {
     if (message.role !== "system") {
-      console.warn(
-        "addSystemMessage called with non-system message, adding anyway",
-      );
+      console.warn("addSystemMessage called with non-system message, adding anyway");
     }
     // Wrap in COMTimelineEntry envelope for consistency
     this.systemMessages.push({
@@ -511,16 +500,10 @@ export class ContextObjectModel extends EventEmitter {
 
     // Combine content based on type
     let combinedContent: unknown;
-    if (
-      typeof existing.content === "string" &&
-      typeof section.content === "string"
-    ) {
+    if (typeof existing.content === "string" && typeof section.content === "string") {
       // Both strings: combine with newline
       combinedContent = `${existing.content}\n${section.content}`;
-    } else if (
-      Array.isArray(existing.content) &&
-      Array.isArray(section.content)
-    ) {
+    } else if (Array.isArray(existing.content) && Array.isArray(section.content)) {
       // Both arrays: concatenate
       combinedContent = [...existing.content, ...section.content];
     } else if (
@@ -583,9 +566,7 @@ export class ContextObjectModel extends EventEmitter {
       this.tools.set(name, tool);
 
       // Convert to ToolDefinition (provider-compatible format with JSON Schema)
-      const jsonSchema = this.convertParametersToJSONSchema(
-        tool.metadata.parameters,
-      );
+      const jsonSchema = this.convertParametersToJSONSchema(tool.metadata.parameters);
       this.toolDefinitions.set(name, {
         name: tool.metadata.name,
         description: tool.metadata.description,
@@ -603,9 +584,7 @@ export class ContextObjectModel extends EventEmitter {
    * Converts Zod schema or JSON Schema to JSON Schema format.
    * Handles ZodUndefined as empty object.
    */
-  private convertParametersToJSONSchema(
-    parameters: unknown,
-  ): Record<string, unknown> {
+  private convertParametersToJSONSchema(parameters: unknown): Record<string, unknown> {
     if (parameters instanceof ZodObject) {
       if (parameters instanceof z.ZodUndefined) {
         return {};
@@ -928,9 +907,7 @@ export class ContextObjectModel extends EventEmitter {
     _tickNumber?: number,
   ): COMTickDecision {
     // Sort by priority (higher priority first)
-    const sortedRequests = [...this.controlRequests].sort(
-      (a, b) => b.priority - a.priority,
-    );
+    const sortedRequests = [...this.controlRequests].sort((a, b) => b.priority - a.priority);
 
     // Find highest priority stop request
     const stopRequest = sortedRequests.find((r) => r.kind === "stop");
@@ -945,8 +922,7 @@ export class ContextObjectModel extends EventEmitter {
     if (stopRequest) {
       return {
         status: stopRequest.status ?? "aborted",
-        terminationReason:
-          stopRequest.reason ?? stopRequest.terminationReason ?? defaultReason,
+        terminationReason: stopRequest.reason ?? stopRequest.terminationReason ?? defaultReason,
         decidedBy: stopRequest,
       };
     }

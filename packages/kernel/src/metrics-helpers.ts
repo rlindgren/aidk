@@ -1,4 +1,4 @@
-import { type KernelContext } from './context';
+import { type KernelContext } from "./context";
 
 /**
  * Helper functions for working with metrics.
@@ -38,7 +38,7 @@ export function getMetric(ctx: KernelContext, key: string): number {
 /**
  * Add usage metrics from a usage object.
  * Converts nested structure to flat dot-notation keys.
- * 
+ *
  * @example
  * addUsageMetrics(ctx, { inputTokens: 100, outputTokens: 50 });
  * // Sets: ctx.metrics['usage.inputTokens'] = 100
@@ -48,7 +48,7 @@ export function addUsageMetrics(ctx: KernelContext, usage: Record<string, number
   if (!ctx.metrics) {
     ctx.metrics = {};
   }
-  
+
   for (const [key, value] of Object.entries(usage)) {
     const metricKey = `usage.${key}`;
     ctx.metrics[metricKey] = (ctx.metrics[metricKey] || 0) + value;
@@ -58,7 +58,7 @@ export function addUsageMetrics(ctx: KernelContext, usage: Record<string, number
 /**
  * Get usage metrics as an object.
  * Converts flat dot-notation keys back to nested structure.
- * 
+ *
  * @example
  * const usage = getUsageMetrics(ctx);
  * // Returns: { inputTokens: 100, outputTokens: 50 }
@@ -67,15 +67,14 @@ export function getUsageMetrics(ctx: KernelContext): Record<string, number> {
   if (!ctx.metrics) {
     return {};
   }
-  
+
   const usage: Record<string, number> = {};
   for (const [key, value] of Object.entries(ctx.metrics)) {
-    if (key.startsWith('usage.')) {
+    if (key.startsWith("usage.")) {
       const usageKey = key.substring(6); // Remove 'usage.' prefix
       usage[usageKey] = value;
     }
   }
-  
+
   return usage;
 }
-

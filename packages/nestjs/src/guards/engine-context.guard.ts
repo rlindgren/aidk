@@ -1,5 +1,5 @@
-import { Injectable, type CanActivate, type ExecutionContext } from '@nestjs/common';
-import { Context } from 'aidk';
+import { Injectable, type CanActivate, type ExecutionContext } from "@nestjs/common";
+import { Context } from "aidk";
 
 /**
  * Guard that ensures execution context is available.
@@ -12,4 +12,3 @@ export class EngineContextGuard implements CanActivate {
     return !!ctx;
   }
 }
-

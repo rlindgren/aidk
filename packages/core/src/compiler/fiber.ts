@@ -1,12 +1,12 @@
 /**
  * Fiber Node Management
- * 
+ *
  * Handles fiber creation, cloning, and tree manipulation.
  */
 
-import type { FiberNode, ComponentType, HookState } from './types';
-import { FiberFlags } from './types';
-import type { ContentRenderer } from '../renderers';
+import type { FiberNode, ComponentType, HookState } from "./types";
+import { FiberFlags } from "./types";
+import type { ContentRenderer } from "../renderers";
 
 // ============================================================================
 // Fiber Creation
@@ -20,45 +20,45 @@ let _fiberIdCounter = 0;
 export function createFiber(
   type: ComponentType,
   props: Record<string, unknown>,
-  key: string | number | null = null
+  key: string | number | null = null,
 ): FiberNode {
   const fiber: FiberNode = {
     // Identity
     type,
     key,
-    
+
     // Props
     props,
     pendingProps: null,
-    
+
     // State
     stateNode: null,
     memoizedState: null,
-    
+
     // Tree
     parent: null,
     child: null,
     sibling: null,
     index: 0,
-    
+
     // Refs
-    ref: typeof props.ref === 'string' ? props.ref : null,
-    
+    ref: typeof props.ref === "string" ? props.ref : null,
+
     // Work tracking
     flags: FiberFlags.NoFlags,
     subtreeFlags: FiberFlags.NoFlags,
     deletions: null,
-    
+
     // Double buffering
     alternate: null,
-    
+
     // Rendering
     renderer: null,
-    
+
     // Debug
     debugName: getDebugName(type),
   };
-  
+
   return fiber;
 }
 
@@ -68,10 +68,10 @@ export function createFiber(
  */
 export function createWorkInProgress(
   current: FiberNode,
-  pendingProps: Record<string, unknown>
+  pendingProps: Record<string, unknown>,
 ): FiberNode {
   let workInProgress = current.alternate;
-  
+
   if (workInProgress === null) {
     // First update - create new WIP fiber
     workInProgress = createFiber(current.type, pendingProps, current.key);
@@ -83,34 +83,31 @@ export function createWorkInProgress(
     workInProgress.props = pendingProps;
     workInProgress.pendingProps = null;
     workInProgress.type = current.type;
-    
+
     // Reset flags
     workInProgress.flags = FiberFlags.NoFlags;
     workInProgress.subtreeFlags = FiberFlags.NoFlags;
     workInProgress.deletions = null;
   }
-  
+
   // Copy memoized state (hooks linked list)
   workInProgress.memoizedState = current.memoizedState;
-  
+
   // Copy tree pointers (will be updated during reconciliation)
   workInProgress.child = current.child;
   workInProgress.index = current.index;
-  
+
   // Copy other properties
   workInProgress.ref = current.ref;
   workInProgress.renderer = current.renderer;
-  
+
   return workInProgress;
 }
 
 /**
  * Clone a fiber for use in a different location.
  */
-export function cloneFiber(
-  fiber: FiberNode,
-  overrides: Partial<FiberNode> = {}
-): FiberNode {
+export function cloneFiber(fiber: FiberNode, overrides: Partial<FiberNode> = {}): FiberNode {
   return {
     ...fiber,
     // Reset tree pointers
@@ -138,12 +135,12 @@ export function cloneFiber(
 export function getChildFibers(fiber: FiberNode | null): FiberNode[] {
   const children: FiberNode[] = [];
   let child = fiber?.child ?? null;
-  
+
   while (child !== null) {
     children.push(child);
     child = child.sibling;
   }
-  
+
   return children;
 }
 
@@ -152,17 +149,17 @@ export function getChildFibers(fiber: FiberNode | null): FiberNode[] {
  */
 export function findFiberByKey(
   firstChild: FiberNode | null,
-  key: string | number | null
+  key: string | number | null,
 ): FiberNode | null {
   let fiber = firstChild;
-  
+
   while (fiber !== null) {
     if (fiber.key === key) {
       return fiber;
     }
     fiber = fiber.sibling;
   }
-  
+
   return null;
 }
 
@@ -171,12 +168,12 @@ export function findFiberByKey(
  */
 export async function traverseFiber(
   fiber: FiberNode | null,
-  callback: (fiber: FiberNode) => void | Promise<void>
+  callback: (fiber: FiberNode) => void | Promise<void>,
 ): Promise<void> {
   if (fiber === null) return;
-  
+
   await callback(fiber);
-  
+
   let child = fiber.child;
   while (child !== null) {
     await traverseFiber(child, callback);
@@ -189,17 +186,17 @@ export async function traverseFiber(
  */
 export async function traverseFiberBottomUp(
   fiber: FiberNode | null,
-  callback: (fiber: FiberNode) => void | Promise<void>
+  callback: (fiber: FiberNode) => void | Promise<void>,
 ): Promise<void> {
   if (fiber === null) return;
-  
+
   // Process children first
   let child = fiber.child;
   while (child !== null) {
     await traverseFiberBottomUp(child, callback);
     child = child.sibling;
   }
-  
+
   // Then this fiber
   await callback(fiber);
 }
@@ -214,12 +211,12 @@ export async function traverseFiberBottomUp(
 export function getHookCount(fiber: FiberNode): number {
   let count = 0;
   let hook = fiber.memoizedState;
-  
+
   while (hook !== null) {
     count++;
     hook = hook.next;
   }
-  
+
   return count;
 }
 
@@ -229,12 +226,12 @@ export function getHookCount(fiber: FiberNode): number {
 export function getHookAtIndex(fiber: FiberNode, index: number): HookState | null {
   let hook = fiber.memoizedState;
   let i = 0;
-  
+
   while (hook !== null && i < index) {
     hook = hook.next;
     i++;
   }
-  
+
   return hook;
 }
 
@@ -246,24 +243,24 @@ export function getHookAtIndex(fiber: FiberNode, index: number): HookState | nul
  * Get a debug name for a component type.
  */
 function getDebugName(type: ComponentType): string {
-  if (typeof type === 'function') {
-    return type.name || 'Anonymous';
+  if (typeof type === "function") {
+    return type.name || "Anonymous";
   }
-  if (typeof type === 'string') {
+  if (typeof type === "string") {
     return type;
   }
-  if (typeof type === 'symbol') {
-    return type.description || 'Symbol';
+  if (typeof type === "symbol") {
+    return type.description || "Symbol";
   }
-  return 'Unknown';
+  return "Unknown";
 }
 
 /**
  * Create a debug string representation of a fiber.
  */
 export function fiberToDebugString(fiber: FiberNode): string {
-  const key = fiber.key !== null ? ` key="${fiber.key}"` : '';
-  const flags = fiber.flags !== 0 ? ` flags=${fiber.flags}` : '';
+  const key = fiber.key !== null ? ` key="${fiber.key}"` : "";
+  const flags = fiber.flags !== 0 ? ` flags=${fiber.flags}` : "";
   return `<${fiber.debugName}${key}${flags}>`;
 }
 
@@ -271,17 +268,17 @@ export function fiberToDebugString(fiber: FiberNode): string {
  * Create a debug tree representation.
  */
 export function fiberTreeToDebugString(fiber: FiberNode | null, indent = 0): string {
-  if (fiber === null) return '';
-  
-  const prefix = '  '.repeat(indent);
-  let result = prefix + fiberToDebugString(fiber) + '\n';
-  
+  if (fiber === null) return "";
+
+  const prefix = "  ".repeat(indent);
+  let result = prefix + fiberToDebugString(fiber) + "\n";
+
   let child = fiber.child;
   while (child !== null) {
     result += fiberTreeToDebugString(child, indent + 1);
     child = child.sibling;
   }
-  
+
   return result;
 }
 
@@ -294,14 +291,14 @@ export function fiberTreeToDebugString(fiber: FiberNode | null, indent = 0): str
  */
 export function findNearestRenderer(fiber: FiberNode): ContentRenderer | null {
   let current: FiberNode | null = fiber;
-  
+
   while (current !== null) {
     if (current.renderer !== null) {
       return current.renderer;
     }
     current = current.parent;
   }
-  
+
   return null;
 }
 
@@ -311,4 +308,3 @@ export function findNearestRenderer(fiber: FiberNode): ContentRenderer | null {
 export function setFiberRenderer(fiber: FiberNode, renderer: ContentRenderer): void {
   fiber.renderer = renderer;
 }
-

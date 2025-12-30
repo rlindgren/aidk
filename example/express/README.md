@@ -1,6 +1,7 @@
 # aidk Example Express Backend
 
 Express.js backend demonstrating the aidk Engine with:
+
 - Agent execution via REST API
 - Real-time channel updates via SSE
 - In-memory persistence for demo purposes
@@ -30,13 +31,13 @@ cp env.example .env
 
 ## Environment Variables
 
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `PORT` | No | `3000` | Port the server listens on |
-| `OPENAI_API_KEY` | **Yes** | - | Your OpenAI API key for GPT model access |
-| `OPENAI_BASE_URL` | No | - | OpenAI Base URL |
-| `OPENAI_MODEL` | No | `gpt-4o-mini` | OpenAI model to use |
-| `DEBUG` | No | `false` | Enable verbose logging |
+| Variable          | Required | Default       | Description                              |
+| ----------------- | -------- | ------------- | ---------------------------------------- |
+| `PORT`            | No       | `3000`        | Port the server listens on               |
+| `OPENAI_API_KEY`  | **Yes**  | -             | Your OpenAI API key for GPT model access |
+| `OPENAI_BASE_URL` | No       | -             | OpenAI Base URL                          |
+| `OPENAI_MODEL`    | No       | `gpt-4o-mini` | OpenAI model to use                      |
+| `DEBUG`           | No       | `false`       | Enable verbose logging                   |
 
 ### Getting an OpenAI API Key
 
@@ -78,9 +79,11 @@ POST /api/agents/:agentId/stream
 ```
 
 Execute an agent with the given input. Available agents:
+
 - `task-assistant` - A todo list management assistant
 
 **Request Body:**
+
 ```json
 {
   "timeline": [
@@ -147,6 +150,7 @@ Query execution history and details.
 ### "Cannot find module" errors
 
 Make sure you've installed dependencies:
+
 ```bash
 npm install
 ```
@@ -158,7 +162,7 @@ Verify your `OPENAI_API_KEY` is set correctly in `.env`.
 ### Port already in use
 
 Change the `PORT` in your `.env` file or kill the process using that port:
+
 ```bash
 lsof -ti:3000 | xargs kill -9
 ```
-

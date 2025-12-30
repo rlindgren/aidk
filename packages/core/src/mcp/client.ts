@@ -1,16 +1,16 @@
 /**
  * MCP Client Service
- * 
+ *
  * Wraps the official @modelcontextprotocol/sdk Client to manage connections
  * to multiple MCP servers.
  */
 
-import { Client } from '@modelcontextprotocol/sdk/client';
-import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
-import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
-import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
-import { type MCPConfig, type MCPToolDefinition } from './types';
-import { Logger } from '../index';
+import { Client } from "@modelcontextprotocol/sdk/client";
+import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import { type MCPConfig, type MCPToolDefinition } from "./types";
+import { Logger } from "../index";
 
 /**
  * Wrapper around official MCP SDK Client
@@ -26,25 +26,25 @@ export class MCPClient {
    */
   async connect(config: MCPConfig): Promise<Client> {
     const existing = this.getClient(config.serverName);
-    
+
     if (existing) {
       return existing;
     }
 
     const client = new Client(
       {
-        name: 'aidk-engine',
-        version: '1.0.0',
+        name: "aidk-engine",
+        version: "1.0.0",
       },
       {
         // Capabilities are optional - Client will work without explicit capabilities
         // The SDK handles tool discovery automatically
-      }
+      },
     );
 
     // Create transport based on config
     const transport = this.createTransport(config);
-    
+
     // Connect using SDK
     await client.connect(transport);
 
@@ -53,15 +53,15 @@ export class MCPClient {
 
     client.onclose = () => {
       this.disconnect(config.serverName);
-      this.logger.warn({ serverName: config.serverName }, 'MCP client disconnected');
+      this.logger.warn({ serverName: config.serverName }, "MCP client disconnected");
     };
 
     client.onerror = (error) => {
       // TODO: inspect error and determine if we should reconnect, or disconnect completely
       this.disconnect(config.serverName);
-      this.logger.error({ err: error, serverName: config.serverName }, 'MCP client error');
+      this.logger.error({ err: error, serverName: config.serverName }, "MCP client error");
     };
-    
+
     this.clients.set(config.serverName, client);
     return client;
   }
@@ -88,10 +88,10 @@ export class MCPClient {
     }
 
     const toolsList = await client.listTools();
-    const mcpTools = toolsList.tools.map(tool => ({
+    const mcpTools = toolsList.tools.map((tool) => ({
       name: tool.name,
-      description: tool.description || '',
-      inputSchema: tool.inputSchema as MCPToolDefinition['inputSchema'],
+      description: tool.description || "",
+      inputSchema: tool.inputSchema as MCPToolDefinition["inputSchema"],
     }));
 
     this.tools.set(serverName, mcpTools);
@@ -110,18 +110,14 @@ export class MCPClient {
    * Disconnect from all servers
    */
   async disconnectAll(): Promise<void> {
-    const promises = Array.from(this.clients.keys()).map(name => this.disconnect(name));
+    const promises = Array.from(this.clients.keys()).map((name) => this.disconnect(name));
     await Promise.all(promises);
   }
 
   /**
    * Call a tool on an MCP server
    */
-  async callTool(
-    serverName: string,
-    toolName: string,
-    input: any
-  ): Promise<any> {
+  async callTool(serverName: string, toolName: string, input: any): Promise<any> {
     const client = this.clients.get(serverName);
     if (!client) {
       throw new Error(`MCP server "${serverName}" is not connected`);
@@ -141,25 +137,25 @@ export class MCPClient {
    */
   private createTransport(config: MCPConfig) {
     switch (config.transport) {
-      case 'stdio':
+      case "stdio":
         if (!config.connection.command) {
-          throw new Error('Stdio transport requires command in connection config');
+          throw new Error("Stdio transport requires command in connection config");
         }
         return new StdioClientTransport({
           command: config.connection.command,
           args: config.connection.args || [],
         });
 
-      case 'sse':
+      case "sse":
         if (!config.connection.url) {
-          throw new Error('SSE transport requires url in connection config');
+          throw new Error("SSE transport requires url in connection config");
         }
         return new SSEClientTransport(new URL(config.connection.url));
 
-      case 'websocket':
+      case "websocket":
         // Use Streamable HTTP (modern replacement for WebSocket)
         if (!config.connection.url) {
-          throw new Error('Streamable HTTP transport requires url in connection config');
+          throw new Error("Streamable HTTP transport requires url in connection config");
         }
         return new StreamableHTTPClientTransport(new URL(config.connection.url));
 

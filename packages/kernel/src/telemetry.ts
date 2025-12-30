@@ -216,11 +216,7 @@ export class Telemetry {
    * @param description - Human-readable description
    * @returns A Counter instance
    */
-  static getCounter(
-    name: string,
-    unit?: string,
-    description?: string,
-  ): Counter {
+  static getCounter(name: string, unit?: string, description?: string): Counter {
     return this.provider.getCounter(name, unit, description);
   }
 
@@ -231,11 +227,7 @@ export class Telemetry {
    * @param description - Human-readable description
    * @returns A Histogram instance
    */
-  static getHistogram(
-    name: string,
-    unit?: string,
-    description?: string,
-  ): Histogram {
+  static getHistogram(name: string, unit?: string, description?: string): Histogram {
     return this.provider.getHistogram(name, unit, description);
   }
 }

@@ -144,10 +144,7 @@ export interface ChannelAdapter {
   /**
    * Subscribe to events from distribution layer.
    */
-  subscribe(
-    channel: string,
-    handler: (event: ChannelEvent) => void,
-  ): Promise<() => void>;
+  subscribe(channel: string, handler: (event: ChannelEvent) => void): Promise<() => void>;
 
   // === Room Support (optional) ===
 
@@ -253,8 +250,7 @@ export class ChannelService implements ChannelServiceInterface {
   private routerRegistry = new Map<string, ChannelRouter<any>>();
 
   constructor(config: ChannelServiceConfig = {}) {
-    this.sessionIdGenerator =
-      config.sessionIdGenerator || ChannelSession.generateId;
+    this.sessionIdGenerator = config.sessionIdGenerator || ChannelSession.generateId;
     this.transport = config.transport;
     this.adapter = config.adapter;
     this.sessionTimeout = config.sessionTimeout || 3600000; // 1 hour default
@@ -294,12 +290,8 @@ export class ChannelService implements ChannelServiceInterface {
   /**
    * Get a registered channel router by name.
    */
-  getRouter<TContext = unknown>(
-    channelName: string,
-  ): ChannelRouter<TContext> | undefined {
-    return this.routerRegistry.get(channelName) as
-      | ChannelRouter<TContext>
-      | undefined;
+  getRouter<TContext = unknown>(channelName: string): ChannelRouter<TContext> | undefined {
+    return this.routerRegistry.get(channelName) as ChannelRouter<TContext> | undefined;
   }
 
   /**
@@ -336,9 +328,7 @@ export class ChannelService implements ChannelServiceInterface {
     }
 
     // Let router transform context if it has buildContext
-    const context = router.buildContext
-      ? router.buildContext(rawContext)
-      : rawContext;
+    const context = router.buildContext ? router.buildContext(rawContext) : rawContext;
 
     const event: ChannelEvent = {
       channel: channelName,
@@ -365,10 +355,7 @@ export class ChannelService implements ChannelServiceInterface {
       // Connect transport if available
       if (this.transport) {
         this.transport.connect(sessionId).catch((err) => {
-          console.error(
-            `Failed to connect transport for session ${sessionId}:`,
-            err,
-          );
+          console.error(`Failed to connect transport for session ${sessionId}:`, err);
         });
       }
     }
@@ -407,10 +394,7 @@ export class ChannelService implements ChannelServiceInterface {
         .catch((err) => {
           // Remove placeholder on failure so retry is possible
           this.adapterSubscriptions.delete(channelName);
-          console.error(
-            `Failed to subscribe adapter to channel ${channelName}:`,
-            err,
-          );
+          console.error(`Failed to subscribe adapter to channel ${channelName}:`, err);
         });
     }
 
@@ -423,11 +407,7 @@ export class ChannelService implements ChannelServiceInterface {
    * **Prefer using ChannelRouter.publisher() for application code.**
    * This is an escape hatch for advanced use cases.
    */
-  publish(
-    ctx: EngineContext,
-    channelName: string,
-    event: Omit<ChannelEvent, "channel">,
-  ): void {
+  publish(ctx: EngineContext, channelName: string, event: Omit<ChannelEvent, "channel">): void {
     const session = this.getSession(ctx);
     const channel = session.getChannel(channelName);
     const fullEvent: ChannelEvent = {
@@ -545,9 +525,7 @@ export class ChannelService implements ChannelServiceInterface {
     // Create filtered handler
     const filteredHandler = (event: ChannelEvent) => {
       // Filter by sessionId
-      const eventSessionId = event.metadata?.["sessionId"] as
-        | string
-        | undefined;
+      const eventSessionId = event.metadata?.["sessionId"] as string | undefined;
       if (eventSessionId !== targetSessionId) {
         return; // Skip events not for this session
       }
@@ -601,9 +579,7 @@ export class ChannelService implements ChannelServiceInterface {
       // Find session and channel
       const session = this.sessions.get(sessionId);
       if (!session) {
-        console.warn(
-          `Received transport event for unknown session: ${sessionId}`,
-        );
+        console.warn(`Received transport event for unknown session: ${sessionId}`);
         return;
       }
 
@@ -654,10 +630,7 @@ export class ChannelService implements ChannelServiceInterface {
       // Disconnect transport if available
       if (this.transport) {
         this.transport.disconnect().catch((err) => {
-          console.error(
-            `Failed to disconnect transport for session ${sessionId}:`,
-            err,
-          );
+          console.error(`Failed to disconnect transport for session ${sessionId}:`, err);
         });
       }
     }
@@ -717,10 +690,7 @@ export class ChannelService implements ChannelServiceInterface {
  * scope: (ctx) => [`user:${ctx.userId}`, `org:${ctx.orgId}`]
  * ```
  */
-export type ScopeDefinition =
-  | ScopeMapping
-  | ScopeMapping[]
-  | ((ctx: any) => string | string[]);
+export type ScopeDefinition = ScopeMapping | ScopeMapping[] | ((ctx: any) => string | string[]);
 
 /**
  * Configuration for ChannelRouter.
@@ -916,10 +886,7 @@ export class ChannelRouter<TSubscribeContext = unknown> {
    * Key format: `${executionId}:${scopeKey}`
    * Allows multiple executions to register for same scope, each with own callbacks.
    */
-  private contextRegistry = new Map<
-    string,
-    RegisteredContext<TSubscribeContext>
-  >();
+  private contextRegistry = new Map<string, RegisteredContext<TSubscribeContext>>();
 
   constructor(
     public readonly channel: string,
@@ -948,9 +915,7 @@ export class ChannelRouter<TSubscribeContext = unknown> {
   getChannelService(): ChannelService {
     const service = this.config.channelService;
     if (!service) {
-      throw ValidationError.required(
-        `ChannelRouter[${this.channel}].channelService`,
-      );
+      throw ValidationError.required(`ChannelRouter[${this.channel}].channelService`);
     }
     return typeof service === "function" ? service() : service;
   }
@@ -1038,10 +1003,7 @@ export class ChannelRouter<TSubscribeContext = unknown> {
       if (this.errorHandler) {
         this.errorHandler(error as Error, event);
       } else {
-        console.error(
-          `ChannelRouter[${this.channel}] error handling ${event.type}:`,
-          error,
-        );
+        console.error(`ChannelRouter[${this.channel}] error handling ${event.type}:`, error);
       }
       throw error;
     }
@@ -1121,10 +1083,7 @@ export class ChannelRouter<TSubscribeContext = unknown> {
   /**
    * Extract scope keys from a single ScopeMapping.
    */
-  private extractKeysFromMapping(
-    mapping: ScopeMapping,
-    ctx: Record<string, unknown>,
-  ): string[] {
+  private extractKeysFromMapping(mapping: ScopeMapping, ctx: Record<string, unknown>): string[] {
     const keys: string[] = [];
     for (const [prefix, field] of Object.entries(mapping)) {
       const value = ctx[field] as string;
@@ -1276,10 +1235,7 @@ export class ChannelRouter<TSubscribeContext = unknown> {
         // Extract scope key from registry key and compare exactly
         // This prevents 'malicious_user:alice' from matching 'user:alice'
         const registeredScopeKey = this.extractScopeKeyFromRegistryKey(key);
-        if (
-          registeredScopeKey === scopeKey &&
-          !processedExecutions.has(executionId)
-        ) {
+        if (registeredScopeKey === scopeKey && !processedExecutions.has(executionId)) {
           processedExecutions.add(executionId);
           try {
             fn(context);
@@ -1316,19 +1272,12 @@ export class ChannelRouter<TSubscribeContext = unknown> {
         // Extract scope key from registry key and compare exactly
         // This prevents 'malicious_user:alice' from matching 'user:alice'
         const registeredScopeKey = this.extractScopeKeyFromRegistryKey(key);
-        if (
-          registeredScopeKey === scopeKey &&
-          !notifiedExecutions.has(executionId) &&
-          onEvent
-        ) {
+        if (registeredScopeKey === scopeKey && !notifiedExecutions.has(executionId) && onEvent) {
           notifiedExecutions.add(executionId);
           try {
             onEvent(event, result);
           } catch (error) {
-            console.error(
-              `ChannelRouter[${this.channel}]: Error in onEvent callback:`,
-              error,
-            );
+            console.error(`ChannelRouter[${this.channel}]: Error in onEvent callback:`, error);
           }
         }
       }
@@ -1350,9 +1299,7 @@ export class ChannelRouter<TSubscribeContext = unknown> {
    * Resolve a value or getter function.
    */
   private resolve<T>(valueOrGetter: ValueOrGetter<T>): T {
-    return typeof valueOrGetter === "function"
-      ? (valueOrGetter as () => T)()
-      : valueOrGetter;
+    return typeof valueOrGetter === "function" ? (valueOrGetter as () => T)() : valueOrGetter;
   }
 
   /**
@@ -1434,9 +1381,9 @@ export class ChannelRouter<TSubscribeContext = unknown> {
 
     const sourceConnectionId =
       options?.sourceConnectionId ??
-      ((Context.tryGet() as EngineContext | undefined)?.metadata?.[
-        "sessionId"
-      ] as string | undefined);
+      ((Context.tryGet() as EngineContext | undefined)?.metadata?.["sessionId"] as
+        | string
+        | undefined);
 
     await transport.send({
       channel: this.channel!,
@@ -1473,9 +1420,7 @@ export class ChannelRouter<TSubscribeContext = unknown> {
       to: (idGetter: ValueOrGetter<string>) => {
         const prefix = this.getScopePrefix();
         if (!prefix) {
-          throw ValidationError.required(
-            `ChannelRouter[${this.channel}].scope`,
-          );
+          throw ValidationError.required(`ChannelRouter[${this.channel}].scope`);
         }
         return this.createBoundPublisherForPrefix(prefix, idGetter);
       },

@@ -1,5 +1,5 @@
-import { createEngine, Engine, EngineContext, Logger } from 'aidk';
-import { getStore } from './persistence/database';
+import { createEngine, Engine, EngineContext, Logger } from "aidk";
+import { getStore } from "./persistence/database";
 import {
   getExecutionRepository,
   getMetricsRepository,
@@ -7,16 +7,16 @@ import {
   getMessageBlockRepository,
   getInteractionRepository,
   getToolStateRepository,
-} from './persistence/repositories';
-import { setupPersistenceHooks } from './persistence/hooks';
-import { channels } from './channels';
+} from "./persistence/repositories";
+import { setupPersistenceHooks } from "./persistence/hooks";
+import { channels } from "./channels";
 
 let engineInstance: Engine | null = null;
 
 export function setupEngine() {
   // Configure logger with app-specific context fields
   Logger.configure({
-    level: process.env['LOG_LEVEL'] as 'debug' | 'info' | 'warn' | 'error' || 'info',
+    level: (process.env["LOG_LEVEL"] as "debug" | "info" | "warn" | "error") || "info",
     contextFields: (ctx: EngineContext) => ({
       // App-specific fields (defaults like request_id, trace_id are auto-included)
       userId: ctx.user?.id,
@@ -44,7 +44,7 @@ export function getEngine(): Engine {
   }
 
   // Create engine with channel service configured for SSE transport
-  engineInstance = createEngine({ channels, compilerVersion: 'v2' });
+  engineInstance = createEngine({ channels });
 
   return engineInstance;
 }

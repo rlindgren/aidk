@@ -52,9 +52,7 @@ export type { BaseToolDefinition, ClientToolDefinition };
  * Tool handler function signature.
  * Takes typed input and returns ContentBlock[].
  */
-export type ToolHandler<TInput = any> = (
-  input: TInput,
-) => ContentBlock[] | Promise<ContentBlock[]>;
+export type ToolHandler<TInput = any> = (input: TInput) => ContentBlock[] | Promise<ContentBlock[]>;
 
 /**
  * Options for createTool().
@@ -146,9 +144,7 @@ export interface CreateToolOptions<TInput = any> {
    * },
    * ```
    */
-  requiresConfirmation?:
-    | boolean
-    | ((input: TInput) => boolean | Promise<boolean>);
+  requiresConfirmation?: boolean | ((input: TInput) => boolean | Promise<boolean>);
 
   /**
    * Message to show user when requesting confirmation.
@@ -191,22 +187,10 @@ export interface CreateToolOptions<TInput = any> {
   onMount?: (com: COM) => void | Promise<void>;
   onUnmount?: (com: COM) => void | Promise<void>;
   onStart?: (com: COM) => void | Promise<void>;
-  onTickStart?: (
-    com: COM,
-    state: TickState,
-  ) => void | Promise<void>;
-  onTickEnd?: (
-    com: COM,
-    state: TickState,
-  ) => void | Promise<void>;
-  onComplete?: (
-    com: COM,
-    finalState: COMInput,
-  ) => void | Promise<void>;
-  onError?: (
-    com: COM,
-    state: TickState,
-  ) => RecoveryAction | void;
+  onTickStart?: (com: COM, state: TickState) => void | Promise<void>;
+  onTickEnd?: (com: COM, state: TickState) => void | Promise<void>;
+  onComplete?: (com: COM, finalState: COMInput) => void | Promise<void>;
+  onError?: (com: COM, state: TickState) => RecoveryAction | void;
   render?: (com: COM, state: TickState) => JSX.Element | null;
   onAfterCompile?: (
     com: COM,
@@ -315,9 +299,7 @@ export function createTool<TInput = any>(
 ): ToolClass<TInput>;
 
 // Implementation
-export function createTool<TInput = any>(
-  options: CreateToolOptions<TInput>,
-): ToolClass<TInput> {
+export function createTool<TInput = any>(options: CreateToolOptions<TInput>): ToolClass<TInput> {
   // Build metadata from options
   const metadata: ToolMetadata<TInput> = {
     name: options.name,
@@ -374,10 +356,7 @@ export function createTool<TInput = any>(
       if (options.onStart) await options.onStart(com);
     }
 
-    async onTickStart(
-      com: COM,
-      state: TickState,
-    ): Promise<void> {
+    async onTickStart(com: COM, state: TickState): Promise<void> {
       if (options.onTickStart) await options.onTickStart(com, state);
     }
 
@@ -385,10 +364,7 @@ export function createTool<TInput = any>(
       if (options.onTickEnd) await options.onTickEnd(com, state);
     }
 
-    async onComplete(
-      com: COM,
-      finalState: COMInput,
-    ): Promise<void> {
+    async onComplete(com: COM, finalState: COMInput): Promise<void> {
       if (options.onComplete) await options.onComplete(com, finalState);
     }
 
@@ -407,8 +383,7 @@ export function createTool<TInput = any>(
       state: TickState,
       ctx: any,
     ): Promise<void> {
-      if (options.onAfterCompile)
-        await options.onAfterCompile(com, compiled, state, ctx);
+      if (options.onAfterCompile) await options.onAfterCompile(com, compiled, state, ctx);
     }
   }
 
@@ -541,9 +516,7 @@ export interface ExecutableTool<
 /**
  * Convert ClientToolDefinition to ToolDefinition for engine use.
  */
-export function clientToolToDefinition(
-  clientTool: ClientToolDefinition,
-): ToolDefinition {
+export function clientToolToDefinition(clientTool: ClientToolDefinition): ToolDefinition {
   return {
     name: clientTool.name,
     description: clientTool.description,
@@ -566,12 +539,7 @@ export function clientToolToDefinition(
  * Type guard: checks if a value is a ToolClass.
  */
 export function isToolClass(value: any): value is ToolClass {
-  return (
-    value &&
-    typeof value === "function" &&
-    "metadata" in value &&
-    value.metadata?.name
-  );
+  return value && typeof value === "function" && "metadata" in value && value.metadata?.name;
 }
 
 /**

@@ -175,8 +175,7 @@ export function createUserMessage(
   content: string | ContentBlock[] = "Hello",
   overrides: Partial<Message> = {},
 ): Message {
-  const contentBlocks =
-    typeof content === "string" ? [createTextBlock(content)] : content;
+  const contentBlocks = typeof content === "string" ? [createTextBlock(content)] : content;
 
   return {
     id: overrides.id ?? testId("msg"),
@@ -193,8 +192,7 @@ export function createAssistantMessage(
   content: string | ContentBlock[] = "Hello! How can I help?",
   overrides: Partial<Message> = {},
 ): Message {
-  const contentBlocks =
-    typeof content === "string" ? [createTextBlock(content)] : content;
+  const contentBlocks = typeof content === "string" ? [createTextBlock(content)] : content;
 
   return {
     id: overrides.id ?? testId("msg"),
@@ -395,10 +393,7 @@ export function createToolResultChunk(
 /**
  * Create a sequence of stream chunks for a simple text response
  */
-export function createTextStreamSequence(
-  text: string,
-  chunkSize: number = 10,
-): StreamChunk[] {
+export function createTextStreamSequence(text: string, chunkSize: number = 10): StreamChunk[] {
   const chunks: StreamChunk[] = [createMessageStartChunk()];
 
   // Split text into chunks

@@ -1,17 +1,13 @@
-import type { Middleware } from 'aidk-kernel';
-import type { COMInput } from '../com/types';
-import type { EngineResponse } from '../engine/engine-response';
-import { BaseHookRegistry } from '../hooks/base-hook-registry';
-import { getGlobalHooks } from '../config';
+import type { Middleware } from "aidk-kernel";
+import type { COMInput } from "../com/types";
+import type { EngineResponse } from "../engine/engine-response";
+import { BaseHookRegistry } from "../hooks/base-hook-registry";
+import { getGlobalHooks } from "../config";
 
 /**
  * Model operation names.
  */
-export type ModelHookName =
-  | 'fromEngineState'
-  | 'generate'
-  | 'stream'
-  | 'toEngineState';
+export type ModelHookName = "fromEngineState" | "generate" | "stream" | "toEngineState";
 
 /**
  * Model selector for hook registration.
@@ -28,28 +24,28 @@ export type ModelHookMiddleware<T extends ModelHookName> = Middleware<ModelHookA
 /**
  * Arguments for each model hook.
  */
-export type ModelHookArgs<T extends ModelHookName> = T extends 'fromEngineState'
+export type ModelHookArgs<T extends ModelHookName> = T extends "fromEngineState"
   ? [input: COMInput]
-  : T extends 'generate'
-  ? [input: unknown] // Opaque model input
-  : T extends 'stream'
-  ? [input: unknown] // Opaque model input
-  : T extends 'toEngineState'
-  ? [output: unknown] // Opaque model output
-  : never;
+  : T extends "generate"
+    ? [input: unknown] // Opaque model input
+    : T extends "stream"
+      ? [input: unknown] // Opaque model input
+      : T extends "toEngineState"
+        ? [output: unknown] // Opaque model output
+        : never;
 
 /**
  * Return type for each model hook.
  */
-export type ModelHookReturn<T extends ModelHookName> = T extends 'fromEngineState'
+export type ModelHookReturn<T extends ModelHookName> = T extends "fromEngineState"
   ? Promise<unknown> // Opaque model input
-  : T extends 'generate'
-  ? Promise<unknown> // Opaque model output
-  : T extends 'stream'
-  ? AsyncIterable<unknown> | Promise<AsyncIterable<unknown>> // Opaque stream chunks
-  : T extends 'toEngineState'
-  ? Promise<EngineResponse>
-  : never;
+  : T extends "generate"
+    ? Promise<unknown> // Opaque model output
+    : T extends "stream"
+      ? AsyncIterable<unknown> | Promise<AsyncIterable<unknown>> // Opaque stream chunks
+      : T extends "toEngineState"
+        ? Promise<EngineResponse>
+        : never;
 
 /**
  * Model-specific hook registry.
@@ -61,12 +57,7 @@ export class ModelHookRegistry extends BaseHookRegistry<
   ModelHookMiddleware<ModelHookName>
 > {
   protected getAllHookNames(): readonly ModelHookName[] {
-    return [
-      'fromEngineState',
-      'generate',
-      'stream',
-      'toEngineState',
-    ] as const;
+    return ["fromEngineState", "generate", "stream", "toEngineState"] as const;
   }
 
   /**
@@ -74,21 +65,18 @@ export class ModelHookRegistry extends BaseHookRegistry<
    * Merges global hooks (from configureEngine) with instance-specific hooks.
    * Global hooks are applied first, then instance hooks.
    */
-  getMiddleware<T extends ModelHookName>(
-    hookName: T
-  ): ModelHookMiddleware<T>[] {
+  getMiddleware<T extends ModelHookName>(hookName: T): ModelHookMiddleware<T>[] {
     const instanceHooks = this.registry.getMiddleware(
       hookName,
-      () => [] // No selectors for now - only global hooks
+      () => [], // No selectors for now - only global hooks
     );
-    
+
     // Merge global hooks (if any) - apply global hooks first, then instance hooks
     const globalHooks = getGlobalHooks()?.model?.[hookName];
     if (globalHooks && globalHooks.length > 0) {
       return [...globalHooks, ...instanceHooks] as ModelHookMiddleware<T>[];
     }
-    
+
     return instanceHooks;
   }
 }
-

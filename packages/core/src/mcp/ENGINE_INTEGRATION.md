@@ -113,13 +113,13 @@ First tick begins
 // In initializeMCPServers():
 for (const [serverName, config] of Object.entries(mcpServers)) {
   const mcpConfig = normalizeMCPConfig(serverName, config);
-  
+
   // Connect to server
   const client = await mcpClient.connect(mcpConfig);
-  
+
   // Discover tools
   const toolsList = await client.listTools();
-  
+
   // Register each tool
   for (const mcpToolDef of toolsList.tools) {
     const tool = new MCPTool(mcpClient, serverName, mcpToolDef, mcpConfig);
@@ -201,7 +201,7 @@ this.run = createEngineProcedure()
   .handler(async (input) => {
     // Forward to MCP server
     const result = await mcpClient.callTool(serverName, toolName, input);
-    
+
     // Convert to ContentBlock[]
     return convertMCPResultToContentBlocks(result);
   });
@@ -212,6 +212,7 @@ this.run = createEngineProcedure()
 ### ✅ What You Can Control
 
 1. **Which Servers to Connect**
+
    ```typescript
    mcpServers: {
      postgres: {...},  // Include
@@ -220,6 +221,7 @@ this.run = createEngineProcedure()
    ```
 
 2. **Tool Filtering** (via custom initialization)
+
    ```typescript
    // Override initializeMCPServers or call manually
    const tools = await mcpService.connectAndDiscover(config);
@@ -314,7 +316,7 @@ class MyAgent extends Component {
 
     // Discover and register tools manually
     await this.mcpService.discoverAndRegister(postgresConfig, com);
-    
+
     // Or discover tools and filter/transform before registering
     const tools = await this.mcpService.connectAndDiscover(postgresConfig);
     const filteredTools = tools.filter(t => t.name.startsWith('safe_'));
@@ -341,12 +343,14 @@ const result = await engine.execute(
 ### When to Use Each Approach
 
 **Use EngineConfig (Automatic):**
+
 - ✅ MCP servers are known at Engine creation time
 - ✅ Same servers for all executions
 - ✅ Simpler setup
 - ✅ Tools available from first tick
 
 **Use Manual Registration:**
+
 - ✅ Dynamic server configuration (based on user input, environment, etc.)
 - ✅ Conditional tool loading (only load tools when needed)
 - ✅ Per-agent tool sets (different agents get different tools)
@@ -367,4 +371,3 @@ const result = await engine.execute(
 2. **No Lazy Loading**: All MCP servers are initialized at execution start (not on-demand)
 3. **No Tool Tracking**: Currently no way to track which tools belong to which server (for cleanup)
 4. **Connection Persistence**: MCP connections persist for the Engine instance lifetime
-

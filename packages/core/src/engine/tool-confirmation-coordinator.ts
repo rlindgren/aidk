@@ -34,10 +34,7 @@ class Deferred<T> {
  * 8. ToolExecutor proceeds or skips based on confirmation
  */
 export class ToolConfirmationCoordinator {
-  private pendingConfirmations = new Map<
-    string,
-    Deferred<ToolConfirmationResult>
-  >();
+  private pendingConfirmations = new Map<string, Deferred<ToolConfirmationResult>>();
 
   /**
    * Wait for user confirmation for a tool call.
@@ -50,10 +47,7 @@ export class ToolConfirmationCoordinator {
    * @param toolName - Name of the tool (for result)
    * @returns Promise that resolves with confirmation result
    */
-  async waitForConfirmation(
-    toolUseId: string,
-    _toolName: string,
-  ): Promise<ToolConfirmationResult> {
+  async waitForConfirmation(toolUseId: string, _toolName: string): Promise<ToolConfirmationResult> {
     // Create deferred promise for this confirmation
     const deferred = new Deferred<ToolConfirmationResult>();
     this.pendingConfirmations.set(toolUseId, deferred);

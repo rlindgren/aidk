@@ -2,28 +2,33 @@
   "name": "aidk-nestjs",
   "version": "0.1.0",
   "description": "NestJS module for AIDK agents",
-  "type": "module",
-  "main": "src/index.ts",
-  "files": [
-    "dist"
-  ],
   "keywords": [
-    "ai",
     "agent",
-    "nestjs",
-    "module"
+    "ai",
+    "module",
+    "nestjs"
   ],
-  "author": "Ryan Lindgren",
+  "homepage": "https://github.com/rlindgren/aidk#readme",
+  "bugs": {
+    "url": "https://github.com/rlindgren/aidk/issues"
+  },
   "license": "ISC",
+  "author": "Ryan Lindgren",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/rlindgren/aidk.git",
     "directory": "packages/nestjs"
   },
-  "bugs": {
-    "url": "https://github.com/rlindgren/aidk/issues"
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "main": "src/index.ts",
+  "publishConfig": {
+    "access": "public",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts"
   },
-  "homepage": "https://github.com/rlindgren/aidk#readme",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "test": "jest",
@@ -35,23 +40,18 @@
     "dev": "tsc --watch"
   },
   "dependencies": {
-    "aidk-server": "workspace:*",
-    "aidk": "workspace:*"
+    "aidk": "workspace:*",
+    "aidk-server": "workspace:*"
   },
   "devDependencies": {
-    "@types/node": "^24.10.0",
-    "@types/express": "^5.0.0"
+    "@types/express": "^5.0.0",
+    "@types/node": "^24.10.0"
   },
   "peerDependencies": {
     "@nestjs/common": "^10.0.0",
     "@nestjs/core": "^10.0.0",
     "@nestjs/platform-express": "^10.0.0",
-    "rxjs": "^7.0.0",
-    "express": "^5.0.0"
-  },
-  "publishConfig": {
-    "access": "public",
-    "main": "./dist/index.js",
-    "types": "./dist/index.d.ts"
+    "express": "^5.0.0",
+    "rxjs": "^7.0.0"
   }
 }

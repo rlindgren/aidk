@@ -1,7 +1,7 @@
-import { type DynamicModule, Module, Global } from '@nestjs/common';
-import type { Engine } from 'aidk';
-import { EngineContextInterceptor } from './interceptors/engine-context.interceptor';
-import { ENGINE_TOKEN } from './tokens';
+import { type DynamicModule, Module, Global } from "@nestjs/common";
+import type { Engine } from "aidk";
+import { EngineContextInterceptor } from "./interceptors/engine-context.interceptor";
+import { ENGINE_TOKEN } from "./tokens";
 
 export interface EngineModuleOptions {
   engine: Engine;
@@ -24,4 +24,3 @@ export class EngineModule {
     };
   }
 }
-

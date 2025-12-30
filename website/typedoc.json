@@ -57,14 +57,7 @@
   "categorizeByGroup": true,
   "categoryOrder": ["Engine", "Components", "Tools", "State", "Hooks", "*"],
   "sort": ["kind", "alphabetical"],
-  "kindSortOrder": [
-    "Function",
-    "Class",
-    "Interface",
-    "TypeAlias",
-    "Variable",
-    "Enum"
-  ],
+  "kindSortOrder": ["Function", "Class", "Interface", "TypeAlias", "Variable", "Enum"],
   "outputFileStrategy": "members",
   "indexFormat": "table",
   "parametersFormat": "table",

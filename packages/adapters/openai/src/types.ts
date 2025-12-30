@@ -29,16 +29,17 @@ export type OpenAIClientOptions = OpenAIAdapterConfig;
  * Used for chat completion calls and other operations.
  * Extends OpenAI's ChatCompletionCreateParams to allow provider-specific overrides.
  */
-export type OpenAIGenerationOptions = Partial<OpenAI.Chat.Completions.ChatCompletionCreateParams> & {
-  [key: string]: unknown;
-};
+export type OpenAIGenerationOptions =
+  Partial<OpenAI.Chat.Completions.ChatCompletionCreateParams> & {
+    [key: string]: unknown;
+  };
 
 /**
  * OpenAI-specific tool options.
  * Can override or extend the base OpenAI tool definition.
  */
 export interface OpenAIToolOptions {
-  type?: 'function' | 'code_interpreter' | 'file_search';
+  type?: "function" | "code_interpreter" | "file_search";
   function?: {
     name?: string;
     description?: string;
@@ -51,7 +52,7 @@ export interface OpenAIToolOptions {
 /**
  * Module augmentation: Extend provider option interfaces to include OpenAI-specific options.
  */
-declare module 'aidk' {
+declare module "aidk" {
   interface ProviderClientOptions {
     openai?: OpenAIAdapterConfig;
   }

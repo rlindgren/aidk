@@ -1,8 +1,4 @@
-import type {
-  AgentToolCall,
-  AgentToolResult,
-  ToolConfirmationResult,
-} from "../tool/tool";
+import type { AgentToolCall, AgentToolResult, ToolConfirmationResult } from "../tool/tool";
 import type { COMInput } from "../com/types";
 import type { EngineResponse } from "./engine-response";
 
@@ -49,5 +45,5 @@ export type EngineStreamEvent =
     }
   | { type: "error"; error: Error; timestamp: string };
 
-// Re-export for backward compatibility (deprecated)
+/** @deprecated Use EngineStreamEvent instead */
 export type AgentStreamEvent = EngineStreamEvent;

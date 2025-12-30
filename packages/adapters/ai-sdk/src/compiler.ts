@@ -121,16 +121,8 @@ import {
   type ForkInheritanceOptions,
   type EngineResponse,
 } from "aidk";
-import type {
-  LanguageModel,
-  ModelMessage as AiSdkMessage,
-  ToolSet,
-  TextStreamPart,
-} from "ai";
-import {
-  generateText as aiSdkGenerateText,
-  streamText as aiSdkStreamText,
-} from "ai";
+import type { LanguageModel, ModelMessage as AiSdkMessage, ToolSet, TextStreamPart } from "ai";
+import { generateText as aiSdkGenerateText, streamText as aiSdkStreamText } from "ai";
 import { EventEmitter } from "node:events";
 import { randomUUID } from "node:crypto";
 import {
@@ -177,9 +169,7 @@ export type Executor = (
 /**
  * Stream executor function signature.
  */
-export type StreamExecutor = (
-  input: CompiledInput,
-) => ReturnType<typeof aiSdkStreamText>;
+export type StreamExecutor = (input: CompiledInput) => ReturnType<typeof aiSdkStreamText>;
 
 /**
  * Configuration for the compiler.
@@ -198,9 +188,7 @@ export interface CompilerConfig {
   maxTicks?: number;
 
   /** Additional service config */
-  serviceConfig?: Partial<
-    Omit<CompileJSXServiceConfig, "modelGetter" | "processMethods">
-  >;
+  serviceConfig?: Partial<Omit<CompileJSXServiceConfig, "modelGetter" | "processMethods">>;
 }
 
 /**
@@ -238,12 +226,7 @@ function toCompiledInput(
   tick: number,
   extractedModel?: LanguageModel,
 ): CompiledInput {
-  const result = toAiSdkCompiledInput(
-    compiled.formatted,
-    compiled.tools,
-    tick,
-    extractedModel,
-  );
+  const result = toAiSdkCompiledInput(compiled.formatted, compiled.tools, tick, extractedModel);
   return result as CompiledInput;
 }
 
@@ -251,9 +234,7 @@ function toCompiledInput(
  * Convert ai-sdk result to TickResultInput for state ingestion.
  * Uses adapter's fromAiSdkMessages for content conversion.
  */
-function toTickResultInput(
-  result: Awaited<ReturnType<typeof aiSdkGenerateText>>,
-): TickResultInput {
+function toTickResultInput(result: Awaited<ReturnType<typeof aiSdkGenerateText>>): TickResultInput {
   // Use adapter's conversion for response messages
   const messages = fromAiSdkMessages(result.response?.messages);
 
@@ -293,12 +274,7 @@ class ProcessHandle {
   readonly type: "root" | "fork" | "spawn";
   readonly parentPid?: string;
 
-  private _status:
-    | "pending"
-    | "running"
-    | "completed"
-    | "failed"
-    | "cancelled" = "pending";
+  private _status: "pending" | "running" | "completed" | "failed" | "cancelled" = "pending";
   private _result?: any;
   private _events = new EventEmitter();
   private _completionPromise: Promise<any>;
@@ -306,11 +282,7 @@ class ProcessHandle {
   private _reject!: (error: Error) => void;
   private _abortController = new AbortController();
 
-  constructor(
-    type: "root" | "fork" | "spawn",
-    parentPid?: string,
-    rootPid?: string,
-  ) {
+  constructor(type: "root" | "fork" | "spawn", parentPid?: string, rootPid?: string) {
     this.pid = `aisdk-${type}-${randomUUID().slice(0, 8)}`;
     this.type = type;
     this.parentPid = parentPid;
@@ -502,30 +474,18 @@ export class AiSdkCompiler {
         const parentHandle = options?.parentPid
           ? this.executions.get(options.parentPid)
           : undefined;
-        const handle = new ProcessHandle(
-          "fork",
-          options?.parentPid,
-          parentHandle?.rootPid,
-        );
+        const handle = new ProcessHandle("fork", options?.parentPid, parentHandle?.rootPid);
         this.executions.set(handle.pid, handle);
 
         if (agent && this.currentExecutor) {
           const element =
-            typeof agent === "function"
-              ? { type: agent, props: {}, key: null }
-              : agent;
+            typeof agent === "function" ? { type: agent, props: {}, key: null } : agent;
           const messages = this.engineInputToMessages(input);
 
-          this.runInternal(
-            element as JSX.Element,
-            messages,
-            this.currentExecutor,
-          )
+          this.runInternal(element as JSX.Element, messages, this.currentExecutor)
             .then((result) => handle.complete(result))
             .catch((error) =>
-              handle.fail(
-                error instanceof Error ? error : new Error(String(error)),
-              ),
+              handle.fail(error instanceof Error ? error : new Error(String(error))),
             );
         }
 
@@ -544,21 +504,13 @@ export class AiSdkCompiler {
 
         if (agent && this.currentExecutor) {
           const element =
-            typeof agent === "function"
-              ? { type: agent, props: {}, key: null }
-              : agent;
+            typeof agent === "function" ? { type: agent, props: {}, key: null } : agent;
           const messages = this.engineInputToMessages(input);
 
-          this.runInternal(
-            element as JSX.Element,
-            messages,
-            this.currentExecutor,
-          )
+          this.runInternal(element as JSX.Element, messages, this.currentExecutor)
             .then((result) => handle.complete(result))
             .catch((error) =>
-              handle.fail(
-                error instanceof Error ? error : new Error(String(error)),
-              ),
+              handle.fail(error instanceof Error ? error : new Error(String(error))),
             );
         }
 
@@ -583,9 +535,7 @@ export class AiSdkCompiler {
       },
 
       get: (pid: string): ExecutionHandle | undefined => {
-        return this.executions.get(pid) as unknown as
-          | ExecutionHandle
-          | undefined;
+        return this.executions.get(pid) as unknown as ExecutionHandle | undefined;
       },
     };
   }

@@ -70,7 +70,7 @@ graph TB
     end
 
     subgraph "Decorators"
-        DEC[decorators/agent.ts<br/>StreamAgent, ExecuteAgent]
+        DEC[decorators/agent.ts<br/>Stream, Execute]
     end
 
     subgraph "Transport"
@@ -192,15 +192,15 @@ The `EngineContextInterceptor` bridges NestJS's request handling with AIDK's ker
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### 3. Agent Decorators
+### 3. Execution Decorators
 
-Route decorators mark handlers for agent streaming or execution. The handler returns `EngineInput`, and the decorator specifies which agent JSX to use.
+Route decorators mark handlers for streaming or execution. The handler returns `EngineInput`, and the decorator specifies which root component to use.
 
 ```typescript
-@Controller('api/chat')
-class ChatController {
+@Controller('api/run')
+class RunController {
   @Post('stream')
-  @StreamAgent(<MyAgent />)  // Decorator binds agent to route
+  @Stream(<MyComponent />)  // Decorator binds component to route
   async stream(@Body() body: RequestBody) {
     return {
       timeline: messagesToTimeline(body.messages),
@@ -329,8 +329,8 @@ Interceptor that extracts context from requests and runs handlers within `Contex
 
 **Context Extraction Priority:**
 
-| Field      | Body              | Header (x-prefix) | Header (no prefix) |
-| ---------- | ----------------- | ----------------- | ------------------ |
+| Field     | Body             | Header (x-prefix) | Header (no prefix) |
+| --------- | ---------------- | ----------------- | ------------------ |
 | threadId  | `body.threadId`  | `x-thread-id`     | `thread-id`        |
 | userId    | `body.userId`    | `x-user-id`       | `user-id`          |
 | tenantId  | `body.tenantId`  | `x-tenant-id`     | `tenant-id`        |
@@ -378,25 +378,25 @@ class ChatController {}
 
 ### decorators/agent.ts
 
-#### `@StreamAgent(agent?)`
+#### `@Stream(root?)`
 
-Marks a route for agent streaming. Handler returns `EngineInput`.
+Marks a route for streaming execution. Handler returns `EngineInput`.
 
 ```typescript
 @Post('stream')
-@StreamAgent(<MyAgent />)
+@Stream(<MyComponent />)
 async stream(@Body() body: RequestBody) {
   return { timeline: [...], metadata: {...} };
 }
 ```
 
-#### `@ExecuteAgent(agent?)`
+#### `@Execute(root?)`
 
-Marks a route for agent execution (non-streaming). Handler returns `EngineInput`.
+Marks a route for non-streaming execution. Handler returns `EngineInput`.
 
 ```typescript
 @Post('execute')
-@ExecuteAgent(<MyAgent />)
+@Execute(<MyComponent />)
 async execute(@Body() body: RequestBody) {
   return { timeline: [...], metadata: {...} };
 }
@@ -703,19 +703,19 @@ export class EventsController {
 }
 ```
 
-### Using Agent Decorators
+### Using Execution Decorators
 
 ```typescript
-// agent.controller.ts
+// run.controller.ts
 import { Controller, Post, Body } from '@nestjs/common';
-import { StreamAgent, ExecuteAgent, messagesToTimeline } from 'aidk-nestjs';
+import { Stream, Execute, messagesToTimeline } from 'aidk-nestjs';
 
-const MyAgent = () => <Agent name="my-agent" tools={[myTool]} />;
+const MyComponent = () => <Root name="my-component" tools={[myTool]} />;
 
-@Controller('api/agent')
-export class AgentController {
+@Controller('api/run')
+export class RunController {
   @Post('stream')
-  @StreamAgent(<MyAgent />)
+  @Stream(<MyComponent />)
   stream(@Body() body: any) {
     return {
       timeline: messagesToTimeline(body.messages),
@@ -724,7 +724,7 @@ export class AgentController {
   }
 
   @Post('execute')
-  @ExecuteAgent(<MyAgent />)
+  @Execute(<MyComponent />)
   execute(@Body() body: any) {
     return {
       timeline: messagesToTimeline(body.messages),
@@ -795,7 +795,7 @@ bootstrap();
 | `Context`          | `EngineContextGuard`, `EngineContextInterceptor`    |
 | `ChannelTransport` | `SSETransport` implements                           |
 | `ChannelEvent`     | `SSETransport.send()`, `handleIncomingEvent()`      |
-| `JSX.Element`      | `StreamAgent`, `ExecuteAgent` decorators            |
+| `JSX.Element`      | `Stream`, `Execute` decorators                      |
 
 ### With AIDK Server
 
@@ -906,7 +906,7 @@ The `aidk-nestjs` package provides NestJS-idiomatic integration for AIDK:
 - **EngineModule** registers the engine globally via NestJS DI
 - **EngineContextInterceptor** bridges NestJS requests with kernel context
 - **EngineContextGuard** protects routes requiring context
-- **StreamAgent/ExecuteAgent** decorators bind agents to routes
+- **Stream/Execute** decorators bind components to routes
 - **SSETransport** enables real-time channel communication
 
 Use the module for engine registration, interceptor for context propagation, and SSE transport for real-time streaming. The package re-exports all `aidk-server` utilities for a single-import experience.

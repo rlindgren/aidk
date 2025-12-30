@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect, ReactNode } from 'react';
-import { type Message, ContentBlockList } from 'aidk-react';
+import { useState, useRef, useEffect, ReactNode } from "react";
+import { type Message, ContentBlockList } from "aidk-react";
 
 interface ChatInterfaceProps {
   messages: Message[];
@@ -17,12 +17,12 @@ export function ChatInterface({
   onClear,
   topContent,
 }: ChatInterfaceProps) {
-  const [inputValue, setInputValue] = useState('');
+  const [inputValue, setInputValue] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -30,11 +30,11 @@ export function ChatInterface({
     if (!inputValue.trim() || isStreaming) return;
 
     onSendMessage(inputValue.trim());
-    setInputValue('');
+    setInputValue("");
   };
 
   // Filter out empty messages (no content blocks)
-  const displayMessages = messages.filter(m => m.content.length > 0);
+  const displayMessages = messages.filter((m) => m.content.length > 0);
 
   return (
     <div className="chat-interface">
@@ -54,16 +54,13 @@ export function ChatInterface({
         {displayMessages.length === 0 && (
           <div className="empty-state">
             <p>Start a conversation with the Task Assistant.</p>
-            <p className="hint">
-              Try: "Create a task to buy groceries" or "List all my tasks"
-            </p>
+            <p className="hint">Try: "Create a task to buy groceries" or "List all my tasks"</p>
           </div>
         )}
 
         {displayMessages.map((message) => (
           <MessageBubble key={message.id} message={message} />
         ))}
-
 
         {isStreaming && (
           <div className="streaming-indicator">
@@ -87,7 +84,7 @@ export function ChatInterface({
           autoFocus
         />
         <button type="submit" disabled={!inputValue.trim() || isStreaming}>
-          {isStreaming ? 'Sending...' : 'Send'}
+          {isStreaming ? "Sending..." : "Send"}
         </button>
       </form>
     </div>
@@ -95,12 +92,12 @@ export function ChatInterface({
 }
 
 function MessageBubble({ message }: { message: Message }) {
-  const isUser = message.role === 'user';
-  const isTool = message.role === 'tool';
-  
+  const isUser = message.role === "user";
+  const isTool = message.role === "tool";
+
   // Determine the display role label
-  const roleLabel = isUser ? 'You' : isTool ? 'Tool Result' : 'Assistant';
-  const roleClass = isUser ? 'user' : 'assistant';
+  const roleLabel = isUser ? "You" : isTool ? "Tool Result" : "Assistant";
+  const roleClass = isUser ? "user" : "assistant";
 
   return (
     <div className={`message ${roleClass}`}>

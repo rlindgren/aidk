@@ -50,8 +50,5 @@ export function isAbortError(error: any): boolean {
   if (error.name === "AbortError") return true;
   if (error.name === "DOMException" && error.code === 20) return true; // AbortError DOMException code
   const message = String(error.message || error);
-  return (
-    message.toLowerCase().includes("abort") ||
-    message.toLowerCase().includes("cancelled")
-  );
+  return message.toLowerCase().includes("abort") || message.toLowerCase().includes("cancelled");
 }

@@ -1,48 +1,53 @@
-import { COM } from '../com/object-model';
-import type { COMInput, COMSection, COMTimelineEntry } from '../com/types';
-import type { ContentBlock, TextBlock } from 'aidk-shared';
-import { ContentRenderer, type SemanticContentBlock, MarkdownRenderer } from '../renderers';
-import type { CompiledStructure, CompiledSection, CompiledTimelineEntry, CompiledEphemeral } from '../compiler/types';
+import { COM } from "../com/object-model";
+import type { COMInput, COMSection, COMTimelineEntry } from "../com/types";
+import type { ContentBlock, TextBlock } from "aidk-shared";
+import { ContentRenderer, type SemanticContentBlock, MarkdownRenderer } from "../renderers";
+import type {
+  CompiledStructure,
+  CompiledSection,
+  CompiledTimelineEntry,
+  CompiledEphemeral,
+} from "../compiler/types";
 
 /**
  * Consolidate contiguous text blocks into single text blocks.
  * Non-text blocks act as boundaries.
- * 
+ *
  * @example
  * [text, text, image, text, text] → [consolidated-text, image, consolidated-text]
  */
 function consolidateTextBlocks(blocks: ContentBlock[]): ContentBlock[] {
   const result: ContentBlock[] = [];
   let textBuffer: string[] = [];
-  
+
   const flushTextBuffer = () => {
     if (textBuffer.length > 0) {
-      result.push({ type: 'text' as const, text: textBuffer.join('\n\n') });
+      result.push({ type: "text" as const, text: textBuffer.join("\n\n") });
       textBuffer = [];
     }
   };
-  
+
   for (const block of blocks) {
-    if (block.type === 'text') {
+    if (block.type === "text") {
       textBuffer.push((block as TextBlock).text);
     } else {
       flushTextBuffer();
       result.push(block);
     }
   }
-  
+
   flushTextBuffer();
   return result;
 }
 
 /**
  * StructureRenderer: Applies CompiledStructure to COM and formats content.
- * 
+ *
  * Responsibilities:
  * - Application (CompiledStructure → COM)
  * - Formatting (SemanticContentBlocks → ContentBlocks)
  * - Caching formatted content on sections
- * 
+ *
  * Formatting Rules:
  * - Sections: Always formatted (system content), cached on section
  * - Timeline entries: Only formatted if explicitly wrapped in renderer tag
@@ -97,9 +102,9 @@ export class StructureRenderer {
    */
   private applySection(compiled: CompiledSection): void {
     const renderer = compiled.renderer || this.defaultRenderer;
-    
+
     let formattedContent: ContentBlock[] | undefined;
-    
+
     if (Array.isArray(compiled.content)) {
       // Format SemanticContentBlocks → ContentBlocks
       formattedContent = renderer.format(compiled.content as SemanticContentBlock[]);
@@ -124,18 +129,18 @@ export class StructureRenderer {
   /**
    * Applies an ephemeral entry to COM.
    * Ephemeral entries are NOT persisted - they provide current context.
-   * 
+   *
    * Consolidates contiguous text blocks for cleaner model input.
    */
   private applyEphemeral(compiled: CompiledEphemeral): void {
     const renderer = compiled.renderer || this.defaultRenderer;
-    
+
     // Format SemanticContentBlocks → ContentBlocks
     const formattedContent = renderer.format(compiled.content);
-    
+
     // Consolidate contiguous text blocks (like system messages)
     const consolidatedContent = consolidateTextBlocks(formattedContent);
-    
+
     this.com.addEphemeral(
       consolidatedContent,
       compiled.position,
@@ -143,7 +148,7 @@ export class StructureRenderer {
       compiled.metadata,
       compiled.id,
       compiled.tags,
-      compiled.type
+      compiled.type,
     );
   }
 
@@ -152,27 +157,30 @@ export class StructureRenderer {
    * Only formats if explicitly wrapped in renderer tag.
    */
   private applyTimelineEntry(compiled: CompiledTimelineEntry): void {
-    if (compiled.kind === 'message' && compiled.message) {
+    if (compiled.kind === "message" && compiled.message) {
       // Store renderer reference in metadata for later formatting
-      const metadata = { 
+      const metadata = {
         ...compiled.metadata,
-        renderer: compiled.renderer // Store renderer reference for formatInput()
+        renderer: compiled.renderer, // Store renderer reference for formatInput()
       };
 
-      this.com.addMessage({
-        ...compiled.message,
-        // Preserve SemanticContentBlocks - will be formatted only if renderer set
-        content: compiled.message.content as SemanticContentBlock[],
-      } as any, {
-        tags: compiled.tags,
-        visibility: compiled.visibility,
-        metadata
-      });
-    } else if (compiled.kind === 'event' && compiled.event) {
+      this.com.addMessage(
+        {
+          ...compiled.message,
+          // Preserve SemanticContentBlocks - will be formatted only if renderer set
+          content: compiled.message.content as SemanticContentBlock[],
+        } as any,
+        {
+          tags: compiled.tags,
+          visibility: compiled.visibility,
+          metadata,
+        },
+      );
+    } else if (compiled.kind === "event" && compiled.event) {
       const entry: COMTimelineEntry = {
-        kind: 'event',
+        kind: "event",
         message: {
-          role: 'system',
+          role: "system",
           content: [],
         },
         id: compiled.id,
@@ -189,14 +197,22 @@ export class StructureRenderer {
    * Consolidates system message items into a single system message.
    * Creates a single, well-formatted text block for the system prompt.
    */
-  private consolidateSystemMessage(items: Array<{ type: 'section' | 'message' | 'loose'; sectionId?: string; content?: SemanticContentBlock[]; index: number; renderer?: ContentRenderer }>): void {
+  private consolidateSystemMessage(
+    items: Array<{
+      type: "section" | "message" | "loose";
+      sectionId?: string;
+      content?: SemanticContentBlock[];
+      index: number;
+      renderer?: ContentRenderer;
+    }>,
+  ): void {
     if (items.length === 0) return;
 
     // Sort by index (render order)
     const sorted = [...items].sort((a, b) => a.index - b.index);
 
     const sectionsMap = new Map<string, COMSection>();
-    
+
     // Get sections from COM for reference (they're already added by applySection)
     const sections = (this.com as any).sections as Map<string, COMSection>;
     for (const section of sections.values()) {
@@ -207,75 +223,75 @@ export class StructureRenderer {
     const textParts: string[] = [];
 
     for (const item of sorted) {
-      if (item.type === 'section' && item.sectionId) {
+      if (item.type === "section" && item.sectionId) {
         const section = sectionsMap.get(item.sectionId);
         if (section) {
           // Use section's renderer if specified, otherwise default
           const renderer = section.renderer || this.defaultRenderer;
-          
+
           // Build section text with title as header
           const sectionParts: string[] = [];
-          
+
           if (section.title) {
             sectionParts.push(`## ${section.title}`);
           }
-          
+
           // Format section content
           if (Array.isArray(section.content)) {
             const formatted = renderer.format(section.content as SemanticContentBlock[]);
             const text = formatted
-              .filter((b): b is { type: 'text'; text: string } => b.type === 'text')
-              .map(b => b.text)
-              .join('\n');
+              .filter((b): b is { type: "text"; text: string } => b.type === "text")
+              .map((b) => b.text)
+              .join("\n");
             if (text) sectionParts.push(text);
-          } else if (typeof section.content === 'string') {
+          } else if (typeof section.content === "string") {
             sectionParts.push(section.content);
           }
-          
+
           if (sectionParts.length > 0) {
-            textParts.push(sectionParts.join('\n'));
+            textParts.push(sectionParts.join("\n"));
           }
         }
-      } else if (item.type === 'message' && item.content) {
+      } else if (item.type === "message" && item.content) {
         // Use message's renderer if specified, otherwise default
         const renderer = item.renderer || this.defaultRenderer;
         // Format message content
         const formatted = renderer.format(item.content);
         const text = formatted
-          .filter((b): b is { type: 'text'; text: string } => b.type === 'text')
-          .map(b => b.text)
-          .join('\n');
+          .filter((b): b is { type: "text"; text: string } => b.type === "text")
+          .map((b) => b.text)
+          .join("\n");
         if (text) textParts.push(text);
-      } else if (item.type === 'loose' && item.content) {
+      } else if (item.type === "loose" && item.content) {
         // Use message's renderer if specified, otherwise default
         const renderer = item.renderer || this.defaultRenderer;
         // Format loose content
         const formatted = renderer.format(item.content);
         const text = formatted
-          .filter((b): b is { type: 'text'; text: string } => b.type === 'text')
-          .map(b => b.text)
-          .join('\n');
+          .filter((b): b is { type: "text"; text: string } => b.type === "text")
+          .map((b) => b.text)
+          .join("\n");
         if (text) textParts.push(text);
       }
     }
 
     if (textParts.length > 0) {
       // Create a single, well-formatted text block
-      const consolidatedText = textParts.join('\n\n');
+      const consolidatedText = textParts.join("\n\n");
 
       this.com.addMessage({
-        role: 'system',
-        content: [{ type: 'text', text: consolidatedText }],
+        role: "system",
+        content: [{ type: "text", text: consolidatedText }],
       });
     }
   }
 
   /**
    * Formats COMInput for model input.
-   * 
+   *
    * Rules:
    * - Sections: Use cached formattedContent
-   * - Timeline entries: 
+   * - Timeline entries:
    *   - If renderer explicitly set → format using that renderer
    *   - If blocks have semanticNode → format using default renderer (MarkdownRenderer)
    *   - If blocks are event blocks → format using default renderer (event blocks need text conversion)
@@ -288,17 +304,20 @@ export class StructureRenderer {
     // Format timeline entries
     for (const entry of comInput.timeline) {
       // Check metadata for renderer reference (stored during applyTimelineEntry)
-      const explicitRenderer = entry.metadata?.['renderer'] as ContentRenderer | undefined;
+      const explicitRenderer = entry.metadata?.["renderer"] as ContentRenderer | undefined;
       const content = entry.message.content as SemanticContentBlock[];
 
       // Format if renderer explicitly set OR blocks have semanticNode OR blocks are event blocks
       // Code/json blocks are passed through as-is (they'll be formatted to markdown later in fromEngineState/adapter)
       // Native ContentBlocks (like image/audio/video/code/json) should pass through unchanged
-      const hasSemanticNodes = content.some(block => block.semanticNode || block.semantic);
-      const hasEventBlocks = content.some(block => 
-        block.type === 'user_action' || block.type === 'system_event' || block.type === 'state_change'
+      const hasSemanticNodes = content.some((block) => block.semanticNode || block.semantic);
+      const hasEventBlocks = content.some(
+        (block) =>
+          block.type === "user_action" ||
+          block.type === "system_event" ||
+          block.type === "state_change",
       );
-      
+
       let formattedContent: ContentBlock[];
       if (explicitRenderer || hasSemanticNodes || hasEventBlocks) {
         const renderer = explicitRenderer || this.defaultRenderer;
@@ -307,13 +326,13 @@ export class StructureRenderer {
         // Pass through native ContentBlocks as-is (code, json, image, audio, video, etc.)
         formattedContent = content;
       }
-      
+
       formattedTimeline.push({
         ...entry,
         message: {
           ...entry.message,
-          content: formattedContent
-        }
+          content: formattedContent,
+        },
       });
     }
 
@@ -349,8 +368,7 @@ export class StructureRenderer {
       tools: comInput.tools,
       ephemeral: comInput.ephemeral, // Pass through ephemeral (already formatted)
       system: comInput.system,
-      metadata: comInput.metadata
+      metadata: comInput.metadata,
     };
   }
 }
-

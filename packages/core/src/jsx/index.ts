@@ -70,7 +70,4 @@ export {
   registerWaitHandle,
   getWaitHandles,
 } from "./components/fork-spawn-helpers";
-export type {
-  CreateForkOptions,
-  CreateSpawnOptions,
-} from "./components/fork-spawn-helpers";
+export type { CreateForkOptions, CreateSpawnOptions } from "./components/fork-spawn-helpers";

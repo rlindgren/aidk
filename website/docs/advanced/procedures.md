@@ -250,15 +250,15 @@ const myProc = createProcedure(async (input: string) => {
 
 The AIDK engine uses procedures internally for all operations:
 
-| Procedure | Purpose |
-|-----------|---------|
-| `engine:execute` | Root execution |
-| `engine:stream` | Streaming execution |
-| `engine:tick` | Single tick |
-| `model:generate` | Model API call |
-| `tool:execute` | Tool execution |
-| `fork:execute` | Forked agent |
-| `spawn:execute` | Spawned agent |
+| Procedure        | Purpose             |
+| ---------------- | ------------------- |
+| `engine:execute` | Root execution      |
+| `engine:stream`  | Streaming execution |
+| `engine:tick`    | Single tick         |
+| `model:generate` | Model API call      |
+| `tool:execute`   | Tool execution      |
+| `fork:execute`   | Forked agent        |
+| `spawn:execute`  | Spawned agent       |
 
 You can hook into these via engine hooks:
 

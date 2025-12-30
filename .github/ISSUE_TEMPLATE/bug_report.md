@@ -12,9 +12,9 @@ A clear description of what the bug is.
 
 ## Steps to Reproduce
 
-1. 
-2. 
-3. 
+1.
+2.
+3.
 
 ## Expected Behavior
 
@@ -26,9 +26,9 @@ What actually happened.
 
 ## Environment
 
-- AIDK version: 
-- Node.js version: 
-- OS: 
+- AIDK version:
+- Node.js version:
+- OS:
 - Package manager: pnpm / npm / yarn
 
 ## Code Example
@@ -40,4 +40,3 @@ What actually happened.
 ## Additional Context
 
 Any other context, screenshots, or error messages.
-

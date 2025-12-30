@@ -55,20 +55,13 @@ export class ExecutionHandleImpl
   private streamIterator?: AsyncIterable<EngineStreamEvent>;
   private tickCount: number = 0;
   private session?: {
-    sendMessage: (
-      message: Omit<ExecutionMessage, "id" | "timestamp">,
-    ) => Promise<void>;
+    sendMessage: (message: Omit<ExecutionMessage, "id" | "timestamp">) => Promise<void>;
   };
   private shutdownHooks: Array<() => Promise<void> | void> = [];
   private parentHandle?: ExecutionHandle;
   private executionGraph?: { getChildren: (pid: string) => ExecutionHandle[] };
   public executionGraphForStatus?: {
-    updateStatus: (
-      pid: string,
-      status: ExecutionStatus,
-      error?: Error,
-      phase?: string,
-    ) => void;
+    updateStatus: (pid: string, status: ExecutionStatus, error?: Error, phase?: string) => void;
   };
   private procedureGraph?: ProcedureGraph; // Procedure graph for this execution
   private _abortEmitted: boolean = false; // Track if abort signal was already emitted (before listeners were set up)
@@ -216,9 +209,7 @@ export class ExecutionHandleImpl
   /**
    * Set the execution graph (for signal propagation to children)
    */
-  setExecutionGraph(graph: {
-    getChildren: (pid: string) => ExecutionHandle[];
-  }): void {
+  setExecutionGraph(graph: { getChildren: (pid: string) => ExecutionHandle[] }): void {
     this.executionGraph = graph;
   }
 
@@ -226,12 +217,7 @@ export class ExecutionHandleImpl
    * Set the execution graph for status updates (for spawn/fork handles registered in parent engine)
    */
   setExecutionGraphForStatus(graph: {
-    updateStatus: (
-      pid: string,
-      status: ExecutionStatus,
-      error?: Error,
-      phase?: string,
-    ) => void;
+    updateStatus: (pid: string, status: ExecutionStatus, error?: Error, phase?: string) => void;
   }): void {
     this.executionGraphForStatus = graph;
   }
@@ -388,11 +374,7 @@ export class ExecutionHandleImpl
   /**
    * Emit signal for this execution (and its children)
    */
-  emitSignal(
-    signal: SignalType,
-    reason?: string,
-    metadata?: Record<string, any>,
-  ): void {
+  emitSignal(signal: SignalType, reason?: string, metadata?: Record<string, any>): void {
     const event: SignalEvent = {
       type: signal,
       source: "execution",
@@ -437,11 +419,7 @@ export class ExecutionHandleImpl
 
     // If abort signal, trigger cancel controller (if not already aborted)
     // Note: cancel() already aborts the controller, so this is mainly for external signals
-    if (
-      signal === "abort" &&
-      this.cancelController &&
-      !this.cancelController.signal.aborted
-    ) {
+    if (signal === "abort" && this.cancelController && !this.cancelController.signal.aborted) {
       this.cancelController.abort();
     }
   }
@@ -497,10 +475,7 @@ export class ExecutionHandleImpl
       try {
         await hook();
       } catch (error) {
-        console.error(
-          `Error in shutdown hook for execution ${this.pid}:`,
-          error,
-        );
+        console.error(`Error in shutdown hook for execution ${this.pid}:`, error);
       }
     }
   }
@@ -570,12 +545,7 @@ export class ExecutionHandleImpl
   /**
    * Create execution state for persistence
    */
-  toState(
-    agent: any,
-    input: any,
-    currentTick: number,
-    previous?: COMInput,
-  ): ExecutionState {
+  toState(agent: any, input: any, currentTick: number, previous?: COMInput): ExecutionState {
     return {
       pid: this.pid,
       parentPid: this.parentPid,
@@ -681,9 +651,7 @@ export class ExecutionHandleImpl
    * Called by Engine when execution starts.
    */
   setSession(session: {
-    sendMessage: (
-      message: Omit<ExecutionMessage, "id" | "timestamp">,
-    ) => Promise<void>;
+    sendMessage: (message: Omit<ExecutionMessage, "id" | "timestamp">) => Promise<void>;
   }): void {
     this.session = session;
   }
@@ -697,9 +665,7 @@ export class ExecutionHandleImpl
    * @param message The message to send (id and timestamp are auto-generated)
    * @throws Error if execution is not running or no active session
    */
-  async send(
-    message: Omit<ExecutionMessage, "id" | "timestamp">,
-  ): Promise<void> {
+  async send(message: Omit<ExecutionMessage, "id" | "timestamp">): Promise<void> {
     if (this.status !== "running") {
       throw new StateError(
         this.status,

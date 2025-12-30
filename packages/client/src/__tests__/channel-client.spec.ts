@@ -5,11 +5,7 @@
  */
 
 import { ChannelClient } from "../core/channel-client";
-import type {
-  ChannelTransport,
-  TransportState,
-  TransportInfo,
-} from "../core/transport";
+import type { ChannelTransport, TransportState, TransportInfo } from "../core/transport";
 
 // =============================================================================
 // Mock Transport
@@ -276,9 +272,7 @@ describe("ChannelClient", () => {
     it("should use custom isChannelEvent filter", () => {
       // Custom filter that only accepts events with customChannel field
       const customFilter = (data: unknown): data is any => {
-        return (
-          typeof data === "object" && data !== null && "customChannel" in data
-        );
+        return typeof data === "object" && data !== null && "customChannel" in data;
       };
 
       const customClient = new ChannelClient({

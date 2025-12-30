@@ -4,19 +4,10 @@
  * Tests the data shape transformations between AIDK format and OpenAI format.
  */
 
-import {
-  buildClientOptions,
-  toOpenAIMessages,
-  mapToolDefinition,
-} from "../openai";
+import { buildClientOptions, toOpenAIMessages, mapToolDefinition } from "../openai";
 import { STOP_REASON_MAP } from "../types";
 import { StopReason } from "aidk";
-import type {
-  Message,
-  ImageBlock,
-  ToolUseBlock,
-  ToolResultBlock,
-} from "aidk/content";
+import type { Message, ImageBlock, ToolUseBlock, ToolResultBlock } from "aidk/content";
 
 // =============================================================================
 // Stop Reason Mapping
@@ -265,10 +256,9 @@ describe("toOpenAIMessages", () => {
       const result = toOpenAIMessages(message);
 
       // Should have empty content array (or null)
-      expect(
-        (result[0] as any).content === null ||
-          (result[0] as any).content.length === 0,
-      ).toBe(true);
+      expect((result[0] as any).content === null || (result[0] as any).content.length === 0).toBe(
+        true,
+      );
     });
   });
 

@@ -1,4 +1,10 @@
-import { Telemetry, type TelemetryProvider, type Span, type Counter, type Histogram } from './telemetry';
+import {
+  Telemetry,
+  type TelemetryProvider,
+  type Span,
+  type Counter,
+  type Histogram,
+} from "./telemetry";
 
 class MockTelemetryProvider implements TelemetryProvider {
   spans: string[] = [];
@@ -43,7 +49,7 @@ class MockTelemetryProvider implements TelemetryProvider {
   }
 }
 
-describe('Kernel Telemetry', () => {
+describe("Kernel Telemetry", () => {
   let mockProvider: MockTelemetryProvider;
 
   beforeEach(() => {
@@ -55,29 +61,28 @@ describe('Kernel Telemetry', () => {
     Telemetry.resetProvider();
   });
 
-  it('should delegate startSpan to provider', () => {
-    Telemetry.startSpan('test-span');
-    expect(mockProvider.spans).toContain('test-span');
+  it("should delegate startSpan to provider", () => {
+    Telemetry.startSpan("test-span");
+    expect(mockProvider.spans).toContain("test-span");
   });
 
-  it('should delegate recordError to provider', () => {
-    const err = new Error('test error');
+  it("should delegate recordError to provider", () => {
+    const err = new Error("test error");
     Telemetry.recordError(err);
     expect(mockProvider.errors).toContain(err);
   });
 
-  it('should delegate metrics to provider', () => {
-    const counter = Telemetry.getCounter('requests');
+  it("should delegate metrics to provider", () => {
+    const counter = Telemetry.getCounter("requests");
     counter.add(1);
     counter.add(5);
 
-    expect(mockProvider.counters['requests']).toBe(6);
+    expect(mockProvider.counters["requests"]).toBe(6);
 
-    const histogram = Telemetry.getHistogram('latency');
+    const histogram = Telemetry.getHistogram("latency");
     histogram.record(100);
     histogram.record(200);
 
-    expect(mockProvider.histograms['latency']).toEqual([100, 200]);
+    expect(mockProvider.histograms["latency"]).toEqual([100, 200]);
   });
 });
-

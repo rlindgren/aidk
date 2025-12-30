@@ -222,9 +222,7 @@ describe("NotFoundError", () => {
     expect(new NotFoundError("model", "x").code).toBe("NOT_FOUND_MODEL");
     expect(new NotFoundError("tool", "x").code).toBe("NOT_FOUND_TOOL");
     expect(new NotFoundError("agent", "x").code).toBe("NOT_FOUND_AGENT");
-    expect(new NotFoundError("execution", "x").code).toBe(
-      "NOT_FOUND_EXECUTION",
-    );
+    expect(new NotFoundError("execution", "x").code).toBe("NOT_FOUND_EXECUTION");
     expect(new NotFoundError("channel", "x").code).toBe("NOT_FOUND_RESOURCE");
   });
 });
@@ -285,11 +283,7 @@ describe("ValidationError", () => {
 
 describe("StateError", () => {
   it("should create with states and message", () => {
-    const error = new StateError(
-      "running",
-      "stopped",
-      "Cannot stop running process",
-    );
+    const error = new StateError("running", "stopped", "Cannot stop running process");
 
     expect(error.message).toBe("Cannot stop running process");
     expect(error.code).toBe("STATE_INVALID");
@@ -302,9 +296,7 @@ describe("StateError", () => {
     it("should create not ready error", () => {
       const error = StateError.notReady("Engine", "initializing");
 
-      expect(error.message).toBe(
-        "Engine is not ready (current state: initializing)",
-      );
+      expect(error.message).toBe("Engine is not ready (current state: initializing)");
       expect(error.code).toBe("STATE_NOT_READY");
       expect(error.current).toBe("initializing");
       expect(error.expectedState).toBe("ready");
@@ -366,11 +358,7 @@ describe("TransportError", () => {
 
   describe("http", () => {
     it("should create HTTP error", () => {
-      const error = TransportError.http(
-        500,
-        "https://api.example.com",
-        "Internal Server Error",
-      );
+      const error = TransportError.http(500, "https://api.example.com", "Internal Server Error");
 
       expect(error.message).toBe("Internal Server Error");
       expect(error.code).toBe("TRANSPORT_RESPONSE");
@@ -424,9 +412,7 @@ describe("AdapterError", () => {
     it("should create context length error", () => {
       const error = AdapterError.contextLength("openai", 128000, 150000);
 
-      expect(error.message).toBe(
-        "Context length exceeded. Max: 128000, Requested: 150000",
-      );
+      expect(error.message).toBe("Context length exceeded. Max: 128000, Requested: 150000");
       expect(error.code).toBe("ADAPTER_CONTEXT_LENGTH");
     });
   });
@@ -471,9 +457,7 @@ describe("ReactivityError", () => {
     it("should work without signal name", () => {
       const error = ReactivityError.circular();
 
-      expect(error.message).toBe(
-        "Circular dependency detected in computed signal",
-      );
+      expect(error.message).toBe("Circular dependency detected in computed signal");
     });
   });
 });
@@ -495,9 +479,7 @@ describe("Type Guards", () => {
 
   it("should identify NotFoundError", () => {
     expect(isNotFoundError(new NotFoundError("model", "x"))).toBe(true);
-    expect(isNotFoundError(new AIDKError("NOT_FOUND_MODEL", "test"))).toBe(
-      false,
-    );
+    expect(isNotFoundError(new AIDKError("NOT_FOUND_MODEL", "test"))).toBe(false);
   });
 
   it("should identify ValidationError", () => {

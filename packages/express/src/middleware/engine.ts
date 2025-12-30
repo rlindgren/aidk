@@ -89,9 +89,7 @@ export interface EngineRequest extends Request {
 /**
  * Express-specific config (extends base with Express types)
  */
-export interface ExpressEngineConfig<
-  TBody = any,
-> extends ExecutionContextConfig<TBody> {
+export interface ExpressEngineConfig<TBody = any> extends ExecutionContextConfig<TBody> {
   // Future: Express-specific options like error handling
 }
 
@@ -123,17 +121,11 @@ export function withEngine<TBody = any>(
   return (req: Request, res: Response, next: NextFunction) => {
     try {
       // Get engine instance
-      const engine =
-        typeof resolved.engine === "function"
-          ? resolved.engine()
-          : resolved.engine;
+      const engine = typeof resolved.engine === "function" ? resolved.engine() : resolved.engine;
 
       // Extract context from request
       const headers = req.headers as Record<string, string | undefined>;
-      const requestContext = resolved.extractContext(
-        req.body as TBody,
-        headers,
-      );
+      const requestContext = resolved.extractContext(req.body as TBody, headers);
 
       // Attach base context to request for guards/simple access
       attachContext(req, requestContext);
@@ -206,17 +198,14 @@ export interface TransportConfig {
 export function withTransport(
   config: TransportConfig,
 ): (req: Request, res: Response, next: NextFunction) => Promise<void> {
-  const roomPattern =
-    config.roomPattern || ((ctx) => `thread:${ctx.threadId}`);
+  const roomPattern = config.roomPattern || ((ctx) => `thread:${ctx.threadId}`);
 
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       const engineReq = req as EngineRequest;
 
       if (!engineReq.engineContext) {
-        return next(
-          new Error("withTransport requires withEngine middleware first"),
-        );
+        return next(new Error("withTransport requires withEngine middleware first"));
       }
 
       const ctx = engineReq.engineContext;

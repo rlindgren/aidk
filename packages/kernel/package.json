@@ -2,27 +2,27 @@
   "name": "aidk-kernel",
   "version": "0.1.0",
   "description": "Low-level execution primitives for AIDK",
-  "type": "module",
-  "main": "src/index.ts",
-  "files": [
-    "dist"
-  ],
   "keywords": [
-    "ai",
     "agent",
+    "ai",
     "kernel"
   ],
-  "author": "Ryan Lindgren",
+  "homepage": "https://github.com/rlindgren/aidk#readme",
+  "bugs": {
+    "url": "https://github.com/rlindgren/aidk/issues"
+  },
   "license": "ISC",
+  "author": "Ryan Lindgren",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/rlindgren/aidk.git",
     "directory": "packages/kernel"
   },
-  "bugs": {
-    "url": "https://github.com/rlindgren/aidk/issues"
-  },
-  "homepage": "https://github.com/rlindgren/aidk#readme",
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "main": "src/index.ts",
   "exports": {
     ".": "./src/index.ts",
     "./execution-helpers": "./src/execution-helpers.ts",
@@ -30,8 +30,6 @@
   },
   "publishConfig": {
     "access": "public",
-    "main": "./dist/index.js",
-    "types": "./dist/index.d.ts",
     "exports": {
       ".": {
         "types": "./dist/index.d.ts",
@@ -45,7 +43,9 @@
         "types": "./dist/**/*.d.ts",
         "import": "./dist/**/*.js"
       }
-    }
+    },
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts"
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",

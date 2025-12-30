@@ -18,12 +18,12 @@ function Chat() {
     baseUrl: 'http://localhost:3000',
     userId: 'user-123',
   });
-  
-  const { 
-    messages, 
-    send, 
+
+  const {
+    messages,
+    send,
     isStreaming,
-    error 
+    error
   } = useExecution({
     client,
     agentId: 'assistant',
@@ -38,8 +38,8 @@ function Chat() {
           ))}
         </div>
       ))}
-      
-      <input 
+
+      <input
         disabled={isStreaming}
         onKeyDown={(e) => {
           if (e.key === 'Enter') {
@@ -70,4 +70,3 @@ function Chat() {
 ## Documentation
 
 See the [full documentation](https://your-org.github.io/aidk).
-

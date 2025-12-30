@@ -92,9 +92,7 @@ export class XMLRenderer extends Renderer {
         // Semantic elements
         case "link":
           const href = node.props?.href || "";
-          return href
-            ? `<a href="${this.escapeXml(href)}">${content}</a>`
-            : content;
+          return href ? `<a href="${this.escapeXml(href)}">${content}</a>` : content;
 
         case "quote":
           return `<q>${content}</q>`;
@@ -110,8 +108,7 @@ export class XMLRenderer extends Renderer {
 
         // Custom XML tags - render with tag name
         case "custom":
-          const tagName =
-            node.props?._tagName || node.props?.rendererTag || "span";
+          const tagName = node.props?._tagName || node.props?.rendererTag || "span";
           return `<${tagName}>${content}</${tagName}>`;
 
         default:
@@ -336,8 +333,7 @@ export class XMLRenderer extends Renderer {
       lines.push("    <tr>");
       for (let i = 0; i < headers.length; i++) {
         const align = alignments?.[i];
-        const style =
-          align && align !== "left" ? ` style="text-align: ${align}"` : "";
+        const style = align && align !== "left" ? ` style="text-align: ${align}"` : "";
         lines.push(`      <th${style}>${this.escapeXml(headers[i])}</th>`);
       }
       lines.push("    </tr>");
@@ -351,8 +347,7 @@ export class XMLRenderer extends Renderer {
         lines.push("    <tr>");
         for (let i = 0; i < row.length; i++) {
           const align = alignments?.[i];
-          const style =
-            align && align !== "left" ? ` style="text-align: ${align}"` : "";
+          const style = align && align !== "left" ? ` style="text-align: ${align}"` : "";
           lines.push(`      <td${style}>${this.escapeXml(row[i])}</td>`);
         }
         lines.push("    </tr>");
@@ -368,10 +363,7 @@ export class XMLRenderer extends Renderer {
     };
   }
 
-  protected applyBlockLevelFormatting(
-    block: SemanticContentBlock,
-    formattedText: string,
-  ): string {
+  protected applyBlockLevelFormatting(block: SemanticContentBlock, formattedText: string): string {
     // Apply heading tags if semantic type is heading
     if (block.semantic?.type === "heading") {
       const level = block.semantic.level || 1;
@@ -414,8 +406,7 @@ export class XMLRenderer extends Renderer {
 
       case "json":
         const jsonBlock = block as any;
-        const jsonText =
-          jsonBlock.text || JSON.stringify(jsonBlock.data || {}, null, 2);
+        const jsonText = jsonBlock.text || JSON.stringify(jsonBlock.data || {}, null, 2);
         return [
           {
             ...jsonBlock,
@@ -437,15 +428,9 @@ export class XMLRenderer extends Renderer {
           if (ua.target) parts.push(`on ${ua.target}`);
           text = parts.length > 0 ? parts.join(" ") : "User action";
         }
-        const actionAttr = ua.action
-          ? ` action="${this.escapeXml(ua.action)}"`
-          : "";
-        const actorAttr = ua.actor
-          ? ` actor="${this.escapeXml(ua.actor)}"`
-          : "";
-        const targetAttr = ua.target
-          ? ` target="${this.escapeXml(ua.target)}"`
-          : "";
+        const actionAttr = ua.action ? ` action="${this.escapeXml(ua.action)}"` : "";
+        const actorAttr = ua.actor ? ` actor="${this.escapeXml(ua.actor)}"` : "";
+        const targetAttr = ua.target ? ` target="${this.escapeXml(ua.target)}"` : "";
         return [
           {
             ...ua,
@@ -464,12 +449,8 @@ export class XMLRenderer extends Renderer {
           if (se.source) parts.push(`(${se.source})`);
           text = parts.length > 0 ? parts.join(" ") : "System event";
         }
-        const eventAttr = se.event
-          ? ` event="${this.escapeXml(se.event)}"`
-          : "";
-        const sourceAttr = se.source
-          ? ` source="${this.escapeXml(se.source)}"`
-          : "";
+        const eventAttr = se.event ? ` event="${this.escapeXml(se.event)}"` : "";
+        const sourceAttr = se.source ? ` source="${this.escapeXml(se.source)}"` : "";
         return [
           {
             ...se,
@@ -485,18 +466,12 @@ export class XMLRenderer extends Renderer {
         if (!text || text.trim() === "") {
           const entityPart = sc.entity || "entity";
           const fieldPart = sc.field ? `.${sc.field}` : "";
-          const fromPart =
-            sc.from !== undefined ? JSON.stringify(sc.from) : "undefined";
-          const toPart =
-            sc.to !== undefined ? JSON.stringify(sc.to) : "undefined";
+          const fromPart = sc.from !== undefined ? JSON.stringify(sc.from) : "undefined";
+          const toPart = sc.to !== undefined ? JSON.stringify(sc.to) : "undefined";
           text = `${entityPart}${fieldPart}: ${fromPart} → ${toPart}`;
         }
-        const entityAttr = sc.entity
-          ? ` entity="${this.escapeXml(sc.entity)}"`
-          : "";
-        const fieldAttr = sc.field
-          ? ` field="${this.escapeXml(sc.field)}"`
-          : "";
+        const entityAttr = sc.entity ? ` entity="${this.escapeXml(sc.entity)}"` : "";
+        const fieldAttr = sc.field ? ` field="${this.escapeXml(sc.field)}"` : "";
         return [
           {
             ...sc,

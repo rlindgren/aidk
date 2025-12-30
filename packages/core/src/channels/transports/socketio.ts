@@ -1,4 +1,9 @@
-import type { ChannelTransport, ChannelEvent, ConnectionMetadata, ChannelTransportConfig } from '../service';
+import type {
+  ChannelTransport,
+  ChannelEvent,
+  ConnectionMetadata,
+  ChannelTransportConfig,
+} from "../service";
 
 /**
  * Configuration for SocketIOTransport
@@ -37,16 +42,16 @@ export interface SocketIOTransportConfig extends ChannelTransportConfig {
 
 /**
  * SocketIOTransport implements bidirectional communication via Socket.io.
- * 
+ *
  * Leverages Socket.io's native room support:
  * - join/leave map directly to socket.join()/socket.leave()
  * - Events with target.rooms are sent via io.to(room).emit()
  * - excludeSender uses socket.broadcast.to(room).emit()
- * 
+ *
  * Requires 'socket.io-client' package.
  */
 export class SocketIOTransport implements ChannelTransport {
-  public readonly name = 'socketio';
+  public readonly name = "socketio";
 
   private config: SocketIOTransportConfig;
   private currentConnectionId?: string;
@@ -58,7 +63,7 @@ export class SocketIOTransport implements ChannelTransport {
 
   constructor(config: SocketIOTransportConfig) {
     if (!config.socket && !config.url) {
-      throw new Error('SocketIOTransport requires either url or socket');
+      throw new Error("SocketIOTransport requires either url or socket");
     }
     this.config = config;
 
@@ -73,7 +78,10 @@ export class SocketIOTransport implements ChannelTransport {
   /**
    * Connect to the transport with optional metadata.
    */
-  async connect(connectionId: string, metadata?: ConnectionMetadata & { channels?: string[] }): Promise<void> {
+  async connect(
+    connectionId: string,
+    metadata?: ConnectionMetadata & { channels?: string[] },
+  ): Promise<void> {
     this.currentConnectionId = connectionId;
     this.connectionMetadata = metadata;
 
@@ -82,9 +90,9 @@ export class SocketIOTransport implements ChannelTransport {
       this.setupSocketHandlers();
       // Join session room if not already joined
       if (this.socket.connected) {
-        this.socket.emit('join-session', connectionId);
+        this.socket.emit("join-session", connectionId);
       }
-      
+
       // Auto-join rooms based on metadata
       if (this.config.autoJoinRooms && metadata) {
         const autoRooms = this.config.autoJoinRooms(metadata);
@@ -108,32 +116,32 @@ export class SocketIOTransport implements ChannelTransport {
     if (!this.socket) return;
 
     // Remove existing handlers to avoid duplicates
-    this.socket.removeAllListeners('connect');
-    this.socket.removeAllListeners('disconnect');
-    this.socket.removeAllListeners('error');
-    this.socket.removeAllListeners('channel-event');
+    this.socket.removeAllListeners("connect");
+    this.socket.removeAllListeners("disconnect");
+    this.socket.removeAllListeners("error");
+    this.socket.removeAllListeners("channel-event");
 
-    this.socket.on('connect', () => {
+    this.socket.on("connect", () => {
       this.isConnected = true;
       // Join session room
       if (this.currentConnectionId) {
-        this.socket.emit('join-session', this.currentConnectionId);
+        this.socket.emit("join-session", this.currentConnectionId);
       }
     });
 
-    this.socket.on('disconnect', () => {
+    this.socket.on("disconnect", () => {
       this.isConnected = false;
     });
 
-    this.socket.on('error', (error: Error) => {
-      console.error('Socket.io error:', error);
+    this.socket.on("error", (error: Error) => {
+      console.error("Socket.io error:", error);
       this.isConnected = false;
     });
 
     // Listen for channel events
-    this.socket.on('channel-event', (event: ChannelEvent) => {
+    this.socket.on("channel-event", (event: ChannelEvent) => {
       // Apply excludeSender filtering if needed
-      const sourceConnectionId = event.metadata?.['sourceConnectionId'] as string | undefined;
+      const sourceConnectionId = event.metadata?.["sourceConnectionId"] as string | undefined;
       if (event.target?.excludeSender && sourceConnectionId === this.currentConnectionId) {
         return; // Skip - we're the sender
       }
@@ -149,7 +157,7 @@ export class SocketIOTransport implements ChannelTransport {
    */
   private async connectSocket(): Promise<void> {
     if (!this.currentConnectionId) {
-      throw new Error('Connection ID required for connection');
+      throw new Error("Connection ID required for connection");
     }
 
     // Close existing connection if any
@@ -159,10 +167,10 @@ export class SocketIOTransport implements ChannelTransport {
       // Lazy-load socket.io-client
       let io: any;
       try {
-        io = require('socket.io-client');
+        io = require("socket.io-client");
       } catch (_error) {
         throw new Error(
-          "SocketIOTransport requires 'socket.io-client' package. Install it with: npm install socket.io-client"
+          "SocketIOTransport requires 'socket.io-client' package. Install it with: npm install socket.io-client",
         );
       }
 
@@ -181,13 +189,13 @@ export class SocketIOTransport implements ChannelTransport {
       // Wait for connection
       await new Promise<void>((resolve, reject) => {
         const timeout = setTimeout(() => {
-          reject(new Error('Socket.io connection timeout'));
+          reject(new Error("Socket.io connection timeout"));
         }, 10000);
 
-        this.socket!.on('connect', () => {
+        this.socket!.on("connect", () => {
           clearTimeout(timeout);
           this.isConnected = true;
-          
+
           // Auto-join rooms after connection
           if (this.config.autoJoinRooms && this.connectionMetadata) {
             const autoRooms = this.config.autoJoinRooms(this.connectionMetadata);
@@ -197,11 +205,11 @@ export class SocketIOTransport implements ChannelTransport {
               }
             }
           }
-          
+
           resolve();
         });
 
-        this.socket!.on('connect_error', (error: Error) => {
+        this.socket!.on("connect_error", (error: Error) => {
           clearTimeout(timeout);
           reject(error);
         });
@@ -217,7 +225,7 @@ export class SocketIOTransport implements ChannelTransport {
    */
   async join(connectionId: string, room: string): Promise<void> {
     if (this.socket && this.isConnected) {
-      this.socket.emit('join-room', room);
+      this.socket.emit("join-room", room);
       this.joinedRooms.add(room);
       console.log(`Socket.io: joined room ${room}`);
     }
@@ -228,7 +236,7 @@ export class SocketIOTransport implements ChannelTransport {
    */
   async leave(connectionId: string, room: string): Promise<void> {
     if (this.socket && this.isConnected) {
-      this.socket.emit('leave-room', room);
+      this.socket.emit("leave-room", room);
       this.joinedRooms.delete(room);
       console.log(`Socket.io: left room ${room}`);
     }
@@ -253,14 +261,14 @@ export class SocketIOTransport implements ChannelTransport {
       // Only disconnect if we created the socket ourselves
       // If socket was provided externally, don't disconnect it
       const wasProvidedExternally = !this.config.url;
-      
+
       if (!wasProvidedExternally) {
         this.socket.disconnect();
       } else {
         // Remove handlers but keep socket reference - caller owns it
         this.socket.removeAllListeners();
       }
-      
+
       if (!wasProvidedExternally) {
         this.socket = undefined;
       }
@@ -283,11 +291,11 @@ export class SocketIOTransport implements ChannelTransport {
    */
   async send(event: ChannelEvent): Promise<void> {
     if (!this.currentConnectionId) {
-      throw new Error('Not connected. Call connect() first.');
+      throw new Error("Not connected. Call connect() first.");
     }
 
     if (!this.isConnected || !this.socket) {
-      throw new Error('Socket.io not connected');
+      throw new Error("Socket.io not connected");
     }
 
     try {
@@ -301,9 +309,9 @@ export class SocketIOTransport implements ChannelTransport {
       };
 
       // Let server handle room routing based on event.target
-      this.socket.emit('channel-event', enrichedEvent);
+      this.socket.emit("channel-event", enrichedEvent);
     } catch (error) {
-      console.error('Failed to send event:', error);
+      console.error("Failed to send event:", error);
       throw error;
     }
   }

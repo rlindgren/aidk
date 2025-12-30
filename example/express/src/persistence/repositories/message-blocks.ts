@@ -1,11 +1,11 @@
 /**
  * Message Block Repository
- * 
+ *
  * Re-exports from shared/server for backwards compatibility.
  */
 
-import { InMemoryMessageBlockRepository, type MessageBlockEntity } from 'aidk-express';
-import { getStore } from '../database';
+import { InMemoryMessageBlockRepository, type MessageBlockEntity } from "aidk-express";
+import { getStore } from "../database";
 
 // Export implementation and types
 export { InMemoryMessageBlockRepository as MessageBlockRepository };

@@ -1,32 +1,32 @@
 /**
  * ServerClient - Direct engine access for server-side use
- * 
+ *
  * Provides the same interface pattern as frontend clients but calls
  * the engine directly without HTTP. Exposes underlying Procedures.
- * 
+ *
  * @example
  * ```typescript
  * import { createServerClient } from 'aidk';
- * 
+ *
  * // With existing engine (uses engine's configured root)
  * const client = createServerClient({ engine });
  * const result = await client.execute('Hello');
- * 
+ *
  * // With specific agent/component
  * const result = await client.execute('Hello', { agent: MyAgentComponent });
- * 
+ *
  * // Direct procedure access
  * const result = await client.procedures.execute(input, agent);
  * const { handle } = await client.procedures.execute.withHandle().call(input);
  * ```
  */
 
-import { Engine, type EngineConfig } from '../engine/engine';
-import type { EngineInput, COMInput } from '../com/types';
-import type { EngineStreamEvent } from '../engine/engine-events';
-import type { ComponentDefinition } from '../component/component';
-import { type MessageInput, normalizeMessageInput, messagesToTimeline } from './types';
-import { type JSX } from '../jsx/jsx-runtime';
+import { Engine, type EngineConfig } from "../engine/engine";
+import type { EngineInput, COMInput } from "../com/types";
+import type { EngineStreamEvent } from "../engine/engine-events";
+import type { ComponentDefinition } from "../component/component";
+import { type MessageInput, normalizeMessageInput, messagesToTimeline } from "./types";
+import { type JSX } from "../jsx/jsx-runtime";
 
 // =============================================================================
 // Types
@@ -64,7 +64,7 @@ export class ServerClient {
       this._engine = new Engine(config.engineConfig);
       this._ownsEngine = true;
     } else {
-      throw new Error('ServerClient requires either engine or engineConfig');
+      throw new Error("ServerClient requires either engine or engineConfig");
     }
   }
 
@@ -83,7 +83,10 @@ export class ServerClient {
   /**
    * Stream execution events
    */
-  async *stream(input: MessageInput, options: ExecuteOptions = {}): AsyncGenerator<EngineStreamEvent> {
+  async *stream(
+    input: MessageInput,
+    options: ExecuteOptions = {},
+  ): AsyncGenerator<EngineStreamEvent> {
     const engineInput = this.buildEngineInput(input, options);
     yield* await this._engine.stream(engineInput, options.agent);
   }
@@ -94,7 +97,7 @@ export class ServerClient {
 
   /**
    * Access underlying engine procedures directly.
-   * 
+   *
    * Use for advanced features like middleware, handles, custom context:
    * ```typescript
    * client.procedures.execute.use(myMiddleware);
@@ -130,9 +133,9 @@ export class ServerClient {
   // ===========================================================================
 
   private buildEngineInput(input: MessageInput, options: ExecuteOptions): EngineInput {
-    const messages = normalizeMessageInput(input, 'user');
+    const messages = normalizeMessageInput(input, "user");
     const timeline = messagesToTimeline(messages);
-    
+
     return {
       timeline,
       metadata: {
@@ -151,4 +154,3 @@ export class ServerClient {
 export function createServerClient(config: ServerClientConfig): ServerClient {
   return new ServerClient(config);
 }
-

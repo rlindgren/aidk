@@ -4,12 +4,12 @@ This tutorial covers Fork and Spawn—AIDK's primitives for running multiple age
 
 ## Two Primitives
 
-| Aspect | Fork | Spawn |
-|--------|------|-------|
-| **Parent Required** | Yes | No |
-| **State Inheritance** | Yes (timeline, sections, hooks, context) | No (blank slate) |
-| **waitUntilComplete** | Yes | Yes (but typically false) |
-| **Use Case** | Parallel work needing context/results | Background tasks, fire-and-forget |
+| Aspect                | Fork                                     | Spawn                             |
+| --------------------- | ---------------------------------------- | --------------------------------- |
+| **Parent Required**   | Yes                                      | No                                |
+| **State Inheritance** | Yes (timeline, sections, hooks, context) | No (blank slate)                  |
+| **waitUntilComplete** | Yes                                      | Yes (but typically false)         |
+| **Use Case**          | Parallel work needing context/results    | Background tasks, fire-and-forget |
 
 **Key difference: inheritance.** Fork creates a child that can inherit state from the parent. Spawn creates a completely independent execution with a fresh engine—a true blank slate.
 
@@ -31,7 +31,7 @@ class ResearchAgent extends Component {
 
         {/* Fork researchers in parallel */}
         <Fork
-          agent={<TopicResearcher topic="climate change" />}
+          root={<TopicResearcher topic="climate change" />}
           waitUntilComplete={true}
           onComplete={(result) => {
             this.results.set([...this.results(), result]);
@@ -39,7 +39,7 @@ class ResearchAgent extends Component {
         />
 
         <Fork
-          agent={<TopicResearcher topic="renewable energy" />}
+          root={<TopicResearcher topic="renewable energy" />}
           waitUntilComplete={true}
           onComplete={(result) => {
             this.results.set([...this.results(), result]);
@@ -62,7 +62,7 @@ class ResearchAgent extends Component {
 
 ### Fork with Children
 
-Instead of the `agent` prop, you can use children:
+Instead of the `root` prop, you can use children:
 
 ```tsx
 <Fork waitUntilComplete={true} onComplete={handleResult}>
@@ -77,8 +77,8 @@ Instead of the `agent` prop, you can use children:
 
 ```tsx
 <Fork
-  // The agent to run (or use children)
-  agent={<MyAgent />}
+  // The component to run (or use children)
+  root={<MyComponent />}
 
   // Wait for completion before continuing parent tick
   waitUntilComplete={true}
@@ -123,11 +123,11 @@ class ChatAgent extends Component {
         <System>You are a helpful assistant.</System>
 
         {/* Log every interaction in background */}
-        <Spawn agent={<AuditLogger interaction={state.current} />} />
+        <Spawn root={<AuditLogger interaction={state.current} />} />
 
         {/* Send notifications without blocking */}
         {this.shouldNotify(state) && (
-          <Spawn agent={<NotificationSender userId={context().user?.id} />} />
+          <Spawn root={<NotificationSender userId={context().user?.id} />} />
         )}
 
         <Timeline>
@@ -156,8 +156,8 @@ class ChatAgent extends Component {
 
 ```tsx
 <Spawn
-  // The agent to run (or use children)
-  agent={<BackgroundTask />}
+  // The component to run (or use children)
+  root={<BackgroundTask />}
 
   // Wait for completion (default: false)
   waitUntilComplete={false}
@@ -352,7 +352,7 @@ class DocumentProcessor extends Component {
 
             // Process in background
             <Spawn
-              agent={<DocumentAnalyzer document={doc} />}
+              root={<DocumentAnalyzer document={doc} />}
               onComplete={() => {
                 const updated = this.processingJobs().map(j =>
                   j.id === doc.id ? { ...j, status: "complete" } : j

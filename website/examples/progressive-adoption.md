@@ -8,16 +8,16 @@ The minimal starting point. Use JSX for context, keep your existing code.
 
 ::: code-group
 
-``` tsx [agent.tsx]
+```tsx [agent.tsx]
 import { System, User, Assistant, Section } from '@aidk/ai-sdk';
 
 export function SimpleAgent() {
   return (
     <>
       <System>You are a helpful math tutor.</System>
-      
+
       <User>What is 2 + 2?</User>
-      
+
       <Section audience="model">
         Show your work step by step.
       </Section>
@@ -26,7 +26,7 @@ export function SimpleAgent() {
 }
 ```
 
-``` tsx [main.ts]
+```tsx [main.ts]
 import { compile } from '@aidk/ai-sdk';
 import { generateText } from 'ai';
 import { openai } from '@ai-sdk/openai';
@@ -35,7 +35,7 @@ import { SimpleAgent } from './agent';
 async function main() {
   // Compile JSX to AI SDK format
   const compiled = await compile(<SimpleAgent />);
-  
+
   // Use your existing generateText code
   const result = await generateText({
     model: compiled.model ?? openai('gpt-4o'),
@@ -43,7 +43,7 @@ async function main() {
     tools: compiled.tools,
     system: compiled.system,
   });
-  
+
   console.log(result.text);
 }
 
@@ -53,6 +53,7 @@ main();
 :::
 
 **Key Points:**
+
 - No changes to your `generateText` call
 - JSX provides cleaner context building
 - You control everything about model execution
@@ -65,7 +66,7 @@ Add multi-tick execution while keeping control of model calls.
 
 ::: code-group
 
-``` tsx [agent.tsx]
+```tsx [agent.tsx]
 import { Component, comState, Timeline, Message } from 'aidk';
 import { Model, Tool } from '@aidk/ai-sdk';
 import { openai } from '@ai-sdk/openai';
@@ -73,24 +74,24 @@ import { calculatorTool } from './tools';
 
 export class MathAgent extends Component {
   private timeline = comState<any[]>('timeline', []);
-  
+
   onTickStart(com, state) {
     if (state.current?.timeline) {
       this.timeline.update(t => [...t, ...state.current.timeline]);
     }
   }
-  
+
   render() {
     return (
       <>
         <Model model={openai('gpt-4o-mini')} />
-        
+
         <Timeline>
           {this.timeline().map((entry, i) => (
             <Message key={i} {...entry.message} />
           ))}
         </Timeline>
-        
+
         <Tool definition={calculatorTool} />
       </>
     );
@@ -98,21 +99,21 @@ export class MathAgent extends Component {
 }
 ```
 
-``` tsx [main.ts]
+```tsx [main.ts]
 import { createCompiler } from '@aidk/ai-sdk';
 import { generateText } from 'ai';
 import { MathAgent } from './agent';
 
 async function main() {
   const compiler = createCompiler();
-  
+
   // You provide the executor
   const result = await compiler.run(
     <MathAgent />,
     [{ role: 'user', content: 'What is 15 * 23?' }],
     async (input) => {
       console.log(`Tick ${input.tick}: Calling model...`);
-      
+
       return await generateText({
         model: input.model ?? openai('gpt-4o'),
         messages: input.messages,
@@ -121,14 +122,14 @@ async function main() {
       });
     }
   );
-  
+
   console.log(result.text);
 }
 
 main();
 ```
 
-``` tsx [tools.ts]
+```tsx [tools.ts]
 import { createTool } from 'aidk';
 import { z } from 'zod';
 
@@ -148,6 +149,7 @@ export const calculatorTool = createTool({
 :::
 
 **Key Points:**
+
 - AIDK handles multi-tick loop
 - Tools automatically executed
 - You control each model call
@@ -161,7 +163,7 @@ Let AIDK handle everything.
 
 ::: code-group
 
-``` tsx [agent.tsx]
+```tsx [agent.tsx]
 import { Component, comState, Timeline, Message, Section } from 'aidk';
 import { Model, Tool } from '@aidk/ai-sdk';
 import { openai } from '@ai-sdk/openai';
@@ -169,27 +171,27 @@ import { openai } from '@ai-sdk/openai';
 export class TaskAgent extends Component {
   private timeline = comState<any[]>('timeline', []);
   private taskCount = comState<number>('tasks', 0);
-  
+
   onTickStart(com, state) {
     if (state.current?.timeline) {
       this.timeline.update(t => [...t, ...state.current.timeline]);
     }
   }
-  
+
   render(com, state) {
     return (
       <>
-        <Model 
+        <Model
           model={openai('gpt-4o-mini')}
           temperature={0.7}
         />
-        
+
         <Timeline>
           {this.timeline().map((entry, i) => (
             <Message key={i} {...entry.message} />
           ))}
         </Timeline>
-        
+
         <Section audience="model">
           <H2>Task Management</H2>
           <Paragraph>Total tasks: {this.taskCount()}</Paragraph>
@@ -200,7 +202,7 @@ export class TaskAgent extends Component {
 }
 ```
 
-``` tsx [main.ts]
+```tsx [main.ts]
 import { createCompiler } from '@aidk/ai-sdk';
 import { openai } from '@ai-sdk/openai';
 import { TaskAgent } from './agent';
@@ -210,13 +212,13 @@ async function main() {
     model: openai('gpt-4o-mini'),
     temperature: 0.7,
   });
-  
+
   // No executor needed
   const result = await compiler.run(
     <TaskAgent />,
     [{ role: 'user', content: 'Add a task: Buy groceries' }]
   );
-  
+
   console.log(result.text);
 }
 
@@ -226,6 +228,7 @@ main();
 :::
 
 **Key Points:**
+
 - Minimal boilerplate
 - Model configured once
 - Components can override model per-tick
@@ -269,6 +272,7 @@ for await (const chunk of fullStream) {
 ```
 
 **Key Points:**
+
 - Exact same API as AI SDK
 - JSX is just the first argument
 - Works with all AI SDK options
@@ -282,7 +286,7 @@ Production-ready backend with full features.
 
 ::: code-group
 
-``` tsx [agent.tsx]
+```tsx [agent.tsx]
 import { Component, comState, Context } from 'aidk';
 import { Model, Tool } from '@aidk/ai-sdk';
 import { openai } from '@ai-sdk/openai';
@@ -290,40 +294,40 @@ import { openai } from '@ai-sdk/openai';
 export class CustomerAgent extends Component {
   private timeline = comState<any[]>('timeline', []);
   private customer = comState<any>('customer', null);
-  
+
   async onMount(com) {
     const ctx = Context.get();
     const customer = await db.customers.findById(ctx.user.id);
     this.customer.set(customer);
   }
-  
+
   onTickStart(com, state) {
     if (state.current?.timeline) {
       this.timeline.update(t => [...t, ...state.current.timeline]);
     }
   }
-  
+
   render() {
     const ctx = Context.get();
     const customer = this.customer();
-    
+
     return (
       <>
         <Model model={openai('gpt-4o')} />
-        
+
         <Section audience="model">
           <H2>Customer Context</H2>
           <Paragraph>Name: {customer?.name}</Paragraph>
           <Paragraph>Tier: {customer?.tier}</Paragraph>
           <Paragraph>Support level: {ctx.metadata.support_tier}</Paragraph>
         </Section>
-        
+
         <Timeline>
           {this.timeline().map((entry, i) => (
             <Message key={i} {...entry.message} />
           ))}
         </Timeline>
-        
+
         {customer?.tier === 'premium' && <RefundTool />}
         <SearchOrdersTool />
       </>
@@ -332,7 +336,7 @@ export class CustomerAgent extends Component {
 }
 ```
 
-``` tsx [server.ts]
+```tsx [server.ts]
 import express from 'express';
 import { createEngine } from 'aidk';
 import { createSSEHandler } from 'aidk-express';
@@ -365,30 +369,30 @@ app.post('/api/agent/stream', createSSEHandler({
 app.listen(3000);
 ```
 
-``` tsx [middleware.ts]
+```tsx [middleware.ts]
 import { Context } from 'aidk';
 
 export const loggingMiddleware = async (args, envelope, next) => {
   const ctx = Context.get();
   console.log(`[${ctx.user.id}] Execution starting`);
-  
+
   const start = Date.now();
   const result = await next();
   const duration = Date.now() - start;
-  
+
   console.log(`[${ctx.user.id}] Completed in ${duration}ms`);
   return result;
 };
 
 export const tokenCountingMiddleware = async (args, envelope, next) => {
   const result = await next();
-  
+
   await db.metrics.create({
     userId: Context.get().user.id,
     inputTokens: result.usage.promptTokens,
     outputTokens: result.usage.completionTokens,
   });
-  
+
   return result;
 };
 ```
@@ -396,6 +400,7 @@ export const tokenCountingMiddleware = async (args, envelope, next) => {
 :::
 
 **Key Points:**
+
 - Full production features
 - Middleware at every level
 - Context available everywhere
@@ -407,27 +412,16 @@ export const tokenCountingMiddleware = async (args, envelope, next) => {
 
 ## Choosing Your Level
 
-| Level | Use When | Complexity | Features |
-|-------|----------|------------|----------|
-| 1: compile() | Trying it out, minimal changes | ⭐ | JSX only |
-| 2: run() + executor | Need control + multi-tick | ⭐⭐ | + State, tools |
-| 3: run() managed | Building from scratch | ⭐⭐ | + Auto-execution |
-| 4: generateText() | Want simplest API | ⭐ | Drop-in replacement |
-| 5: Full Engine | Production apps | ⭐⭐⭐⭐ | Everything |
+| Level               | Use When                       | Complexity | Features            |
+| ------------------- | ------------------------------ | ---------- | ------------------- |
+| 1: compile()        | Trying it out, minimal changes | ⭐         | JSX only            |
+| 2: run() + executor | Need control + multi-tick      | ⭐⭐       | + State, tools      |
+| 3: run() managed    | Building from scratch          | ⭐⭐       | + Auto-execution    |
+| 4: generateText()   | Want simplest API              | ⭐         | Drop-in replacement |
+| 5: Full Engine      | Production apps                | ⭐⭐⭐⭐   | Everything          |
 
 ## Next Steps
 
 - [Progressive Adoption Guide](/docs/progressive-adoption) - Detailed guide
 - [Getting Started](/docs/getting-started) - Build your first agent
 - [Full Stack Example](/examples/fullstack) - Complete application
-
-
-
-
-
-
-
-
-
-
-

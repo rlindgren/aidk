@@ -1,13 +1,13 @@
-import { Component, OnInit, DestroyRef, inject, Input } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { ChannelsService, ExecutionService, ChannelEvent } from 'aidk-angular';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Component, OnInit, DestroyRef, inject, Input } from "@angular/core";
+import { CommonModule } from "@angular/common";
+import { FormsModule } from "@angular/forms";
+import { ChannelsService, ExecutionService, ChannelEvent } from "aidk-angular";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 
 interface ScratchpadNote {
   id: string;
   text: string;
-  source: 'model' | 'user';
+  source: "model" | "user";
   createdAt?: string;
 }
 
@@ -18,7 +18,7 @@ interface ScratchpadResponse {
 }
 
 @Component({
-  selector: 'app-scratchpad',
+  selector: "app-scratchpad",
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
@@ -71,7 +71,8 @@ interface ScratchpadResponse {
       }
     </div>
   `,
-  styles: [`
+  styles: [
+    `
     .scratchpad {
       background: rgba(255, 255, 255, 0.03);
       border-bottom: 1px solid rgba(255, 255, 255, 0.08);
@@ -261,19 +262,20 @@ interface ScratchpadResponse {
     .clear-btn:hover {
       color: rgba(255, 255, 255, 0.5);
     }
-  `],
+  `,
+  ],
 })
 export class ScratchpadComponent implements OnInit {
   notes: ScratchpadNote[] = [];
   isLoading = false;
   isExpanded = true;
-  newNoteText = '';
+  newNoteText = "";
 
   private destroyRef = inject(DestroyRef);
 
   constructor(
     private channelsService: ChannelsService,
-    private executionService: ExecutionService
+    private executionService: ExecutionService,
   ) {}
 
   ngOnInit(): void {
@@ -282,10 +284,10 @@ export class ScratchpadComponent implements OnInit {
 
     // Subscribe to scratchpad channel
     this.channelsService
-      .subscribe('scratchpad')
+      .subscribe("scratchpad")
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((event: ChannelEvent) => {
-        if (event.type === 'state_changed') {
+        if (event.type === "state_changed") {
           const payload = event.payload as { notes?: ScratchpadNote[]; threadId?: string };
           // Only update if it's for our thread
           if (payload?.notes) {
@@ -303,8 +305,8 @@ export class ScratchpadComponent implements OnInit {
       const threadId = this.executionService.threadId;
       if (!threadId) return;
       const params = new URLSearchParams();
-      params.set('threadId', threadId);
-      
+      params.set("threadId", threadId);
+
       const response = await fetch(`/api/notes?${params}`);
       if (response.ok) {
         const data = await response.json();
@@ -313,7 +315,7 @@ export class ScratchpadComponent implements OnInit {
         }
       }
     } catch (err) {
-      console.error('Failed to fetch initial notes:', err);
+      console.error("Failed to fetch initial notes:", err);
     }
   }
 
@@ -326,10 +328,10 @@ export class ScratchpadComponent implements OnInit {
 
     this.isLoading = true;
     const text = this.newNoteText.trim();
-    this.newNoteText = '';
+    this.newNoteText = "";
 
     this.channelsService
-      .publish<ScratchpadResponse>('scratchpad', 'add_note', {
+      .publish<ScratchpadResponse>("scratchpad", "add_note", {
         text,
         threadId: this.executionService.threadId,
       })
@@ -341,7 +343,7 @@ export class ScratchpadComponent implements OnInit {
           }
         },
         error: (err: Error) => {
-          console.error('Failed to add note:', err);
+          console.error("Failed to add note:", err);
         },
         complete: () => (this.isLoading = false),
       });
@@ -352,7 +354,7 @@ export class ScratchpadComponent implements OnInit {
     this.notes = this.notes.filter((n) => n.id !== note.id);
 
     this.channelsService
-      .publish<ScratchpadResponse>('scratchpad', 'remove_note', {
+      .publish<ScratchpadResponse>("scratchpad", "remove_note", {
         note_id: note.id,
         threadId: this.executionService.threadId,
       })
@@ -365,7 +367,7 @@ export class ScratchpadComponent implements OnInit {
         },
         error: (err: Error) => {
           // Revert on error - would need to store old state
-          console.error('Failed to remove note:', err);
+          console.error("Failed to remove note:", err);
         },
       });
   }
@@ -376,7 +378,7 @@ export class ScratchpadComponent implements OnInit {
     this.notes = [];
 
     this.channelsService
-      .publish<ScratchpadResponse>('scratchpad', 'clear_notes', {
+      .publish<ScratchpadResponse>("scratchpad", "clear_notes", {
         threadId: this.executionService.threadId,
       })
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -389,9 +391,8 @@ export class ScratchpadComponent implements OnInit {
         error: (err: Error) => {
           // Revert on error
           this.notes = oldNotes;
-          console.error('Failed to clear notes:', err);
+          console.error("Failed to clear notes:", err);
         },
       });
   }
 }
-

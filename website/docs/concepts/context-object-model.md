@@ -216,12 +216,12 @@ const value = watch<string>('key');
 
 ### Signal Types Comparison
 
-| Type | Scope | Persists? | Reactive? | Use Case |
-|------|-------|-----------|-----------|----------|
-| `signal()` | Component | Yes | Yes | Local component state |
-| `comState()` | COM | Yes | Yes | Shared state across components |
-| `watch()` | COM | N/A | Yes | Read-only observation |
-| `computed()` | Derived | Yes | Yes | Derived values |
+| Type         | Scope     | Persists? | Reactive? | Use Case                       |
+| ------------ | --------- | --------- | --------- | ------------------------------ |
+| `signal()`   | Component | Yes       | Yes       | Local component state          |
+| `comState()` | COM       | Yes       | Yes       | Shared state across components |
+| `watch()`    | COM       | N/A       | Yes       | Read-only observation          |
+| `computed()` | Derived   | Yes       | Yes       | Derived values                 |
 
 ## COM Events
 
@@ -307,14 +307,14 @@ class MyAgent extends Component {
 
 If you understand the DOM, you understand the COM:
 
-| DOM | COM |
-|-----|-----|
-| HTML elements | Sections, Messages, Tools |
-| Document tree | Context tree |
-| `getElementById` | `comState(key)` / `watch(key)` |
-| Event listeners | `com.on(event, handler)` |
-| `innerHTML` | Rendered context |
-| Virtual DOM diffing | Fiber reconciliation |
+| DOM                 | COM                            |
+| ------------------- | ------------------------------ |
+| HTML elements       | Sections, Messages, Tools      |
+| Document tree       | Context tree                   |
+| `getElementById`    | `comState(key)` / `watch(key)` |
+| Event listeners     | `com.on(event, handler)`       |
+| `innerHTML`         | Rendered context               |
+| Virtual DOM diffing | Fiber reconciliation           |
 
 The key difference: the DOM renders to pixels. The COM renders to model context.
 

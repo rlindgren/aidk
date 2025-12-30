@@ -1,17 +1,22 @@
 /**
  * MCP Tool
- * 
+ *
  * Wraps an MCP server tool as an ExecutableTool.
  * The tool forwards execution to the MCP server via MCPClient.
  */
 
-import { type ToolMetadata, type ExecutableTool, type ToolHandler, ToolExecutionType } from '../tool/tool';
-import type { ContentBlock } from 'aidk-shared';
-import { MCPClient } from './client';
-import type { MCPToolDefinition } from './types';
-import { z } from 'zod';
-import type { Procedure } from 'aidk-kernel';
-import { createEngineProcedure } from '../procedure';
+import {
+  type ToolMetadata,
+  type ExecutableTool,
+  type ToolHandler,
+  ToolExecutionType,
+} from "../tool/tool";
+import type { ContentBlock } from "aidk-shared";
+import { MCPClient } from "./client";
+import type { MCPToolDefinition } from "./types";
+import { z } from "zod";
+import type { Procedure } from "aidk-kernel";
+import { createEngineProcedure } from "../procedure";
 
 // ============================================================================
 // Schema Conversion
@@ -21,7 +26,7 @@ import { createEngineProcedure } from '../procedure';
  * Converts MCP JSON Schema to Zod schema.
  * Basic conversion - supports common types.
  */
-export function mcpSchemaToZod(schema: MCPToolDefinition['inputSchema']): z.ZodSchema {
+export function mcpSchemaToZod(schema: MCPToolDefinition["inputSchema"]): z.ZodSchema {
   const properties = schema.properties || {};
   const required = schema.required || [];
   const shape: Record<string, z.ZodTypeAny> = {};
@@ -30,20 +35,20 @@ export function mcpSchemaToZod(schema: MCPToolDefinition['inputSchema']): z.ZodS
     let zType: z.ZodTypeAny;
 
     switch (prop.type) {
-      case 'string':
+      case "string":
         zType = z.string();
         break;
-      case 'number':
-      case 'integer':
+      case "number":
+      case "integer":
         zType = z.number();
         break;
-      case 'boolean':
+      case "boolean":
         zType = z.boolean();
         break;
-      case 'array':
+      case "array":
         zType = z.array(z.any());
         break;
-      case 'object':
+      case "object":
         zType = z.record(z.string(), z.any());
         break;
       default:
@@ -68,18 +73,18 @@ export function mcpSchemaToZod(schema: MCPToolDefinition['inputSchema']): z.ZodS
  * Normalize MCP tool result to ContentBlock[].
  */
 export function normalizeResult(result: any): ContentBlock[] {
-  if (typeof result === 'string') {
-    return [{ type: 'text', text: result }];
+  if (typeof result === "string") {
+    return [{ type: "text", text: result }];
   }
 
-  if (result && typeof result === 'object') {
+  if (result && typeof result === "object") {
     if (Array.isArray(result.content)) {
       return result.content as ContentBlock[];
     }
-    return [{ type: 'text', text: JSON.stringify(result, null, 2) }];
+    return [{ type: "text", text: JSON.stringify(result, null, 2) }];
   }
 
-  return [{ type: 'text', text: String(result) }];
+  return [{ type: "text", text: String(result) }];
 }
 
 // ============================================================================
@@ -92,28 +97,30 @@ export function normalizeResult(result: any): ContentBlock[] {
 export interface MCPToolConfig {
   serverUrl?: string;
   serverName?: string;
-  transport?: 'stdio' | 'sse' | 'websocket';
+  transport?: "stdio" | "sse" | "websocket";
   [key: string]: any;
 }
 
 /**
  * MCPTool wraps an MCP server tool as an ExecutableTool.
- * 
+ *
  * This class is used internally by MCP creation functions.
  * For most use cases, prefer `createMCPTool()` or `discoverMCPTools()`.
- * 
+ *
  * @example Direct usage (advanced)
  * ```typescript
  * const tool = new MCPTool(mcpClient, 'server-name', toolDefinition, mcpConfig);
- * 
+ *
  * // Register with COM
  * com.addTool(tool);
- * 
+ *
  * // Or execute directly
  * const result = await tool.run({ path: '/file.txt' });
  * ```
  */
-export class MCPTool<THandler extends ToolHandler = ToolHandler> implements ExecutableTool<THandler> {
+export class MCPTool<
+  THandler extends ToolHandler = ToolHandler,
+> implements ExecutableTool<THandler> {
   public readonly metadata: ToolMetadata<Parameters<THandler>[0]>;
   public readonly run: Procedure<THandler>;
 
@@ -121,7 +128,7 @@ export class MCPTool<THandler extends ToolHandler = ToolHandler> implements Exec
     private mcpClient: MCPClient,
     private serverName: string,
     mcpToolDefinition: MCPToolDefinition,
-    mcpConfig?: MCPToolConfig
+    mcpConfig?: MCPToolConfig,
   ) {
     // Convert MCP schema to Zod
     const zodSchema = mcpSchemaToZod(mcpToolDefinition.inputSchema);
@@ -137,12 +144,12 @@ export class MCPTool<THandler extends ToolHandler = ToolHandler> implements Exec
 
     // Create procedure that forwards to MCP server
     this.run = createEngineProcedure<THandler>(
-      { 
-        name: 'tool:run', // Low cardinality span name (same as regular tools)
+      {
+        name: "tool:run", // Low cardinality span name (same as regular tools)
         metadata: {
-          type: 'mcp',
+          type: "mcp",
           id: mcpToolDefinition.name,
-          operation: 'run',
+          operation: "run",
           server: this.serverName,
         },
       },
@@ -150,10 +157,10 @@ export class MCPTool<THandler extends ToolHandler = ToolHandler> implements Exec
         const result = await this.mcpClient.callTool(
           this.serverName,
           mcpToolDefinition.name,
-          input
+          input,
         );
         return normalizeResult(result);
-      }) as THandler
+      }) as THandler,
     );
   }
 }

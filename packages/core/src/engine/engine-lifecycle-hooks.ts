@@ -7,11 +7,7 @@ import type { ExecutionHandle } from "./execution-types";
 import type { TickState } from "../component/component";
 import type { EngineResponse } from "./engine-response";
 import type { CompiledStructure } from "../compiler/types";
-import type {
-  AgentToolCall,
-  AgentToolResult,
-  ToolConfirmationResult,
-} from "../tool/tool";
+import type { AgentToolCall, AgentToolResult, ToolConfirmationResult } from "../tool/tool";
 
 export type EngineLifecycleHookName =
   | "onInit"
@@ -28,51 +24,38 @@ export type EngineLifecycleHookName =
 
 export type EngineLifecycleSelector = undefined; // Global (all engines)
 
-export type EngineLifecycleHookArgs<T extends EngineLifecycleHookName> =
-  T extends "onInit"
-    ? [engine: Engine]
-    : T extends "onShutdown"
-      ? [engine: Engine, reason?: string]
-      : T extends "onDestroy"
-        ? [engine: Engine]
-        : T extends "onExecutionStart"
-          ? [
-              input: EngineInput,
-              agent?: ComponentDefinition,
-              handle?: ExecutionHandle,
-            ]
-          : T extends "onExecutionEnd"
-            ? [output: COMInput, handle?: ExecutionHandle]
-            : T extends "onExecutionError"
-              ? [error: Error, handle?: ExecutionHandle]
-              : T extends "onTickStart"
-                ? [tick: number, state: TickState, handle?: ExecutionHandle]
-                : T extends "onTickEnd"
-                  ? [
-                      tick: number,
-                      state: TickState,
-                      response: EngineResponse,
-                      handle?: ExecutionHandle,
-                    ]
-                  : T extends "onAfterCompile"
+export type EngineLifecycleHookArgs<T extends EngineLifecycleHookName> = T extends "onInit"
+  ? [engine: Engine]
+  : T extends "onShutdown"
+    ? [engine: Engine, reason?: string]
+    : T extends "onDestroy"
+      ? [engine: Engine]
+      : T extends "onExecutionStart"
+        ? [input: EngineInput, agent?: ComponentDefinition, handle?: ExecutionHandle]
+        : T extends "onExecutionEnd"
+          ? [output: COMInput, handle?: ExecutionHandle]
+          : T extends "onExecutionError"
+            ? [error: Error, handle?: ExecutionHandle]
+            : T extends "onTickStart"
+              ? [tick: number, state: TickState, handle?: ExecutionHandle]
+              : T extends "onTickEnd"
+                ? [
+                    tick: number,
+                    state: TickState,
+                    response: EngineResponse,
+                    handle?: ExecutionHandle,
+                  ]
+                : T extends "onAfterCompile"
+                  ? [compiled: CompiledStructure, state: TickState, handle?: ExecutionHandle]
+                  : T extends "onToolConfirmation"
                     ? [
-                        compiled: CompiledStructure,
-                        state: TickState,
+                        confirmation: ToolConfirmationResult,
+                        call: AgentToolCall,
                         handle?: ExecutionHandle,
                       ]
-                    : T extends "onToolConfirmation"
-                      ? [
-                          confirmation: ToolConfirmationResult,
-                          call: AgentToolCall,
-                          handle?: ExecutionHandle,
-                        ]
-                      : T extends "onClientToolResult"
-                        ? [
-                            result: AgentToolResult,
-                            call: AgentToolCall,
-                            handle?: ExecutionHandle,
-                          ]
-                        : never;
+                    : T extends "onClientToolResult"
+                      ? [result: AgentToolResult, call: AgentToolCall, handle?: ExecutionHandle]
+                      : never;
 
 /**
  * Engine lifecycle hook - a Procedure that performs side effects.
@@ -112,9 +95,7 @@ export class EngineLifecycleHookRegistry extends BaseHookRegistry<
    * Get all middleware for a lifecycle hook.
    * Currently only supports global hooks (all engines).
    */
-  getMiddleware<T extends EngineLifecycleHookName>(
-    hookName: T,
-  ): EngineLifecycleHook<T>[] {
+  getMiddleware<T extends EngineLifecycleHookName>(hookName: T): EngineLifecycleHook<T>[] {
     return this.registry.getMiddleware(
       hookName,
       () => [], // No selectors for now - only global hooks

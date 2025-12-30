@@ -1,47 +1,47 @@
-import { COM } from './object-model';
-import type { Message } from '../content';
-import type { ExecutableTool } from '../tool/tool';
-import type { COMTimelineEntry, COMSection } from './types';
-import { createTool } from '../tool/tool';
-import { z } from 'zod';
+import { COM } from "./object-model";
+import type { Message } from "../content";
+import type { ExecutableTool } from "../tool/tool";
+import type { COMTimelineEntry, COMSection } from "./types";
+import { createTool } from "../tool/tool";
+import { z } from "zod";
 
-describe('COM EventEmitter', () => {
+describe("COM EventEmitter", () => {
   let com: COM;
 
   beforeEach(() => {
     com = new COM();
   });
 
-  describe('EventEmitter inheritance', () => {
-    it('should extend EventEmitter', () => {
-      expect(com).toBeInstanceOf(require('node:events').EventEmitter);
+  describe("EventEmitter inheritance", () => {
+    it("should extend EventEmitter", () => {
+      expect(com).toBeInstanceOf(require("node:events").EventEmitter);
     });
 
-    it('should have type-safe on method', () => {
+    it("should have type-safe on method", () => {
       const handler = jest.fn();
-      com.on('message:added', handler);
-      expect(typeof com.on).toBe('function');
+      com.on("message:added", handler);
+      expect(typeof com.on).toBe("function");
     });
 
-    it('should have type-safe once method', () => {
+    it("should have type-safe once method", () => {
       const handler = jest.fn();
-      com.once('message:added', handler);
-      expect(typeof com.once).toBe('function');
+      com.once("message:added", handler);
+      expect(typeof com.once).toBe("function");
     });
 
-    it('should have type-safe emit method', () => {
-      expect(typeof com.emit).toBe('function');
+    it("should have type-safe emit method", () => {
+      expect(typeof com.emit).toBe("function");
     });
   });
 
-  describe('message:added event', () => {
-    it('should emit message:added when addMessage is called', () => {
+  describe("message:added event", () => {
+    it("should emit message:added when addMessage is called", () => {
       const handler = jest.fn();
-      com.on('message:added', handler);
+      com.on("message:added", handler);
 
       const message: Message = {
-        role: 'user',
-        content: [{ type: 'text', text: 'Hello' }],
+        role: "user",
+        content: [{ type: "text", text: "Hello" }],
       };
 
       com.addMessage(message);
@@ -50,18 +50,18 @@ describe('COM EventEmitter', () => {
       expect(handler).toHaveBeenCalledWith(message, {});
     });
 
-    it('should emit message:added with options', () => {
+    it("should emit message:added with options", () => {
       const handler = jest.fn();
-      com.on('message:added', handler);
+      com.on("message:added", handler);
 
       const message: Message = {
-        role: 'assistant',
-        content: [{ type: 'text', text: 'Hi there' }],
+        role: "assistant",
+        content: [{ type: "text", text: "Hi there" }],
       };
       const options = {
-        tags: ['important'],
-        visibility: 'model' as const,
-        metadata: { source: 'test' },
+        tags: ["important"],
+        visibility: "model" as const,
+        metadata: { source: "test" },
       };
 
       com.addMessage(message, options);
@@ -69,17 +69,17 @@ describe('COM EventEmitter', () => {
       expect(handler).toHaveBeenCalledWith(message, options);
     });
 
-    it('should emit message:added for system message consolidation', () => {
+    it("should emit message:added for system message consolidation", () => {
       const handler = jest.fn();
-      com.on('message:added', handler);
+      com.on("message:added", handler);
 
       const message1: Message = {
-        role: 'system',
-        content: [{ type: 'text', text: 'First' }],
+        role: "system",
+        content: [{ type: "text", text: "First" }],
       };
       const message2: Message = {
-        role: 'system',
-        content: [{ type: 'text', text: 'Second' }],
+        role: "system",
+        content: [{ type: "text", text: "Second" }],
       };
 
       com.addMessage(message1);
@@ -90,32 +90,32 @@ describe('COM EventEmitter', () => {
     });
   });
 
-  describe('timeline:modified event', () => {
-    it('should emit timeline:modified when addTimelineEntry is called', () => {
+  describe("timeline:modified event", () => {
+    it("should emit timeline:modified when addTimelineEntry is called", () => {
       const handler = jest.fn();
-      com.on('timeline:modified', handler);
+      com.on("timeline:modified", handler);
 
       const entry: COMTimelineEntry = {
-        kind: 'message',
+        kind: "message",
         message: {
-          role: 'user',
-          content: [{ type: 'text', text: 'Test' }],
+          role: "user",
+          content: [{ type: "text", text: "Test" }],
         },
       };
 
       com.addTimelineEntry(entry);
 
       expect(handler).toHaveBeenCalledTimes(1);
-      expect(handler).toHaveBeenCalledWith(entry, 'add');
+      expect(handler).toHaveBeenCalledWith(entry, "add");
     });
 
-    it('should emit timeline:modified when addMessage calls addTimelineEntry', () => {
+    it("should emit timeline:modified when addMessage calls addTimelineEntry", () => {
       const handler = jest.fn();
-      com.on('timeline:modified', handler);
+      com.on("timeline:modified", handler);
 
       const message: Message = {
-        role: 'user',
-        content: [{ type: 'text', text: 'Hello' }],
+        role: "user",
+        content: [{ type: "text", text: "Hello" }],
       };
 
       com.addMessage(message);
@@ -125,14 +125,14 @@ describe('COM EventEmitter', () => {
     });
   });
 
-  describe('tool:registered event', () => {
-    it('should emit tool:registered when addTool is called', () => {
+  describe("tool:registered event", () => {
+    it("should emit tool:registered when addTool is called", () => {
       const handler = jest.fn();
-      com.on('tool:registered', handler);
+      com.on("tool:registered", handler);
 
       const mockTool = createTool({
-        name: 'test-tool',
-        description: 'Test tool',
+        name: "test-tool",
+        description: "Test tool",
         parameters: z.object({ input: z.string().optional() }),
         handler: async (_input: { input?: string }) => [],
       });
@@ -143,20 +143,20 @@ describe('COM EventEmitter', () => {
       expect(handler).toHaveBeenCalledWith(mockTool);
     });
 
-    it('should not emit tool:registered if tool has no name', () => {
+    it("should not emit tool:registered if tool has no name", () => {
       const handler = jest.fn();
-      com.on('tool:registered', handler);
+      com.on("tool:registered", handler);
 
       // Create a tool with empty name by directly manipulating metadata
       const mockTool = createTool({
-        name: 'valid-tool',
-        description: 'Test tool',
+        name: "valid-tool",
+        description: "Test tool",
         parameters: z.object({ input: z.string().optional() }),
         handler: async (_input: { input?: string }) => [],
       });
-      
+
       // Override name to empty string (this shouldn't happen in practice)
-      (mockTool.metadata as any).name = '';
+      (mockTool.metadata as any).name = "";
 
       com.addTool(mockTool);
 
@@ -164,79 +164,79 @@ describe('COM EventEmitter', () => {
     });
   });
 
-  describe('tool:removed event', () => {
-    it('should emit tool:removed when removeTool is called', () => {
+  describe("tool:removed event", () => {
+    it("should emit tool:removed when removeTool is called", () => {
       const handler = jest.fn();
-      com.on('tool:removed', handler);
+      com.on("tool:removed", handler);
 
       const mockTool = createTool({
-        name: 'test-tool',
-        description: 'Test tool',
+        name: "test-tool",
+        description: "Test tool",
         parameters: z.object({ input: z.string().optional() }),
         handler: async (_input: { input?: string }) => [],
       });
 
       com.addTool(mockTool);
-      com.removeTool('test-tool');
+      com.removeTool("test-tool");
 
       expect(handler).toHaveBeenCalledTimes(1);
-      expect(handler).toHaveBeenCalledWith('test-tool');
+      expect(handler).toHaveBeenCalledWith("test-tool");
     });
 
-    it('should not emit tool:removed if tool does not exist', () => {
+    it("should not emit tool:removed if tool does not exist", () => {
       const handler = jest.fn();
-      com.on('tool:removed', handler);
+      com.on("tool:removed", handler);
 
-      com.removeTool('non-existent-tool');
+      com.removeTool("non-existent-tool");
 
       expect(handler).not.toHaveBeenCalled();
     });
   });
 
-  describe('state:changed event', () => {
-    it('should emit state:changed when setState is called', () => {
+  describe("state:changed event", () => {
+    it("should emit state:changed when setState is called", () => {
       const handler = jest.fn();
-      com.on('state:changed', handler);
+      com.on("state:changed", handler);
 
-      com.setState('testKey', 'testValue');
+      com.setState("testKey", "testValue");
 
       expect(handler).toHaveBeenCalledTimes(1);
-      expect(handler).toHaveBeenCalledWith('testKey', 'testValue', undefined);
+      expect(handler).toHaveBeenCalledWith("testKey", "testValue", undefined);
     });
 
-    it('should emit state:changed with previous value', () => {
+    it("should emit state:changed with previous value", () => {
       const handler = jest.fn();
-      com.on('state:changed', handler);
+      com.on("state:changed", handler);
 
-      com.setState('testKey', 'firstValue');
-      com.setState('testKey', 'secondValue');
+      com.setState("testKey", "firstValue");
+      com.setState("testKey", "secondValue");
 
       expect(handler).toHaveBeenCalledTimes(2);
-      expect(handler).toHaveBeenNthCalledWith(1, 'testKey', 'firstValue', undefined);
-      expect(handler).toHaveBeenNthCalledWith(2, 'testKey', 'secondValue', 'firstValue');
+      expect(handler).toHaveBeenNthCalledWith(1, "testKey", "firstValue", undefined);
+      expect(handler).toHaveBeenNthCalledWith(2, "testKey", "secondValue", "firstValue");
     });
 
-    it('should emit state:changed for each key in setStatePartial', () => {
+    it("should emit state:changed for each key in setStatePartial", () => {
       const handler = jest.fn();
-      com.on('state:changed', handler);
+      com.on("state:changed", handler);
 
       com.setStatePartial({
-        key1: 'value1',
-        key2: 'value2',
-        key3: 'value3',
+        key1: "value1",
+        key2: "value2",
+        key3: "value3",
       });
 
       expect(handler).toHaveBeenCalledTimes(3);
-      expect(handler).toHaveBeenCalledWith('key1', 'value1', undefined);
-      expect(handler).toHaveBeenCalledWith('key2', 'value2', undefined);
-      expect(handler).toHaveBeenCalledWith('key3', 'value3', undefined);
+      expect(handler).toHaveBeenCalledWith("key1", "value1", undefined);
+      expect(handler).toHaveBeenCalledWith("key2", "value2", undefined);
+      expect(handler).toHaveBeenCalledWith("key3", "value3", undefined);
     });
   });
 
-  describe('state:cleared event', () => {
-    it('should emit state:cleared when clear is called', () => {
+  describe("state:cleared event", () => {
+    it("should emit state:cleared when clear is called", () => {
       const handler = jest.fn();
-      com.on('state:cleared', handler);
+      com.on("state:cleared", handler);
 
       com.clear();
 
@@ -244,9 +244,9 @@ describe('COM EventEmitter', () => {
       expect(handler).toHaveBeenCalledWith();
     });
 
-    it('should not remove event listeners when clear is called', () => {
+    it("should not remove event listeners when clear is called", () => {
       const handler = jest.fn();
-      com.on('state:cleared', handler);
+      com.on("state:cleared", handler);
 
       com.clear();
       com.clear();
@@ -256,23 +256,23 @@ describe('COM EventEmitter', () => {
     });
   });
 
-  describe('model:changed event', () => {
-    it('should emit model:changed when setModel is called', () => {
+  describe("model:changed event", () => {
+    it("should emit model:changed when setModel is called", () => {
       const handler = jest.fn();
-      com.on('model:changed', handler);
+      com.on("model:changed", handler);
 
-      const mockModel = { id: 'test-model' } as any;
+      const mockModel = { id: "test-model" } as any;
       com.setModel(mockModel);
 
       expect(handler).toHaveBeenCalledTimes(1);
       expect(handler).toHaveBeenCalledWith(mockModel);
     });
 
-    it('should emit model:changed with undefined when clearing model', () => {
+    it("should emit model:changed with undefined when clearing model", () => {
       const handler = jest.fn();
-      com.on('model:changed', handler);
+      com.on("model:changed", handler);
 
-      com.setModel('test-model');
+      com.setModel("test-model");
       com.setModel(undefined);
 
       expect(handler).toHaveBeenCalledTimes(2);
@@ -280,10 +280,10 @@ describe('COM EventEmitter', () => {
     });
   });
 
-  describe('model:unset event', () => {
-    it('should emit model:unset when unsetModel is called', () => {
+  describe("model:unset event", () => {
+    it("should emit model:unset when unsetModel is called", () => {
       const handler = jest.fn();
-      com.on('model:unset', handler);
+      com.on("model:unset", handler);
 
       com.unsetModel();
 
@@ -292,159 +292,163 @@ describe('COM EventEmitter', () => {
     });
   });
 
-  describe('section:updated event', () => {
+  describe("section:updated event", () => {
     it('should emit section:updated with action "add" when new section is added', () => {
       const handler = jest.fn();
-      com.on('section:updated', handler);
+      com.on("section:updated", handler);
 
       const section: COMSection = {
-        id: 'test-section',
-        content: 'Test content',
+        id: "test-section",
+        content: "Test content",
       };
 
       com.addSection(section);
 
       expect(handler).toHaveBeenCalledTimes(1);
-      expect(handler).toHaveBeenCalledWith(section, 'add');
+      expect(handler).toHaveBeenCalledWith(section, "add");
     });
 
     it('should emit section:updated with action "update" when existing section is updated', () => {
       const handler = jest.fn();
-      com.on('section:updated', handler);
+      com.on("section:updated", handler);
 
       const section1: COMSection = {
-        id: 'test-section',
-        content: 'First content',
+        id: "test-section",
+        content: "First content",
       };
       const section2: COMSection = {
-        id: 'test-section',
-        content: 'Second content',
+        id: "test-section",
+        content: "Second content",
       };
 
       com.addSection(section1);
       com.addSection(section2);
 
       expect(handler).toHaveBeenCalledTimes(2);
-      expect(handler).toHaveBeenNthCalledWith(1, section1, 'add');
-      expect(handler).toHaveBeenNthCalledWith(2, expect.objectContaining({ id: 'test-section' }), 'update');
+      expect(handler).toHaveBeenNthCalledWith(1, section1, "add");
+      expect(handler).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({ id: "test-section" }),
+        "update",
+      );
     });
   });
 
-  describe('metadata:changed event', () => {
-    it('should emit metadata:changed when addMetadata is called', () => {
+  describe("metadata:changed event", () => {
+    it("should emit metadata:changed when addMetadata is called", () => {
       const handler = jest.fn();
-      com.on('metadata:changed', handler);
+      com.on("metadata:changed", handler);
 
-      com.addMetadata('testKey', 'testValue');
+      com.addMetadata("testKey", "testValue");
 
       expect(handler).toHaveBeenCalledTimes(1);
-      expect(handler).toHaveBeenCalledWith('testKey', 'testValue', undefined);
+      expect(handler).toHaveBeenCalledWith("testKey", "testValue", undefined);
     });
 
-    it('should emit metadata:changed with previous value', () => {
+    it("should emit metadata:changed with previous value", () => {
       const handler = jest.fn();
-      com.on('metadata:changed', handler);
+      com.on("metadata:changed", handler);
 
-      com.addMetadata('testKey', 'firstValue');
-      com.addMetadata('testKey', 'secondValue');
+      com.addMetadata("testKey", "firstValue");
+      com.addMetadata("testKey", "secondValue");
 
       expect(handler).toHaveBeenCalledTimes(2);
-      expect(handler).toHaveBeenNthCalledWith(1, 'testKey', 'firstValue', undefined);
-      expect(handler).toHaveBeenNthCalledWith(2, 'testKey', 'secondValue', 'firstValue');
+      expect(handler).toHaveBeenNthCalledWith(1, "testKey", "firstValue", undefined);
+      expect(handler).toHaveBeenNthCalledWith(2, "testKey", "secondValue", "firstValue");
     });
   });
 
-  describe('Synchronous event emission', () => {
-    it('should emit events synchronously', () => {
+  describe("Synchronous event emission", () => {
+    it("should emit events synchronously", () => {
       const callOrder: string[] = [];
 
-      com.on('state:changed', () => {
-        callOrder.push('event-handler');
+      com.on("state:changed", () => {
+        callOrder.push("event-handler");
       });
 
-      com.setState('test', 'value');
-      callOrder.push('after-setState');
+      com.setState("test", "value");
+      callOrder.push("after-setState");
 
-      expect(callOrder).toEqual(['event-handler', 'after-setState']);
+      expect(callOrder).toEqual(["event-handler", "after-setState"]);
     });
   });
 
-  describe('Event listener cleanup', () => {
-    it('should allow removing listeners', () => {
+  describe("Event listener cleanup", () => {
+    it("should allow removing listeners", () => {
       const handler = jest.fn();
-      com.on('state:changed', handler);
+      com.on("state:changed", handler);
 
-      com.setState('test', 'value');
+      com.setState("test", "value");
       expect(handler).toHaveBeenCalledTimes(1);
 
-      com.removeListener('state:changed', handler);
-      com.setState('test', 'value2');
+      com.removeListener("state:changed", handler);
+      com.setState("test", "value2");
 
       expect(handler).toHaveBeenCalledTimes(1); // Should not be called again
     });
 
-    it('should allow using once for one-time listeners', () => {
+    it("should allow using once for one-time listeners", () => {
       const handler = jest.fn();
-      com.once('state:changed', handler);
+      com.once("state:changed", handler);
 
-      com.setState('test', 'value1');
-      com.setState('test', 'value2');
+      com.setState("test", "value1");
+      com.setState("test", "value2");
 
       expect(handler).toHaveBeenCalledTimes(1); // Should only be called once
     });
   });
 
-  describe('Component pattern example', () => {
-    it('should support component-scoped listener management', () => {
+  describe("Component pattern example", () => {
+    it("should support component-scoped listener management", () => {
       const cleanup: Array<() => void> = [];
       const messageHandler = jest.fn();
       const stateHandler = jest.fn();
 
       // Simulate component onMount
-      com.on('message:added', messageHandler);
-      cleanup.push(() => com.removeListener('message:added', messageHandler));
+      com.on("message:added", messageHandler);
+      cleanup.push(() => com.removeListener("message:added", messageHandler));
 
-      com.on('state:changed', stateHandler);
-      cleanup.push(() => com.removeListener('state:changed', stateHandler));
+      com.on("state:changed", stateHandler);
+      cleanup.push(() => com.removeListener("state:changed", stateHandler));
 
       // Trigger events
-      com.addMessage({ role: 'user', content: [{ type: 'text', text: 'Hello' }] });
-      com.setState('test', 'value');
+      com.addMessage({ role: "user", content: [{ type: "text", text: "Hello" }] });
+      com.setState("test", "value");
 
       expect(messageHandler).toHaveBeenCalledTimes(1);
       expect(stateHandler).toHaveBeenCalledTimes(1);
 
       // Simulate component onUnmount
-      cleanup.forEach(fn => fn());
+      cleanup.forEach((fn) => fn());
 
       // Trigger events again - handlers should not be called
-      com.addMessage({ role: 'user', content: [{ type: 'text', text: 'Hello again' }] });
-      com.setState('test', 'value2');
+      com.addMessage({ role: "user", content: [{ type: "text", text: "Hello again" }] });
+      com.setState("test", "value2");
 
       expect(messageHandler).toHaveBeenCalledTimes(1); // Still 1
       expect(stateHandler).toHaveBeenCalledTimes(1); // Still 1
     });
   });
 
-  describe('Type safety', () => {
-    it('should enforce correct event handler signatures', () => {
+  describe("Type safety", () => {
+    it("should enforce correct event handler signatures", () => {
       // This test verifies TypeScript type safety
       // If types are wrong, TypeScript will error at compile time
 
       // Correct usage - should compile
-      com.on('message:added', (message: Message, _options: any) => {
+      com.on("message:added", (message: Message, _options: any) => {
         expect(message.role).toBeDefined();
       });
 
-      com.on('state:changed', (key: string, _value: unknown, _previousValue: unknown) => {
-        expect(typeof key).toBe('string');
+      com.on("state:changed", (key: string, _value: unknown, _previousValue: unknown) => {
+        expect(typeof key).toBe("string");
       });
 
-      com.on('tool:registered', (tool: ExecutableTool) => {
+      com.on("tool:registered", (tool: ExecutableTool) => {
         expect(tool.metadata).toBeDefined();
       });
 
-      com.on('state:cleared', () => {
+      com.on("state:cleared", () => {
         // No arguments
       });
 
@@ -453,17 +457,17 @@ describe('COM EventEmitter', () => {
     });
   });
 
-  describe('Multiple listeners', () => {
-    it('should support multiple listeners for the same event', () => {
+  describe("Multiple listeners", () => {
+    it("should support multiple listeners for the same event", () => {
       const handler1 = jest.fn();
       const handler2 = jest.fn();
       const handler3 = jest.fn();
 
-      com.on('state:changed', handler1);
-      com.on('state:changed', handler2);
-      com.on('state:changed', handler3);
+      com.on("state:changed", handler1);
+      com.on("state:changed", handler2);
+      com.on("state:changed", handler3);
 
-      com.setState('test', 'value');
+      com.setState("test", "value");
 
       expect(handler1).toHaveBeenCalledTimes(1);
       expect(handler2).toHaveBeenCalledTimes(1);
@@ -471,4 +475,3 @@ describe('COM EventEmitter', () => {
     });
   });
 });
-

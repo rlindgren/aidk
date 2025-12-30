@@ -1,10 +1,10 @@
 module.exports = {
-  testEnvironment: 'node',
+  testEnvironment: "node",
   transform: {
-    '^.+\\.tsx?$': ['ts-jest', { useESM: true }],
+    "^.+\\.tsx?$": ["ts-jest", { useESM: true }],
   },
-  extensionsToTreatAsEsm: ['.ts', '.tsx'],
-  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
+  extensionsToTreatAsEsm: [".ts", ".tsx"],
+  moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json"],
   clearMocks: true,
   resetMocks: true,
 };

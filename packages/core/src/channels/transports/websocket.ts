@@ -1,4 +1,9 @@
-import type { ChannelTransport, ChannelEvent, ConnectionMetadata, ChannelTransportConfig } from '../service';
+import type {
+  ChannelTransport,
+  ChannelEvent,
+  ConnectionMetadata,
+  ChannelTransportConfig,
+} from "../service";
 
 /**
  * Configuration for WebSocketTransport
@@ -47,16 +52,16 @@ export interface WebSocketTransportConfig extends ChannelTransportConfig {
 
 /**
  * WebSocketTransport implements bidirectional WebSocket communication.
- * 
+ *
  * Room management is handled server-side. Client:
  * - Sends join-room/leave-room messages
  * - Includes event.target in sends for server to route
  * - Server filters based on room membership
- * 
+ *
  * Uses native WebSocket API in browser or 'ws' package in Node.js.
  */
 export class WebSocketTransport implements ChannelTransport {
-  public readonly name = 'websocket';
+  public readonly name = "websocket";
 
   private config: WebSocketTransportConfig & {
     reconnectDelay: number;
@@ -75,7 +80,7 @@ export class WebSocketTransport implements ChannelTransport {
 
   constructor(config: WebSocketTransportConfig) {
     if (!config.socket && !config.url) {
-      throw new Error('WebSocketTransport requires either url or socket');
+      throw new Error("WebSocketTransport requires either url or socket");
     }
 
     this.config = {
@@ -87,7 +92,8 @@ export class WebSocketTransport implements ChannelTransport {
     // If existing socket provided, use it directly
     if (config.socket) {
       this.ws = config.socket;
-      this.isConnected = config.socket.readyState === WebSocket.OPEN || config.socket.readyState === 1;
+      this.isConnected =
+        config.socket.readyState === WebSocket.OPEN || config.socket.readyState === 1;
       this.setupSocketHandlers();
     }
   }
@@ -95,7 +101,10 @@ export class WebSocketTransport implements ChannelTransport {
   /**
    * Connect to the transport with optional metadata.
    */
-  async connect(connectionId: string, metadata?: ConnectionMetadata & { channels?: string[] }): Promise<void> {
+  async connect(
+    connectionId: string,
+    metadata?: ConnectionMetadata & { channels?: string[] },
+  ): Promise<void> {
     this.currentConnectionId = connectionId;
     this.connectionMetadata = metadata;
     this.channelFilter = metadata?.channels as string[] | undefined;
@@ -103,7 +112,7 @@ export class WebSocketTransport implements ChannelTransport {
     // If socket was provided in constructor, just setup handlers
     if (this.ws && this.isConnected) {
       this.setupSocketHandlers();
-      
+
       // Auto-join rooms based on metadata
       if (this.config.autoJoinRooms && metadata) {
         const autoRooms = this.config.autoJoinRooms(metadata);
@@ -129,10 +138,10 @@ export class WebSocketTransport implements ChannelTransport {
 
     // Remove existing handlers to avoid duplicates
     if (this.ws.removeAllListeners) {
-      this.ws.removeAllListeners('message');
-      this.ws.removeAllListeners('error');
-      this.ws.removeAllListeners('close');
-      this.ws.removeAllListeners('open');
+      this.ws.removeAllListeners("message");
+      this.ws.removeAllListeners("error");
+      this.ws.removeAllListeners("close");
+      this.ws.removeAllListeners("open");
     }
 
     // Setup message handler
@@ -142,29 +151,29 @@ export class WebSocketTransport implements ChannelTransport {
         if (data instanceof MessageEvent) {
           text = data.data;
         } else {
-          text = typeof data === 'string' ? data : data.toString('utf-8');
+          text = typeof data === "string" ? data : data.toString("utf-8");
         }
         const event: ChannelEvent = JSON.parse(text);
-        
+
         // Apply excludeSender filtering
-        const sourceConnectionId = event.metadata?.['sourceConnectionId'] as string | undefined;
+        const sourceConnectionId = event.metadata?.["sourceConnectionId"] as string | undefined;
         if (event.target?.excludeSender && sourceConnectionId === this.currentConnectionId) {
           return; // Skip - we're the sender
         }
-        
+
         if (this.receiveHandler) {
           this.receiveHandler(event);
         }
       } catch (error) {
-        console.error('Failed to parse WebSocket message:', error);
+        console.error("Failed to parse WebSocket message:", error);
       }
     };
 
-    if (typeof WebSocket !== 'undefined' && this.ws instanceof WebSocket) {
+    if (typeof WebSocket !== "undefined" && this.ws instanceof WebSocket) {
       // Browser WebSocket
       this.ws.onmessage = messageHandler as any;
       this.ws.onerror = (error: Event) => {
-        console.error('WebSocket error:', error);
+        console.error("WebSocket error:", error);
         this.isConnected = false;
       };
       this.ws.onclose = () => {
@@ -175,15 +184,15 @@ export class WebSocketTransport implements ChannelTransport {
       };
     } else {
       // Node.js ws.WebSocket
-      this.ws.on('message', messageHandler);
-      this.ws.on('error', (error: Error) => {
-        console.error('WebSocket error:', error);
+      this.ws.on("message", messageHandler);
+      this.ws.on("error", (error: Error) => {
+        console.error("WebSocket error:", error);
         this.isConnected = false;
       });
-      this.ws.on('close', () => {
+      this.ws.on("close", () => {
         this.isConnected = false;
       });
-      this.ws.on('open', () => {
+      this.ws.on("open", () => {
         this.isConnected = true;
       });
     }
@@ -194,31 +203,31 @@ export class WebSocketTransport implements ChannelTransport {
    */
   private async connectWebSocket(): Promise<void> {
     if (!this.currentConnectionId) {
-      throw new Error('Connection ID required for connection');
+      throw new Error("Connection ID required for connection");
     }
 
     // Close existing connection if any
     this.disconnect().catch(() => {});
 
     if (!this.config.url) {
-      throw new Error('URL required when socket is not provided');
+      throw new Error("URL required when socket is not provided");
     }
 
     try {
       // Build WebSocket URL with connection ID and metadata
       const url = new URL(this.config.url);
-      url.searchParams.set('connectionId', this.currentConnectionId);
+      url.searchParams.set("connectionId", this.currentConnectionId);
       if (this.config.token) {
-        url.searchParams.set('token', this.config.token);
+        url.searchParams.set("token", this.config.token);
       }
       if (this.channelFilter && this.channelFilter.length > 0) {
-        url.searchParams.set('channels', this.channelFilter.join(','));
+        url.searchParams.set("channels", this.channelFilter.join(","));
       }
       if (this.connectionMetadata?.userId) {
-        url.searchParams.set('userId', this.connectionMetadata.userId as string);
+        url.searchParams.set("userId", this.connectionMetadata.userId as string);
       }
 
-      if (typeof WebSocket !== 'undefined') {
+      if (typeof WebSocket !== "undefined") {
         // Browser environment
         this.ws = new WebSocket(url.toString(), this.config.protocols);
         this.setupBrowserWebSocket();
@@ -227,7 +236,7 @@ export class WebSocketTransport implements ChannelTransport {
         await this.connectWebSocketNode(url);
       }
     } catch (error) {
-      console.error('Failed to connect WebSocket:', error);
+      console.error("Failed to connect WebSocket:", error);
       this.handleReconnect();
       throw error;
     }
@@ -237,23 +246,25 @@ export class WebSocketTransport implements ChannelTransport {
     this.ws.onmessage = (event: MessageEvent) => {
       try {
         const channelEvent: ChannelEvent = JSON.parse(event.data);
-        
+
         // Apply excludeSender filtering
-        const sourceConnectionId = channelEvent.metadata?.['sourceConnectionId'] as string | undefined;
+        const sourceConnectionId = channelEvent.metadata?.["sourceConnectionId"] as
+          | string
+          | undefined;
         if (channelEvent.target?.excludeSender && sourceConnectionId === this.currentConnectionId) {
           return;
         }
-        
+
         if (this.receiveHandler) {
           this.receiveHandler(channelEvent);
         }
       } catch (error) {
-        console.error('Failed to parse WebSocket message:', error);
+        console.error("Failed to parse WebSocket message:", error);
       }
     };
 
     this.ws.onerror = (error: Event) => {
-      console.error('WebSocket error:', error);
+      console.error("WebSocket error:", error);
       this.isConnected = false;
       this.handleReconnect();
     };
@@ -268,7 +279,7 @@ export class WebSocketTransport implements ChannelTransport {
     this.ws.onopen = () => {
       this.isConnected = true;
       this.reconnectAttempts = 0;
-      
+
       // Auto-join rooms after connection
       if (this.config.autoJoinRooms && this.connectionMetadata) {
         const autoRooms = this.config.autoJoinRooms(this.connectionMetadata);
@@ -289,10 +300,10 @@ export class WebSocketTransport implements ChannelTransport {
       // Lazy-load 'ws' module
       if (!this.wsModule) {
         try {
-          this.wsModule = require('ws');
+          this.wsModule = require("ws");
         } catch (_error) {
           throw new Error(
-            "WebSocketTransport requires 'ws' package in Node.js. Install it with: npm install ws"
+            "WebSocketTransport requires 'ws' package in Node.js. Install it with: npm install ws",
           );
         }
       }
@@ -304,30 +315,30 @@ export class WebSocketTransport implements ChannelTransport {
       });
 
       this.setupSocketHandlers();
-      
+
       // Override error/close handlers to include reconnection logic
-      const originalOnError = this.ws.listeners('error')[0];
-      const originalOnClose = this.ws.listeners('close')[0];
-      
-      this.ws.removeAllListeners('error');
-      this.ws.removeAllListeners('close');
-      
-      this.ws.on('error', (error: Error) => {
+      const originalOnError = this.ws.listeners("error")[0];
+      const originalOnClose = this.ws.listeners("close")[0];
+
+      this.ws.removeAllListeners("error");
+      this.ws.removeAllListeners("close");
+
+      this.ws.on("error", (error: Error) => {
         if (originalOnError) originalOnError(error);
         this.handleReconnect();
       });
-      
-      this.ws.on('close', () => {
+
+      this.ws.on("close", () => {
         if (originalOnClose) originalOnClose();
         if (this.reconnectAttempts < this.config.maxReconnectAttempts) {
           this.handleReconnect();
         }
       });
-      
-      this.ws.on('open', () => {
+
+      this.ws.on("open", () => {
         this.isConnected = true;
         this.reconnectAttempts = 0;
-        
+
         // Auto-join rooms
         if (this.config.autoJoinRooms && this.connectionMetadata) {
           const autoRooms = this.config.autoJoinRooms(this.connectionMetadata);
@@ -342,15 +353,15 @@ export class WebSocketTransport implements ChannelTransport {
       // Wait for connection to open
       await new Promise<void>((resolve, reject) => {
         const timeout = setTimeout(() => {
-          reject(new Error('WebSocket connection timeout'));
+          reject(new Error("WebSocket connection timeout"));
         }, 10000);
 
-        this.ws!.on('open', () => {
+        this.ws!.on("open", () => {
           clearTimeout(timeout);
           resolve();
         });
 
-        this.ws!.on('error', (error: Error) => {
+        this.ws!.on("error", (error: Error) => {
           clearTimeout(timeout);
           reject(error);
         });
@@ -366,7 +377,7 @@ export class WebSocketTransport implements ChannelTransport {
    */
   private handleReconnect(): void {
     if (this.reconnectAttempts >= this.config.maxReconnectAttempts) {
-      console.error('Max reconnection attempts reached');
+      console.error("Max reconnection attempts reached");
       return;
     }
 
@@ -376,7 +387,7 @@ export class WebSocketTransport implements ChannelTransport {
     this.reconnectTimer = setTimeout(() => {
       if (this.currentConnectionId) {
         this.connectWebSocket().catch((error) => {
-          console.error('Reconnection failed:', error);
+          console.error("Reconnection failed:", error);
         });
       }
     }, delay);
@@ -388,7 +399,7 @@ export class WebSocketTransport implements ChannelTransport {
   async join(connectionId: string, room: string): Promise<void> {
     if (this.ws && this.isConnected) {
       const message = JSON.stringify({
-        type: 'join-room',
+        type: "join-room",
         room,
         connectionId: this.currentConnectionId,
       });
@@ -404,7 +415,7 @@ export class WebSocketTransport implements ChannelTransport {
   async leave(connectionId: string, room: string): Promise<void> {
     if (this.ws && this.isConnected) {
       const message = JSON.stringify({
-        type: 'leave-room',
+        type: "leave-room",
         room,
         connectionId: this.currentConnectionId,
       });
@@ -427,7 +438,7 @@ export class WebSocketTransport implements ChannelTransport {
   async disconnect(_connectionId?: string): Promise<void> {
     this.isConnected = false;
     this.joinedRooms.clear();
-    
+
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = undefined;
@@ -436,7 +447,7 @@ export class WebSocketTransport implements ChannelTransport {
     if (this.ws) {
       // Only close if we created the socket ourselves
       const wasProvidedExternally = !this.config.url;
-      
+
       if (!wasProvidedExternally) {
         if (this.ws.close) {
           this.ws.close();
@@ -444,7 +455,7 @@ export class WebSocketTransport implements ChannelTransport {
           this.ws.terminate();
         }
       }
-      
+
       if (wasProvidedExternally) {
         if (this.ws.removeAllListeners) {
           this.ws.removeAllListeners();
@@ -464,11 +475,11 @@ export class WebSocketTransport implements ChannelTransport {
    */
   async send(event: ChannelEvent): Promise<void> {
     if (!this.currentConnectionId) {
-      throw new Error('Not connected. Call connect() first.');
+      throw new Error("Not connected. Call connect() first.");
     }
 
     if (!this.isConnected || !this.ws) {
-      throw new Error('WebSocket not connected');
+      throw new Error("WebSocket not connected");
     }
 
     try {
@@ -484,10 +495,10 @@ export class WebSocketTransport implements ChannelTransport {
       if (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === 1) {
         this.ws.send(message);
       } else {
-        throw new Error('WebSocket is not open');
+        throw new Error("WebSocket is not open");
       }
     } catch (error) {
-      console.error('Failed to send event:', error);
+      console.error("Failed to send event:", error);
       throw error;
     }
   }

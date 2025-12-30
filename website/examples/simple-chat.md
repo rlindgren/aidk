@@ -13,7 +13,7 @@ A basic chat agent with streaming responses. Perfect starting point.
 
 ::: code-group
 
-``` tsx [agent.tsx]
+```tsx [agent.tsx]
 import { Component, comState, ContextObjectModel, TickState } from 'aidk';
 import { Timeline, Message, Section, H2, Paragraph } from 'aidk';
 import { AiSdkModel } from '@aidk/ai-sdk';
@@ -21,36 +21,36 @@ import { openai } from '@ai-sdk/openai';
 
 export class ChatAgent extends Component {
   private timeline = comState<any[]>('timeline', []);
-  
+
   onTickStart(com: ContextObjectModel, state: TickState) {
     // Accumulate messages from model responses
     if (state.current?.timeline) {
       this.timeline.update(t => [...t, ...state.current.timeline]);
     }
   }
-  
+
   render(com: ContextObjectModel, state: TickState) {
     return (
       <>
-        <AiSdkModel 
+        <AiSdkModel
           model={openai('gpt-4o-mini')}
           temperature={0.7}
         />
-        
+
         <Timeline>
           {this.timeline().map((entry, index) => (
-            <Message 
+            <Message
               key={index}
               role={entry.message?.role}
               content={entry.message?.content}
             />
           ))}
         </Timeline>
-        
+
         <Section id="instructions" audience="model">
           <H2>Your Role</H2>
           <Paragraph>
-            You are a friendly and helpful AI assistant. 
+            You are a friendly and helpful AI assistant.
             Be concise but informative.
           </Paragraph>
         </Section>
@@ -60,7 +60,7 @@ export class ChatAgent extends Component {
 }
 ```
 
-``` tsx [server.ts]
+```tsx [server.ts]
 import express from 'express';
 import cors from 'cors';
 import { createEngine } from 'aidk';
@@ -96,7 +96,7 @@ export function App() {
     client,
     endpoint: '/api/chat',
   });
-  
+
   const handleSend = () => {
     if (input.trim()) {
       send({
@@ -111,14 +111,14 @@ export function App() {
       setInput('');
     }
   };
-  
+
   return (
     <div style={{ maxWidth: 800, margin: '0 auto', padding: 20 }}>
       <h1>Simple Chat</h1>
-      
-      <div style={{ 
-        border: '1px solid #ddd', 
-        borderRadius: 8, 
+
+      <div style={{
+        border: '1px solid #ddd',
+        borderRadius: 8,
         padding: 16,
         minHeight: 400,
         marginBottom: 16,
@@ -130,7 +130,7 @@ export function App() {
           </div>
         ))}
       </div>
-      
+
       <div style={{ display: 'flex', gap: 8 }}>
         <input
           value={input}
@@ -171,7 +171,7 @@ Visit `http://localhost:5173`
 
 The timeline uses `comState` to persist across ticks:
 
-``` tsx
+```tsx
 private timeline = comState<any[]>('timeline', []);
 
 onTickStart(com, state) {
@@ -186,7 +186,7 @@ onTickStart(com, state) {
 
 The server uses Server-Sent Events for real-time streaming:
 
-``` tsx
+```tsx
 createSSEHandler({
   engine,
   getAgent: () => <ChatAgent />,
@@ -194,6 +194,7 @@ createSSEHandler({
 ```
 
 Events stream to the client as they happen:
+
 - `tick_start` - New tick begins
 - `content_delta` - Text chunks
 - `tool_call` - Tool invocations
@@ -203,12 +204,13 @@ Events stream to the client as they happen:
 ### React Hook
 
 The `useExecution` hook handles:
+
 - Connection management
 - Message accumulation
 - Streaming state
 - Error handling
 
-``` tsx
+```tsx
 const { messages, send, isStreaming, error } = useExecution({
   client,
   endpoint: '/api/chat',
@@ -219,7 +221,7 @@ const { messages, send, isStreaming, error } = useExecution({
 
 ### Add Tools
 
-``` tsx
+```tsx
 import { createTool } from 'aidk';
 import { z } from 'zod';
 
@@ -248,7 +250,7 @@ render() {
 
 ### Add Context
 
-``` tsx
+```tsx
 app.post('/api/chat', createSSEHandler({
   engine,
   getAgent: () => <ChatAgent />,
@@ -263,7 +265,7 @@ app.post('/api/chat', createSSEHandler({
 
 Access in your agent:
 
-``` tsx
+```tsx
 import { Context } from 'aidk';
 
 render() {
@@ -281,14 +283,3 @@ render() {
 - [Add tools](/examples/tools-mcp) - Tool integration
 - [Real-time updates](/examples/realtime) - Channels
 - [Multi-agent](/examples/multi-agent) - Coordination
-
-
-
-
-
-
-
-
-
-
-

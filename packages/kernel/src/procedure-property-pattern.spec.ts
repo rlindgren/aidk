@@ -3,10 +3,10 @@
  * which provides full type support without coercion.
  */
 
-import { createProcedure, generatorProcedure } from './procedure';
+import { createProcedure, generatorProcedure } from "./procedure";
 
-describe('Procedure v2 - Property Initializer Pattern', () => {
-  it('should provide full type support for class properties', async () => {
+describe("Procedure v2 - Property Initializer Pattern", () => {
+  it("should provide full type support for class properties", async () => {
     class Model {
       // ✅ Full type support - no coercion needed!
       execute = createProcedure(async (input: string): Promise<string> => {
@@ -21,28 +21,28 @@ describe('Procedure v2 - Property Initializer Pattern', () => {
     const model = new Model();
 
     // ✅ Full IntelliSense - execute is Procedure<[string], string>
-    expect(typeof model.execute).toBe('function');
-    expect('use' in model.execute).toBe(true);
-    expect('withHandle' in model.execute).toBe(true);
-    expect('withContext' in model.execute).toBe(true);
+    expect(typeof model.execute).toBe("function");
+    expect("use" in model.execute).toBe(true);
+    expect("withHandle" in model.execute).toBe(true);
+    expect("withContext" in model.execute).toBe(true);
 
     // ✅ Can call directly
-    const result = await model.execute('test');
-    expect(result).toBe('test');
+    const result = await model.execute("test");
+    expect(result).toBe("test");
 
     // ✅ Can chain middleware
     const withMw = model.execute.use(async (args, envelope, next) => {
       return next(args);
     });
-    expect(typeof withMw).toBe('function');
+    expect(typeof withMw).toBe("function");
 
     // ✅ Can use withHandle
-    const { handle, result: _handleResult } = model.execute.withHandle().call('test');
+    const { handle, result: _handleResult } = model.execute.withHandle().call("test");
     expect(handle).toBeDefined();
     expect(handle.traceId).toBeDefined();
   });
 
-  it('should work with static middleware', () => {
+  it("should work with static middleware", () => {
     const telemetryMw = async (envelope: any, next: any) => {
       return next();
     };
@@ -52,21 +52,18 @@ describe('Procedure v2 - Property Initializer Pattern', () => {
         execute: [telemetryMw],
       };
 
-      execute = createProcedure(
-        { name: 'execute' },
-        async (input: string): Promise<string> => {
-          return input;
-        }
-      );
+      execute = createProcedure({ name: "execute" }, async (input: string): Promise<string> => {
+        return input;
+      });
     }
 
     const model = new Model();
-    expect(typeof model.execute).toBe('function');
+    expect(typeof model.execute).toBe("function");
   });
 
-  it('should preserve method context when needed', async () => {
+  it("should preserve method context when needed", async () => {
     class Model {
-      private value = 'test';
+      private value = "test";
 
       // Note: Arrow functions capture 'this', regular functions don't
       // For methods that need 'this', use bind or regular function
@@ -77,23 +74,22 @@ describe('Procedure v2 - Property Initializer Pattern', () => {
     }
 
     const model = new Model();
-    const result = await model.execute('input');
-    expect(result).toBe('test:input');
+    const result = await model.execute("input");
+    expect(result).toBe("test:input");
   });
 
-  it('should work with hooks', async () => {
+  it("should work with hooks", async () => {
     class Model {
       processChunk = createProcedure(
-        { name: 'stream:chunk', sourceType: 'hook' },
+        { name: "stream:chunk", sourceType: "hook" },
         async (chunk: string): Promise<string> => {
           return chunk.toUpperCase();
-        }
+        },
       );
     }
 
     const model = new Model();
-    const result = await model.processChunk('test');
-    expect(result).toBe('TEST');
+    const result = await model.processChunk("test");
+    expect(result).toBe("TEST");
   });
 });
-

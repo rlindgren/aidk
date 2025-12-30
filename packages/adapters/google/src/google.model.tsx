@@ -13,30 +13,30 @@ import { type GoogleAdapterConfig } from "./types";
  */
 export interface GoogleModelProps extends GoogleAdapterConfig {
   /** Optional callback when model is mounted */
-  onMount?: ModelComponentProps['onMount'];
+  onMount?: ModelComponentProps["onMount"];
   /** Optional callback when model is unmounted */
-  onUnmount?: ModelComponentProps['onUnmount'];
+  onUnmount?: ModelComponentProps["onUnmount"];
 }
 
 /**
  * GoogleModel component for declarative model configuration in JSX.
- * 
+ *
  * Creates a Google model adapter internally and wraps it in a Model component.
- * 
+ *
  * @example
  * ```tsx
  * // Basic usage
  * <GoogleModel model="gemini-2.5-flash" />
- * 
+ *
  * // With config
- * <GoogleModel 
+ * <GoogleModel
  *   model="gemini-2.5-flash"
  *   temperature={0.7}
  *   maxTokens={1000}
  * />
- * 
+ *
  * // With Vertex AI
- * <GoogleModel 
+ * <GoogleModel
  *   model="gemini-2.5-flash"
  *   vertexai={true}
  *   project="my-project"
@@ -49,4 +49,3 @@ export function GoogleModel(props: GoogleModelProps) {
   const adapter = createGoogleModel(adapterConfig);
   return createElement(Model, { model: adapter, onMount, onUnmount });
 }
-

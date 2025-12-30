@@ -5,6 +5,7 @@ AIDK's renderer system transforms your semantic JSX components into the format e
 ## The Problem
 
 Different AI models perform better with different context formats:
+
 - **Claude** works best with XML: `<section><title>...</title></section>`
 - **GPT models** prefer Markdown: `# Title\n\nContent...`
 - **Custom models** might need JSON or plain text
@@ -46,9 +47,9 @@ class MyAgent extends Component {
 
 // Or as Markdown for GPT:
 // # User Profile
-// 
+//
 // Name: John Doe | Tier: **premium**
-// 
+//
 // 1. Email: john@example.com
 // 2. Member since: 2024-01-15
 ```
@@ -76,6 +77,7 @@ import { Markdown } from 'aidk';
 ```
 
 **Output:**
+
 ```markdown
 # Title
 
@@ -103,6 +105,7 @@ import { XML } from 'aidk';
 ```
 
 **Output:**
+
 ```xml
 <h1>Title</h1>
 <p>Content with <strong>bold</strong> and <em>italic</em></p>
@@ -124,7 +127,7 @@ class AdaptiveAgent extends Component {
   render(com, state) {
     // Check response quality
     const quality = analyzeResponse(state.current);
-    
+
     return (
       <>
         {/* Switch models based on need */}
@@ -135,7 +138,7 @@ class AdaptiveAgent extends Component {
           <AiSdkModel model={openai('gpt-4o-mini')} />
           // Renderer automatically uses Markdown
         )}
-        
+
         {/* Same JSX, different output format per model */}
         <Section audience="model">
           <H2>Analysis</H2>
@@ -151,6 +154,7 @@ class AdaptiveAgent extends Component {
 ```
 
 **On Claude tick:**
+
 ```xml
 <section>
   <h2>Analysis</h2>
@@ -159,6 +163,7 @@ class AdaptiveAgent extends Component {
 ```
 
 **On GPT tick:**
+
 ```markdown
 ## Analysis
 
@@ -170,19 +175,19 @@ class AdaptiveAgent extends Component {
 
 AIDK includes built-in preferences for popular models:
 
-``` tsx
+```tsx
 // From model adapter capabilities
 const modelPreferences = {
   // Anthropic models prefer XML
   'claude-3-5-sonnet-20241022': 'xml',
   'claude-3-opus-20240229': 'xml',
   'claude-3-sonnet-20240229': 'xml',
-  
+
   // OpenAI models prefer Markdown
   'gpt-4o': 'markdown',
   'gpt-4o-mini': 'markdown',
   'gpt-4-turbo': 'markdown',
-  
+
   // Google models prefer Markdown
   'gemini-2.0-flash': 'markdown',
   'gemini-1.5-pro': 'markdown',
@@ -191,7 +196,7 @@ const modelPreferences = {
 
 You can also configure this dynamically:
 
-``` tsx
+```tsx
 import { createAiSdkModel } from '@aidk/ai-sdk';
 
 const model = createAiSdkModel({
@@ -298,6 +303,7 @@ You can even switch renderers **inline within content**:
 ```
 
 **Output with Markdown as default:**
+
 ```
 This text uses **default renderer** for bold. But this part uses <strong>XML tags</strong> for formatting. And this nested part uses *Markdown* inside XML.
 ```
@@ -321,8 +327,8 @@ All JSX primitives work with any renderer:
 
 ```tsx
 <Paragraph>
-  Text with <strong>bold</strong>, <em>italic</em>, 
-  <inlineCode>code</inlineCode>, <mark>highlight</mark>, 
+  Text with <strong>bold</strong>, <em>italic</em>,
+  <inlineCode>code</inlineCode>, <mark>highlight</mark>,
   <u>underline</u>, and <s>strikethrough</s>.
 </Paragraph>
 ```
@@ -345,7 +351,7 @@ All JSX primitives work with any renderer:
 ### Tables
 
 ```tsx
-<Table 
+<Table
   headers={['Name', 'Age', 'Role']}
   rows={[
     ['Alice', '30', 'Engineer'],
@@ -367,7 +373,7 @@ console.log(greeting);`}
 
 Create your own renderer for custom formats:
 
-``` tsx
+```tsx
 import { Renderer, SemanticContentBlock, SemanticNode } from 'aidk';
 
 class JSONRenderer extends Renderer {
@@ -379,28 +385,28 @@ class JSONRenderer extends Renderer {
     // ... more formatting
     return node.text || '';
   }
-  
+
   formatSemantic(block: SemanticContentBlock): ContentBlock | null {
     // Handle semantic blocks
     if (block.semantic?.type === 'heading') {
       return {
         type: 'text',
-        text: JSON.stringify({ 
-          heading: extractText([block]), 
-          level: block.semantic.level 
+        text: JSON.stringify({
+          heading: extractText([block]),
+          level: block.semantic.level
         }),
       };
     }
     return null;
   }
-  
+
   formatStandard(block: SemanticContentBlock): ContentBlock[] {
     // Handle standard blocks
     return [block];
   }
-  
+
   protected applyBlockLevelFormatting(
-    block: SemanticContentBlock, 
+    block: SemanticContentBlock,
     formattedText: string
   ): string {
     return formattedText;
@@ -417,6 +423,7 @@ class JSONRenderer extends Renderer {
 ## Performance
 
 Renderers are **zero-cost abstractions**:
+
 - Rendering happens at compile time (before model call)
 - No runtime overhead
 - Efficient string building
@@ -491,6 +498,7 @@ Inline renderer switching is powerful but can be complex:
 ```
 
 **When to use inline switching:**
+
 - Embedding structured data in natural text
 - Code snippets in XML contexts
 - Specific formatting requirements mid-content
@@ -499,7 +507,7 @@ Inline renderer switching is powerful but can be complex:
 
 When building reusable components, test with both renderers:
 
-``` tsx
+```tsx
 import { MarkdownRenderer, XMLRenderer } from 'aidk';
 
 describe('UserProfile component', () => {
@@ -508,17 +516,17 @@ describe('UserProfile component', () => {
     expect(rendered).toContain('# User Profile');
     expect(rendered).toContain('**Name:**');
   });
-  
+
   it('renders correctly as XML', () => {
     const rendered = render(<UserProfile />, new XMLRenderer());
     expect(rendered).toContain('<h1>User Profile</h1>');
     expect(rendered).toContain('<strong>Name:</strong>');
   });
-  
+
   it('produces semantically equivalent output', () => {
     const markdown = render(<UserProfile />, new MarkdownRenderer());
     const xml = render(<UserProfile />, new XMLRenderer());
-    
+
     // Both should contain the same data
     expect(extractText(markdown)).toEqual(extractText(xml));
   });
@@ -532,18 +540,18 @@ If your component has renderer requirements or preferences:
 ```tsx
 /**
  * UserAnalytics component.
- * 
+ *
  * Displays user analytics in table format.
- * 
+ *
  * **Renderer Notes:**
  * - Works with any renderer (Markdown/XML)
  * - Complex tables may be more readable in Markdown
  * - For XML-preferring models, consider wrapping in <Markdown>
- * 
+ *
  * @example
  * // Auto-detect
  * <UserAnalytics data={data} />
- * 
+ *
  * @example
  * // Force Markdown for better table formatting
  * <Markdown>
@@ -564,14 +572,14 @@ Different renderers may have different characteristics:
 class OptimizedAgent extends Component {
   render(com, state) {
     const contextSize = estimateSize(state);
-    
+
     // XML is often more compact for highly structured data
     const useXML = contextSize > 100000 && isHighlyStructured(state);
-    
+
     return (
       <>
         <AiSdkModel model={model} />
-        
+
         {useXML ? (
           <XML>
             <Section audience="model">
@@ -662,12 +670,12 @@ class MixedFormatAgent extends Component {
     return (
       <>
         <AiSdkModel model={model} />
-        
+
         <Section audience="model">
           {/* Standard Markdown formatting */}
           <H2>Analysis Results</H2>
           <Paragraph>Here are the findings:</Paragraph>
-          
+
           {/* Force XML for structured data */}
           <XML>
             <List ordered>
@@ -683,7 +691,7 @@ class MixedFormatAgent extends Component {
               </ListItem>
             </List>
           </XML>
-          
+
           {/* Back to standard rendering */}
           <Paragraph>
             Summary: <strong>Success</strong>
@@ -696,6 +704,7 @@ class MixedFormatAgent extends Component {
 ```
 
 **Why mix renderers?**
+
 - XML for structured lists/tables that models parse better
 - Markdown for code snippets and natural text
 - Fine-tuned control for complex context
@@ -716,7 +725,7 @@ class ContentAwareAgent extends Component {
             <Code language="typescript">{codeSnippet}</Code>
           </Section>
         </Markdown>
-        
+
         {/* Structured data - use XML for clarity */}
         <XML>
           <Section audience="model">
@@ -724,7 +733,7 @@ class ContentAwareAgent extends Component {
             <Table headers={headers} rows={configRows} />
           </Section>
         </XML>
-        
+
         {/* Let model preference decide for general content */}
         <Section audience="model">
           <H3>Instructions</H3>
@@ -740,16 +749,16 @@ class ContentAwareAgent extends Component {
 
 ### `Renderer` (Base Class)
 
-``` tsx
+```tsx
 abstract class Renderer {
   abstract formatNode(node: SemanticNode): string;
   abstract formatSemantic(block: SemanticContentBlock): ContentBlock | null;
   abstract formatStandard(block: SemanticContentBlock): ContentBlock[];
   protected abstract applyBlockLevelFormatting(
-    block: SemanticContentBlock, 
+    block: SemanticContentBlock,
     formattedText: string
   ): string;
-  
+
   format(blocks: SemanticContentBlock[]): ContentBlock[];
   getCustomPrimitives?(): string[];
 }
@@ -757,7 +766,7 @@ abstract class Renderer {
 
 ### `MarkdownRenderer`
 
-``` tsx
+```tsx
 class MarkdownRenderer extends Renderer {
   constructor(flavor?: 'github' | 'commonmark' | 'gfm');
 }
@@ -765,7 +774,7 @@ class MarkdownRenderer extends Renderer {
 
 ### `XMLRenderer`
 
-``` tsx
+```tsx
 class XMLRenderer extends Renderer {
   constructor(rootTag?: string);
 }
@@ -796,4 +805,3 @@ class XMLRenderer extends Renderer {
 ---
 
 **Next:** [MCP Integration](/docs/guides/mcp)
-

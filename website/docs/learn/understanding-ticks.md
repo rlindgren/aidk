@@ -222,6 +222,7 @@ class AdaptiveAgent extends Component {
 ```
 
 On each tick:
+
 1. `onTickStart` accumulates new timeline entries
 2. The agent compiles with the current complexity level
 3. The model responds

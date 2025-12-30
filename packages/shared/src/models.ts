@@ -1,17 +1,17 @@
 /**
  * Model Types
- * 
+ *
  * Platform-independent types for model input/output and configuration.
  * Used by both backend (aidk-core) and frontend (aidk-client) for direct model execution.
- * 
+ *
  * These are simplified versions that exclude backend-specific adapter concerns.
  * Backend extends these with providerOptions, libraryOptions, ephemeralConfig, etc.
  */
 
-import type { Message } from './messages';
-import type { StopReason } from './streaming';
-import type { ModelToolCall } from './tools';
-import type { ToolDefinition } from './tools';
+import type { Message } from "./messages";
+import type { StopReason } from "./streaming";
+import type { ModelToolCall } from "./tools";
+import type { ToolDefinition } from "./tools";
 
 // ============================================================================
 // Model Tool Reference
@@ -29,7 +29,7 @@ export type ModelToolReference = string | ToolDefinition;
 
 /**
  * Model input - simplified platform-independent structure.
- * 
+ *
  * Used for direct model execution from clients.
  * Backend extends this with providerOptions, libraryOptions, messageTransformation, etc.
  */
@@ -38,17 +38,17 @@ export interface ModelInput {
    * Model identifier (e.g., 'gpt-4', 'claude-3-5-sonnet')
    */
   model?: string;
-  
+
   /**
    * Conversation messages
    */
   messages: string | string[] | Message[];
-  
+
   /**
    * System prompt (optional)
    */
   system?: string;
-  
+
   /**
    * Generation parameters
    */
@@ -58,12 +58,12 @@ export interface ModelInput {
   frequencyPenalty?: number;
   presencePenalty?: number;
   stop?: string[];
-  
+
   /**
    * Tool references
    */
   tools?: ModelToolReference[];
-  
+
   /**
    * Whether to stream the response
    */
@@ -76,7 +76,7 @@ export interface ModelInput {
 
 /**
  * Model output - simplified platform-independent structure.
- * 
+ *
  * Used for direct model execution from clients.
  * Backend extends this with raw provider response, cacheId, etc.
  */
@@ -93,12 +93,12 @@ export interface ModelOutput {
    * For single-turn responses, this will typically contain one assistant message.
    */
   messages?: Message[];
-  
+
   /**
    * Convenience accessor for the primary assistant message.
    * When `messages` is provided, this is the last assistant-role message.
    * When `messages` is not provided, this is the single generated message.
-   * 
+   *
    * Use `messages` array for full conversation history or multi-message responses.
    */
   message?: Message;
@@ -107,7 +107,7 @@ export interface ModelOutput {
    * Why generation stopped
    */
   stopReason: StopReason;
-  
+
   /**
    * Token usage
    */
@@ -118,7 +118,7 @@ export interface ModelOutput {
     totalTokens: number;
     cachedInputTokens?: number;
   };
-  
+
   /**
    * Tool calls made by the model
    */
@@ -131,7 +131,7 @@ export interface ModelOutput {
 
 /**
  * Model configuration - simplified platform-independent structure.
- * 
+ *
  * Used for model instance configuration from clients.
  * Backend extends this with providerOptions, messageTransformation, etc.
  */
@@ -140,17 +140,17 @@ export interface ModelConfig {
    * Model instance identifier
    */
   id?: string;
-  
+
   /**
    * Model instance name
    */
   name?: string;
-  
+
   /**
    * Model identifier (e.g., 'gpt-4', 'claude-3-5-sonnet')
    */
   model?: string;
-  
+
   /**
    * Generation parameters
    */
@@ -160,10 +160,9 @@ export interface ModelConfig {
   frequencyPenalty?: number;
   presencePenalty?: number;
   stop?: string[];
-  
+
   /**
    * Tool references
    */
   tools?: ModelToolReference[];
 }
-

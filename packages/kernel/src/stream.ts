@@ -57,9 +57,7 @@ export async function* mapStream<T, R>(
 
   try {
     while (true) {
-      const next = ctx
-        ? await Context.run(ctx, () => iterator.next())
-        : await iterator.next();
+      const next = ctx ? await Context.run(ctx, () => iterator.next()) : await iterator.next();
 
       if (next.done) break;
 
@@ -166,10 +164,7 @@ export async function* mergeStreams<T>(
     const iter = s[Symbol.asyncIterator]();
     return {
       next: () => (ctx ? Context.run(ctx, () => iter.next()) : iter.next()),
-      return: () =>
-        ctx && iter.return
-          ? Context.run(ctx, () => iter.return!())
-          : iter.return?.(),
+      return: () => (ctx && iter.return ? Context.run(ctx, () => iter.return!()) : iter.return?.()),
       instance: iter,
     };
   });
@@ -185,16 +180,14 @@ export async function* mergeStreams<T>(
 
     while (nextPromises.size > 0) {
       // Create a race between all active promises
-      const racePromises = Array.from(nextPromises.entries()).map(
-        async ([index, promise]) => {
-          try {
-            const result = await promise;
-            return { index, result };
-          } catch (error) {
-            return { index, error };
-          }
-        },
-      );
+      const racePromises = Array.from(nextPromises.entries()).map(async ([index, promise]) => {
+        try {
+          const result = await promise;
+          return { index, result };
+        } catch (error) {
+          return { index, error };
+        }
+      });
 
       const { index, result, error } = await Promise.race(racePromises);
 

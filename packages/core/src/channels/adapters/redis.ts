@@ -1,4 +1,4 @@
-import type { ChannelAdapter, ChannelEvent } from '../service';
+import type { ChannelAdapter, ChannelEvent } from "../service";
 
 /**
  * Configuration for RedisChannelAdapter
@@ -32,20 +32,20 @@ export interface RedisChannelAdapterConfig {
 
 /**
  * RedisChannelAdapter implements distribution via Redis pub/sub.
- * 
+ *
  * Allows multiple engine instances to share channels across a distributed system.
- * 
+ *
  * Supports room-based routing:
  * - Events with target.rooms publish to room-specific Redis channels
  * - Each instance subscribes to rooms when local connections join
  * - Uses prefix pattern: `aidk:rooms:{roomName}`
- * 
+ *
  * Requires 'redis' or 'ioredis' package.
  */
 export class RedisChannelAdapter implements ChannelAdapter {
-  public readonly name = 'redis';
+  public readonly name = "redis";
 
-  private config: Required<Pick<RedisChannelAdapterConfig, 'channelPrefix' | 'roomPrefix'>> & {
+  private config: Required<Pick<RedisChannelAdapterConfig, "channelPrefix" | "roomPrefix">> & {
     url?: string;
     host?: string;
     port?: number;
@@ -60,8 +60,8 @@ export class RedisChannelAdapter implements ChannelAdapter {
 
   constructor(config: RedisChannelAdapterConfig) {
     this.config = {
-      channelPrefix: config.channelPrefix || 'aidk:channels:',
-      roomPrefix: config.roomPrefix || 'aidk:rooms:',
+      channelPrefix: config.channelPrefix || "aidk:channels:",
+      roomPrefix: config.roomPrefix || "aidk:rooms:",
       url: config.url,
       host: config.host,
       port: config.port,
@@ -86,11 +86,11 @@ export class RedisChannelAdapter implements ChannelAdapter {
     try {
       // Try 'ioredis' first (more popular)
       try {
-        const Redis = require('ioredis');
+        const Redis = require("ioredis");
         this.redisClient = this.config.url
           ? new Redis(this.config.url)
           : new Redis({
-              host: this.config.host || 'localhost',
+              host: this.config.host || "localhost",
               port: this.config.port || 6379,
               password: this.config.password,
               db: this.config.db || 0,
@@ -98,12 +98,12 @@ export class RedisChannelAdapter implements ChannelAdapter {
         return this.redisClient;
       } catch (_error) {
         // Fall back to 'redis' package
-        const redis = require('redis');
+        const redis = require("redis");
         this.redisClient = this.config.url
           ? redis.createClient({ url: this.config.url })
           : redis.createClient({
               socket: {
-                host: this.config.host || 'localhost',
+                host: this.config.host || "localhost",
                 port: this.config.port || 6379,
               },
               password: this.config.password,
@@ -115,7 +115,7 @@ export class RedisChannelAdapter implements ChannelAdapter {
       }
     } catch (_error) {
       throw new Error(
-        `RedisChannelAdapter requires 'redis' or 'ioredis' package. Install it with: npm install redis or npm install ioredis`
+        `RedisChannelAdapter requires 'redis' or 'ioredis' package. Install it with: npm install redis or npm install ioredis`,
       );
     }
   }
@@ -132,7 +132,7 @@ export class RedisChannelAdapter implements ChannelAdapter {
 
       // Determine target channels
       const targetChannels: string[] = [];
-      
+
       if (event.target?.rooms && event.target.rooms.length > 0) {
         // Room-based routing: publish to each room's Redis channel
         for (const room of event.target.rooms) {
@@ -152,11 +152,11 @@ export class RedisChannelAdapter implements ChannelAdapter {
           // redis (v4+)
           await client.publishAsync(channel, message);
         } else {
-          throw new Error('Redis client does not support publish');
+          throw new Error("Redis client does not support publish");
         }
       }
     } catch (error) {
-      console.error('Failed to publish event to Redis:', error);
+      console.error("Failed to publish event to Redis:", error);
       throw error;
     }
   }
@@ -176,31 +176,31 @@ export class RedisChannelAdapter implements ChannelAdapter {
       if (client.subscribe) {
         // ioredis
         await client.subscribe(redisChannel);
-        client.on('message', (receivedChannel: string, message: string) => {
+        client.on("message", (receivedChannel: string, message: string) => {
           if (receivedChannel === redisChannel) {
             try {
               const event: ChannelEvent = JSON.parse(message);
               handler(event);
             } catch (error) {
-              console.error('Failed to parse Redis message:', error);
+              console.error("Failed to parse Redis message:", error);
             }
           }
         });
       } else if (client.subscribeAsync) {
         // redis (v4+)
         await client.subscribeAsync(redisChannel);
-        client.on('message', (receivedChannel: string, message: string) => {
+        client.on("message", (receivedChannel: string, message: string) => {
           if (receivedChannel === redisChannel) {
             try {
               const event: ChannelEvent = JSON.parse(message);
               handler(event);
             } catch (error) {
-              console.error('Failed to parse Redis message:', error);
+              console.error("Failed to parse Redis message:", error);
             }
           }
         });
       } else {
-        throw new Error('Redis client does not support subscribe');
+        throw new Error("Redis client does not support subscribe");
       }
 
       // Return unsubscribe function
@@ -215,11 +215,11 @@ export class RedisChannelAdapter implements ChannelAdapter {
           }
           this.subscribers.delete(redisChannel);
         } catch (error) {
-          console.error('Failed to unsubscribe from Redis:', error);
+          console.error("Failed to unsubscribe from Redis:", error);
         }
       };
     } catch (error) {
-      console.error('Failed to subscribe to Redis channel:', error);
+      console.error("Failed to subscribe to Redis channel:", error);
       throw error;
     }
   }
@@ -301,4 +301,3 @@ export class RedisChannelAdapter implements ChannelAdapter {
     this.isConnected = false;
   }
 }
-

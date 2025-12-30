@@ -64,14 +64,7 @@ import { Context, type KernelContext } from "./context";
  * }
  * ```
  */
-export type LogLevel =
-  | "trace"
-  | "debug"
-  | "info"
-  | "warn"
-  | "error"
-  | "fatal"
-  | "silent";
+export type LogLevel = "trace" | "debug" | "info" | "warn" | "error" | "fatal" | "silent";
 
 /**
  * Function to extract fields from KernelContext for logging.
@@ -90,9 +83,9 @@ export type LogLevel =
  *
  * @see {@link composeContextFields} - Combine multiple extractors
  */
-export type ContextFieldsExtractor<
-  TContext extends KernelContext = KernelContext,
-> = (ctx: TContext) => Record<string, unknown>;
+export type ContextFieldsExtractor<TContext extends KernelContext = KernelContext> = (
+  ctx: TContext,
+) => Record<string, unknown>;
 
 export interface LoggerConfig<TContext extends KernelContext = KernelContext> {
   /** Log level (default: 'info') */
@@ -389,10 +382,7 @@ export const Logger = {
 
     // Handle contextFields composition
     if (config.contextFields) {
-      globalConfig.contextFields = composeContextFields(
-        defaultContextFields,
-        config.contextFields,
-      );
+      globalConfig.contextFields = composeContextFields(defaultContextFields, config.contextFields);
     } else if (!globalConfig.contextFields) {
       globalConfig.contextFields = defaultContextFields;
     }
@@ -436,9 +426,7 @@ export const Logger = {
    */
   for(nameOrComponent: string | object): KernelLogger {
     const name =
-      typeof nameOrComponent === "string"
-        ? nameOrComponent
-        : nameOrComponent.constructor.name;
+      typeof nameOrComponent === "string" ? nameOrComponent : nameOrComponent.constructor.name;
     return wrapLogger(getOrCreateGlobalLogger().child({ component: name }));
   },
 

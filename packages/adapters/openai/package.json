@@ -2,29 +2,34 @@
   "name": "aidk-openai",
   "version": "0.1.0",
   "description": "OpenAI adapter for AIDK",
-  "type": "module",
-  "main": "src/index.ts",
-  "files": [
-    "dist"
-  ],
   "keywords": [
-    "ai",
+    "adapter",
     "agent",
-    "openai",
+    "ai",
     "gpt",
-    "adapter"
+    "openai"
   ],
-  "author": "Ryan Lindgren",
+  "homepage": "https://github.com/rlindgren/aidk#readme",
+  "bugs": {
+    "url": "https://github.com/rlindgren/aidk/issues"
+  },
   "license": "ISC",
+  "author": "Ryan Lindgren",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/rlindgren/aidk.git",
     "directory": "packages/adapters/openai"
   },
-  "bugs": {
-    "url": "https://github.com/rlindgren/aidk/issues"
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "main": "src/index.ts",
+  "publishConfig": {
+    "access": "public",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts"
   },
-  "homepage": "https://github.com/rlindgren/aidk#readme",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "test": "jest",
@@ -41,10 +46,5 @@
   },
   "peerDependencies": {
     "openai": "^6.0.0"
-  },
-  "publishConfig": {
-    "access": "public",
-    "main": "./dist/index.js",
-    "types": "./dist/index.d.ts"
   }
 }

@@ -12,12 +12,7 @@ import {
 } from "../google";
 import { STOP_REASON_MAP } from "../types";
 import { StopReason } from "aidk";
-import type {
-  ContentBlock,
-  ImageBlock,
-  ToolUseBlock,
-  ToolResultBlock,
-} from "aidk/content";
+import type { ContentBlock, ImageBlock, ToolUseBlock, ToolResultBlock } from "aidk/content";
 
 // =============================================================================
 // Stop Reason Mapping
@@ -25,9 +20,7 @@ import type {
 
 describe("STOP_REASON_MAP", () => {
   it("should map FINISH_REASON_UNSPECIFIED to UNSPECIFIED", () => {
-    expect(STOP_REASON_MAP["FINISH_REASON_UNSPECIFIED"]).toBe(
-      StopReason.UNSPECIFIED,
-    );
+    expect(STOP_REASON_MAP["FINISH_REASON_UNSPECIFIED"]).toBe(StopReason.UNSPECIFIED);
   });
 
   it("should map STOP to STOP", () => {
@@ -56,9 +49,7 @@ describe("STOP_REASON_MAP", () => {
     });
 
     it("should map PROHIBITED_CONTENT to CONTENT_FILTER", () => {
-      expect(STOP_REASON_MAP["PROHIBITED_CONTENT"]).toBe(
-        StopReason.CONTENT_FILTER,
-      );
+      expect(STOP_REASON_MAP["PROHIBITED_CONTENT"]).toBe(StopReason.CONTENT_FILTER);
     });
 
     it("should map SPII to CONTENT_FILTER", () => {
@@ -68,9 +59,7 @@ describe("STOP_REASON_MAP", () => {
 
   describe("tool/function call related", () => {
     it("should map MALFORMED_FUNCTION_CALL to FORMAT_ERROR", () => {
-      expect(STOP_REASON_MAP["MALFORMED_FUNCTION_CALL"]).toBe(
-        StopReason.FORMAT_ERROR,
-      );
+      expect(STOP_REASON_MAP["MALFORMED_FUNCTION_CALL"]).toBe(StopReason.FORMAT_ERROR);
     });
 
     it("should map UNEXPECTED_TOOL_CALL to ERROR", () => {
@@ -88,9 +77,7 @@ describe("STOP_REASON_MAP", () => {
     });
 
     it("should map IMAGE_PROHIBITED_CONTENT to CONTENT_FILTER", () => {
-      expect(STOP_REASON_MAP["IMAGE_PROHIBITED_CONTENT"]).toBe(
-        StopReason.CONTENT_FILTER,
-      );
+      expect(STOP_REASON_MAP["IMAGE_PROHIBITED_CONTENT"]).toBe(StopReason.CONTENT_FILTER);
     });
 
     it("should map IMAGE_OTHER to OTHER", () => {
@@ -102,9 +89,7 @@ describe("STOP_REASON_MAP", () => {
     });
 
     it("should map IMAGE_RECITATION to CONTENT_FILTER", () => {
-      expect(STOP_REASON_MAP["IMAGE_RECITATION"]).toBe(
-        StopReason.CONTENT_FILTER,
-      );
+      expect(STOP_REASON_MAP["IMAGE_RECITATION"]).toBe(StopReason.CONTENT_FILTER);
     });
   });
 
@@ -114,9 +99,7 @@ describe("STOP_REASON_MAP", () => {
     });
 
     it("should map MISSING_THOUGHT_SIGNATURE to ERROR", () => {
-      expect(STOP_REASON_MAP["MISSING_THOUGHT_SIGNATURE"]).toBe(
-        StopReason.ERROR,
-      );
+      expect(STOP_REASON_MAP["MISSING_THOUGHT_SIGNATURE"]).toBe(StopReason.ERROR);
     });
   });
 });
@@ -128,18 +111,12 @@ describe("mapGoogleFinishReason", () => {
 
   it("should map known finish reasons via STOP_REASON_MAP", () => {
     expect(mapGoogleFinishReason("STOP" as any)).toBe(StopReason.STOP);
-    expect(mapGoogleFinishReason("MAX_TOKENS" as any)).toBe(
-      StopReason.MAX_TOKENS,
-    );
-    expect(mapGoogleFinishReason("SAFETY" as any)).toBe(
-      StopReason.CONTENT_FILTER,
-    );
+    expect(mapGoogleFinishReason("MAX_TOKENS" as any)).toBe(StopReason.MAX_TOKENS);
+    expect(mapGoogleFinishReason("SAFETY" as any)).toBe(StopReason.CONTENT_FILTER);
   });
 
   it("should return STOP for unknown finish reasons", () => {
-    expect(mapGoogleFinishReason("UNKNOWN_REASON" as any)).toBe(
-      StopReason.STOP,
-    );
+    expect(mapGoogleFinishReason("UNKNOWN_REASON" as any)).toBe(StopReason.STOP);
   });
 });
 

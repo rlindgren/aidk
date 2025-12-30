@@ -2,27 +2,27 @@
   "name": "aidk-shared",
   "version": "0.1.0",
   "description": "Shared types and utilities for AIDK",
-  "type": "module",
-  "main": "src/index.ts",
-  "files": [
-    "dist"
-  ],
   "keywords": [
-    "ai",
     "agent",
+    "ai",
     "types"
   ],
-  "author": "Ryan Lindgren",
+  "homepage": "https://github.com/rlindgren/aidk#readme",
+  "bugs": {
+    "url": "https://github.com/rlindgren/aidk/issues"
+  },
   "license": "ISC",
+  "author": "Ryan Lindgren",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/rlindgren/aidk.git",
     "directory": "packages/shared"
   },
-  "bugs": {
-    "url": "https://github.com/rlindgren/aidk/issues"
-  },
-  "homepage": "https://github.com/rlindgren/aidk#readme",
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "main": "src/index.ts",
   "exports": {
     ".": "./src/index.ts",
     "./blocks": "./src/blocks.ts",
@@ -39,8 +39,6 @@
   },
   "publishConfig": {
     "access": "public",
-    "main": "./dist/index.js",
-    "types": "./dist/index.d.ts",
     "exports": {
       ".": {
         "types": "./dist/index.d.ts",
@@ -90,7 +88,9 @@
         "types": "./dist/testing/index.d.ts",
         "import": "./dist/testing/index.js"
       }
-    }
+    },
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts"
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",

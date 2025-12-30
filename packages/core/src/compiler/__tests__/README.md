@@ -5,7 +5,9 @@ Comprehensive test suite for the V2 Fiber Compiler.
 ## Test Files
 
 ### `hooks.spec.ts`
+
 Tests for all hook implementations:
+
 - **State Hooks**: `useState`, `useReducer`, `useSignal`
 - **COM Hooks**: `useComState`, `useWatch`, `useInput`
 - **Effect Hooks**: `useEffect`, `useOnMount`, `useOnUnmount`
@@ -16,7 +18,9 @@ Tests for all hook implementations:
 - **Hook Rules**: Validation that hooks are called correctly
 
 ### `fiber-compiler.spec.ts`
+
 Tests for the main compiler:
+
 - **Basic Compilation**: Simple JSX, function components, class components
 - **Function Components with Hooks**: Components using useState, useComState
 - **Class Components**: Lifecycle methods, signals, props
@@ -30,14 +34,18 @@ Tests for the main compiler:
 - **Props Updates**: Updating props for function and class components
 
 ### `fiber.spec.ts`
+
 Tests for fiber utilities:
+
 - **Fiber Creation**: `createFiber`, `createWorkInProgress`, `cloneFiber`
 - **Tree Traversal**: `getChildFibers`, `findFiberByKey`, `traverseFiber`, `traverseFiberBottomUp`
 - **Hook Utilities**: `getHookCount`, `getHookAtIndex`
 - **Debug Utilities**: `fiberToDebugString`, `fiberTreeToDebugString`
 
 ### `integration.spec.ts`
+
 End-to-end integration tests:
+
 - **Mixed Components**: Function and class components together
 - **State Management**: State updates, COM state sync
 - **Lifecycle Integration**: Correct order of lifecycle hooks
@@ -100,10 +108,10 @@ describe('Feature Name', () => {
   it('should do something', async () => {
     // Arrange
     const element = createElement(MyComponent, {});
-    
+
     // Act
     const result = await compiler.compile(element, tickState);
-    
+
     // Assert
     expect(result).toBeDefined();
   });
@@ -113,6 +121,7 @@ describe('Feature Name', () => {
 ## Key Testing Patterns
 
 ### Testing Hooks
+
 ```typescript
 setRenderContext(renderContext);
 const [value, setValue] = useState(0);
@@ -120,6 +129,7 @@ expect(value).toBe(0);
 ```
 
 ### Testing Effects
+
 ```typescript
 const spy = jest.fn();
 useEffect(spy, []);
@@ -129,14 +139,15 @@ expect(spy).toHaveBeenCalled();
 ```
 
 ### Testing Lifecycle
+
 ```typescript
 await compiler.notifyTickStart(tickState);
 expect(tickStartSpy).toHaveBeenCalled();
 ```
 
 ### Testing Compile Stabilization
+
 ```typescript
 const result = await compiler.compileUntilStable(element, tickState);
 expect(result.iterations).toBeGreaterThan(1);
 ```
-

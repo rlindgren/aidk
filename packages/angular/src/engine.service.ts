@@ -1,15 +1,15 @@
 /**
  * Angular Service for Engine Client
- * 
+ *
  * Provides RxJS-based wrapper around the Engine Client with:
  * - Observable-based streaming
  * - Automatic cleanup on destroy
  * - Zone.js integration for change detection
  */
 
-import { Injectable, type OnDestroy, NgZone, InjectionToken, Inject } from '@angular/core';
-import { Observable, Subject, from, defer } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { Injectable, type OnDestroy, NgZone, InjectionToken, Inject } from "@angular/core";
+import { Observable, Subject, from, defer } from "rxjs";
+import { takeUntil } from "rxjs/operators";
 import {
   EngineClient,
   createEngineClient,
@@ -18,19 +18,19 @@ import {
   type EngineStreamEvent,
   type ExecutionResult,
   type ChannelEvent,
-} from 'aidk-client';
+} from "aidk-client";
 
 /** Injection token for Engine client configuration */
-export const ENGINE_CONFIG = new InjectionToken<EngineClientConfig>('ENGINE_CONFIG');
+export const ENGINE_CONFIG = new InjectionToken<EngineClientConfig>("ENGINE_CONFIG");
 
 @Injectable()
 export class EngineService implements OnDestroy {
   private client: EngineClient;
   private destroy$ = new Subject<void>();
-  
+
   /** Current session ID */
   readonly sessionId: string;
-  
+
   /** Current user ID */
   get userId(): string | undefined {
     return this.client.getUserId();
@@ -38,7 +38,7 @@ export class EngineService implements OnDestroy {
 
   constructor(
     private readonly ngZone: NgZone,
-    @Inject(ENGINE_CONFIG) private readonly config: EngineClientConfig
+    @Inject(ENGINE_CONFIG) private readonly config: EngineClientConfig,
   ) {
     // Initialize with empty config - can be updated later
     this.client = createEngineClient(this.config);
@@ -76,9 +76,7 @@ export class EngineService implements OnDestroy {
    * Execute an agent (non-streaming)
    */
   execute(agentId: string, input: EngineInput): Observable<ExecutionResult> {
-    return defer(() => from(this.client.execute(agentId, input))).pipe(
-      takeUntil(this.destroy$)
-    );
+    return defer(() => from(this.client.execute(agentId, input))).pipe(takeUntil(this.destroy$));
   }
 
   /**
@@ -131,8 +129,8 @@ export class EngineService implements OnDestroy {
    * Returns Observable of server response (may include updated state)
    */
   publish<T = unknown>(channel: string, type: string, payload?: unknown): Observable<T> {
-    return defer(() => 
-      from(this.client.publish<T>(channel, type, payload, { excludeSender: true }))
+    return defer(() =>
+      from(this.client.publish<T>(channel, type, payload, { excludeSender: true })),
     ).pipe(takeUntil(this.destroy$));
   }
 
@@ -146,17 +144,13 @@ export class EngineService implements OnDestroy {
     limit?: number;
     offset?: number;
   }): Observable<unknown[]> {
-    return defer(() => from(this.client.getExecutions(params))).pipe(
-      takeUntil(this.destroy$)
-    );
+    return defer(() => from(this.client.getExecutions(params))).pipe(takeUntil(this.destroy$));
   }
 
   /**
    * Get execution by ID
    */
   getExecution(executionId: string): Observable<unknown> {
-    return defer(() => from(this.client.getExecution(executionId))).pipe(
-      takeUntil(this.destroy$)
-    );
+    return defer(() => from(this.client.getExecution(executionId))).pipe(takeUntil(this.destroy$));
   }
 }

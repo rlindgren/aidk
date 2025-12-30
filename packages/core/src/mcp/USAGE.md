@@ -5,6 +5,7 @@
 Both `EngineConfig.mcpServers` and `MCPToolComponent` use the **same configuration format**:
 
 ### Cursor-Style (Simplified)
+
 ```typescript
 {
   command: 'npx',
@@ -14,6 +15,7 @@ Both `EngineConfig.mcpServers` and `MCPToolComponent` use the **same configurati
 ```
 
 ### Full MCPConfig Format
+
 ```typescript
 {
   serverName: 'postgres',
@@ -51,6 +53,7 @@ await engine.execute(input, <MyAgent />);
 ```
 
 **Use when:**
+
 - Same MCP servers for all executions
 - Static configuration
 - Simple setup
@@ -82,6 +85,7 @@ await engine.execute(input, <MyAgent />);
 ```
 
 **Use when:**
+
 - Different agents need different MCP servers
 - Conditional tool loading
 - Per-agent configuration
@@ -123,6 +127,7 @@ await engine.execute(
 ```
 
 **Use when:**
+
 - User-specific auth tokens
 - Dynamic configuration
 - Runtime tool filtering
@@ -248,7 +253,7 @@ function UserAgent({ userId, apiToken }: { userId: string; apiToken: string }) {
   return (
     <>
       {/* Engine-level MCP server (already registered) */}
-      
+
       {/* User-specific MCP server with runtime auth */}
       <MCPTool
         server="user-api"
@@ -267,7 +272,7 @@ function UserAgent({ userId, apiToken }: { userId: string; apiToken: string }) {
         exclude={['admin_tools']} // Filter out admin tools for regular users
         toolPrefix="user_" // Prefix: user_get_data, user_update_profile
       />
-      
+
       {/* Conditional MCP server (only for premium users) */}
       {userId.startsWith('premium_') && (
         <MCPTool
@@ -298,4 +303,3 @@ await engine.execute(
 5. **Conditional Loading**: Load tools based on user/context
 6. **Connection Sharing**: Share MCPClient across components
 7. **Easy JSX Usage**: `<MCPTool server="..." config={...} />`
-

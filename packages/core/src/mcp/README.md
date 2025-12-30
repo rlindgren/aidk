@@ -147,26 +147,30 @@ Model receives tools in tool calling format
 ### Current Control Points
 
 #### 1. **Tool Name** (from MCP server)
+
 - MCP server defines the tool name
 - Used as-is in Engine
 - **Control**: None (comes from MCP server)
 
 #### 2. **Tool Description** (from MCP server)
+
 - MCP server defines the description
 - Used as-is in Engine
 - **Control**: None (comes from MCP server)
 
 #### 3. **Tool Parameters** (from MCP server)
+
 - MCP server defines JSON Schema
 - Converted to Zod schema automatically
 - Converted back to JSON Schema for model
 - **Control**: None (comes from MCP server)
 
 #### 4. **Tool Filtering** (you can control this!)
+
 ```typescript
 // Discover tools but filter before registering
 const allTools = await mcpService.connectAndDiscover(config);
-const filteredTools = allTools.filter(tool => 
+const filteredTools = allTools.filter(tool =>
   tool.name.startsWith('allowed_') // Only register certain tools
 );
 
@@ -177,6 +181,7 @@ for (const toolDef of filteredTools) {
 ```
 
 #### 5. **Tool Transformation** (you can control this!)
+
 ```typescript
 // Transform tool definitions before registering
 const tools = await mcpService.connectAndDiscover(config);
@@ -195,12 +200,13 @@ for (const mcpToolDef of tools) {
     },
     mcpConfig
   );
-  
+
   com.addTool(transformedTool);
 }
 ```
 
 #### 6. **Provider-Specific Options** (you can control this!)
+
 ```typescript
 // Add provider-specific options to MCP tools
 const tool = new MCPTool(mcpClient, serverName, mcpToolDef, mcpConfig);
@@ -231,7 +237,7 @@ interface ToolTransformer {
 
 class PrefixToolTransformer implements ToolTransformer {
   constructor(private prefix: string) {}
-  
+
   transform(tool: MCPToolDefinition): MCPToolDefinition {
     return {
       ...tool,
@@ -292,24 +298,28 @@ Model receives tool result in next tick
 ## Best Practices
 
 1. **Prefix Tool Names**: Avoid conflicts with native tools
+
    ```typescript
    // Transform: 'read_file' → 'mcp_filesystem_read_file'
    ```
 
 2. **Filter Tools**: Only register tools you need
+
    ```typescript
-   const safeTools = tools.filter(t => 
-     !t.name.includes('delete') && 
+   const safeTools = tools.filter(t =>
+     !t.name.includes('delete') &&
      !t.name.includes('write')
    );
    ```
 
 3. **Add Descriptions**: Enhance MCP tool descriptions with context
+
    ```typescript
    description: `[Filesystem MCP] ${mcpToolDef.description}`
    ```
 
 4. **Use Provider Options**: Configure tool behavior per provider
+
    ```typescript
    providerOptions: {
      openai: { function: { strict: true } },
@@ -321,4 +331,3 @@ Model receives tool result in next tick
    const toolToServer = new Map<string, string>();
    toolToServer.set('mcp_read_file', 'filesystem-mcp');
    ```
-

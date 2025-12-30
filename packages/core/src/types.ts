@@ -1,30 +1,30 @@
 /**
  * Model Plugin Types
- * 
+ *
  * Defines types for AI model components (generation, streaming, tool calling)
- * 
+ *
  * ## Provider Options Architecture
- * 
+ *
  * The engine supports three levels of provider-specific options, each with its own interface
  * that can be extended via module augmentation:
- * 
+ *
  * 1. **ProviderClientOptions** - Client initialization options
  *    - Used when creating the underlying provider client (OpenAI, GoogleGenAI, Anthropic, HuggingFace, etc.)
  *    - Passed to adapter constructors or factory functions
  *    - Examples: API keys, base URLs, organization IDs, timeout settings
- * 
+ *
  * 2. **ProviderGenerationOptions** - Model generation/operation options
  *    - Used for model generation/streaming calls and other operations
- *    - Passed via `ModelInput.providerOptions` 
+ *    - Passed via `ModelInput.providerOptions`
  *    - Can include provider-specific parameters for generateImage, editImage, countTokens, etc.
  *    - Merged into provider-specific request parameters in adapter's `prepareInput()` method
- * 
+ *
  * 3. **ProviderToolOptions** - Tool definition options
  *    - Used for tool definitions to customize how tools are presented to the provider
  *    - Passed via `ToolMetadata.providerOptions` or `ToolDefinition.providerOptions`
  *    - Allows provider-specific tool configuration (e.g., OpenAI's tool types, function descriptions)
  *    - Merged into provider-specific tool definitions in adapter's `prepareInput()` method
- * 
+ *
  * Each adapter extends these interfaces using module augmentation:
  * ```typescript
  * declare module 'aidk' {
@@ -41,26 +41,19 @@
  * ```
  */
 
-import { 
-  type Message, 
-  type ContentBlock, 
-  type GeneratedImageBlock, 
-  type StreamChunk,
-  type AgentToolCall,
-  type AgentToolResult,
-} from 'aidk-shared';
-import type { Procedure, UserContext } from 'aidk-kernel';
-import { ProcedureGraph, ProcedureNode } from 'aidk-kernel';
-import type { ChannelService } from './channels/service';
-import type { COMInput } from './com/types';
-import { ExecutionHandleImpl } from './engine/execution-handle';
-import type { ExecutionType, ExecutionHandle as EngineExecutionHandle } from './engine/execution-types';
-import { EventEmitter } from 'node:events';
-import type { ContextMetadata, ContextMetrics } from 'aidk-kernel';
+import { type Message, type ContentBlock, type GeneratedImageBlock } from "aidk-shared";
+import type { Procedure, UserContext } from "aidk-kernel";
+import { ProcedureGraph, ProcedureNode } from "aidk-kernel";
+import type { ChannelService } from "./channels/service";
+import { ExecutionHandleImpl } from "./engine/execution-handle";
+import type {
+  ExecutionType,
+  ExecutionHandle as EngineExecutionHandle,
+} from "./engine/execution-types";
+import { EventEmitter } from "node:events";
+import type { ContextMetadata, ContextMetrics } from "aidk-kernel";
 
-export interface EngineContextMetadata extends ContextMetadata {
-
-}
+export interface EngineContextMetadata extends ContextMetadata {}
 
 export interface EngineContextMetrics extends ContextMetrics {
   usage: {
@@ -77,11 +70,11 @@ export interface EngineContextMetrics extends ContextMetrics {
  * Module augmentation: Extend KernelContext with Engine-specific properties.
  * This allows Engine to add fields to KernelContext without modifying Kernel types.
  * These fields are optional and only present when Engine is being used.
- * 
+ *
  * Note: We cannot override executionHandle (it's EventEmitter in Kernel),
  * but in Engine code we know it's always ExecutionHandleImpl and use type guards/assertions.
  */
-declare module 'aidk-kernel' {
+declare module "aidk-kernel" {
   interface KernelContext {
     /**
      * Execution type for fork/spawn operations.
@@ -103,14 +96,14 @@ declare module 'aidk-kernel' {
 
 /**
  * EngineContext is KernelContext with Engine-specific augmentations.
- * 
+ *
  * Unlike simple `extends KernelContext`, we explicitly redeclare all KernelContext
  * properties to ensure TypeScript properly recognizes them across package boundaries.
  * This avoids issues where module augmentation doesn't propagate correctly.
- * 
+ *
  * Engine augments KernelContext via module augmentation to add:
  * - executionType, parentPid, parentHandle (for fork/spawn)
- * 
+ *
  * This interface narrows executionHandle from EventEmitter to ExecutionHandleImpl
  * for better type safety in Engine code. This is valid because ExecutionHandleImpl
  * extends EventEmitter, making it a subtype.
@@ -119,32 +112,32 @@ export interface EngineContext {
   // ========================================
   // Core KernelContext properties (explicit redeclaration)
   // ========================================
-  
+
   /** Unique request ID for this execution context */
   requestId: string;
-  
+
   /** Trace ID for distributed tracing */
   traceId: string;
-  
+
   /** User context information */
   user?: UserContext;
-  
+
   /** Arbitrary metadata stored in the context */
   metadata: EngineContextMetadata;
-  
+
   /** Metrics collected during execution */
   metrics: EngineContextMetrics;
-  
+
   /** Global Request Bus for event emission */
   events: EventEmitter;
-  
+
   /** Cancellation signal */
   signal?: AbortSignal;
-  
+
   /**
    * Channel service for bidirectional communication (optional).
    * Injected by Engine when channels are configured.
-   * 
+   *
    * Provides access to:
    * - Router registry: `ctx.channels?.getRouter('channel-name')`
    * - Event dispatch: `ctx.channels?.handleEvent(...)`
@@ -152,21 +145,21 @@ export interface EngineContext {
    * - Low-level methods: `publish()`, `subscribe()`, `waitForResponse()`
    */
   channels?: ChannelService;
-  
+
   /**
    * Procedure graph for tracking procedure execution hierarchy.
    * Automatically initialized when first procedure is executed.
    */
   procedureGraph?: ProcedureGraph;
-  
+
   /**
    * Current procedure PID (for tracking nested procedures).
    */
   procedurePid?: string;
-  
+
   /** Current procedure node in the execution graph */
   procedureNode?: ProcedureNode;
-  
+
   /**
    * Origin procedure node - the root procedure that initiated this execution chain.
    * Undefined for the root procedure itself (since it IS the origin).
@@ -177,19 +170,19 @@ export interface EngineContext {
   // ========================================
   // Engine-specific properties (from module augmentation)
   // ========================================
-  
+
   /**
    * Execution type for fork/spawn operations.
    * Set by Engine when creating child executions.
    */
   executionType?: ExecutionType;
-  
+
   /**
    * Parent execution PID for fork/spawn operations.
    * Set by Engine when creating child executions.
    */
   parentPid?: string;
-  
+
   /**
    * Parent execution handle for fork/spawn operations.
    * Set by Engine when creating child executions.
@@ -199,7 +192,7 @@ export interface EngineContext {
   // ========================================
   // Engine-specific narrowed types
   // ========================================
-  
+
   /**
    * Execution handle narrowed to ExecutionHandleImpl (Engine's concrete implementation).
    * In Engine, executionHandle is always ExecutionHandleImpl, not just EventEmitter.
@@ -211,7 +204,7 @@ export interface EngineContext {
  * Base interface for provider-specific client initialization options.
  * Used when creating the underlying provider client (OpenAI, GoogleGenAI, Anthropic, etc.).
  * Each adapter can extend this interface using module augmentation to add their provider key.
- * 
+ *
  * Example:
  * ```typescript
  * declare module 'aidk' {
@@ -229,7 +222,7 @@ export interface ProviderClientOptions {
  * Base interface for provider-specific generation options.
  * Used for model generation/streaming calls and other operations (generateImage, editImage, countTokens, etc.).
  * Each adapter can extend this interface using module augmentation to add their provider key.
- * 
+ *
  * Example:
  * ```typescript
  * declare module 'aidk' {
@@ -247,7 +240,7 @@ export interface ProviderGenerationOptions {
  * Base interface for provider-specific tool options.
  * Used for tool definitions to customize how tools are presented to the provider.
  * Each adapter can extend this interface using module augmentation to add their provider key.
- * 
+ *
  * Example:
  * ```typescript
  * declare module 'aidk' {
@@ -264,7 +257,7 @@ export interface ProviderToolOptions {
 // ============================================================================
 // Library Options (ai-sdk, langchain, llamaindex, etc.)
 // ============================================================================
-// 
+//
 // Library options are distinct from provider options:
 // - ProviderOptions: SDK-level params sent to the AI provider (OpenAI, Anthropic)
 // - LibraryOptions: Library-level params consumed by the integration library runtime
@@ -282,7 +275,7 @@ export interface ProviderToolOptions {
  * Base interface for library client initialization options.
  * Used when creating library adapter instances.
  * Each adapter package extends this interface using module augmentation.
- * 
+ *
  * Example:
  * ```typescript
  * declare module 'aidk' {
@@ -303,7 +296,7 @@ export interface LibraryClientOptions {
  * Used for per-request library-specific configuration.
  * Passed via `ModelInput.libraryOptions`.
  * Each adapter package extends this interface using module augmentation.
- * 
+ *
  * Example:
  * ```typescript
  * declare module 'aidk' {
@@ -326,7 +319,7 @@ export interface LibraryGenerationOptions {
  * Used for tool-specific library configuration.
  * Passed via `ToolMetadata.libraryOptions` or `ToolDefinition.libraryOptions`.
  * Each adapter package extends this interface using module augmentation.
- * 
+ *
  * Example:
  * ```typescript
  * declare module 'aidk' {
@@ -358,17 +351,17 @@ export interface EphemeralRoleConfig {
   /**
    * @deprecated Use MessageTransformationConfig.roleMapping.ephemeral instead
    */
-  role?: 'user' | 'system';
-  
+  role?: "user" | "system";
+
   /**
    * @deprecated Use MessageTransformationConfig.delimiters.ephemeral instead
    */
   delimiter?: string | { start: string; end: string };
-  
+
   /**
    * @deprecated Use MessageTransformationConfig.ephemeralPosition instead
    */
-  position?: 'flow' | 'start' | 'end' | 'before-user' | 'after-system';
+  position?: "flow" | "start" | "end" | "before-user" | "after-system";
 }
 
 /** Simple delimiter - string or start/end pair */
@@ -387,8 +380,7 @@ export interface EventBlockDelimiters {
 }
 
 /** Event content block types (for formatter) */
-import type { EventBlock, TextBlock } from 'aidk-shared';
-import type { ModelOutput } from './model/model';
+import type { EventBlock, TextBlock } from "aidk-shared";
 
 /**
  * @deprecated Use MessageTransformationConfig from 'aidk/model' instead.
@@ -398,13 +390,13 @@ export interface EventRoleConfig {
   /**
    * @deprecated Use MessageTransformationConfig.roleMapping.event instead
    */
-  role?: 'user' | 'event';
-  
+  role?: "user" | "event";
+
   /**
    * @deprecated Use MessageTransformationConfig.delimiters.event instead
    */
   delimiter?: DelimiterConfig | EventBlockDelimiters;
-  
+
   /**
    * @deprecated Use MessageTransformationConfig.formatBlock instead
    */
@@ -412,8 +404,6 @@ export interface EventRoleConfig {
 }
 
 // ToolExecutionType and ToolIntent are now exported from 'aidk-shared'
-
-
 
 /**
  * Tool execution configuration options.
@@ -427,20 +417,20 @@ export interface ToolExecutionOptions {
    * @default true
    */
   parallel?: boolean;
-  
+
   /**
    * Maximum number of concurrent tool executions when parallel is true.
    * @default 10
    */
   maxConcurrent?: number;
-  
+
   /**
    * Default timeout for tool execution in milliseconds.
    * Can be overridden per-tool via tool definition.
    * @default 30000 (30 seconds)
    */
   defaultTimeoutMs?: number;
-  
+
   /**
    * Whether to continue execution if a tool fails.
    * When true, failed tools return error results but don't stop the tick.
@@ -452,19 +442,11 @@ export interface ToolExecutionOptions {
 // StopReason is now exported from 'aidk-shared'
 
 // ============================================================================
-// Agent / Engine Events
+// Engine Events
 // ============================================================================
 
 // AgentToolCall and AgentToolResult are now exported from 'aidk-shared'
-
-export type AgentStreamEvent =
-  | { type: 'agent_start'; agent_name: string; timestamp: string }
-  | { type: 'tick_start'; tick: number; timestamp: string }
-  | { type: 'model_chunk'; chunk: StreamChunk; tick: number }
-  | { type: 'tool_call'; call: AgentToolCall; tick: number }
-  | { type: 'tool_result'; result: AgentToolResult; tick: number }
-  | { type: 'tick_end'; tick: number; output: ModelOutput; timestamp: string }
-  | { type: 'agent_end'; output: COMInput; timestamp: string };
+// EngineStreamEvent and AgentStreamEvent are exported from './engine/engine-events'
 
 // ============================================================================
 // Image Generation
@@ -479,7 +461,7 @@ export interface ImageGenerationInput {
   style?: string;
   seed?: number;
   model?: string;
-  outputType?: 'url' | 'blob';
+  outputType?: "url" | "blob";
   providerOptions?: Record<string, any>;
 }
 
@@ -511,32 +493,32 @@ export interface ImageVariationInput {
 }
 
 export enum ImageSize {
-  SMALL = '256x256',
-  MEDIUM = '512x512',
-  LARGE = '1024x1024',
-  EXTRA_LARGE = '2048x2048',
-  SQUARE = 'square',
-  PORTRAIT = 'portrait',
-  LANDSCAPE = 'landscape',
-  AUTO = 'auto',
+  SMALL = "256x256",
+  MEDIUM = "512x512",
+  LARGE = "1024x1024",
+  EXTRA_LARGE = "2048x2048",
+  SQUARE = "square",
+  PORTRAIT = "portrait",
+  LANDSCAPE = "landscape",
+  AUTO = "auto",
 }
 
 export enum ImageQuality {
-  STANDARD = 'standard',
-  HD = 'hd',
-  ULTRA_HD = 'ultra_hd'
+  STANDARD = "standard",
+  HD = "hd",
+  ULTRA_HD = "ultra_hd",
 }
 
 export enum ImageOperation {
-  GENERATE = 'generate',
-  EDIT = 'edit',
-  VARIATION = 'variation'
+  GENERATE = "generate",
+  EDIT = "edit",
+  VARIATION = "variation",
 }
 
 export interface ImageGenerationAdapter {
-  generate: Procedure<((input: ImageGenerationInput) => ImageGenerationOutput)>;
-  edit?: Procedure<((input: ImageEditInput) => ImageGenerationOutput)>;
-  variation?: Procedure<((input: ImageVariationInput) => ImageGenerationOutput)>;
+  generate: Procedure<(input: ImageGenerationInput) => ImageGenerationOutput>;
+  edit?: Procedure<(input: ImageEditInput) => ImageGenerationOutput>;
+  variation?: Procedure<(input: ImageVariationInput) => ImageGenerationOutput>;
 }
 
 // ============================================================================
@@ -548,7 +530,7 @@ export interface EmbeddingInput {
   model?: string;
   dimensions?: number;
   user?: string;
-  encodingFormat?: 'float' | 'base64';
+  encodingFormat?: "float" | "base64";
   providerOptions?: Record<string, any>;
 }
 
@@ -585,8 +567,8 @@ export interface SimilarityResult {
 }
 
 export interface EmbeddingAdapter {
-  embed: Procedure<((input: EmbeddingInput) => EmbeddingOutput)>;
-  similarity?: Procedure<((input: SimilarityInput) => SimilarityResult)>;
+  embed: Procedure<(input: EmbeddingInput) => EmbeddingOutput>;
+  similarity?: Procedure<(input: SimilarityInput) => SimilarityResult>;
 }
 
 // ============================================================================
@@ -595,7 +577,7 @@ export interface EmbeddingAdapter {
 
 export function cosineSimilarity(a: number[], b: number[]): number {
   if (a.length !== b.length) {
-    throw new Error('Vectors must have same length');
+    throw new Error("Vectors must have same length");
   }
 
   let dotProduct = 0;
@@ -620,19 +602,17 @@ export function findSimilar(
   candidateEmbeddings: number[][],
   candidates: string[],
   topK: number = 5,
-  threshold?: number
+  threshold?: number,
 ): Array<{ text: string; score: number; index: number }> {
   const similarities = candidateEmbeddings.map((embedding, index) => ({
     text: candidates[index],
     score: cosineSimilarity(queryEmbedding, embedding),
-    index
+    index,
   }));
 
   similarities.sort((a, b) => b.score - a.score);
 
-  const filtered = threshold
-    ? similarities.filter(s => s.score >= threshold)
-    : similarities;
+  const filtered = threshold ? similarities.filter((s) => s.score >= threshold) : similarities;
 
   return filtered.slice(0, topK);
 }

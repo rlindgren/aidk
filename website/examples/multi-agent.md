@@ -473,6 +473,7 @@ pnpm dev
 ```
 
 Try queries like:
+
 - "Research the current state of quantum computing"
 - "What are best practices for building LLM applications?"
 - "Compare React, Vue, and Svelte for large applications"
@@ -502,6 +503,7 @@ Spawn creates independent processes that don't block the parent. Used for loggin
 ### Phase-Based Rendering
 
 The coordinator uses signals to track phase and renders different content:
+
 - **Research phase**: Fork parallel researchers
 - **Synthesis phase**: Combine results with a powerful model
 - **Complete phase**: Answer follow-up questions

@@ -22,7 +22,7 @@ npm install @ai-sdk/mistral    # Mistral
 
 Use AIDK to build context, then call `generateText` yourself:
 
-``` tsx
+```tsx
 import { compile } from 'aidk-ai-sdk';
 import { generateText } from 'ai';
 import { openai } from '@ai-sdk/openai';
@@ -57,7 +57,7 @@ console.log(result.text);
 
 Let the compiler manage multi-turn execution:
 
-``` tsx
+```tsx
 import { createCompiler } from 'aidk-ai-sdk';
 import { generateText } from 'ai';
 import { openai } from '@ai-sdk/openai';
@@ -81,7 +81,7 @@ console.log(result.text);
 
 Configure the model in the compiler:
 
-``` tsx
+```tsx
 import { createCompiler } from 'aidk-ai-sdk';
 import { openai } from '@ai-sdk/openai';
 
@@ -106,7 +106,7 @@ for await (const event of compiler.stream(<ChatAgent userMessage="Hello!" />)) {
 
 The `aisdk()` function wraps any AI SDK model for use with AIDK:
 
-``` tsx
+```tsx
 import { aisdk } from "aidk-ai-sdk";
 import { openai } from "@ai-sdk/openai";
 import { anthropic } from "@ai-sdk/anthropic";
@@ -179,7 +179,7 @@ class AdaptiveAgent extends Component {
 
 ### OpenAI
 
-``` tsx
+```tsx
 import { openai } from "@ai-sdk/openai";
 
 const model = aisdk({
@@ -194,7 +194,7 @@ const model = aisdk({
 
 ### Anthropic
 
-``` tsx
+```tsx
 import { anthropic } from "@ai-sdk/anthropic";
 
 const model = aisdk({
@@ -208,7 +208,7 @@ Claude models automatically receive XML-formatted context.
 
 ### Google
 
-``` tsx
+```tsx
 import { google } from "@ai-sdk/google";
 
 const model = aisdk({
@@ -221,7 +221,7 @@ const model = aisdk({
 
 ### With Compiler
 
-``` tsx
+```tsx
 const compiler = createCompiler({ model: openai('gpt-4o') });
 
 for await (const event of compiler.stream(<MyAgent />)) {
@@ -244,7 +244,7 @@ for await (const event of compiler.stream(<MyAgent />)) {
 
 ### With Engine
 
-``` tsx
+```tsx
 import { createEngine } from 'aidk';
 import { aisdk } from 'aidk-ai-sdk';
 
@@ -261,7 +261,7 @@ for await (const event of engine.stream(input, <MyAgent />)) {
 
 Tools work automatically with the AI SDK adapter:
 
-``` tsx
+```tsx
 const Calculator = createTool({
   name: 'calculator',
   description: 'Perform arithmetic',
@@ -292,7 +292,7 @@ const result = await compiler.run(<MathAgent />);
 
 For models with extended thinking (o1, o3, etc.):
 
-``` tsx
+```tsx
 const reasoningModel = aisdk({
   model: openai('o1-preview'),
   // Reasoning models have specific constraints
@@ -323,7 +323,7 @@ The adapter automatically selects the right format for each model:
 
 You can override this:
 
-``` tsx
+```tsx
 const model = aisdk({
   model: openai("gpt-4o"),
   renderer: "xml", // Force XML format
@@ -332,7 +332,7 @@ const model = aisdk({
 
 ## Full Example
 
-``` tsx
+```tsx
 import { createCompiler, aisdk } from 'aidk-ai-sdk';
 import { openai } from '@ai-sdk/openai';
 import { Component, System, Timeline, createTool, Grounding } from 'aidk';

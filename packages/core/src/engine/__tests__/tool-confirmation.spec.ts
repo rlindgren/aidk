@@ -22,10 +22,7 @@ describe("Tool Confirmation", () => {
       const toolName = "test_tool";
 
       // Start waiting for confirmation
-      const confirmationPromise = coordinator.waitForConfirmation(
-        toolUseId,
-        toolName,
-      );
+      const confirmationPromise = coordinator.waitForConfirmation(toolUseId, toolName);
 
       // Simulate async confirmation (like from client)
       setTimeout(() => {
@@ -43,10 +40,7 @@ describe("Tool Confirmation", () => {
       const toolUseId = "test-tool-2";
       const toolName = "test_tool";
 
-      const confirmationPromise = coordinator.waitForConfirmation(
-        toolUseId,
-        toolName,
-      );
+      const confirmationPromise = coordinator.waitForConfirmation(toolUseId, toolName);
 
       setTimeout(() => {
         coordinator.resolveConfirmation(toolUseId, false, false);
@@ -62,10 +56,7 @@ describe("Tool Confirmation", () => {
       const toolUseId = "test-tool-3";
       const toolName = "test_tool";
 
-      const confirmationPromise = coordinator.waitForConfirmation(
-        toolUseId,
-        toolName,
-      );
+      const confirmationPromise = coordinator.waitForConfirmation(toolUseId, toolName);
 
       setTimeout(() => {
         coordinator.resolveConfirmation(toolUseId, true, true);
@@ -78,11 +69,7 @@ describe("Tool Confirmation", () => {
     });
 
     it("should return null when resolving non-existent confirmation", () => {
-      const result = coordinator.resolveConfirmation(
-        "non-existent",
-        true,
-        false,
-      );
+      const result = coordinator.resolveConfirmation("non-existent", true, false);
       expect(result).toBeNull();
     });
 
@@ -116,11 +103,7 @@ describe("Tool Confirmation", () => {
       coordinator.resolveConfirmation("tool-1", false, true);
       coordinator.resolveConfirmation("tool-3", true, true);
 
-      const [result1, result2, result3] = await Promise.all([
-        promise1,
-        promise2,
-        promise3,
-      ]);
+      const [result1, result2, result3] = await Promise.all([promise1, promise2, promise3]);
 
       expect(result1.confirmed).toBe(false);
       expect(result1.always).toBe(true);
@@ -301,11 +284,7 @@ describe("Tool Confirmation", () => {
         name: "conditional_confirm",
         input: { dangerous: false },
       };
-      const safeResult = await executor.checkConfirmationRequired(
-        safeCall,
-        com,
-        [],
-      );
+      const safeResult = await executor.checkConfirmationRequired(safeCall, com, []);
       expect(safeResult!.required).toBe(false);
 
       // Dangerous operation - requires confirmation
@@ -314,11 +293,7 @@ describe("Tool Confirmation", () => {
         name: "conditional_confirm",
         input: { dangerous: true },
       };
-      const dangerousResult = await executor.checkConfirmationRequired(
-        dangerousCall,
-        com,
-        [],
-      );
+      const dangerousResult = await executor.checkConfirmationRequired(dangerousCall, com, []);
       expect(dangerousResult!.required).toBe(true);
 
       expect(callCount).toBe(2);
@@ -345,11 +320,7 @@ describe("Tool Confirmation", () => {
         name: "async_confirm",
         input: { userId: "admin" },
       };
-      const adminResult = await executor.checkConfirmationRequired(
-        adminCall,
-        com,
-        [],
-      );
+      const adminResult = await executor.checkConfirmationRequired(adminCall, com, []);
       expect(adminResult!.required).toBe(false);
 
       // Regular user - requires confirmation
@@ -358,11 +329,7 @@ describe("Tool Confirmation", () => {
         name: "async_confirm",
         input: { userId: "user123" },
       };
-      const userResult = await executor.checkConfirmationRequired(
-        userCall,
-        com,
-        [],
-      );
+      const userResult = await executor.checkConfirmationRequired(userCall, com, []);
       expect(userResult!.required).toBe(true);
     });
 
@@ -394,9 +361,7 @@ describe("Tool Confirmation", () => {
       };
 
       // Tool not in COM, but in configTools
-      const result = await executor.checkConfirmationRequired(call, com, [
-        tool,
-      ]);
+      const result = await executor.checkConfirmationRequired(call, com, [tool]);
 
       expect(result).not.toBeNull();
       expect(result!.required).toBe(true);
@@ -425,9 +390,7 @@ describe("Tool Confirmation", () => {
       expect(result.error).toBe("User denied tool execution");
       expect(result.content).toHaveLength(1);
       expect(result.content[0].type).toBe("text");
-      expect((result.content[0] as any).text).toBe(
-        "Tool execution was denied by user.",
-      );
+      expect((result.content[0] as any).text).toBe("Tool execution was denied by user.");
     });
   });
 
@@ -631,8 +594,11 @@ describe("Tool Confirmation", () => {
         input: {},
       };
 
-      const { result, confirmCheck, confirmation } =
-        await executor.processToolWithConfirmation(call, com, []);
+      const { result, confirmCheck, confirmation } = await executor.processToolWithConfirmation(
+        call,
+        com,
+        [],
+      );
 
       expect(confirmCheck?.required).toBe(false);
       expect(confirmation).toBeNull();
@@ -665,15 +631,19 @@ describe("Tool Confirmation", () => {
         coordinator.resolveConfirmation(call.id, true, false);
       }, 10);
 
-      const { result, confirmCheck, confirmation } =
-        await executor.processToolWithConfirmation(call, com, [], {
+      const { result, confirmCheck, confirmation } = await executor.processToolWithConfirmation(
+        call,
+        com,
+        [],
+        {
           onConfirmationRequired: async () => {
             events.push("confirmation_required");
           },
           onConfirmationResult: async () => {
             events.push("confirmation_result");
           },
-        });
+        },
+      );
 
       expect(confirmCheck?.required).toBe(true);
       expect(confirmation?.confirmed).toBe(true);
@@ -705,8 +675,11 @@ describe("Tool Confirmation", () => {
         coordinator.resolveConfirmation(call.id, false, false);
       }, 10);
 
-      const { result, confirmCheck, confirmation } =
-        await executor.processToolWithConfirmation(call, com, []);
+      const { result, confirmCheck, confirmation } = await executor.processToolWithConfirmation(
+        call,
+        com,
+        [],
+      );
 
       expect(confirmCheck?.required).toBe(true);
       expect(confirmation?.confirmed).toBe(false);
@@ -767,21 +740,14 @@ describe("Tool Confirmation", () => {
       // Process all tools in parallel
       const resultsPromise = Promise.all(
         calls.map(async (call) => {
-          const { result } = await executor.processToolWithConfirmation(
-            call,
-            com,
-            [],
-            {
-              onConfirmationRequired: async (c) => {
-                executionOrder.push(`confirm_required:${c.name}`);
-              },
-              onConfirmationResult: async (conf, c) => {
-                executionOrder.push(
-                  `confirm_result:${c.name}:${conf.confirmed}`,
-                );
-              },
+          const { result } = await executor.processToolWithConfirmation(call, com, [], {
+            onConfirmationRequired: async (c) => {
+              executionOrder.push(`confirm_required:${c.name}`);
             },
-          );
+            onConfirmationResult: async (conf, c) => {
+              executionOrder.push(`confirm_result:${c.name}:${conf.confirmed}`);
+            },
+          });
           executionOrder.push(`result:${call.name}`);
           return result;
         }),
@@ -830,9 +796,7 @@ describe("Tool Confirmation", () => {
       // We can verify this by checking that result:fast_tool appears before
       // confirm_result events (which happen after the setTimeout delays)
       const fastToolResultIndex = executionOrder.indexOf("result:fast_tool");
-      const confirmToolResultIndex = executionOrder.indexOf(
-        "confirm_result:confirm_tool:true",
-      );
+      const confirmToolResultIndex = executionOrder.indexOf("confirm_result:confirm_tool:true");
       expect(fastToolResultIndex).toBeLessThan(confirmToolResultIndex);
     });
 
@@ -866,11 +830,7 @@ describe("Tool Confirmation", () => {
 
       const resultsPromise = Promise.all(
         calls.map(async (call) => {
-          const { result } = await executor.processToolWithConfirmation(
-            call,
-            com,
-            [],
-          );
+          const { result } = await executor.processToolWithConfirmation(call, com, []);
           completionOrder.push(call.name);
           return result;
         }),

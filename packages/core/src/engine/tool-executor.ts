@@ -8,11 +8,7 @@ import {
 import { COM } from "../com/object-model";
 import { type ContentBlock } from "aidk-shared";
 import { type Middleware, type MiddlewarePipeline } from "aidk-kernel";
-import {
-  type ToolHookMiddleware,
-  type ToolHookName,
-  ToolHookRegistry,
-} from "../tool/tool-hooks";
+import { type ToolHookMiddleware, type ToolHookName, ToolHookRegistry } from "../tool/tool-hooks";
 import { applyRegistryMiddleware } from "../procedure";
 import { ClientToolCoordinator } from "./client-tool-coordinator";
 import { ToolConfirmationCoordinator } from "./tool-confirmation-coordinator";
@@ -134,9 +130,7 @@ export class ToolExecutor {
    * @param call - The tool call awaiting confirmation
    * @returns The confirmation result
    */
-  async waitForConfirmation(
-    call: AgentToolCall,
-  ): Promise<ToolConfirmationResult> {
+  async waitForConfirmation(call: AgentToolCall): Promise<ToolConfirmationResult> {
     return this.confirmationCoordinator.waitForConfirmation(call.id, call.name);
   }
 
@@ -174,9 +168,7 @@ export class ToolExecutor {
       return tool.run;
     }
 
-    const middleware = this.toolHooks.getMiddleware(
-      "run",
-    ) as ToolHookMiddleware<ToolHookName>[];
+    const middleware = this.toolHooks.getMiddleware("run") as ToolHookMiddleware<ToolHookName>[];
     if (middleware.length === 0) {
       return tool.run;
     }
@@ -243,9 +235,7 @@ export class ToolExecutor {
     // - Error isolation
     // - Result ordering preservation
     // - Circuit breaker patterns
-    const promises = toolCalls.map((call) =>
-      this.executeSingleTool(call, com, configTools),
-    );
+    const promises = toolCalls.map((call) => this.executeSingleTool(call, com, configTools));
     return Promise.all(promises);
   }
 
@@ -272,11 +262,7 @@ export class ToolExecutor {
     }
 
     if (!tool) {
-      return this.createErrorResult(
-        call,
-        `Tool "${call.name}" is not available`,
-        "TOOL_NOT_FOUND",
-      );
+      return this.createErrorResult(call, `Tool "${call.name}" is not available`, "TOOL_NOT_FOUND");
     }
 
     // 3. Check execution type and route accordingly
@@ -348,11 +334,7 @@ export class ToolExecutor {
 
       // Handle async iterable result (shouldn't happen for tools, but be safe)
       let content: ContentBlock[];
-      if (
-        result &&
-        typeof result === "object" &&
-        Symbol.asyncIterator in result
-      ) {
+      if (result && typeof result === "object" && Symbol.asyncIterator in result) {
         // If it's an async iterable, collect all chunks
         const chunks: ContentBlock[] = [];
         for await (const chunk of result as AsyncIterable<ContentBlock>) {
@@ -421,10 +403,7 @@ export class ToolExecutor {
             error_details: {
               name: originalError?.name,
               code: originalError?.code,
-              stack:
-                process.env["NODE_ENV"] === "development"
-                  ? originalError?.stack
-                  : undefined,
+              stack: process.env["NODE_ENV"] === "development" ? originalError?.stack : undefined,
             },
           }),
         }),
@@ -451,11 +430,7 @@ export class ToolExecutor {
     if (!error) return "UNKNOWN_ERROR";
 
     // Network/timeout errors
-    if (
-      error.code === "ETIMEDOUT" ||
-      error.code === "ECONNRESET" ||
-      error.code === "ENOTFOUND"
-    ) {
+    if (error.code === "ETIMEDOUT" || error.code === "ECONNRESET" || error.code === "ENOTFOUND") {
       return "NETWORK_ERROR";
     }
 
@@ -510,10 +485,7 @@ export class ToolExecutor {
     com: COM,
     configTools: ExecutableTool[] = [],
     callbacks: {
-      onConfirmationRequired?: (
-        call: AgentToolCall,
-        message: string,
-      ) => void | Promise<void>;
+      onConfirmationRequired?: (call: AgentToolCall, message: string) => void | Promise<void>;
       onConfirmationResult?: (
         confirmation: ToolConfirmationResult,
         call: AgentToolCall,
@@ -525,11 +497,7 @@ export class ToolExecutor {
     confirmation: ToolConfirmationResult | null;
   }> {
     // Check if confirmation is required
-    const confirmCheck = await this.checkConfirmationRequired(
-      call,
-      com,
-      configTools,
-    );
+    const confirmCheck = await this.checkConfirmationRequired(call, com, configTools);
 
     let result: AgentToolResult;
     let confirmation: ToolConfirmationResult | null = null;

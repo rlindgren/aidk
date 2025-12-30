@@ -94,9 +94,7 @@ describe("Fixtures", () => {
     });
 
     it("should create tool result block", () => {
-      const block = createToolResultBlock("tool-123", [
-        createTextBlock("Result"),
-      ]);
+      const block = createToolResultBlock("tool-123", [createTextBlock("Result")]);
 
       expect(block.type).toBe("tool_result");
       expect(block.toolUseId).toBe("tool-123");
@@ -153,26 +151,16 @@ describe("Fixtures", () => {
       expect(chunks[chunks.length - 1].stopReason).toBe(StopReason.STOP);
 
       // Should have content deltas in the middle
-      const deltas = chunks.filter(
-        (c) => c.type === StreamChunkType.CONTENT_DELTA,
-      );
+      const deltas = chunks.filter((c) => c.type === StreamChunkType.CONTENT_DELTA);
       expect(deltas.length).toBeGreaterThan(0);
     });
 
     it("should create tool call stream sequence", () => {
-      const chunks = createToolCallStreamSequence(
-        "search",
-        { query: "test" },
-        { results: [] },
-      );
+      const chunks = createToolCallStreamSequence("search", { query: "test" }, { results: [] });
 
       expect(chunks[0].type).toBe(StreamChunkType.MESSAGE_START);
-      expect(chunks.some((c) => c.type === StreamChunkType.TOOL_CALL)).toBe(
-        true,
-      );
-      expect(chunks.some((c) => c.type === StreamChunkType.TOOL_RESULT)).toBe(
-        true,
-      );
+      expect(chunks.some((c) => c.type === StreamChunkType.TOOL_CALL)).toBe(true);
+      expect(chunks.some((c) => c.type === StreamChunkType.TOOL_RESULT)).toBe(true);
       expect(chunks[chunks.length - 1].stopReason).toBe(StopReason.TOOL_USE);
     });
   });
@@ -219,9 +207,9 @@ describe("Helpers", () => {
     });
 
     it("should reject on timeout", async () => {
-      await expect(
-        waitFor(() => false, { timeout: 50, message: "Never ready" }),
-      ).rejects.toThrow("Never ready");
+      await expect(waitFor(() => false, { timeout: 50, message: "Never ready" })).rejects.toThrow(
+        "Never ready",
+      );
     });
   });
 
@@ -274,17 +262,13 @@ describe("Helpers", () => {
         }
       }
 
-      await expect(
-        captureAsyncGenerator(infinite(), { timeout: 50 }),
-      ).rejects.toThrow("timeout");
+      await expect(captureAsyncGenerator(infinite(), { timeout: 50 })).rejects.toThrow("timeout");
     });
   });
 
   describe("arrayToAsyncGenerator", () => {
     it("should yield items from array", async () => {
-      const items = await captureAsyncGenerator(
-        arrayToAsyncGenerator([1, 2, 3]),
-      );
+      const items = await captureAsyncGenerator(arrayToAsyncGenerator([1, 2, 3]));
 
       expect(items).toEqual([1, 2, 3]);
     });
@@ -300,8 +284,7 @@ describe("Helpers", () => {
 
   describe("createControllableGenerator", () => {
     it("should yield pushed values", async () => {
-      const { generator, push, complete } =
-        createControllableGenerator<number>();
+      const { generator, push, complete } = createControllableGenerator<number>();
 
       const capturePromise = captureAsyncGenerator(generator);
 

@@ -64,10 +64,7 @@ async function processFile(filePath) {
 
     // b) Escape ALL tag-like patterns: <word>, <Word>, </word>, </Word>
     // This is aggressive but safe - better to over-escape than have build failures
-    escaped = escaped.replace(
-      /(?<!&lt;)<(\/?[A-Za-z][A-Za-z0-9]*)([^>]*)>/g,
-      "&lt;$1$2&gt;",
-    );
+    escaped = escaped.replace(/(?<!&lt;)<(\/?[A-Za-z][A-Za-z0-9]*)([^>]*)>/g, "&lt;$1$2&gt;");
 
     // c) Convert backslash-escaped braces to HTML entities
     escaped = escaped.replace(/\\{/g, "&#123;");

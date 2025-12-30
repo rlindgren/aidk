@@ -37,6 +37,7 @@ sequenceDiagram
 **When**: Component is first added to the tree (before first tick)
 
 **Use for**:
+
 - Loading initial data
 - Setting up subscriptions
 - Initializing COM state
@@ -73,10 +74,12 @@ class MyAgent extends Component {
 **When**: At the start of each tick, before render — **for components already in the tree**
 
 **Arguments**:
+
 - `com: COM` — The context object model
 - `state: TickState` — Current tick state including previous response
 
 **Use for**:
+
 - Accumulating timeline from previous response
 - Reacting to model output
 - Preparing state for render
@@ -97,6 +100,7 @@ onTickStart(com: COM, state: TickState) {
 ```
 
 **Important notes**:
+
 - `state.tick` gives you the current tick number (1-indexed)
 - **onTickStart does NOT fire for newly mounted components.** It only fires for components that already exist in the fiber tree when the tick starts. Newly mounted components receive `onMount` but not `onTickStart` on their first tick—they start receiving `onTickStart` from the next tick onwards.
 
@@ -107,12 +111,14 @@ onTickStart(com: COM, state: TickState) {
 **When**: During compilation phase of each tick
 
 **Arguments**:
+
 - `com: COM` — The context object model
 - `state: TickState` — Current tick state
 
 **Returns**: JSX element tree
 
 **Use for**:
+
 - Building the context the model will see
 - Conditional rendering based on state
 - Composing child components
@@ -148,11 +154,13 @@ render(com: COM, state: TickState) {
 **When**: After render completes, before model call
 
 **Arguments**:
+
 - `com: COM` — The context object model
 - `compiled: CompiledStructure` — The compiled output
 - `state: TickState` — Current tick state
 
 **Use for**:
+
 - Inspecting compiled context (token counting, validation)
 - Dynamic context management (summarization, truncation)
 - Requesting recompilation
@@ -182,10 +190,12 @@ onAfterCompile(com: COM, compiled: CompiledStructure, state: TickState) {
 **When**: After model responds and tools execute
 
 **Arguments**:
+
 - `com: COM` — The context object model
 - `state: TickState` — Updated with current response
 
 **Use for**:
+
 - Processing model response
 - Deciding whether to continue or stop
 - Triggering side effects based on output
@@ -217,10 +227,12 @@ onTickEnd(com: COM, state: TickState) {
 **When**: Execution finishes (all ticks done, stop requested, or max ticks)
 
 **Arguments**:
+
 - `com: COM` — Final COM state
 - `finalState: TickState` — Final tick state
 
 **Use for**:
+
 - Persisting results
 - Cleanup
 - Sending final events
@@ -248,6 +260,7 @@ async onComplete(com: COM, finalState: TickState) {
 **When**: Component is removed from tree
 
 **Use for**:
+
 - Cleanup subscriptions
 - Disposing resources
 - Final state persistence
@@ -269,12 +282,14 @@ onUnmount(com: COM) {
 **When**: An error occurs during execution
 
 **Arguments**:
+
 - `com: COM` — The context object model
 - `state: TickState` — State at time of error (includes `state.error`)
 
 **Returns**: Recovery action or void
 
 **Use for**:
+
 - Error recovery decisions
 - Graceful degradation
 - Error logging
@@ -311,11 +326,13 @@ class MyAgent extends Component {
 **When**: A message is sent to the running execution
 
 **Arguments**:
+
 - `com: COM` — The context object model
 - `message: Message` — The incoming message
 - `state: TickState` — Current state
 
 **Use for**:
+
 - Handling user interrupts
 - Processing real-time feedback
 - Dynamic context injection
@@ -435,27 +452,27 @@ interface COMOutput {
 
 ## Execution Order Summary
 
-| Order | Hook | Fires |
-|-------|------|-------|
-| 1 | `onMount` | Once, when component added |
-| 2 | `onStart` | Once, before first tick (engine-level) |
-| 3 | `onTickStart` | Every tick, before render (existing components only) |
-| 4 | `render` | Every tick |
-| 5 | `onAfterCompile` | Every tick, after render |
-| 6 | `onTickEnd` | Every tick, after model |
-| 7 | `onComplete` | Once, when execution ends |
-| 8 | `onUnmount` | Once, when component removed |
+| Order | Hook             | Fires                                                |
+| ----- | ---------------- | ---------------------------------------------------- |
+| 1     | `onMount`        | Once, when component added                           |
+| 2     | `onStart`        | Once, before first tick (engine-level)               |
+| 3     | `onTickStart`    | Every tick, before render (existing components only) |
+| 4     | `render`         | Every tick                                           |
+| 5     | `onAfterCompile` | Every tick, after render                             |
+| 6     | `onTickEnd`      | Every tick, after model                              |
+| 7     | `onComplete`     | Once, when execution ends                            |
+| 8     | `onUnmount`      | Once, when component removed                         |
 
 `onError` and `onMessage` fire as needed, outside the normal tick flow.
 
 ### First Mount vs Subsequent Ticks
 
-| Hook | First Mount (Tick N) | Subsequent Ticks |
-|------|---------------------|------------------|
-| `onMount` | ✓ | — |
-| `onTickStart` | — (not called) | ✓ |
-| `render` | ✓ | ✓ |
-| `onTickEnd` | ✓ | ✓ |
+| Hook          | First Mount (Tick N) | Subsequent Ticks |
+| ------------- | -------------------- | ---------------- |
+| `onMount`     | ✓                    | —                |
+| `onTickStart` | — (not called)       | ✓                |
+| `render`      | ✓                    | ✓                |
+| `onTickEnd`   | ✓                    | ✓                |
 
 **Why this matters**: If you need to process `state.current` on the component's first tick, use `render()` or `onTickEnd()` instead of `onTickStart()`. Alternatively, handle initial state in `onMount()` before render.
 

@@ -107,9 +107,7 @@ describe("isMessage", () => {
   it("should return true for tool message", () => {
     const message: Message = {
       role: "tool",
-      content: [
-        { type: "tool_result", toolUseId: "123", name: "test", content: [] },
-      ],
+      content: [{ type: "tool_result", toolUseId: "123", name: "test", content: [] }],
     };
     expect(isMessage(message)).toBe(true);
   });

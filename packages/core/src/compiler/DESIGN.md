@@ -4,14 +4,14 @@
 
 This compiler is designed for **AI agent execution**, not UI rendering. This changes everything:
 
-| Concern | React (UI) | AIDK (Agent) |
-|---------|-----------|--------------|
-| **Timing** | 60fps, can't block | Tick-based, waiting is fine |
-| **Output** | DOM mutations | Data structures (CompiledStructure) |
-| **Async** | Effects after paint | First-class async in all phases |
-| **Concurrency** | Time-slicing to avoid jank | Not needed - no jank |
-| **Suspense** | Show fallback while loading | Wait for data, then proceed |
-| **Layout effects** | Before DOM paint | N/A - no paint |
+| Concern            | React (UI)                  | AIDK (Agent)                        |
+| ------------------ | --------------------------- | ----------------------------------- |
+| **Timing**         | 60fps, can't block          | Tick-based, waiting is fine         |
+| **Output**         | DOM mutations               | Data structures (CompiledStructure) |
+| **Async**          | Effects after paint         | First-class async in all phases     |
+| **Concurrency**    | Time-slicing to avoid jank  | Not needed - no jank                |
+| **Suspense**       | Show fallback while loading | Wait for data, then proceed         |
+| **Layout effects** | Before DOM paint            | N/A - no paint                      |
 
 ## Design Principles
 
@@ -92,15 +92,16 @@ function DataComponent({ userId }) {
     () => fetchUser(userId),
     [userId]
   );
-  
+
   if (loading) return null;  // Component contributes nothing while loading
   if (error) throw error;    // Or handle gracefully
-  
+
   return <Message role="system">User: {user.name}</Message>;
 }
 ```
 
 **Why this works for us:**
+
 - We're not blocking a UI thread
 - The tick can wait for all async work
 - No fallback UI needed (there's no UI!)
@@ -113,7 +114,7 @@ Effects CAN be async - we await them:
 useEffect(async () => {
   const data = await fetchSomething();
   setData(data);
-  
+
   return () => {
     // cleanup can also be async
     await saveData(data);
@@ -133,14 +134,14 @@ Components that manage state/effects but produce no output:
 // State manager - no render output
 function TimelineManager() {
   const [timeline, setTimeline] = useComState('timeline', []);
-  
+
   useTickStart((com, state) => {
     // Process model output from previous tick
     if (state.current?.timeline) {
       setTimeline(t => [...t, ...state.current.timeline]);
     }
   });
-  
+
   // Returns null - doesn't contribute to CompiledStructure
   return null;
 }
@@ -148,15 +149,15 @@ function TimelineManager() {
 // Controller component - manages tick execution
 function ExecutionController() {
   const [turnCount, setTurnCount] = useState(0);
-  
+
   useTickEnd((com, state) => {
     setTurnCount(c => c + 1);
-    
+
     if (turnCount >= 10) {
       state.stop('max turns reached');
     }
   });
-  
+
   return null;
 }
 
@@ -186,11 +187,11 @@ function MyComponent() {
     <Message role="assistant">
       {/* JSX content components */}
       <Text>Hello, world!</Text>
-      
+
       {/* Pure content blocks - passed through directly */}
       {{ type: 'text', text: 'Raw content block' }}
       {{ type: 'code', language: 'python', code: 'print("hello")' }}
-      
+
       {/* Array of content blocks */}
       {[
         { type: 'text', text: 'Block 1' },
@@ -224,21 +225,21 @@ function isContentBlock(value: unknown): value is ContentBlock {
 function ToolProvider({ tools }: { tools: Tool[] }) {
   // Local state
   const [enabled, setEnabled] = useState(true);
-  
+
   // COM state
   const [toolCalls] = useComState('toolCalls', []);
-  
+
   // Lifecycle
   useOnMount((com) => {
     tools.forEach(t => com.addTool(t));
   });
-  
+
   useOnUnmount((com) => {
     tools.forEach(t => com.removeTool(t.name));
   });
-  
+
   if (!enabled) return null;
-  
+
   return (
     <Section id="tools">
       <Text>Available tools: {tools.map(t => t.name).join(', ')}</Text>
@@ -254,24 +255,24 @@ class ConversationManager extends Component {
   // Signals (existing pattern)
   private timeline = comState<Message[]>('timeline', []);
   private messageCount = signal(0);
-  
+
   // Input signals
   private maxMessages = input<number>(100);
-  
+
   async onTickStart(com: COM, state: TickState) {
     if (state.current?.timeline) {
       this.timeline.update(t => [...t, ...state.current.timeline]);
       this.messageCount.update(c => c + state.current.timeline.length);
     }
   }
-  
+
   render() {
     const timeline = this.timeline();
     const max = this.maxMessages() ?? 100;
-    
+
     // Truncate if needed
     const visible = timeline.slice(-max);
-    
+
     return (
       <Timeline>
         {visible.map((msg, i) => (
@@ -293,18 +294,18 @@ For those who want signals in functions, we provide a bridge:
 // Hook that creates a signal (persisted on fiber)
 function useSignal<T>(initialValue: T): Signal<T> {
   const hook = mountOrUpdateHook(HookTag.Signal);
-  
+
   if (hook.memoizedState === undefined) {
     hook.memoizedState = signal(initialValue);
   }
-  
+
   return hook.memoizedState as Signal<T>;
 }
 
 // Usage
 function Counter() {
   const count = useSignal(0);  // Full signal API
-  
+
   return (
     <Section id="counter">
       <Text>Count: {count()}</Text>
@@ -320,14 +321,15 @@ function Counter() {
 
 React's concurrent mode solves UI problems we don't have:
 
-| React Problem | Our Situation |
-|--------------|---------------|
-| Long renders freeze UI | No UI to freeze |
-| Need to prioritize user input | No user input during tick |
-| Time-slice to maintain 60fps | No fps requirement |
-| Interruptible rendering | We want to complete, not interrupt |
+| React Problem                 | Our Situation                      |
+| ----------------------------- | ---------------------------------- |
+| Long renders freeze UI        | No UI to freeze                    |
+| Need to prioritize user input | No user input during tick          |
+| Time-slice to maintain 60fps  | No fps requirement                 |
+| Interruptible rendering       | We want to complete, not interrupt |
 
 **What we DO need:**
+
 - Ability to abort execution (AbortController)
 - Compile stabilization loop
 - Async phase execution
@@ -351,6 +353,7 @@ while (workInProgress) {
 ## Effect Phases
 
 Instead of React's:
+
 - `useLayoutEffect` (sync, before paint)
 - `useEffect` (async, after paint)
 
@@ -470,7 +473,7 @@ Hooks store state on the fiber node in a linked list:
 interface FiberNode {
   // For function components
   memoizedState: HookState | null;  // Head of linked list
-  
+
   // For class components
   stateNode: ComponentInstance | null;  // The instance
 }
@@ -504,7 +507,7 @@ Pure content blocks are detected and passed through:
 
 ```typescript
 const CONTENT_BLOCK_TYPES = [
-  'text', 'image', 'document', 'audio', 'video', 
+  'text', 'image', 'document', 'audio', 'video',
   'code', 'json', 'tool_use', 'tool_result', 'reasoning'
 ];
 
@@ -535,7 +538,7 @@ function useAbortSignal(): AbortSignal {
 // Usage
 function DataFetcher() {
   const signal = useAbortSignal();
-  
+
   useEffect(async () => {
     const data = await fetch(url, { signal });
     setData(data);
@@ -553,7 +556,7 @@ function DataFetcher() {
 // V1 class component works unchanged in V2
 class MyComponent extends Component {
   timeline = comState('timeline', []);
-  
+
   onMount(com) { /* ... */ }
   render(com, state) { return <Section>...</Section>; }
 }
@@ -571,9 +574,9 @@ function StatelessComponent(props) {
 function StatefulComponent(props) {
   const [data, setData] = useState(null);
   const [shared] = useComState('shared', {});
-  
+
   useOnMount((com) => { /* ... */ });
-  
+
   return <Section>{data}</Section>;
 }
 ```
@@ -609,6 +612,7 @@ packages/core/src/compiler/v2/
 ### Q: Should useEffect be async?
 
 **Yes, in our model.** React's useEffect can't be async because:
+
 1. It must return `undefined | cleanup` synchronously
 2. React needs to know the cleanup function immediately
 3. Async would block the render thread
@@ -633,6 +637,7 @@ useEffect(async () => {
 ```
 
 **Why this works for us:**
+
 - No render thread to block
 - Tick loop can await effects
 - Cleanup can be async (e.g., saving state to DB)
@@ -677,16 +682,19 @@ function Profile() {
 ### Q: Do we need concurrent mode?
 
 **No.** React's concurrent mode solves:
+
 - Time-slicing (avoid jank)
 - Priority lanes (user input > background updates)
 - Interruptible rendering
 
 We don't have these needs:
+
 - No UI = no jank
 - No user input during render
 - We WANT to complete rendering, not interrupt it
 
 What we DO have:
+
 - **AbortController** for cancellation
 - **Compile stabilization** for recompile loops
 - **Async phases** for waiting on async work
@@ -699,25 +707,25 @@ What we DO have:
 // State manager - no output
 function TimelineManager() {
   const [timeline, setTimeline] = useComState('timeline', []);
-  
+
   useTickStart((com, state) => {
     if (state.current?.timeline) {
       setTimeline(t => [...t, ...state.current.timeline]);
     }
   });
-  
+
   return null;  // ← No output, just manages state
 }
 
 // Execution controller
 function MaxTurnsGuard({ max }) {
   const [turns, setTurns] = useState(0);
-  
+
   useTickEnd((com, state) => {
     setTurns(t => t + 1);
     if (turns >= max) state.stop('max turns');
   });
-  
+
   return null;  // ← No output, just controls execution
 }
 
@@ -729,7 +737,7 @@ function ToolProvider({ tools }) {
   useOnUnmount((com) => {
     tools.forEach(t => com.removeTool(t.name));
   });
-  
+
   return null;  // ← No output, just manages tools
 }
 ```
@@ -744,13 +752,13 @@ function MyComponent() {
     <Message role="assistant">
       {/* JSX components */}
       <Text>Hello, world!</Text>
-      
+
       {/* Pure content block object */}
       {{ type: 'text', text: 'I am a raw content block' }}
-      
+
       {/* Code block */}
       {{ type: 'code', language: 'python', code: 'print("hi")' }}
-      
+
       {/* Array of blocks */}
       {[
         { type: 'text', text: 'Block 1' },
@@ -784,29 +792,29 @@ function isContentBlock(value: unknown): boolean {
 class MyAgent extends Component {
   // Signals (component-local)
   private count = signal(0);
-  
+
   // COM state (shared)
   private timeline = comState<Message[]>('timeline', []);
-  
+
   // Input signals (from props)
   private maxTurns = input<number>(10);
-  
+
   async onMount(com: COM) {
     // Setup
   }
-  
+
   async onTickStart(com: COM, state: TickState) {
     if (state.current?.timeline) {
       this.timeline.update(t => [...t, ...state.current.timeline]);
     }
   }
-  
+
   async onAfterCompile(com, compiled, state, ctx) {
     if (this.timeline().length > 100) {
       com.requestRecompile('timeline too long');
     }
   }
-  
+
   render(com: COM, state: TickState) {
     return (
       <Timeline>
@@ -821,14 +829,14 @@ class MyAgent extends Component {
 
 ### Q: When to use function vs class components?
 
-| Use Case | Recommended |
-|----------|-------------|
-| Simple stateless rendering | Function |
-| Local state + effects | Function with hooks |
-| Complex shared state | Either (hooks or signals) |
-| Heavy lifecycle logic | Class (cleaner organization) |
-| Tool components | Class (static tool property) |
-| Quick prototyping | Function (less boilerplate) |
+| Use Case                   | Recommended                  |
+| -------------------------- | ---------------------------- |
+| Simple stateless rendering | Function                     |
+| Local state + effects      | Function with hooks          |
+| Complex shared state       | Either (hooks or signals)    |
+| Heavy lifecycle logic      | Class (cleaner organization) |
+| Tool components            | Class (static tool property) |
+| Quick prototyping          | Function (less boilerplate)  |
 
 Both are first-class citizens. Use what feels right.
 
@@ -836,26 +844,26 @@ Both are first-class citizens. Use what feels right.
 
 ## Implementation Status
 
-| Feature | Status |
-|---------|--------|
-| Fiber tree structure | ✅ Implemented |
-| useState, useReducer | ✅ Implemented |
-| useEffect (async) | ✅ Implemented |
-| useComState, useWatch | ✅ Implemented |
-| useTickStart/End | ✅ Implemented |
-| useAfterCompile | ✅ Implemented |
-| useMemo, useCallback | ✅ Implemented |
-| useRef, useCOMRef | ✅ Implemented |
-| useAsync | ✅ Implemented |
-| useSignal (bridge) | ✅ Implemented |
-| Class component support | ✅ Implemented |
-| Pure content blocks | ✅ Implemented |
+| Feature                  | Status         |
+| ------------------------ | -------------- |
+| Fiber tree structure     | ✅ Implemented |
+| useState, useReducer     | ✅ Implemented |
+| useEffect (async)        | ✅ Implemented |
+| useComState, useWatch    | ✅ Implemented |
+| useTickStart/End         | ✅ Implemented |
+| useAfterCompile          | ✅ Implemented |
+| useMemo, useCallback     | ✅ Implemented |
+| useRef, useCOMRef        | ✅ Implemented |
+| useAsync                 | ✅ Implemented |
+| useSignal (bridge)       | ✅ Implemented |
+| Class component support  | ✅ Implemented |
+| Pure content blocks      | ✅ Implemented |
 | Non-rendering components | ✅ Implemented |
-| Compile stabilization | ✅ Implemented |
-| Structure collection | ✅ Implemented |
-| Engine integration | 🔲 Todo |
-| Error boundaries | 🔲 Todo |
-| DevTools integration | 🔲 Todo |
+| Compile stabilization    | ✅ Implemented |
+| Structure collection     | ✅ Implemented |
+| Engine integration       | 🔲 Todo        |
+| Error boundaries         | 🔲 Todo        |
+| DevTools integration     | 🔲 Todo        |
 
 ---
 

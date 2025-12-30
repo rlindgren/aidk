@@ -1,11 +1,11 @@
 /**
  * Metrics Repository
- * 
+ *
  * Re-exports from shared/server for backwards compatibility.
  */
 
-import { InMemoryMetricsRepository, type MetricsEntity } from 'aidk-express';
-import { getStore } from '../database';
+import { InMemoryMetricsRepository, type MetricsEntity } from "aidk-express";
+import { getStore } from "../database";
 
 // Export implementation and types
 export { InMemoryMetricsRepository as MetricsRepository };

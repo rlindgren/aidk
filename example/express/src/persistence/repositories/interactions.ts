@@ -1,11 +1,11 @@
 /**
  * Interaction Repository
- * 
+ *
  * Re-exports from shared/server for backwards compatibility.
  */
 
-import { InMemoryInteractionRepository, type InteractionEntity } from 'aidk-express';
-import { getStore } from '../database';
+import { InMemoryInteractionRepository, type InteractionEntity } from "aidk-express";
+import { getStore } from "../database";
 
 // Export implementation and types
 export { InMemoryInteractionRepository as InteractionRepository };

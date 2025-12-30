@@ -45,12 +45,12 @@ import { EngineService, ExecutionService } from 'aidk-angular';
 export class ChatComponent {
   private engine = inject(EngineService);
   protected execution = inject(ExecutionService);
-  
+
   ngOnInit() {
     this.engine.updateConfig({ userId: 'user-123' });
     this.execution.initialize('assistant');
   }
-  
+
   send(event: KeyboardEvent) {
     const input = event.target as HTMLInputElement;
     this.execution.sendMessage(input.value);
@@ -81,4 +81,3 @@ export class ChatComponent {
 ## Documentation
 
 See the [full documentation](https://your-org.github.io/aidk).
-

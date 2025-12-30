@@ -1,8 +1,6 @@
 import type { ContentBlock, Message, MessageRoles } from "aidk-shared";
 import { createElement, type JSX, Fragment } from "../jsx-runtime";
-import type {
-  EngineStreamEvent,
-} from "../../engine/engine-events";
+import type { EngineStreamEvent } from "../../engine/engine-events";
 import type { ComponentBaseProps } from "../jsx-types";
 
 /**
@@ -10,9 +8,7 @@ import type { ComponentBaseProps } from "../jsx-types";
  * Wraps Message components to explicitly declare timeline entries.
  * When used in JSX: <Timeline><Message role="user" content="..." /></Timeline>
  */
-export function Timeline(
-  props: JSX.IntrinsicElements["timeline"],
-): JSX.Element {
+export function Timeline(props: JSX.IntrinsicElements["timeline"]): JSX.Element {
   // Timeline is just a Fragment - it doesn't render anything itself
   // The renderer processes its Message children
   return createElement(Fragment, props);
@@ -127,18 +123,8 @@ export type MessageProps = Partial<Omit<Message, "content" | "role">> & {
  * Compiles to: <Entry kind="message" message={{ role: 'user', content: [...] }} />
  */
 export function Message(props: MessageProps): JSX.Element {
-  const {
-    role,
-    content,
-    children,
-    id,
-    metadata,
-    tags,
-    visibility,
-    createdAt,
-    updatedAt,
-    ...rest
-  } = props;
+  const { role, content, children, id, metadata, tags, visibility, createdAt, updatedAt, ...rest } =
+    props;
 
   // Convert MessageProps to Message structure for EntryKindMap
   // If content is already ContentBlock[], use it; otherwise renderer will convert children
@@ -178,29 +164,10 @@ export type { ModelComponentProps, ModelOptionsProps } from "./model";
 export { Markdown } from "./markdown";
 
 // Re-export semantic primitives
-export {
-  H1,
-  H2,
-  H3,
-  Header,
-  Paragraph,
-  List,
-  ListItem,
-  Table,
-  Row,
-  Column,
-} from "./semantic";
+export { H1, H2, H3, Header, Paragraph, List, ListItem, Table, Row, Column } from "./semantic";
 
 // Re-export message role components
-export {
-  User,
-  Assistant,
-  System,
-  ToolResult,
-  Event,
-  Ephemeral,
-  Grounding,
-} from "./messages";
+export { User, Assistant, System, ToolResult, Event, Ephemeral, Grounding } from "./messages";
 export type {
   UserProps,
   AssistantProps,
@@ -215,10 +182,6 @@ export type {
 
 // Re-export event block components
 export { UserAction, SystemEvent, StateChange } from "./messages";
-export type {
-  UserActionProps,
-  SystemEventProps,
-  StateChangeProps,
-} from "./messages";
+export type { UserActionProps, SystemEventProps, StateChangeProps } from "./messages";
 
 // Fragment is already exported from jsx-runtime but we can re-export or use <>

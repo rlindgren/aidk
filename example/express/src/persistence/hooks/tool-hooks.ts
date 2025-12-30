@@ -1,13 +1,19 @@
 /**
  * Tool Hooks - Persistence for tool.run
- * 
+ *
  * These hooks track tool executions. When nested inside an engine execution,
  * they link to the parent. When standalone, they create their own execution record.
  */
 
-import type { ToolHookMiddleware } from 'aidk';
-import type { ExecutionRepository, MetricsRepository } from '../repositories';
-import { generateUUID, tryGetExecutionContext, getParentExecution, getInteraction, isNestedExecution } from './utils';
+import type { ToolHookMiddleware } from "aidk";
+import type { ExecutionRepository, MetricsRepository } from "../repositories";
+import {
+  generateUUID,
+  tryGetExecutionContext,
+  getParentExecution,
+  getInteraction,
+  isNestedExecution,
+} from "./utils";
 
 export interface ToolHooksConfig {
   executionRepo: ExecutionRepository;
@@ -17,7 +23,7 @@ export interface ToolHooksConfig {
 /**
  * Create tool.run hook
  */
-export function createToolRunHook(config: ToolHooksConfig): ToolHookMiddleware<'run'> {
+export function createToolRunHook(config: ToolHooksConfig): ToolHookMiddleware<"run"> {
   const { executionRepo, metricsRepo } = config;
 
   return async ([_input], _envelope, next) => {
@@ -49,8 +55,8 @@ export function createToolRunHook(config: ToolHooksConfig): ToolHookMiddleware<'
 
     await executionRepo.create({
       id: toolExecutionId,
-      type: 'tool',
-      status: 'running',
+      type: "tool",
+      status: "running",
       root_id: rootId,
       parent_id: parentId,
       thread_id: effectiveThreadId,
@@ -58,8 +64,8 @@ export function createToolRunHook(config: ToolHooksConfig): ToolHookMiddleware<'
       tenant_id: tenantId,
       interaction_id: parentInteraction?.id,
       metadata: {
-        tool_id: ctx.metadata['tool_id'] || 'unknown',
-        tool_type: ctx.metadata['tool_type'] || 'unknown',
+        tool_id: ctx.metadata["tool_id"] || "unknown",
+        tool_type: ctx.metadata["tool_type"] || "unknown",
         engine_pid: handle.pid,
       },
     });
@@ -88,13 +94,13 @@ export function createToolRunHook(config: ToolHooksConfig): ToolHookMiddleware<'
     try {
       const result = await next();
       await executionRepo.update(toolExecutionId, {
-        status: 'completed',
+        status: "completed",
         completed_at: new Date(),
       });
       return result;
     } catch (error: any) {
       await executionRepo.update(toolExecutionId, {
-        status: 'failed',
+        status: "failed",
         error: JSON.stringify({ message: error.message, stack: error.stack }),
         completed_at: new Date(),
       });
@@ -102,4 +108,3 @@ export function createToolRunHook(config: ToolHooksConfig): ToolHookMiddleware<'
     }
   };
 }
-

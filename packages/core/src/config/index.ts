@@ -5,10 +5,7 @@
  */
 
 import type { Middleware } from "aidk-kernel";
-import type {
-  EngineHookMiddleware,
-  EngineHookName,
-} from "../engine/engine-hooks";
+import type { EngineHookMiddleware, EngineHookName } from "../engine/engine-hooks";
 import type { ModelHookMiddleware, ModelHookName } from "../model/model-hooks";
 import type { ToolHookMiddleware, ToolHookName } from "../tool/tool-hooks";
 

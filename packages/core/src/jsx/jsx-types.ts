@@ -6,7 +6,7 @@ export interface ComponentBaseProps {
   /**
    * Reference name for accessing this component instance.
    * Use com.getRef<ComponentType>('myRef') to access the instance.
-   * 
+   *
    * @example
    * ```tsx
    * <Fork ref="myFork" input={forkInput} />
@@ -14,11 +14,10 @@ export interface ComponentBaseProps {
    * ```
    */
   ref?: string;
-  
+
   /**
    * Key for React-like reconciliation (optional).
    * Used by compiler to track component instances across renders.
    */
   key?: string | number;
 }
-

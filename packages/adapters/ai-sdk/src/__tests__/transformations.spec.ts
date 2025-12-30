@@ -437,10 +437,7 @@ describe("mapAiSdkContentToContentBlocks", () => {
   });
 
   it("should filter undefined blocks", () => {
-    const content = [
-      { type: "text" as const, text: "Keep" },
-      { type: "unknown-type" as any },
-    ];
+    const content = [{ type: "text" as const, text: "Keep" }, { type: "unknown-type" as any }];
     const result = mapAiSdkContentToContentBlocks(content);
 
     // The unknown type might be converted or undefined depending on implementation
@@ -468,17 +465,12 @@ describe("mapToolResultContent", () => {
   });
 
   it("should return text type for single text block", () => {
-    const result = mapToolResultContent([
-      { type: "text", text: "Result text" },
-    ]);
+    const result = mapToolResultContent([{ type: "text", text: "Result text" }]);
     expect(result).toEqual({ type: "text", value: "Result text" });
   });
 
   it("should return error-text for single text block with isError", () => {
-    const result = mapToolResultContent(
-      [{ type: "text", text: "Error message" }],
-      true,
-    );
+    const result = mapToolResultContent([{ type: "text", text: "Error message" }], true);
     expect(result).toEqual({ type: "error-text", value: "Error message" });
   });
 
@@ -549,9 +541,7 @@ describe("mapContentBlocksToToolResultOutput", () => {
   });
 
   it("should handle single text block", () => {
-    const result = mapContentBlocksToToolResultOutput([
-      { type: "text", text: "42" },
-    ]);
+    const result = mapContentBlocksToToolResultOutput([{ type: "text", text: "42" }]);
     expect(result).toEqual({ type: "text", value: "42" });
   });
 

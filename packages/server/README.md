@@ -37,4 +37,3 @@ broadcaster.publish('todos', {
 ## Documentation
 
 See the [full documentation](https://your-org.github.io/aidk).
-

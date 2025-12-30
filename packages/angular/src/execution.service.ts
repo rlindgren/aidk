@@ -1,33 +1,33 @@
 /**
  * Angular Service for Agent Execution
- * 
+ *
  * Provides high-level execution management with:
  * - Message accumulation
  * - Streaming state
  * - Thread management
  * - Observable-based API
- * 
+ *
  * Uses the framework-agnostic StreamProcessor for event handling.
  */
 
-import { Injectable, type OnDestroy } from '@angular/core';
-import { BehaviorSubject, Subject, Observable, throwError } from 'rxjs';
-import { takeUntil, tap, finalize, catchError } from 'rxjs/operators';
-import { EngineService } from './engine.service';
-import { 
-  type Message, 
+import { Injectable, type OnDestroy } from "@angular/core";
+import { BehaviorSubject, Subject, Observable, throwError } from "rxjs";
+import { takeUntil, tap, finalize, catchError } from "rxjs/operators";
+import { EngineService } from "./engine.service";
+import {
+  type Message,
   StreamProcessor,
   type StreamEvent,
   createMessage,
   normalizeMessageInput,
-} from 'aidk-client';
-import type { EngineStreamEvent, MessageInput } from 'aidk-client';
+} from "aidk-client";
+import type { EngineStreamEvent, MessageInput } from "aidk-client";
 
 @Injectable()
 export class ExecutionService implements OnDestroy {
   private destroy$ = new Subject<void>();
   private processor: StreamProcessor;
-  
+
   private messagesSubject = new BehaviorSubject<Message[]>([]);
   private isStreamingSubject = new BehaviorSubject<boolean>(false);
   private threadIdSubject = new BehaviorSubject<string | null>(null);
@@ -35,13 +35,13 @@ export class ExecutionService implements OnDestroy {
 
   /** Observable of accumulated messages */
   readonly messages$ = this.messagesSubject.asObservable();
-  
+
   /** Observable of streaming state */
   readonly isStreaming$ = this.isStreamingSubject.asObservable();
-  
+
   /** Observable of current thread ID */
   readonly threadId$ = this.threadIdSubject.asObservable();
-  
+
   /** Observable of last error */
   readonly error$ = this.errorSubject.asObservable();
 
@@ -81,7 +81,7 @@ export class ExecutionService implements OnDestroy {
 
   /**
    * Send a message and stream the response
-   * 
+   *
    * @param agentId - The agent to execute
    * @param input - Flexible message input:
    *   - string: Converted to TextBlock in user message
@@ -91,10 +91,14 @@ export class ExecutionService implements OnDestroy {
    *   - Message[]: Multiple messages
    * @param threadId - Optional thread ID override
    */
-  sendMessage(agentId: string, input: MessageInput, threadId?: string): Observable<EngineStreamEvent> {
+  sendMessage(
+    agentId: string,
+    input: MessageInput,
+    threadId?: string,
+  ): Observable<EngineStreamEvent> {
     // Normalize input to messages
-    const inputMessages = normalizeMessageInput(input, 'user');
-    
+    const inputMessages = normalizeMessageInput(input, "user");
+
     // Add all input messages to the display
     for (const msg of inputMessages) {
       const displayMessage = createMessage(msg.role, msg.content);
@@ -102,7 +106,7 @@ export class ExecutionService implements OnDestroy {
     }
 
     // Create placeholder for assistant response
-    const assistantMessage = createMessage('assistant', []);
+    const assistantMessage = createMessage("assistant", []);
     const assistantMessageId = assistantMessage.id!;
     this.processor.setCurrentAssistantId(assistantMessageId);
 
@@ -125,7 +129,7 @@ export class ExecutionService implements OnDestroy {
         const result = this.processor.processEvent(
           event as StreamEvent,
           { assistantMessage, assistantMessageId },
-          addedAssistantMessage
+          addedAssistantMessage,
         );
         addedAssistantMessage = result.addedAssistantMessage;
       }),
@@ -135,9 +139,9 @@ export class ExecutionService implements OnDestroy {
       }),
       takeUntil(this.destroy$),
       catchError((error: any) => {
-        console.error('Error sending message to agent:', error);
+        console.error("Error sending message to agent:", error);
         return throwError(() => error);
-      })
+      }),
     );
   }
 

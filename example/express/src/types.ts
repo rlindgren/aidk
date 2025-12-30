@@ -1,6 +1,6 @@
 // This import makes the file a module, enabling proper module augmentation
 // Without it, `declare module` creates an ambient module that REPLACES the real one
-import 'aidk';
+import "aidk";
 
 declare module "aidk" {
   interface UserContext {
@@ -15,5 +15,4 @@ declare module "aidk" {
     threadId?: string;
     userId?: string;
   }
-
 }

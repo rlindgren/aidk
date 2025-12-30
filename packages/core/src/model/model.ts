@@ -1,33 +1,29 @@
 /**
  * Model System
- * 
+ *
  * EngineModel is the primary interface for models in the engine.
  * Use createModel() to create models from options.
- * 
+ *
  * ModelAdapter is available for class-based implementations (e.g., provider adapters).
  */
 
-import type { Middleware, MiddlewarePipeline, Procedure, ProcedureOptions } from 'aidk-kernel';
-import { createEngineProcedure } from '../procedure';
+import type { Middleware, MiddlewarePipeline, Procedure, ProcedureOptions } from "aidk-kernel";
+import { createEngineProcedure } from "../procedure";
 import type {
   ModelInput as BaseModelInput,
   ModelOutput as BaseModelOutput,
   ModelConfig as BaseModelConfig,
   ModelToolReference as BaseModelToolReference,
-} from 'aidk-shared/models';
-import type { StreamChunk } from 'aidk-shared/streaming';
-import type { Message } from 'aidk-shared/messages';
-import { StopReason } from 'aidk-shared/streaming';
-import type { COMInput } from '../com/types';
-import type { EngineResponse } from '../engine/engine-response';
-import type { StopReasonInfo } from '../component/component';
-import { type ModelHookMiddleware, type ModelHookName, ModelHookRegistry } from './model-hooks';
-import { ToolHookRegistry } from '../tool/tool-hooks';
-import type { 
-  EventBlock, 
-  TextBlock, 
-  ContentBlock
-} from 'aidk-shared';
+} from "aidk-shared/models";
+import type { StreamChunk } from "aidk-shared/streaming";
+import type { Message } from "aidk-shared/messages";
+import { StopReason } from "aidk-shared/streaming";
+import type { COMInput } from "../com/types";
+import type { EngineResponse } from "../engine/engine-response";
+import type { StopReasonInfo } from "../component/component";
+import { type ModelHookMiddleware, type ModelHookName, ModelHookRegistry } from "./model-hooks";
+import { ToolHookRegistry } from "../tool/tool-hooks";
+import type { EventBlock, TextBlock, ContentBlock } from "aidk-shared";
 
 export type { BaseModelToolReference, BaseModelConfig, BaseModelInput, BaseModelOutput };
 
@@ -39,25 +35,22 @@ export type { BaseModelToolReference, BaseModelConfig, BaseModelInput, BaseModel
  * EngineModel is the primary interface for models.
  * All models (created via createModel or ModelAdapter) conform to this.
  */
-export interface EngineModel<
-  TModelInput = ModelInput,
-  TModelOutput = ModelOutput
-> {
+export interface EngineModel<TModelInput = ModelInput, TModelOutput = ModelOutput> {
   /** Model metadata (id, description, capabilities, etc.) */
   metadata: ModelMetadata;
-  
+
   /** Generate a response (non-streaming) */
   generate: Procedure<(input: TModelInput) => Promise<TModelOutput>>;
-  
+
   /** Generate a streaming response */
   stream?: Procedure<(input: TModelInput) => AsyncIterable<StreamChunk>>;
-  
+
   /** Convert engine state (COMInput) to model input */
   fromEngineState?: (input: COMInput) => Promise<TModelInput>;
-  
+
   /** Convert model output to engine response */
   toEngineState?: (output: TModelOutput) => Promise<EngineResponse>;
-  
+
   /** Aggregate stream chunks into final output */
   processStream?: (chunks: StreamChunk[]) => Promise<TModelOutput>;
 }
@@ -76,7 +69,7 @@ export interface ModelTransformers<
   TModelOutput,
   TProviderInput,
   TProviderOutput,
-  TChunk
+  TChunk,
 > {
   /** Convert model input to provider-specific format */
   prepareInput?: (input: TModelInput) => MaybePromise<TProviderInput>;
@@ -103,7 +96,7 @@ export interface ModelExecutors<TProviderInput, TProviderOutput, TChunk> {
  */
 export interface ModelProcedureOptions {
   middleware?: Middleware<any[]>[];
-  handleFactory?: ProcedureOptions['handleFactory'];
+  handleFactory?: ProcedureOptions["handleFactory"];
 }
 
 /**
@@ -114,12 +107,18 @@ export interface CreateModelOptions<
   TModelOutput extends ModelOutput = ModelOutput,
   TProviderInput = any,
   TProviderOutput = any,
-  TChunk = any
+  TChunk = any,
 > {
   /** Model metadata */
   metadata: ModelMetadata;
   /** Input/output transformers */
-  transformers?: ModelTransformers<TModelInput, TModelOutput, TProviderInput, TProviderOutput, TChunk>;
+  transformers?: ModelTransformers<
+    TModelInput,
+    TModelOutput,
+    TProviderInput,
+    TProviderOutput,
+    TChunk
+  >;
   /** Provider execution methods */
   executors: ModelExecutors<TProviderInput, TProviderOutput, TChunk>;
   /** Procedure options for generate/stream */
@@ -135,7 +134,7 @@ export interface CreateModelOptions<
 
 /**
  * Creates an EngineModel from options.
- * 
+ *
  * @example
  * ```typescript
  * const myModel = createModel({
@@ -156,24 +155,29 @@ export function createModel<
   TModelOutput extends ModelOutput = ModelOutput,
   TProviderInput = any,
   TProviderOutput = any,
-  TChunk = any
->(options: CreateModelOptions<TModelInput, TModelOutput, TProviderInput, TProviderOutput, TChunk>): EngineModel<TModelInput, TModelOutput> {
+  TChunk = any,
+>(
+  options: CreateModelOptions<TModelInput, TModelOutput, TProviderInput, TProviderOutput, TChunk>,
+): EngineModel<TModelInput, TModelOutput> {
   const { metadata, transformers = {}, executors, procedures = {} } = options;
 
   // Default transformers (pass-through)
-  const prepareInput = transformers.prepareInput ?? ((input: TModelInput) => input as unknown as TProviderInput);
-  const processOutput = transformers.processOutput ?? ((output: TProviderOutput) => output as unknown as TModelOutput);
-  const processChunk = transformers.processChunk ?? ((chunk: TChunk) => chunk as unknown as StreamChunk);
+  const prepareInput =
+    transformers.prepareInput ?? ((input: TModelInput) => input as unknown as TProviderInput);
+  const processOutput =
+    transformers.processOutput ?? ((output: TProviderOutput) => output as unknown as TModelOutput);
+  const processChunk =
+    transformers.processChunk ?? ((chunk: TChunk) => chunk as unknown as StreamChunk);
   const processStream = transformers.processStream;
 
   // Create generate procedure with low-cardinality telemetry
   const generate = createEngineProcedure<(input: TModelInput) => Promise<TModelOutput>>(
     {
-      name: 'model:generate',
+      name: "model:generate",
       metadata: {
-        type: 'model',
+        type: "model",
         id: metadata.id,
-        operation: 'generate',
+        operation: "generate",
       },
       handleFactory: procedures.generate?.handleFactory,
       middleware: normalizeMiddleware(procedures.generate?.middleware),
@@ -182,7 +186,7 @@ export function createModel<
       const providerInput = await prepareInput(input);
       const providerOutput = await executors.execute(providerInput);
       return processOutput(providerOutput);
-    }
+    },
   );
 
   // Create stream procedure if streaming is supported
@@ -190,11 +194,11 @@ export function createModel<
   if (executors.executeStream) {
     stream = createEngineProcedure<(input: TModelInput) => AsyncIterable<StreamChunk>>(
       {
-        name: 'model:stream',
+        name: "model:stream",
         metadata: {
-          type: 'model',
+          type: "model",
           id: metadata.id,
-          operation: 'stream',
+          operation: "stream",
         },
         handleFactory: procedures.stream?.handleFactory,
         middleware: normalizeMiddleware(procedures.stream?.middleware),
@@ -205,7 +209,7 @@ export function createModel<
         for await (const chunk of iterator) {
           yield processChunk(chunk);
         }
-      }
+      },
     );
   }
 
@@ -230,15 +234,23 @@ export function createModel<
 }
 
 function normalizeMiddleware(
-  middleware?: Middleware<any[]>[]
+  middleware?: Middleware<any[]>[],
 ): (Middleware<any[]> | MiddlewarePipeline)[] | undefined {
   return middleware as (Middleware<any[]> | MiddlewarePipeline)[] | undefined;
 }
 
 // Import and re-export language model utilities
-import { fromEngineState as defaultFromEngineState, toEngineState as defaultToEngineState } from './utils/language-model';
-import type { LibraryGenerationOptions, ProviderGenerationOptions, DelimiterConfig, EventBlockDelimiters } from '../types';
-import type { ExecutableTool, ToolDefinition, ToolMetadata } from '../tool/tool';
+import {
+  fromEngineState as defaultFromEngineState,
+  toEngineState as defaultToEngineState,
+} from "./utils/language-model";
+import type {
+  LibraryGenerationOptions,
+  ProviderGenerationOptions,
+  DelimiterConfig,
+  EventBlockDelimiters,
+} from "../types";
+import type { ExecutableTool, ToolDefinition, ToolMetadata } from "../tool/tool";
 
 /**
  * Creates a language model with standard fromEngineState/toEngineState transformers.
@@ -249,12 +261,14 @@ export function createLanguageModel<
   TModelOutput extends ModelOutput = ModelOutput,
   TProviderInput = any,
   TProviderOutput = any,
-  TChunk = any
->(options: CreateModelOptions<TModelInput, TModelOutput, TProviderInput, TProviderOutput, TChunk>): EngineModel<TModelInput, TModelOutput> {
+  TChunk = any,
+>(
+  options: CreateModelOptions<TModelInput, TModelOutput, TProviderInput, TProviderOutput, TChunk>,
+): EngineModel<TModelInput, TModelOutput> {
   return createModel<TModelInput, TModelOutput, TProviderInput, TProviderOutput, TChunk>({
     metadata: {
       ...options.metadata,
-      type: 'language' as const,
+      type: "language" as const,
     },
     transformers: options.transformers,
     executors: options.executors,
@@ -267,7 +281,7 @@ export function createLanguageModel<
       const modelInstance = { metadata: options.metadata } as any;
       return defaultFromEngineState(input, undefined, modelInstance) as Promise<TModelInput>;
     },
-    toEngineState: (output: TModelOutput) => 
+    toEngineState: (output: TModelOutput) =>
       (options.toEngineState || defaultToEngineState)(output),
   });
 }
@@ -278,10 +292,10 @@ export function createLanguageModel<
 
 /**
  * Abstract class for provider-specific model adapters.
- * 
+ *
  * Use this when you need class-based organization (e.g., OpenAI, Anthropic adapters).
  * For simpler cases, use createModel().
- * 
+ *
  * Generic parameters:
  * - TModelInput: Standard input format (default: ModelInput)
  * - TModelOutput: Standard output format (default: ModelOutput)
@@ -294,10 +308,10 @@ export abstract class ModelAdapter<
   TModelOutput = ModelOutput,
   TProviderInput = any,
   TProviderOutput = any,
-  TChunk = StreamChunk
+  TChunk = StreamChunk,
 > implements EngineModel<TModelInput, TModelOutput> {
   abstract metadata: ModelMetadata;
-  
+
   static hooks: Record<string, ModelHookMiddleware<any>[]> = {};
   static tags: string[] = [];
 
@@ -322,7 +336,7 @@ export abstract class ModelAdapter<
     const modelClass = this.constructor as typeof ModelAdapter;
     const staticHooks = modelClass.hooks;
     if (!staticHooks) return;
-    
+
     for (const [hookName, middleware] of Object.entries(staticHooks)) {
       if (middleware && Array.isArray(middleware)) {
         for (const mw of middleware) {
@@ -333,19 +347,19 @@ export abstract class ModelAdapter<
   }
 
   // === Abstract methods for subclasses ===
-  
+
   /** Convert model input to provider format */
   protected abstract prepareInput(input: TModelInput): TProviderInput | Promise<TProviderInput>;
-  
+
   /** Convert provider output to model output */
   protected abstract processOutput(output: TProviderOutput): TModelOutput | Promise<TModelOutput>;
-  
+
   /** Convert provider chunk to StreamChunk */
   protected abstract processChunk?(chunk: TChunk): StreamChunk;
-  
+
   /** Execute generation (provider-specific) */
   protected abstract execute(input: TProviderInput): Promise<TProviderOutput>;
-  
+
   /** Execute streaming (provider-specific) */
   protected abstract executeStream?(input: TProviderInput): AsyncIterable<TChunk>;
 
@@ -353,23 +367,23 @@ export abstract class ModelAdapter<
 
   /** Generate procedure - initialized lazily to access metadata */
   private _generate?: Procedure<(input: TModelInput) => Promise<TModelOutput>>;
-  
+
   public get generate(): Procedure<(input: TModelInput) => Promise<TModelOutput>> {
     if (!this._generate) {
       this._generate = createEngineProcedure(
         {
-          name: 'model:generate',
+          name: "model:generate",
           metadata: {
-            type: 'model',
+            type: "model",
             id: this.metadata.id,
-            operation: 'generate',
+            operation: "generate",
           },
         },
         async (input: TModelInput) => {
           const providerInput = await this.prepareInput(input);
           const providerOutput = await this.execute(providerInput);
           return this.processOutput(providerOutput);
-        }
+        },
       );
     }
     return this._generate;
@@ -377,17 +391,17 @@ export abstract class ModelAdapter<
 
   /** Stream procedure - initialized lazily to access metadata */
   private _stream?: Procedure<(input: TModelInput) => AsyncIterable<StreamChunk>>;
-  
+
   public get stream(): Procedure<(input: TModelInput) => AsyncIterable<StreamChunk>> {
     if (!this._stream) {
       const self = this;
       this._stream = createEngineProcedure(
         {
-          name: 'model:stream',
+          name: "model:stream",
           metadata: {
-            type: 'model',
+            type: "model",
             id: this.metadata.id,
-            operation: 'stream',
+            operation: "stream",
           },
         },
         async function* (input: TModelInput): AsyncIterable<StreamChunk> {
@@ -396,9 +410,9 @@ export abstract class ModelAdapter<
           }
           const providerInput = await self.prepareInput(input);
           for await (const chunk of self.executeStream(providerInput)) {
-            yield self.processChunk ? self.processChunk(chunk) : chunk as unknown as StreamChunk;
+            yield self.processChunk ? self.processChunk(chunk) : (chunk as unknown as StreamChunk);
           }
-        }
+        },
       );
     }
     return this._stream;
@@ -407,10 +421,10 @@ export abstract class ModelAdapter<
   /** Aggregate stream chunks into final output */
   public async processStream(chunks: TChunk[] | StreamChunk[]): Promise<TModelOutput> {
     const streamChunks = chunks as StreamChunk[];
-    let text = '';
+    let text = "";
     const toolCalls: any[] = [];
     const usage = { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
-    let stopReason: any = 'unspecified';
+    let stopReason: any = "unspecified";
     let model = this.metadata.id;
 
     for (const chunk of streamChunks) {
@@ -428,11 +442,11 @@ export abstract class ModelAdapter<
     return {
       model,
       createdAt: new Date().toISOString(),
-      message: { role: 'assistant', content: [{ type: 'text', text }] },
+      message: { role: "assistant", content: [{ type: "text", text }] },
       usage,
       toolCalls: toolCalls.length ? toolCalls : undefined,
       stopReason,
-      raw: {}
+      raw: {},
     } as unknown as TModelOutput;
   }
 
@@ -446,20 +460,28 @@ export abstract class ModelAdapter<
   public async toEngineState(output: TModelOutput): Promise<EngineResponse> {
     const modelOutput = output as unknown as ModelOutput;
     const stopReasonInfo = this.deriveStopReason(output);
-    const shouldStop = stopReasonInfo 
-      ? (!modelOutput.toolCalls?.length && this.isTerminalStopReason(stopReasonInfo.reason))
+    const shouldStop = stopReasonInfo
+      ? !modelOutput.toolCalls?.length && this.isTerminalStopReason(stopReasonInfo.reason)
       : false;
-    
+
     return {
-      newTimelineEntries: modelOutput.message ? [{
-        kind: 'message',
-        message: modelOutput.message,
-        tags: ['model_output']
-      }] : [],
-      toolCalls: modelOutput.toolCalls?.map(tc => ({ id: tc.id, name: tc.name, input: tc.input })),
+      newTimelineEntries: modelOutput.message
+        ? [
+            {
+              kind: "message",
+              message: modelOutput.message,
+              tags: ["model_output"],
+            },
+          ]
+        : [],
+      toolCalls: modelOutput.toolCalls?.map((tc) => ({
+        id: tc.id,
+        name: tc.name,
+        input: tc.input,
+      })),
       usage: modelOutput.usage,
       shouldStop,
-      stopReason: stopReasonInfo
+      stopReason: stopReasonInfo,
     };
   }
 
@@ -474,27 +496,31 @@ export abstract class ModelAdapter<
       reason: stopReason,
       description: this.getStopReasonDescription(stopReason),
       recoverable: this.isRecoverableStopReason(stopReason),
-      metadata: { usage: modelOutput.usage, model: modelOutput.model }
+      metadata: { usage: modelOutput.usage, model: modelOutput.model },
     };
   }
 
   protected getStopReasonDescription(reason: string | StopReason): string {
     const descriptions: Record<string, string> = {
-      [StopReason.MAX_TOKENS]: 'Maximum token limit reached',
-      [StopReason.CONTENT_FILTER]: 'Content was filtered by safety filters',
-      [StopReason.TOOL_USE]: 'Model requested tool execution',
-      [StopReason.STOP]: 'Model completed naturally',
-      [StopReason.PAUSED]: 'Generation was paused',
-      [StopReason.FORMAT_ERROR]: 'Response format error occurred',
-      [StopReason.EMPTY_RESPONSE]: 'Model returned empty response',
-      [StopReason.NO_CONTENT]: 'No content was generated',
+      [StopReason.MAX_TOKENS]: "Maximum token limit reached",
+      [StopReason.CONTENT_FILTER]: "Content was filtered by safety filters",
+      [StopReason.TOOL_USE]: "Model requested tool execution",
+      [StopReason.STOP]: "Model completed naturally",
+      [StopReason.PAUSED]: "Generation was paused",
+      [StopReason.FORMAT_ERROR]: "Response format error occurred",
+      [StopReason.EMPTY_RESPONSE]: "Model returned empty response",
+      [StopReason.NO_CONTENT]: "No content was generated",
     };
     return descriptions[reason] || `Stopped: ${reason}`;
   }
 
   protected isRecoverableStopReason(reason: string | StopReason): boolean {
     const recoverable = [StopReason.PAUSED, StopReason.FORMAT_ERROR];
-    const terminal = [StopReason.STOP, StopReason.EXPLICIT_COMPLETION, StopReason.NATURAL_COMPLETION];
+    const terminal = [
+      StopReason.STOP,
+      StopReason.EXPLICIT_COMPLETION,
+      StopReason.NATURAL_COMPLETION,
+    ];
     if (recoverable.includes(reason as StopReason)) return true;
     if (terminal.includes(reason as StopReason)) return false;
     return false;
@@ -522,10 +548,10 @@ export abstract class ModelAdapter<
 export function isEngineModel(value: any): value is EngineModel {
   return (
     value &&
-    typeof value === 'object' &&
-    'metadata' in value &&
-    'generate' in value &&
-    typeof value.generate === 'function'
+    typeof value === "object" &&
+    "metadata" in value &&
+    "generate" in value &&
+    typeof value.generate === "function"
   );
 }
 
@@ -534,8 +560,6 @@ export function isEngineModel(value: any): value is EngineModel {
  * ModelAdapter implements EngineModel, so both work.
  */
 export type ModelInstance = EngineModel;
-
-
 
 /**
  * Unified message transformation configuration.
@@ -547,10 +571,10 @@ export interface MessageTransformationConfig {
    * Can be:
    * - String: Static renderer type ('markdown' | 'xml')
    * - Function: Dynamic renderer selection based on model ID
-   * 
+   *
    * @example
    * preferredRenderer: 'markdown'
-   * 
+   *
    * @example
    * preferredRenderer: (modelId: string) => {
    *   if (modelId.includes('claude')) return 'markdown';
@@ -558,8 +582,11 @@ export interface MessageTransformationConfig {
    *   return 'markdown'; // default
    * }
    */
-  preferredRenderer?: 'markdown' | 'xml' | ((modelId: string, provider?: string) => 'markdown' | 'xml');
-  
+  preferredRenderer?:
+    | "markdown"
+    | "xml"
+    | ((modelId: string, provider?: string) => "markdown" | "xml");
+
   /**
    * Role mapping for transformed messages.
    * Controls how event/ephemeral messages are converted to model-understandable roles.
@@ -572,17 +599,17 @@ export interface MessageTransformationConfig {
      * - 'event': Keep as event (adapter handles model-specific mapping)
      * - 'system': Treat as system context
      */
-    event?: 'user' | 'developer' | 'event' | 'system';
-    
+    event?: "user" | "developer" | "event" | "system";
+
     /**
      * Role to use for ephemeral messages.
      * - 'user': Most compatible
      * - 'developer': Use developer role (Claude, newer OpenAI)
      * - 'system': Treat as system context
      */
-    ephemeral?: 'user' | 'developer' | 'system';
+    ephemeral?: "user" | "developer" | "system";
   };
-  
+
   /**
    * Delimiter configuration for transformed content.
    * When useDelimiters is true, content is wrapped with delimiters.
@@ -595,13 +622,13 @@ export interface MessageTransformationConfig {
     /** Global toggle for delimiter usage */
     useDelimiters?: boolean;
   };
-  
+
   /**
    * Custom formatter for full control over event block transformation.
    * When provided, overrides delimiter-based formatting.
    */
   formatBlock?: (block: EventBlock | TextBlock) => ContentBlock[];
-  
+
   /**
    * Position for ephemeral content in the message list (CSS-inspired).
    * - 'flow': Keep in declaration order (default)
@@ -610,26 +637,26 @@ export interface MessageTransformationConfig {
    * - 'before-user': Move to just before last user message
    * - 'after-system': Move to just after system messages
    */
-  ephemeralPosition?: 'flow' | 'start' | 'end' | 'before-user' | 'after-system';
+  ephemeralPosition?: "flow" | "start" | "end" | "before-user" | "after-system";
 }
 
 export interface ModelCapabilities {
   stream?: boolean;
   toolCalls?: boolean;
   provider?: string;
-  
+
   /**
    * Message transformation configuration.
    * Can be:
    * - Static config object
    * - Function that returns config based on model ID
-   * 
+   *
    * @example
    * messageTransformation: {
    *   preferredRenderer: 'markdown',
    *   roleMapping: { event: 'user', ephemeral: 'user' }
    * }
-   * 
+   *
    * @example
    * messageTransformation: (modelId: string, provider?: string) => ({
    *   preferredRenderer: modelId.includes('claude') ? 'markdown' : 'markdown',
@@ -639,20 +666,21 @@ export interface ModelCapabilities {
    *   }
    * })
    */
-  messageTransformation?: MessageTransformationConfig | 
-    ((modelId: string, provider?: string) => MessageTransformationConfig);
+  messageTransformation?:
+    | MessageTransformationConfig
+    | ((modelId: string, provider?: string) => MessageTransformationConfig);
 }
 
 /**
  * Model operations supported by adapters.
- * 
+ *
  * Used by the Model component's `operation` prop to specify which
  * model method to invoke during execution.
- * 
+ *
  * Core operations (available on all language models):
  * - 'generate': Non-streaming text generation (default)
  * - 'stream': Streaming text generation
- * 
+ *
  * Extended operations (adapter-specific, may require specific model types):
  * - 'generateObject': Structured output generation
  * - 'streamObject': Streaming structured output
@@ -663,19 +691,19 @@ export interface ModelCapabilities {
  * - 'transcribe': Audio to text
  * - 'speak': Text to audio
  */
-export type ModelOperation = 
+export type ModelOperation =
   // Core operations (always available)
-  | 'generate'
-  | 'stream'
+  | "generate"
+  | "stream"
   // Extended operations (adapter-specific)
-  | 'generateObject'
-  | 'streamObject'
-  | 'generateImage'
-  | 'editImage'
-  | 'embed'
-  | 'countTokens'
-  | 'transcribe'
-  | 'speak'
+  | "generateObject"
+  | "streamObject"
+  | "generateImage"
+  | "editImage"
+  | "embed"
+  | "countTokens"
+  | "transcribe"
+  | "speak"
   // Extensible for custom operations
   | (string & {});
 
@@ -685,13 +713,13 @@ export interface ModelMetadata {
   description?: string;
   version?: string;
   provider?: string;
-  type?: 'language' | 'image' | 'embedding' | 'vision';
+  type?: "language" | "image" | "embedding" | "vision";
   capabilities: ModelCapabilities[];
 }
 
 /**
  * Model input (normalized across all providers)
- * 
+ *
  * Extends the base ModelInput from aidk-shared with backend-specific fields.
  */
 export interface ModelInput extends BaseModelInput {
@@ -706,7 +734,7 @@ export interface ModelInput extends BaseModelInput {
    * Adapter-specific options (keyed by library: ai-sdk, langchain, llamaindex, etc.).
    * Used to pass library-specific configuration that isn't provider-specific.
    * Each adapter package extends LibraryGenerationOptions via module augmentation.
-   * 
+   *
    * Note: If an adapter has its own providerOptions concept, provide them here
    * under the adapter key. The adapter will merge them with ModelInput.providerOptions.
    */
@@ -716,7 +744,7 @@ export interface ModelInput extends BaseModelInput {
    * Message transformation configuration.
    * Controls how event and ephemeral messages are transformed for the model.
    * Can be set per-request to override model-level defaults.
-   * 
+   *
    * @see MessageTransformationConfig
    */
   messageTransformation?: Partial<MessageTransformationConfig>;
@@ -734,7 +762,7 @@ export interface ModelInput extends BaseModelInput {
     title?: string;
     content?: any;
     visibility?: string;
-    audience?: 'model' | 'human' | 'system';
+    audience?: "model" | "human" | "system";
     ttlMs?: number;
     ttlTicks?: number;
   }>;
@@ -747,7 +775,7 @@ export interface ModelInput extends BaseModelInput {
 
 /**
  * Model output (normalized across all providers)
- * 
+ *
  * Extends the base ModelOutput from aidk-shared with backend-specific fields.
  */
 export interface ModelOutput extends BaseModelOutput {
@@ -768,8 +796,7 @@ export type ModelToolReference =
   | BaseModelToolReference
   | ToolDefinition
   | ToolMetadata
-  | ExecutableTool // Changed from Tool class to ExecutableTool interface
-  ;
+  | ExecutableTool; // Changed from Tool class to ExecutableTool interface
 
 export interface NormalizedModelTool {
   id: string;
@@ -781,7 +808,7 @@ export interface NormalizedModelTool {
 /**
  * Normalized model input (after message normalization)
  */
-export interface NormalizedModelInput extends Omit<ModelInput, 'messages' | 'tools'> {
+export interface NormalizedModelInput extends Omit<ModelInput, "messages" | "tools"> {
   messages: Message[];
   model: string; // Override to make required after validation
   tools: NormalizedModelTool[];
@@ -794,17 +821,17 @@ export interface ModelOperations {
   /**
    * Generate completion (non-streaming)
    */
-  generate: Procedure<((input: ModelInput) => ModelOutput)>;
-  
+  generate: Procedure<(input: ModelInput) => ModelOutput>;
+
   /**
    * Generate completion (streaming)
    */
-  stream: Procedure<((input: ModelInput) => AsyncIterable<StreamChunk>)>;
+  stream: Procedure<(input: ModelInput) => AsyncIterable<StreamChunk>>;
 }
 
 /**
  * Model configuration
- * 
+ *
  * Extends the base ModelConfig from aidk-shared with backend-specific fields.
  */
 export interface ModelConfig extends BaseModelConfig {

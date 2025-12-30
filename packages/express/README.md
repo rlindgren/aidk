@@ -41,4 +41,3 @@ app.listen(3000);
 ## Documentation
 
 See the [full documentation](https://your-org.github.io/aidk).
-

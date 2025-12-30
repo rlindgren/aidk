@@ -1,6 +1,6 @@
 /**
  * MCP (Model Context Protocol) Types
- * 
+ *
  * Configuration types for MCP integration using @modelcontextprotocol/sdk
  */
 
@@ -18,7 +18,7 @@ export interface MCPServerConfig {
  * MCP transport types
  * Note: 'websocket' maps to StreamableHTTP in the SDK
  */
-export type MCPTransport = 'stdio' | 'sse' | 'websocket';
+export type MCPTransport = "stdio" | "sse" | "websocket";
 
 /**
  * MCP server configuration
@@ -28,12 +28,12 @@ export interface MCPConfig {
    * Unique identifier for this MCP server connection
    */
   serverName: string;
-  
+
   /**
    * Transport type for MCP communication
    */
   transport: MCPTransport;
-  
+
   /**
    * Connection details (transport-specific)
    */
@@ -43,23 +43,23 @@ export interface MCPConfig {
      */
     command?: string;
     args?: string[];
-    
+
     /**
      * For SSE/StreamableHTTP: server URL
      */
     url?: string;
-    
+
     /**
      * Additional transport-specific options
      */
     [key: string]: any;
   };
-  
+
   /**
    * Optional authentication
    */
   auth?: {
-    type: 'bearer' | 'api_key' | 'custom';
+    type: "bearer" | "api_key" | "custom";
     token?: string;
     [key: string]: any;
   };
@@ -73,9 +73,8 @@ export interface MCPToolDefinition {
   name: string;
   description: string;
   inputSchema: {
-    type: 'object';
+    type: "object";
     properties: Record<string, any>;
     required?: string[];
   };
 }
-

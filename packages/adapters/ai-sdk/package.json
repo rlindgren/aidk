@@ -2,29 +2,34 @@
   "name": "aidk-ai-sdk",
   "version": "0.1.0",
   "description": "Vercel AI SDK adapter for AIDK",
-  "type": "module",
-  "main": "src/index.ts",
-  "files": [
-    "dist"
-  ],
   "keywords": [
-    "ai",
+    "adapter",
     "agent",
-    "vercel",
+    "ai",
     "ai-sdk",
-    "adapter"
+    "vercel"
   ],
-  "author": "Ryan Lindgren",
+  "homepage": "https://github.com/rlindgren/aidk#readme",
+  "bugs": {
+    "url": "https://github.com/rlindgren/aidk/issues"
+  },
   "license": "ISC",
+  "author": "Ryan Lindgren",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/rlindgren/aidk.git",
     "directory": "packages/adapters/ai-sdk"
   },
-  "bugs": {
-    "url": "https://github.com/rlindgren/aidk/issues"
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "main": "src/index.ts",
+  "publishConfig": {
+    "access": "public",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts"
   },
-  "homepage": "https://github.com/rlindgren/aidk#readme",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "test": "jest",
@@ -40,12 +45,7 @@
     "aidk-shared": "workspace:*"
   },
   "peerDependencies": {
-    "ai": "^5.0.0",
-    "@ai-sdk/openai": "^2.0.0"
-  },
-  "publishConfig": {
-    "access": "public",
-    "main": "./dist/index.js",
-    "types": "./dist/index.d.ts"
+    "@ai-sdk/openai": "^2.0.0",
+    "ai": "^5.0.0"
   }
 }

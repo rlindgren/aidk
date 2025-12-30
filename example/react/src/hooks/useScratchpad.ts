@@ -3,13 +3,13 @@
  * Uses the new typed channel API
  */
 
-import { useState, useCallback, useEffect } from 'react';
-import { useChannel, defineChannel, EngineClient } from 'aidk-react';
+import { useState, useCallback, useEffect } from "react";
+import { useChannel, defineChannel, EngineClient } from "aidk-react";
 
 export interface ScratchpadNote {
   id: string;
   text: string;
-  source: 'model' | 'user';
+  source: "model" | "user";
   createdAt?: string;
 }
 
@@ -19,19 +19,19 @@ interface ScratchpadResponse {
   message?: string;
 }
 
-const API_URL = import.meta.env.VITE_API_URL || '';
+const API_URL = import.meta.env.VITE_API_URL || "";
 
 // Define the scratchpad channel contract
 const ScratchpadChannel = defineChannel<
   // Incoming events (from server)
   { state_changed: { notes: ScratchpadNote[]; threadId?: string } },
   // Outgoing events (to server)
-  { 
+  {
     add_note: { text: string; threadId: string };
     remove_note: { note_id: string; threadId: string };
     clear_notes: { threadId: string };
   }
->('scratchpad');
+>("scratchpad");
 
 /**
  * Hook that syncs with ScratchpadTool via the scratchpad channel.
@@ -40,15 +40,15 @@ const ScratchpadChannel = defineChannel<
 export function useScratchpad(client: EngineClient, threadId: string | null = null) {
   const [notes, setNotes] = useState<ScratchpadNote[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  
-  const effectiveThreadId = threadId || 'default';
+
+  const effectiveThreadId = threadId || "default";
 
   // Connect to the scratchpad channel
   const channel = useChannel(ScratchpadChannel, client);
 
   // Subscribe to state changes
   useEffect(() => {
-    return channel.on('state_changed', ({ notes, threadId }) => {
+    return channel.on("state_changed", ({ notes, threadId }) => {
       // Only update if it's for our thread
       if (!threadId || threadId === effectiveThreadId) {
         setNotes(notes);
@@ -61,8 +61,8 @@ export function useScratchpad(client: EngineClient, threadId: string | null = nu
     const fetchNotes = async () => {
       try {
         const params = new URLSearchParams();
-        params.set('threadId', effectiveThreadId);
-        
+        params.set("threadId", effectiveThreadId);
+
         const response = await fetch(`${API_URL}/api/notes?${params}`);
         if (response.ok) {
           const data = await response.json();
@@ -71,24 +71,24 @@ export function useScratchpad(client: EngineClient, threadId: string | null = nu
           }
         }
       } catch (err) {
-        console.error('Failed to fetch initial notes:', err);
+        console.error("Failed to fetch initial notes:", err);
       }
     };
-    
+
     fetchNotes();
   }, [effectiveThreadId]);
 
   const addNote = useCallback(
     async (text: string) => {
       if (!text.trim()) return;
-      
+
       setIsLoading(true);
       try {
-        const response = await channel.send('add_note', { 
+        const response = (await channel.send("add_note", {
           text,
           threadId: effectiveThreadId,
-        }) as ScratchpadResponse;
-        
+        })) as ScratchpadResponse;
+
         if (response?.notes) {
           setNotes(response.notes);
         }
@@ -96,7 +96,7 @@ export function useScratchpad(client: EngineClient, threadId: string | null = nu
         setIsLoading(false);
       }
     },
-    [channel, effectiveThreadId]
+    [channel, effectiveThreadId],
   );
 
   const removeNote = useCallback(
@@ -104,33 +104,30 @@ export function useScratchpad(client: EngineClient, threadId: string | null = nu
       // Optimistic update
       setNotes((prev) => prev.filter((n) => n.id !== noteId));
 
-      const response = await channel.send('remove_note', { 
+      const response = (await channel.send("remove_note", {
         note_id: noteId,
         threadId: effectiveThreadId,
-      }) as ScratchpadResponse;
-      
+      })) as ScratchpadResponse;
+
       if (response?.notes) {
         setNotes(response.notes);
       }
     },
-    [channel, effectiveThreadId]
+    [channel, effectiveThreadId],
   );
 
-  const clearNotes = useCallback(
-    async () => {
-      // Optimistic update
-      setNotes([]);
+  const clearNotes = useCallback(async () => {
+    // Optimistic update
+    setNotes([]);
 
-      const response = await channel.send('clear_notes', { 
-        threadId: effectiveThreadId,
-      }) as ScratchpadResponse;
-      
-      if (response?.notes) {
-        setNotes(response.notes);
-      }
-    },
-    [channel, effectiveThreadId]
-  );
+    const response = (await channel.send("clear_notes", {
+      threadId: effectiveThreadId,
+    })) as ScratchpadResponse;
+
+    if (response?.notes) {
+      setNotes(response.notes);
+    }
+  }, [channel, effectiveThreadId]);
 
   return {
     notes,

@@ -54,34 +54,40 @@ example/
 ### State Management
 
 See how signals work:
+
 - **Files:** `backend/agents/task-assistant.tsx`
 - **Features:** `comState`, `signal`, `computed`
 
 ### Tools
 
 Custom tool definitions:
+
 - **Files:** `backend/tools/calculator-tool.ts`, `backend/tools/scratchpad-tool.tsx`
 - **Features:** Tool creation, execution, rendering
 
 ### Channels
 
 Real-time updates:
+
 - **Files:** `backend/channels/todo-list.channel.ts`, `backend/routes/channels.ts`
 - **Features:** Channel definition, publishing, subscribing
 
 ### Client Integration
 
 #### React
+
 - **Files:** `frontend-react/src/App.tsx`, `frontend-react/src/hooks/`
 - **Hooks:** `useEngineClient`, `useExecution`, `useChannel`
 
 #### Angular
+
 - **Files:** `frontend-angular/src/app/`
 - **Services:** `EngineService`, `ExecutionService`, `ChannelService`
 
 ### Persistence
 
 Database integration:
+
 - **Files:** `backend/persistence/`
 - **Features:** Execution tracking, message logging, metrics
 
@@ -94,6 +100,7 @@ Explore a specific example:
 <div class="feature-card">
 
 ### [Simple Chat](/examples/simple-chat)
+
 Basic chat agent with streaming responses.
 
 </div>
@@ -101,6 +108,7 @@ Basic chat agent with streaming responses.
 <div class="feature-card">
 
 ### [Task Assistant](/examples/task-assistant)
+
 Full-stack app with tools, channels, and React.
 
 </div>
@@ -108,6 +116,7 @@ Full-stack app with tools, channels, and React.
 <div class="feature-card">
 
 ### [Multi-Agent](/examples/multi-agent)
+
 Research coordinator with Fork/Spawn for parallel execution.
 
 </div>
@@ -115,19 +124,9 @@ Research coordinator with Fork/Spawn for parallel execution.
 <div class="feature-card">
 
 ### [Dynamic Router](/examples/dynamic-router)
+
 Smart model selection based on task and cost.
 
 </div>
 
 </div>
-
-
-
-
-
-
-
-
-
-
-

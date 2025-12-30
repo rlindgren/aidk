@@ -1,14 +1,20 @@
-import type { AgentToolCall, AgentToolResult, Message, TimelineEntry as BaseTimelineEntry, ClientToolDefinition } from 'aidk-shared';
-import type { ToolExecutionOptions } from '../types';
-import type { ModelConfig } from '../model/model';
-import type { ExecutableTool, ToolDefinition } from '../tool/tool';
-import { ContentRenderer, type SemanticContentBlock } from '../renderers';
-import type { ContentBlock } from 'aidk-shared';
+import type {
+  AgentToolCall,
+  AgentToolResult,
+  Message,
+  TimelineEntry as BaseTimelineEntry,
+  ClientToolDefinition,
+} from "aidk-shared";
+import type { ToolExecutionOptions } from "../types";
+import type { ModelConfig } from "../model/model";
+import type { ExecutableTool, ToolDefinition } from "../tool/tool";
+import { ContentRenderer, type SemanticContentBlock } from "../renderers";
+import type { ContentBlock } from "aidk-shared";
 
 // Note: ModelToolCall and NormalizedModelTool are unused imports - keeping for future use
 
 // TimelineVisibility and TimelineTag are now exported from aidk-shared
-export type TimelineVisibility = 'model' | 'observer' | 'log';
+export type TimelineVisibility = "model" | "observer" | "log";
 export type TimelineTag = string;
 
 // ============================================================================
@@ -23,18 +29,18 @@ export type TimelineTag = string;
  * - 'after-system': Immediately after the system message
  * - 'flow': In the flow of the timeline (treated as historical context)
  */
-export type EphemeralPosition = 'start' | 'end' | 'before-user' | 'after-system' | 'flow';
+export type EphemeralPosition = "start" | "end" | "before-user" | "after-system" | "flow";
 
 /**
  * Ephemeral entry - transient content that is NOT persisted.
- * 
+ *
  * Ephemeral content provides current state/context to the model but is not
  * part of the conversation history. It is rebuilt fresh each tick.
- * 
+ *
  * Unlike Messages (which have roles and are persisted), ephemeral entries
  * are transformed into messages (typically 'user' role) before being sent
  * to the model, based on the position and model configuration.
- * 
+ *
  * Examples:
  * - Current account balance
  * - Available inventory
@@ -42,28 +48,28 @@ export type EphemeralPosition = 'start' | 'end' | 'before-user' | 'after-system'
  * - Current date/time
  */
 export interface EphemeralEntry {
-  /** 
+  /**
    * Type/category of ephemeral content.
    * Used for semantic categorization and can be used by model config
    * to apply type-specific formatting (delimiters, etc.)
    */
   readonly type?: string;
-  
+
   /** Content blocks to include */
   readonly content: ContentBlock[];
-  
+
   /** Where to position this ephemeral content in the message stream */
   readonly position: EphemeralPosition;
-  
+
   /** Secondary sort order (when multiple entries have the same position) */
   readonly order?: number;
-  
+
   /** Optional metadata */
   readonly metadata?: Record<string, unknown>;
-  
+
   /** Optional identifier for debugging/tracing */
   readonly id?: string;
-  
+
   /** Tags for categorization/filtering */
   readonly tags?: string[];
 }
@@ -74,7 +80,7 @@ export interface EphemeralEntry {
 
 /**
  * COM Timeline Entry - extends base TimelineEntry with backend-specific fields.
- * 
+ *
  * Extends the platform-independent TimelineEntry from aidk-shared with:
  * - SemanticContentBlock[] content (format-agnostic, can be rendered)
  * - ContentRenderer reference (for formatting)
@@ -97,7 +103,7 @@ export interface COMSection {
   formattedContent?: ContentBlock[];
   formattedWith?: string; // Renderer ID that formatted it (for cache invalidation)
   visibility?: TimelineVisibility;
-  audience?: 'model' | 'human' | 'system';
+  audience?: "model" | "human" | "system";
   ttlMs?: number;
   ttlTicks?: number;
   tags?: TimelineTag[];
@@ -111,7 +117,7 @@ export interface COMInput {
    * Does NOT include system messages - those go in `system`.
    */
   timeline: COMTimelineEntry[];
-  
+
   /**
    * System messages - consolidated from sections each tick.
    * Rebuilt fresh each tick (declarative), NOT persisted in previous.
@@ -119,12 +125,12 @@ export interface COMInput {
    * Uses COMTimelineEntry envelope for consistency with timeline entries.
    */
   system: COMTimelineEntry[];
-  
+
   sections: Record<string, COMSection>;
   tools: ToolDefinition[];
   metadata: Record<string, unknown>;
   modelOptions?: ModelConfig;
-  
+
   /**
    * Ephemeral entries - transient content rebuilt each tick.
    * Not persisted. Interleaved into messages based on position before model call.
@@ -135,7 +141,7 @@ export interface COMInput {
 /**
  * Output state from the last tick execution.
  * Contains what was produced by the model and tool execution.
- * 
+ *
  * On tick 1, before model execution, this may contain userInput (timeline, sections)
  * to allow components to render purely from previous + current without
  * needing to check tick number or access com.getUserInput().
@@ -147,17 +153,17 @@ export interface COMOutput {
    * - After model execution: new timeline entries from model (assistant messages, tool_use blocks, etc.)
    */
   timeline: COMTimelineEntry[];
-  
+
   /**
    * Sections (only present on tick 1 before model execution, from userInput).
    */
   sections?: Record<string, COMSection>;
-  
+
   /**
    * Tool calls from the model execution (only present after model execution).
    */
   toolCalls?: AgentToolCall[];
-  
+
   /**
    * Tool results from tool execution (only present after model execution).
    */
@@ -178,7 +184,7 @@ export interface ContextStructure {
 export interface EngineInput {
   /**
    * Initial timeline entries (e.g. conversation history).
-   * 
+   *
    * Accepts TimelineEntry[] (from clients) or COMTimelineEntry[] (backend format).
    * Clients send TimelineEntry[], which gets converted to COMTimelineEntry[] internally.
    */
@@ -188,7 +194,7 @@ export interface EngineInput {
    * Initial sections.
    */
   sections?: Record<string, COMSection>;
-  
+
   /**
    * Initial metadata.
    */

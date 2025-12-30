@@ -2,10 +2,10 @@
 // JSX Component
 // ============================================================================
 
-import { type ModelComponentProps, Model } from 'aidk/jsx/components';
-import { createElement } from 'aidk/jsx-runtime';
-import { createOpenAIModel } from './openai';
-import { type OpenAIAdapterConfig } from './types';
+import { type ModelComponentProps, Model } from "aidk/jsx/components";
+import { createElement } from "aidk/jsx-runtime";
+import { createOpenAIModel } from "./openai";
+import { type OpenAIAdapterConfig } from "./types";
 
 /**
  * Props for OpenAIModel component.
@@ -13,30 +13,30 @@ import { type OpenAIAdapterConfig } from './types';
  */
 export interface OpenAIModelProps extends OpenAIAdapterConfig {
   /** Optional callback when model is mounted */
-  onMount?: ModelComponentProps['onMount'];
+  onMount?: ModelComponentProps["onMount"];
   /** Optional callback when model is unmounted */
-  onUnmount?: ModelComponentProps['onUnmount'];
+  onUnmount?: ModelComponentProps["onUnmount"];
 }
 
 /**
  * OpenAIModel component for declarative model configuration in JSX.
- * 
+ *
  * Creates an OpenAI model adapter internally and wraps it in a Model component.
- * 
+ *
  * @example
  * ```tsx
  * // Basic usage
  * <OpenAIModel model="gpt-4o" />
- * 
+ *
  * // With config
- * <OpenAIModel 
+ * <OpenAIModel
  *   model="gpt-4o"
  *   temperature={0.7}
  *   maxTokens={1000}
  * />
- * 
+ *
  * // With custom base URL (e.g., Azure OpenAI)
- * <OpenAIModel 
+ * <OpenAIModel
  *   model="gpt-4"
  *   baseURL="https://my-resource.openai.azure.com"
  *   apiKey={process.env.AZURE_OPENAI_KEY}

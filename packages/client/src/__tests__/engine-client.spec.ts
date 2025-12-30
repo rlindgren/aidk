@@ -5,11 +5,7 @@
  */
 
 import { EngineClient, createEngineClient } from "../engine-client";
-import type {
-  ChannelTransport,
-  TransportState,
-  TransportInfo,
-} from "../core/transport";
+import type { ChannelTransport, TransportState, TransportInfo } from "../core/transport";
 import { ChannelClient } from "../core/channel-client";
 
 // =============================================================================
@@ -74,21 +70,19 @@ function createMockTransport(): ChannelTransport & {
 const originalFetch = global.fetch;
 
 function mockFetch(responses: Map<string, () => Response | Promise<Response>>) {
-  global.fetch = jest.fn(
-    async (url: string | URL | Request, _options?: RequestInit) => {
-      const urlStr = typeof url === "string" ? url : url.toString();
+  global.fetch = jest.fn(async (url: string | URL | Request, _options?: RequestInit) => {
+    const urlStr = typeof url === "string" ? url : url.toString();
 
-      for (const [pattern, responseFn] of responses) {
-        if (urlStr.includes(pattern)) {
-          return await responseFn();
-        }
+    for (const [pattern, responseFn] of responses) {
+      if (urlStr.includes(pattern)) {
+        return await responseFn();
       }
+    }
 
-      return new Response(JSON.stringify({ error: "Not found" }), {
-        status: 404,
-      });
-    },
-  ) as jest.Mock;
+    return new Response(JSON.stringify({ error: "Not found" }), {
+      status: 404,
+    });
+  }) as jest.Mock;
 }
 
 function restoreFetch() {
@@ -195,7 +189,7 @@ describe("EngineClient", () => {
       mockFetch(
         new Map([
           [
-            "/api/agents/test-agent/execute",
+            "/api/run/test-agent/execute",
             () =>
               new Response(JSON.stringify({ timeline: [], metrics: {} }), {
                 status: 200,
@@ -226,18 +220,16 @@ describe("EngineClient", () => {
       mockFetch(
         new Map([
           [
-            "/api/agents/",
+            "/api/run/",
             () =>
-              new Response(JSON.stringify({ message: "Agent not found" }), {
+              new Response(JSON.stringify({ message: "Not found" }), {
                 status: 404,
               }),
           ],
         ]),
       );
 
-      await expect(
-        client.execute("unknown-agent", { messages: [] }),
-      ).rejects.toThrow("Agent not found");
+      await expect(client.execute("unknown-agent", { messages: [] })).rejects.toThrow("Not found");
     });
   });
 
@@ -254,9 +246,7 @@ describe("EngineClient", () => {
       const stream = new ReadableStream({
         start(controller) {
           for (const event of events) {
-            controller.enqueue(
-              encoder.encode(`data: ${JSON.stringify(event)}\n\n`),
-            );
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
           }
           controller.close();
         },
@@ -265,7 +255,7 @@ describe("EngineClient", () => {
       mockFetch(
         new Map([
           [
-            "/api/agents/test-agent/stream",
+            "/api/run/test-agent/stream",
             () =>
               new Response(stream, {
                 status: 200,
@@ -292,7 +282,7 @@ describe("EngineClient", () => {
       mockFetch(
         new Map([
           [
-            "/api/agents/",
+            "/api/run/",
             () =>
               new Response(JSON.stringify({ message: "Stream failed" }), {
                 status: 500,
@@ -309,7 +299,7 @@ describe("EngineClient", () => {
       mockFetch(
         new Map([
           [
-            "/api/agents/test-agent/stream",
+            "/api/run/test-agent/stream",
             () => {
               const response = new Response(null, { status: 200 });
               // @ts-ignore - Override body to be null
@@ -385,8 +375,7 @@ describe("EngineClient", () => {
         new Map([
           [
             "/api/channels/events",
-            () =>
-              new Response(JSON.stringify({ success: true }), { status: 200 }),
+            () => new Response(JSON.stringify({ success: true }), { status: 200 }),
           ],
         ]),
       );
@@ -412,10 +401,9 @@ describe("EngineClient", () => {
           [
             "/api/channels/tool-results",
             () =>
-              new Response(
-                JSON.stringify({ success: true, toolUseId: "tool-123" }),
-                { status: 200 },
-              ),
+              new Response(JSON.stringify({ success: true, toolUseId: "tool-123" }), {
+                status: 200,
+              }),
           ],
         ]),
       );
@@ -430,10 +418,9 @@ describe("EngineClient", () => {
           [
             "/api/channels/tool-results",
             () =>
-              new Response(
-                JSON.stringify({ success: true, toolUseId: "tool-123" }),
-                { status: 200 },
-              ),
+              new Response(JSON.stringify({ success: true, toolUseId: "tool-123" }), {
+                status: 200,
+              }),
           ],
         ]),
       );
@@ -463,9 +450,9 @@ describe("EngineClient", () => {
         ]),
       );
 
-      await expect(
-        client.sendToolResult("unknown-tool", { data: "value" }),
-      ).rejects.toThrow("Not found");
+      await expect(client.sendToolResult("unknown-tool", { data: "value" })).rejects.toThrow(
+        "Not found",
+      );
     });
   });
 
@@ -480,9 +467,7 @@ describe("EngineClient", () => {
       });
 
       expect(transport._sendCalls.length).toBeGreaterThan(0);
-      const lastCall = transport._sendCalls[
-        transport._sendCalls.length - 1
-      ] as {
+      const lastCall = transport._sendCalls[transport._sendCalls.length - 1] as {
         channel: string;
         type: string;
         payload: unknown;
@@ -494,14 +479,9 @@ describe("EngineClient", () => {
     it("should include targetPid when specified", async () => {
       client.subscribe("execution", () => {});
 
-      await client.sendMessage(
-        { type: "stop", content: {} },
-        { targetPid: "exec-abc" },
-      );
+      await client.sendMessage({ type: "stop", content: {} }, { targetPid: "exec-abc" });
 
-      const lastCall = transport._sendCalls[
-        transport._sendCalls.length - 1
-      ] as {
+      const lastCall = transport._sendCalls[transport._sendCalls.length - 1] as {
         payload: { targetPid?: string };
       };
       expect(lastCall.payload.targetPid).toBe("exec-abc");
@@ -570,12 +550,7 @@ describe("EngineClient", () => {
 
     it("should pass query params", async () => {
       mockFetch(
-        new Map([
-          [
-            "/api/executions",
-            () => new Response(JSON.stringify([]), { status: 200 }),
-          ],
-        ]),
+        new Map([["/api/executions", () => new Response(JSON.stringify([]), { status: 200 })]]),
       );
 
       await client.getExecutions({ status: "completed", limit: 10 });
@@ -586,9 +561,7 @@ describe("EngineClient", () => {
     });
 
     it("should use custom API implementation if provided", async () => {
-      const customGetExecutions = jest
-        .fn()
-        .mockResolvedValue([{ id: "custom" }]);
+      const customGetExecutions = jest.fn().mockResolvedValue([{ id: "custom" }]);
       const customClient = new EngineClient({
         transport,
         api: { getExecutions: customGetExecutions },
@@ -609,10 +582,9 @@ describe("EngineClient", () => {
           [
             "/api/executions/exec-123",
             () =>
-              new Response(
-                JSON.stringify({ id: "exec-123", status: "completed" }),
-                { status: 200 },
-              ),
+              new Response(JSON.stringify({ id: "exec-123", status: "completed" }), {
+                status: 200,
+              }),
           ],
         ]),
       );
@@ -643,10 +615,9 @@ describe("EngineClient", () => {
           [
             "/api/executions/metrics",
             () =>
-              new Response(
-                JSON.stringify([{ executionId: "exec-1", inputTokens: 100 }]),
-                { status: 200 },
-              ),
+              new Response(JSON.stringify([{ executionId: "exec-1", inputTokens: 100 }]), {
+                status: 200,
+              }),
           ],
         ]),
       );
@@ -723,11 +694,7 @@ describe("EngineClient", () => {
 
       mockFetch(
         new Map([
-          [
-            "/api/agents/",
-            () =>
-              new Response(JSON.stringify({ timeline: [] }), { status: 200 }),
-          ],
+          ["/api/run/", () => new Response(JSON.stringify({ timeline: [] }), { status: 200 })],
         ]),
       );
 
@@ -746,7 +713,7 @@ describe("EngineClient", () => {
         baseUrl: "http://localhost:3000",
         transport,
         routes: {
-          agentExecute: (id) => `/v2/agents/${id}/run`,
+          execute: (id) => `/v2/run/${id}/execute`,
           executionsList: () => "/v2/history",
         },
       });
@@ -754,20 +721,16 @@ describe("EngineClient", () => {
       mockFetch(
         new Map([
           [
-            "/v2/agents/test/run",
-            () =>
-              new Response(JSON.stringify({ timeline: [] }), { status: 200 }),
+            "/v2/run/test/execute",
+            () => new Response(JSON.stringify({ timeline: [] }), { status: 200 }),
           ],
-          [
-            "/v2/history",
-            () => new Response(JSON.stringify([]), { status: 200 }),
-          ],
+          ["/v2/history", () => new Response(JSON.stringify([]), { status: 200 })],
         ]),
       );
 
       await customClient.execute("test", { messages: [] });
       const [executeUrl] = (global.fetch as jest.Mock).mock.calls[0];
-      expect(executeUrl).toContain("/v2/agents/test/run");
+      expect(executeUrl).toContain("/v2/run/test/execute");
 
       await customClient.getExecutions();
       const [historyUrl] = (global.fetch as jest.Mock).mock.calls[1];

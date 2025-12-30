@@ -38,8 +38,7 @@ export function createMessage(
   return {
     id: generateMessageId(),
     role,
-    content:
-      typeof content === "string" ? [{ type: "text", text: content }] : content,
+    content: typeof content === "string" ? [{ type: "text", text: content }] : content,
     createdAt: new Date().toISOString(),
     metadata,
   };
@@ -176,9 +175,7 @@ export class StreamProcessor {
    * Update a message by ID
    */
   updateMessage(id: string, updater: (message: Message) => Message): void {
-    this.messages = this.messages.map((msg) =>
-      msg.id === id ? updater(msg) : msg,
-    );
+    this.messages = this.messages.map((msg) => (msg.id === id ? updater(msg) : msg));
     this.callbacks.onMessagesChange(this.messages);
   }
 
@@ -186,18 +183,14 @@ export class StreamProcessor {
    * Patch a tool_use block with its result.
    * Uses the pre-built index for O(1) lookup.
    */
-  private patchToolUseWithResult(
-    location: ToolUseLocation,
-    result: ContentBlock,
-  ): void {
+  private patchToolUseWithResult(location: ToolUseLocation, result: ContentBlock): void {
     this.messages = this.messages.map((msg) => {
       if (msg.id !== location.messageId) return msg;
 
       return {
         ...msg,
         content: msg.content.map((block, index) => {
-          if (index !== location.blockIndex || block.type !== "tool_use")
-            return block;
+          if (index !== location.blockIndex || block.type !== "tool_use") return block;
 
           // Patch the tool_use block with the result
           return {
@@ -265,9 +258,7 @@ export class StreamProcessor {
           case "reasoning_end":
             if (chunk.reasoning) {
               this.updateMessage(assistantMessageId, (msg) => {
-                const existingReasoning = msg.content.find(
-                  (b) => b.type === "reasoning",
-                ) as any;
+                const existingReasoning = msg.content.find((b) => b.type === "reasoning") as any;
                 if (existingReasoning) {
                   return {
                     ...msg,
@@ -281,10 +272,7 @@ export class StreamProcessor {
                   // Add reasoning block at the start of content
                   return {
                     ...msg,
-                    content: [
-                      { type: "reasoning", text: chunk.reasoning },
-                      ...msg.content,
-                    ],
+                    content: [{ type: "reasoning", text: chunk.reasoning }, ...msg.content],
                   };
                 }
               });
@@ -307,16 +295,12 @@ export class StreamProcessor {
               if (chunk.blockType === "tool_result") {
                 // Tool result content streaming - accumulate in the most recent tool_result block
                 this.updateMessage(assistantMessageId, (msg) => {
-                  const toolResultBlocks = msg.content.filter(
-                    (b) => b.type === "tool_result",
-                  );
+                  const toolResultBlocks = msg.content.filter((b) => b.type === "tool_result");
                   if (toolResultBlocks.length > 0) {
-                    const lastToolResult =
-                      toolResultBlocks[toolResultBlocks.length - 1];
+                    const lastToolResult = toolResultBlocks[toolResultBlocks.length - 1];
                     // Append delta to the last text block in tool_result content, or create new text block
                     const updatedContent = [...lastToolResult.content];
-                    const lastTextBlock =
-                      updatedContent[updatedContent.length - 1];
+                    const lastTextBlock = updatedContent[updatedContent.length - 1];
                     if (lastTextBlock?.type === "text") {
                       updatedContent[updatedContent.length - 1] = {
                         ...lastTextBlock,
@@ -329,9 +313,7 @@ export class StreamProcessor {
                     return {
                       ...msg,
                       content: msg.content.map((b) =>
-                        b === lastToolResult
-                          ? { ...b, content: updatedContent }
-                          : b,
+                        b === lastToolResult ? { ...b, content: updatedContent } : b,
                       ),
                     };
                   }
@@ -342,25 +324,18 @@ export class StreamProcessor {
 
               // Regular text content delta
               this.updateMessage(assistantMessageId, (msg) => {
-                const existingText = msg.content.find(
-                  (b) => b.type === "text",
-                ) as any;
+                const existingText = msg.content.find((b) => b.type === "text") as any;
                 if (existingText) {
                   return {
                     ...msg,
                     content: msg.content.map((b) =>
-                      b.type === "text"
-                        ? { ...b, text: (b as any).text + chunk.delta }
-                        : b,
+                      b.type === "text" ? { ...b, text: (b as any).text + chunk.delta } : b,
                     ),
                   };
                 } else {
                   return {
                     ...msg,
-                    content: [
-                      ...msg.content,
-                      { type: "text", text: chunk.delta },
-                    ],
+                    content: [...msg.content, { type: "text", text: chunk.delta }],
                   };
                 }
               });
@@ -418,9 +393,7 @@ export class StreamProcessor {
 
       case "tool_call":
         // Find current block count to know where this tool_use will be
-        const currentMsg = this.messages.find(
-          (m) => m.id === assistantMessageId,
-        );
+        const currentMsg = this.messages.find((m) => m.id === assistantMessageId);
         const blockIndex = currentMsg?.content.length ?? 0;
 
         // Register in index for O(1) lookup when result arrives
@@ -479,10 +452,7 @@ export class StreamProcessor {
         break;
 
       case "error":
-        const error =
-          event.error instanceof Error
-            ? event.error
-            : new Error(String(event.error));
+        const error = event.error instanceof Error ? event.error : new Error(String(event.error));
         this.callbacks.onError?.(error);
         break;
     }

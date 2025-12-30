@@ -119,15 +119,10 @@ export function createContextExtractor<TBody>(config: {
   threadId?: keyof TBody | ((body: TBody) => string);
   sessionId?:
     | keyof TBody
-    | ((
-        body: TBody,
-        headers?: Record<string, string | undefined>,
-      ) => string | undefined);
+    | ((body: TBody, headers?: Record<string, string | undefined>) => string | undefined);
   userId?: keyof TBody | ((body: TBody) => string);
   tenantId?: keyof TBody | ((body: TBody) => string);
-  metadata?:
-    | keyof TBody
-    | ((body: TBody) => Record<string, unknown> | undefined);
+  metadata?: keyof TBody | ((body: TBody) => Record<string, unknown> | undefined);
 }): ContextExtractor<TBody> {
   const get = <T>(
     body: TBody,
@@ -161,9 +156,7 @@ export type InputTransformer<TBody = StandardRequestBody> = (
  * Transform standard message format to Engine timeline.
  * Uses loose typing to handle various frontend message formats.
  */
-export function messagesToTimeline(
-  messages: StandardRequestBody["messages"],
-): COMTimelineEntry[] {
+export function messagesToTimeline(messages: StandardRequestBody["messages"]): COMTimelineEntry[] {
   if (!messages || !Array.isArray(messages)) {
     return [];
   }
@@ -211,9 +204,7 @@ export function createInputTransformer<TBody>(
 /**
  * Build the withContext options for engine execution
  */
-export function buildEngineContext(
-  ctx: RequestContext & { executionId: string },
-) {
+export function buildEngineContext(ctx: RequestContext & { executionId: string }) {
   return {
     user: { id: ctx.userId },
     metadata: {
@@ -255,12 +246,8 @@ export function resolveConfig<TBody = StandardRequestBody>(
   return {
     engine: config.engine,
     generateId: config.generateId || uuidV4Generator,
-    extractContext:
-      config.extractContext ||
-      (defaultContextExtractor as ContextExtractor<TBody>),
-    transformInput:
-      config.transformInput ||
-      (defaultInputTransformer as InputTransformer<TBody>),
+    extractContext: config.extractContext || (defaultContextExtractor as ContextExtractor<TBody>),
+    transformInput: config.transformInput || (defaultInputTransformer as InputTransformer<TBody>),
   };
 }
 

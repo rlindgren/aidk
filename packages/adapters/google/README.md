@@ -14,13 +14,13 @@ pnpm add aidk-google
 import { GoogleModel } from 'aidk-google';
 
 // Google AI Studio
-<GoogleModel 
+<GoogleModel
   apiKey={process.env.GOOGLE_API_KEY}
   model="gemini-2.0-flash"
 />
 
 // Vertex AI
-<GoogleModel 
+<GoogleModel
   vertexai={true}
   project={process.env.GCP_PROJECT_ID}
   location="us-central1"
@@ -33,18 +33,17 @@ import { GoogleModel } from 'aidk-google';
 
 ## Configuration
 
-| Prop | Type | Description |
-|------|------|-------------|
-| `model` | `string` | Model name |
-| `apiKey` | `string?` | Google AI Studio API key |
-| `vertexai` | `boolean?` | Use Vertex AI |
-| `project` | `string?` | GCP project ID (Vertex) |
-| `location` | `string?` | GCP region (Vertex) |
-| `googleAuthOptions` | `object?` | Auth options (Vertex) |
-| `temperature` | `number?` | Sampling temperature |
-| `maxTokens` | `number?` | Maximum tokens |
+| Prop                | Type       | Description              |
+| ------------------- | ---------- | ------------------------ |
+| `model`             | `string`   | Model name               |
+| `apiKey`            | `string?`  | Google AI Studio API key |
+| `vertexai`          | `boolean?` | Use Vertex AI            |
+| `project`           | `string?`  | GCP project ID (Vertex)  |
+| `location`          | `string?`  | GCP region (Vertex)      |
+| `googleAuthOptions` | `object?`  | Auth options (Vertex)    |
+| `temperature`       | `number?`  | Sampling temperature     |
+| `maxTokens`         | `number?`  | Maximum tokens           |
 
 ## Documentation
 
 See the [full documentation](https://your-org.github.io/aidk).
-

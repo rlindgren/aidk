@@ -3,9 +3,7 @@
     "tsBuildInfoFile": "dist/.tsbuildinfo.build"
   },
   "extends": "./tsconfig.json",
-  "references": [
-    { "path": "../../core/tsconfig.build.json" }
-  ],
+  "references": [{ "path": "../../core/tsconfig.build.json" }],
   "include": ["src"],
   "exclude": ["src/**/*.spec.ts", "src/**/*.spec.tsx", "src/**/__tests__"]
 }

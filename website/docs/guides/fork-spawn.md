@@ -4,15 +4,15 @@ Run agents in parallel or in the background. Coordinate results. Handle independ
 
 ## Fork vs Spawn
 
-|                        | Fork                              | Spawn                           |
-| ---------------------- | --------------------------------- | ------------------------------- |
-| **Parent Required**    | Yes (throws if missing)           | No                              |
-| **State Inheritance**  | Yes (configurable via `inherit`)  | No (blank slate)                |
-| **Hooks Inherited**    | Yes (by default)                  | No                              |
-| **waitUntilComplete**  | Yes                               | Yes                             |
-| **Engine Instance**    | Shares parent's config            | New independent engine          |
-| **Abort Signal**       | Merged with parent's signal       | Independent                     |
-| **Use case**           | Parallel work needing context     | Background tasks, fire-and-forget |
+|                       | Fork                             | Spawn                             |
+| --------------------- | -------------------------------- | --------------------------------- |
+| **Parent Required**   | Yes (throws if missing)          | No                                |
+| **State Inheritance** | Yes (configurable via `inherit`) | No (blank slate)                  |
+| **Hooks Inherited**   | Yes (by default)                 | No                                |
+| **waitUntilComplete** | Yes                              | Yes                               |
+| **Engine Instance**   | Shares parent's config           | New independent engine            |
+| **Abort Signal**      | Merged with parent's signal      | Independent                       |
+| **Use case**          | Parallel work needing context    | Background tasks, fire-and-forget |
 
 The key difference is **inheritance**: Fork creates a child execution that can inherit timeline, sections, tools, hooks, and context from its parent. Spawn creates a completely independent execution with a fresh engine instance—a true blank slate.
 
@@ -36,12 +36,12 @@ class ResearchAgent extends Component {
          * The component instance persists across ticks.
          */}
         <Fork
-          agent={<MarketResearchAgent />}
+          root={<MarketResearchAgent />}
           waitUntilComplete={true}
           onComplete={(result) => this.marketData.set(result)}
         />
         <Fork
-          agent={<CompetitorResearchAgent />}
+          root={<CompetitorResearchAgent />}
           waitUntilComplete={true}
           onComplete={(result) => this.competitorData.set(result)}
         />
@@ -67,7 +67,7 @@ class ResearchAgent extends Component {
 
 ```tsx
 <Fork
-  agent={<SubAgent />}          // Agent to run (or use children)
+  root={<SubComponent />}       // Component to run (or use children)
   waitUntilComplete={true}      // Wait for completion before continuing
   onComplete={(result) => {}}   // Callback when done
   onError={(error) => {}}       // Callback on error
@@ -105,6 +105,7 @@ interface ForkInheritanceOptions {
 ```
 
 **Copy vs Reference:**
+
 - `'copy'`: Deep copies the data. Changes in the fork don't affect the parent.
 - `'reference'`: Shares the same array/object. Changes in the fork affect the parent (use carefully).
 
@@ -112,7 +113,7 @@ Example with full inheritance:
 
 ```tsx
 <Fork
-  agent={<ResearchAgent query={query} />}
+  root={<ResearchAgent query={query} />}
   inherit={{
     timeline: 'copy',      // Fork gets parent's timeline, changes isolated
     sections: 'copy',
@@ -125,7 +126,7 @@ Example with full inheritance:
 />
 ```
 
-You can also use children instead of the `agent` prop:
+You can also use children instead of the `root` prop:
 
 ```tsx
 <Fork waitUntilComplete={true} onComplete={(result) => {}}>
@@ -141,7 +142,7 @@ Pass data to the forked agent:
 
 ```tsx
 <Fork
-  agent={<AnalysisAgent />}
+  root={<AnalysisAgent />}
   input={{
     topic: "Q4 revenue",
     depth: "detailed",
@@ -166,10 +167,10 @@ class MainAgent extends Component {
         <Model model={openai("gpt-4o")} />
 
         {/* Log this interaction in the background */}
-        <Spawn agent={<AuditLogger interaction={state.timeline} />} />
+        <Spawn root={<AuditLogger interaction={state.timeline} />} />
 
         {/* Send notifications without blocking */}
-        <Spawn agent={<NotificationAgent userId={ctx.user.id} />} />
+        <Spawn root={<NotificationAgent userId={ctx.user.id} />} />
 
         <System>You are a helpful assistant.</System>
         <Timeline>{/* Timeline entries */}</Timeline>
@@ -183,7 +184,7 @@ class MainAgent extends Component {
 
 ```tsx
 <Spawn
-  agent={<BackgroundAgent />}   // Agent to run (or use children)
+  root={<BackgroundComponent />}  // Component to run (or use children)
   waitUntilComplete={false}     // Can wait if needed (default: false)
   onComplete={(result) => {}}   // Callback when done
   onError={(error) => {}}       // Callback on error
@@ -196,18 +197,18 @@ class MainAgent extends Component {
 
 **Note**: Spawn CAN use `waitUntilComplete={true}` when you need to wait for an independent execution. The key difference from Fork is that Spawn has no state inheritance—use it when you want complete isolation.
 
-Like Fork, you can use children instead of the `agent` prop.
+Like Fork, you can use children instead of the `root` prop.
 
 ### When to Use Fork vs Spawn
 
-| Scenario | Use | Why |
-|----------|-----|-----|
-| Parallel research sharing context | Fork | Need parent's timeline/sections |
-| Background logging | Spawn | No shared state needed |
-| Child agent needing user context | Fork | Inherit context (user, metadata) |
-| Independent job queue processing | Spawn | Complete isolation |
-| Branching with shared hooks | Fork | Inherit middleware |
-| Fire-and-forget notification | Spawn | Don't need results |
+| Scenario                          | Use   | Why                              |
+| --------------------------------- | ----- | -------------------------------- |
+| Parallel research sharing context | Fork  | Need parent's timeline/sections  |
+| Background logging                | Spawn | No shared state needed           |
+| Child agent needing user context  | Fork  | Inherit context (user, metadata) |
+| Independent job queue processing  | Spawn | Complete isolation               |
+| Branching with shared hooks       | Fork  | Inherit middleware               |
+| Fire-and-forget notification      | Spawn | Don't need results               |
 
 ## Coordinating Multiple Forks
 
@@ -305,7 +306,7 @@ class LevelOneAgent extends Component {
   render() {
     return (
       <>
-        <Fork agent={<LevelTwoAgent />} waitUntilComplete={true} />
+        <Fork root={<LevelTwoAgent />} waitUntilComplete={true} />
         {/* ... */}
       </>
     );
@@ -316,7 +317,7 @@ class LevelTwoAgent extends Component {
   render() {
     return (
       <>
-        <Fork agent={<LevelThreeAgent />} waitUntilComplete={true} />
+        <Fork root={<LevelThreeAgent />} waitUntilComplete={true} />
         {/* ... */}
       </>
     );
@@ -332,7 +333,7 @@ Handle errors in forked agents:
 
 ```tsx
 <Fork
-  agent={<RiskyAgent />}
+  root={<RiskyAgent />}
   waitUntilComplete={true}
   onComplete={(result) => {
     this.result.set(result);
@@ -353,6 +354,7 @@ Handle errors in forked agents:
 ## Context and State Inheritance Summary
 
 **Fork** inherits from parent (configurable via `inherit` prop):
+
 - Timeline entries (copy or reference)
 - Sections (copy or reference)
 - Tools (always shared)
@@ -362,6 +364,7 @@ Handle errors in forked agents:
 - Abort signal (merged with parent's signal)
 
 **Spawn** is completely independent:
+
 - No timeline inheritance
 - No sections inheritance
 - No hooks inheritance
@@ -372,14 +375,14 @@ Handle errors in forked agents:
 ```tsx
 // Fork inherits parent context
 <Fork
-  agent={<SubAgent />}
+  root={<SubAgent />}
   inherit={{ timeline: 'copy', context: true, hooks: true }}
   waitUntilComplete={true}
 />
 
 // Spawn is isolated - starts fresh
 <Spawn
-  agent={<IndependentAgent />}
+  root={<IndependentAgent />}
   input={{ timeline: [] }}  // Must provide input explicitly
 />
 ```
@@ -416,17 +419,17 @@ class ResearchCoordinator extends Component {
 
         {/* Fork agents for each source */}
         <Fork
-          agent={<WebSearchAgent query={state.query} />}
+          root={<WebSearchAgent query={state.query} />}
           waitUntilComplete={true}
           onComplete={(r) => this.addSource("web", r)}
         />
         <Fork
-          agent={<DatabaseAgent query={state.query} />}
+          root={<DatabaseAgent query={state.query} />}
           waitUntilComplete={true}
           onComplete={(r) => this.addSource("database", r)}
         />
         <Fork
-          agent={<DocumentAgent query={state.query} />}
+          root={<DocumentAgent query={state.query} />}
           waitUntilComplete={true}
           onComplete={(r) => this.addSource("documents", r)}
         />

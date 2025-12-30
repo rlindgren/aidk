@@ -27,7 +27,7 @@ flowchart TB
 
 ## The Router Agent
 
-```tsx
+````tsx
 // agents/smart-router.tsx
 import {
   Component,
@@ -241,7 +241,7 @@ export class SmartRouter extends Component {
     return (usage.promptTokens * input + usage.completionTokens * output) / 1000;
   }
 }
-```
+````
 
 ## Advanced: Multi-Stage Router
 

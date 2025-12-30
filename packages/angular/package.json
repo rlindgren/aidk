@@ -2,32 +2,38 @@
   "name": "aidk-angular",
   "version": "0.1.0",
   "description": "Angular bindings for AIDK agents",
-  "type": "module",
-  "main": "src/index.ts",
   "keywords": [
-    "ai",
     "agent",
+    "ai",
     "angular",
     "signals"
   ],
-  "author": "Ryan Lindgren",
+  "homepage": "https://github.com/rlindgren/aidk#readme",
+  "bugs": {
+    "url": "https://github.com/rlindgren/aidk/issues"
+  },
   "license": "ISC",
+  "author": "Ryan Lindgren",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/rlindgren/aidk.git",
     "directory": "packages/angular"
   },
-  "bugs": {
-    "url": "https://github.com/rlindgren/aidk/issues"
-  },
-  "homepage": "https://github.com/rlindgren/aidk#readme",
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "main": "src/index.ts",
   "exports": {
     ".": "./src/index.ts",
     "./markdown.css": "./src/markdown.css"
   },
-  "files": [
-    "dist"
-  ],
+  "publishConfig": {
+    "./dist/markdown.css": "./dist/markdown.css",
+    "access": "public",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.build.json && cp src/markdown.css dist/markdown.css",
     "test": "jest --passWithNoTests",
@@ -42,19 +48,13 @@
     "aidk-client": "workspace:*"
   },
   "peerDependencies": {
-    "@angular/core": "^20.0.0",
     "@angular/common": "^20.0.0",
+    "@angular/core": "^20.0.0",
+    "@angular/forms": "^20.0.0",
     "@angular/platform-browser": "^20.0.0",
     "@angular/router": "^20.0.0",
-    "@angular/forms": "^20.0.0",
     "marked": "^17.0.0",
     "rxjs": "^7.0.0",
     "tslib": "^2.6.0"
-  },
-  "publishConfig": {
-    "access": "public",
-    "main": "./dist/index.js",
-    "types": "./dist/index.d.ts",
-    "./dist/markdown.css": "./dist/markdown.css"
   }
 }

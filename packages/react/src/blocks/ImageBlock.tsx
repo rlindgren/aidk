@@ -1,4 +1,4 @@
-import type { GeneratedImageBlock, ImageBlock as ImageBlockType } from 'aidk-client';
+import type { GeneratedImageBlock, ImageBlock as ImageBlockType } from "aidk-client";
 
 interface Props {
   block: ImageBlockType | GeneratedImageBlock;
@@ -7,14 +7,14 @@ interface Props {
 
 export function ImageBlock({ block, className }: Props) {
   let src: string | undefined;
-  
-  if (block.type === 'generated_image') {
+
+  if (block.type === "generated_image") {
     src = block.data;
   } else {
-    if (block.source.type === 'url') {
+    if (block.source.type === "url") {
       src = block.source.url;
-    } else if (block.source.type === 'base64') {
-      const mimeType = block.mimeType || 'image/png';
+    } else if (block.source.type === "base64") {
+      const mimeType = block.mimeType || "image/png";
       src = `data:${mimeType};base64,${block.source.data}`;
     }
   }
@@ -26,10 +26,9 @@ export function ImageBlock({ block, className }: Props) {
   return (
     <img
       src={src}
-      alt={block.altText || 'Image'}
+      alt={block.altText || "Image"}
       className={className}
-      style={{ maxWidth: '100%', height: 'auto', borderRadius: '4px' }}
+      style={{ maxWidth: "100%", height: "auto", borderRadius: "4px" }}
     />
   );
 }
-

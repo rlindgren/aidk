@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import type { Task } from '../hooks';
+import { useState } from "react";
+import type { Task } from "../hooks";
 
 interface TodoListUIProps {
   tasks: Task[];
@@ -16,8 +16,8 @@ export function TodoListUI({
   onToggleComplete,
   onDeleteTask,
 }: TodoListUIProps) {
-  const [newTaskTitle, setNewTaskTitle] = useState('');
-  const [newTaskDesc, setNewTaskDesc] = useState('');
+  const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [newTaskDesc, setNewTaskDesc] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,8 +28,8 @@ export function TodoListUI({
       description: newTaskDesc.trim() || undefined,
     });
 
-    setNewTaskTitle('');
-    setNewTaskDesc('');
+    setNewTaskTitle("");
+    setNewTaskDesc("");
   };
 
   const completedCount = tasks.filter((t) => t.completed).length;
@@ -69,9 +69,7 @@ export function TodoListUI({
         {tasks.length === 0 && (
           <div className="empty-tasks">
             <p>No tasks yet.</p>
-            <p className="hint">
-              Add a task above or ask the assistant to create one.
-            </p>
+            <p className="hint">Add a task above or ask the assistant to create one.</p>
           </div>
         )}
 
@@ -98,21 +96,15 @@ function TaskItem({
   onDelete: () => void;
 }) {
   return (
-    <div className={`task-item ${task.completed ? 'completed' : ''}`}>
+    <div className={`task-item ${task.completed ? "completed" : ""}`}>
       <label className="task-checkbox">
-        <input
-          type="checkbox"
-          checked={task.completed}
-          onChange={onToggle}
-        />
+        <input type="checkbox" checked={task.completed} onChange={onToggle} />
         <span className="checkmark"></span>
       </label>
 
       <div className="task-content">
         <span className="task-title">{task.title}</span>
-        {task.description && (
-          <span className="task-description">{task.description}</span>
-        )}
+        {task.description && <span className="task-description">{task.description}</span>}
       </div>
 
       <button className="delete-btn" onClick={onDelete} title="Delete task">
@@ -121,4 +113,3 @@ function TaskItem({
     </div>
   );
 }
-

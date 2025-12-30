@@ -1,24 +1,24 @@
 /**
  * MCP Tool Creation
- * 
+ *
  * Factory functions for creating MCP tools that work like regular tools:
  * - Pass to models: engine.execute({ tools: [tool] })
  * - Run directly: await tool.run(input)
  * - Use in JSX: <MyMCPTool />
- * 
+ *
  * Three main entry points:
  * 1. createMCPTool() - Component factory with discovery, for JSX usage
  * 2. createMCPToolFromDefinition() - Direct creation from known definition
  * 3. discoverMCPTools() - Batch discovery of all tools on a server
  */
 
-import { type Component } from '../component/component';
-import { MCPClient } from './client';
-import { MCPService } from './service';
-import type { MCPConfig, MCPServerConfig, MCPToolDefinition } from './types';
-import type { ExecutableTool } from '../tool/tool';
-import { MCPTool, type MCPToolConfig } from './tool';
-import { MCPToolComponent, type MCPToolComponentProps } from './component';
+import { type Component } from "../component/component";
+import { MCPClient } from "./client";
+import { MCPService } from "./service";
+import type { MCPConfig, MCPServerConfig, MCPToolDefinition } from "./types";
+import type { ExecutableTool } from "../tool/tool";
+import { MCPTool, type MCPToolConfig } from "./tool";
+import { MCPToolComponent, type MCPToolComponentProps } from "./component";
 
 // ============================================================================
 // Config Utilities
@@ -26,13 +26,16 @@ import { MCPToolComponent, type MCPToolComponentProps } from './component';
 
 /**
  * Normalizes Cursor-style config to full MCPConfig.
- * 
+ *
  * Cursor-style: { command: 'npx', args: [...], env: {...} }
  * Full MCPConfig: { serverName, transport, connection: {...} }
  */
-export function normalizeMCPConfig(serverName: string, config: MCPServerConfig | MCPConfig): MCPConfig {
+export function normalizeMCPConfig(
+  serverName: string,
+  config: MCPServerConfig | MCPConfig,
+): MCPConfig {
   // Already a full MCPConfig
-  if ('transport' in config && 'connection' in config) {
+  if ("transport" in config && "connection" in config) {
     return config as MCPConfig;
   }
 
@@ -40,7 +43,7 @@ export function normalizeMCPConfig(serverName: string, config: MCPServerConfig |
   const c = config as MCPServerConfig;
   return {
     serverName,
-    transport: 'stdio',
+    transport: "stdio",
     connection: {
       command: c.command,
       args: c.args || [],
@@ -75,14 +78,17 @@ export function mergeMCPConfig(base: MCPConfig, runtime?: Partial<MCPConfig>): M
  * Options for createMCPTool().
  * Extends MCPToolComponentProps but adds `toolName` for single-tool selection.
  */
-export interface CreateMCPToolOptions extends Omit<MCPToolComponentProps, 'include' | 'exclude' | 'mcpClient'> {
-  /** 
+export interface CreateMCPToolOptions extends Omit<
+  MCPToolComponentProps,
+  "include" | "exclude" | "mcpClient"
+> {
+  /**
    * Specific tool name to discover.
    * If omitted, registers first tool found.
    */
   toolName?: string;
-  
-  /** 
+
+  /**
    * Shared MCPClient instance.
    * If not provided, creates a new one.
    */
@@ -91,12 +97,12 @@ export interface CreateMCPToolOptions extends Omit<MCPToolComponentProps, 'inclu
 
 /**
  * Creates an MCP tool component that discovers and registers on mount.
- * 
+ *
  * Use this when you need:
  * - Dynamic discovery at runtime
  * - Runtime configuration (auth tokens)
  * - JSX-based tool declaration
- * 
+ *
  * @example Basic usage
  * ```tsx
  * const ReadFile = createMCPTool({
@@ -104,7 +110,7 @@ export interface CreateMCPToolOptions extends Omit<MCPToolComponentProps, 'inclu
  *   config: { command: 'npx', args: ['-y', '@modelcontextprotocol/server-filesystem', '/path'] },
  *   toolName: 'read_file',
  * });
- * 
+ *
  * function MyAgent() {
  *   return (
  *     <>
@@ -114,7 +120,7 @@ export interface CreateMCPToolOptions extends Omit<MCPToolComponentProps, 'inclu
  *   );
  * }
  * ```
- * 
+ *
  * @example With runtime auth
  * ```tsx
  * const APITool = createMCPTool({
@@ -122,13 +128,13 @@ export interface CreateMCPToolOptions extends Omit<MCPToolComponentProps, 'inclu
  *   config: { transport: 'sse', connection: { url: 'https://api.example.com/mcp' } },
  *   toolName: 'query',
  * });
- * 
+ *
  * // Runtime config from user context
  * <APITool runtimeConfig={{ auth: { type: 'bearer', token: userToken } }} />
  * ```
  */
 export function createMCPTool(
-  options: CreateMCPToolOptions
+  options: CreateMCPToolOptions,
 ): new (props?: Partial<CreateMCPToolOptions>) => Component {
   // Build base props for MCPToolComponent
   const baseProps: MCPToolComponentProps = {
@@ -173,29 +179,29 @@ export function createMCPTool(
 export interface CreateMCPToolFromDefinitionOptions {
   /** Active MCPClient with server connection. */
   client: MCPClient;
-  
+
   /** MCP server configuration. */
   config: MCPConfig;
-  
+
   /** Tool definition from discovery. */
   definition: MCPToolDefinition;
-  
+
   /** Override tool name. */
   name?: string;
 }
 
 /**
  * Creates an ExecutableTool from an MCP tool definition.
- * 
+ *
  * Use this when you already have:
  * - An active MCPClient connection
  * - The tool definition from discovery
- * 
+ *
  * @example
  * ```typescript
  * const client = new MCPClient();
  * const service = new MCPService(client);
- * 
+ *
  * // Connect and discover
  * const config: MCPConfig = {
  *   serverName: 'filesystem',
@@ -203,23 +209,23 @@ export interface CreateMCPToolFromDefinitionOptions {
  *   connection: { command: 'npx', args: [...] }
  * };
  * const tools = await service.connectAndDiscover(config);
- * 
+ *
  * // Create specific tool
  * const readFile = createMCPToolFromDefinition({
  *   client,
  *   config,
  *   definition: tools.find(t => t.name === 'read_file')!,
  * });
- * 
+ *
  * // Pass to model
  * engine.execute({ tools: [readFile] });
- * 
+ *
  * // Or run directly
  * const result = await readFile.run({ path: '/file.txt' });
  * ```
  */
 export function createMCPToolFromDefinition(
-  options: CreateMCPToolFromDefinitionOptions
+  options: CreateMCPToolFromDefinitionOptions,
 ): ExecutableTool {
   const { client, config, definition } = options;
   const name = options.name || definition.name;
@@ -243,32 +249,32 @@ export function createMCPToolFromDefinition(
 export interface DiscoverMCPToolsOptions {
   /** MCP server configuration. */
   config: MCPConfig;
-  
-  /** 
+
+  /**
    * Shared MCPClient.
    * If not provided, creates a new one.
    */
   client?: MCPClient;
-  
+
   /** Prefix for all tool names. */
   toolPrefix?: string;
-  
-  /** 
+
+  /**
    * Whitelist: only include these tools.
    * Takes precedence over exclude.
    */
   include?: string[];
-  
+
   /** Blacklist: exclude these tools. */
   exclude?: string[];
 }
 
 /**
  * Discovers all tools from an MCP server and creates ExecutableTools.
- * 
+ *
  * Use this for batch tool registration or when you need all tools
  * from a server without JSX.
- * 
+ *
  * @example Basic discovery
  * ```typescript
  * const tools = await discoverMCPTools({
@@ -278,11 +284,11 @@ export interface DiscoverMCPToolsOptions {
  *     connection: { command: 'npx', args: [...] }
  *   },
  * });
- * 
+ *
  * // Pass all to model
  * engine.execute({ tools });
  * ```
- * 
+ *
  * @example With filtering
  * ```typescript
  * const tools = await discoverMCPTools({
@@ -291,7 +297,7 @@ export interface DiscoverMCPToolsOptions {
  *   toolPrefix: 'fs_',
  * });
  * ```
- * 
+ *
  * @example Register with COM
  * ```typescript
  * const tools = await discoverMCPTools({ config });
@@ -299,7 +305,7 @@ export interface DiscoverMCPToolsOptions {
  * ```
  */
 export async function discoverMCPTools(
-  options: DiscoverMCPToolsOptions
+  options: DiscoverMCPToolsOptions,
 ): Promise<ExecutableTool[]> {
   const { config } = options;
   const client = options.client ?? new MCPClient();
@@ -310,16 +316,14 @@ export async function discoverMCPTools(
 
   // Filter
   if (options.include?.length) {
-    definitions = definitions.filter(t => options.include!.includes(t.name));
+    definitions = definitions.filter((t) => options.include!.includes(t.name));
   } else if (options.exclude?.length) {
-    definitions = definitions.filter(t => !options.exclude!.includes(t.name));
+    definitions = definitions.filter((t) => !options.exclude!.includes(t.name));
   }
 
   // Create tools
-  return definitions.map(def => {
-    const name = options.toolPrefix
-      ? `${options.toolPrefix}${def.name}`
-      : def.name;
+  return definitions.map((def) => {
+    const name = options.toolPrefix ? `${options.toolPrefix}${def.name}` : def.name;
 
     return createMCPToolFromDefinition({
       client,

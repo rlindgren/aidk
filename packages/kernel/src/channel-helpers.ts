@@ -1,5 +1,5 @@
-import { Channel, type ChannelEvent } from './channel';
-import { Context } from './context';
+import { Channel, type ChannelEvent } from "./channel";
+import { Context } from "./context";
 
 /**
  * Helper functions for accessing channels from KernelContext.
@@ -13,7 +13,9 @@ import { Context } from './context';
 export function getChannel(channelName: string): Channel {
   const ctx = Context.get();
   if (!ctx.channels) {
-    throw new Error('Channels are not available in the current context. Ensure channels are configured in EngineConfig.');
+    throw new Error(
+      "Channels are not available in the current context. Ensure channels are configured in EngineConfig.",
+    );
   }
   return ctx.channels.getChannel(ctx, channelName);
 }
@@ -22,10 +24,12 @@ export function getChannel(channelName: string): Channel {
  * Publish an event to a channel using the current context.
  * @throws Error if channels are not available in context
  */
-export function publishChannel(channelName: string, event: Omit<ChannelEvent, 'channel'>): void {
+export function publishChannel(channelName: string, event: Omit<ChannelEvent, "channel">): void {
   const ctx = Context.get();
   if (!ctx.channels) {
-    throw new Error('Channels are not available in the current context. Ensure channels are configured in EngineConfig.');
+    throw new Error(
+      "Channels are not available in the current context. Ensure channels are configured in EngineConfig.",
+    );
   }
   ctx.channels.publish(ctx, channelName, event);
 }
@@ -35,10 +39,15 @@ export function publishChannel(channelName: string, event: Omit<ChannelEvent, 'c
  * @returns Unsubscribe function
  * @throws Error if channels are not available in context
  */
-export function subscribeChannel(channelName: string, handler: (event: ChannelEvent) => void): () => void {
+export function subscribeChannel(
+  channelName: string,
+  handler: (event: ChannelEvent) => void,
+): () => void {
   const ctx = Context.get();
   if (!ctx.channels) {
-    throw new Error('Channels are not available in the current context. Ensure channels are configured in EngineConfig.');
+    throw new Error(
+      "Channels are not available in the current context. Ensure channels are configured in EngineConfig.",
+    );
   }
   return ctx.channels.subscribe(ctx, channelName, handler);
 }
@@ -47,10 +56,16 @@ export function subscribeChannel(channelName: string, handler: (event: ChannelEv
  * Wait for a response on a channel using the current context.
  * @throws Error if channels are not available in context
  */
-export function waitForChannelResponse(channelName: string, requestId: string, timeoutMs?: number): Promise<ChannelEvent> {
+export function waitForChannelResponse(
+  channelName: string,
+  requestId: string,
+  timeoutMs?: number,
+): Promise<ChannelEvent> {
   const ctx = Context.get();
   if (!ctx.channels) {
-    throw new Error('Channels are not available in the current context. Ensure channels are configured in EngineConfig.');
+    throw new Error(
+      "Channels are not available in the current context. Ensure channels are configured in EngineConfig.",
+    );
   }
   return ctx.channels.waitForResponse(ctx, channelName, requestId, timeoutMs);
 }
@@ -65,4 +80,3 @@ export function tryGetChannel(channelName: string): Channel | undefined {
   }
   return ctx.channels.getChannel(ctx, channelName);
 }
-

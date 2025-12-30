@@ -26,9 +26,7 @@ const logger = Logger.for("GoogleAdapter");
 /**
  * Factory function for creating Google model adapter using createModel
  */
-export function createGoogleModel(
-  config: GoogleAdapterConfig = {},
-): GoogleAdapter {
+export function createGoogleModel(config: GoogleAdapterConfig = {}): GoogleAdapter {
   const client = config.client ?? new GoogleGenAI(buildClientOptions(config));
 
   return createLanguageModel<
@@ -123,12 +121,8 @@ export function buildClientOptions(config: GoogleAdapterConfig): any {
 /**
  * Map Google FinishReason to normalized StopReason
  */
-export function mapGoogleFinishReason(
-  finishReason: FinishReason | undefined,
-): StopReason {
-  return finishReason
-    ? STOP_REASON_MAP[finishReason] || StopReason.STOP
-    : StopReason.STOP;
+export function mapGoogleFinishReason(finishReason: FinishReason | undefined): StopReason {
+  return finishReason ? STOP_REASON_MAP[finishReason] || StopReason.STOP : StopReason.STOP;
 }
 
 /**
@@ -238,8 +232,7 @@ export function mapToolDefinition(tool: any): any {
       return {
         ...baseTool,
         ...googleConfig,
-        functionDeclarations:
-          googleConfig.functionDeclarations || baseTool.functionDeclarations,
+        functionDeclarations: googleConfig.functionDeclarations || baseTool.functionDeclarations,
       };
     }
 
@@ -344,8 +337,7 @@ async function prepareInput(
   const googleOptions = normalizedInput.providerOptions?.google || {};
 
   // Extract model override if provided in providerOptions
-  const { model: providerModel, ...providerConfigOptions } =
-    googleOptions as any;
+  const { model: providerModel, ...providerConfigOptions } = googleOptions as any;
 
   // Merge provider config options into generateConfig
   const finalConfig = {
@@ -363,11 +355,7 @@ async function prepareInput(
 
   // Build request parameters with new SDK structure
   const requestParams: any = {
-    model:
-      providerModel ||
-      normalizedInput.model ||
-      config.model ||
-      "gemini-2.5-flash",
+    model: providerModel || normalizedInput.model || config.model || "gemini-2.5-flash",
     contents,
     config: finalConfig,
   };
@@ -378,16 +366,10 @@ async function prepareInput(
 /**
  * Convert Google GenerateContentResponse to ModelOutput
  */
-async function processOutput(
-  output: GenerateContentResponse,
-): Promise<ModelOutput> {
+async function processOutput(output: GenerateContentResponse): Promise<ModelOutput> {
   const candidate = output.candidates?.[0];
   if (!candidate) {
-    throw new AdapterError(
-      "google",
-      "No candidates in Google response",
-      "ADAPTER_RESPONSE",
-    );
+    throw new AdapterError("google", "No candidates in Google response", "ADAPTER_RESPONSE");
   }
 
   const content: ContentBlock[] = [];
@@ -507,25 +489,14 @@ function processChunk(chunk: any): StreamChunk {
 /**
  * Aggregate stream chunks into final ModelOutput
  */
-async function processStreamChunks(
-  chunks: any[] | StreamChunk[],
-): Promise<ModelOutput> {
+async function processStreamChunks(chunks: any[] | StreamChunk[]): Promise<ModelOutput> {
   if (chunks.length === 0) {
-    throw new AdapterError(
-      "google",
-      "No chunks to process",
-      "ADAPTER_RESPONSE",
-    );
+    throw new AdapterError("google", "No chunks to process", "ADAPTER_RESPONSE");
   }
 
   // Check if chunks are StreamChunks (from engine) or raw Google chunks
   const isStreamChunk = (chunk: any): chunk is StreamChunk => {
-    return (
-      chunk &&
-      typeof chunk === "object" &&
-      "type" in chunk &&
-      !("candidates" in chunk)
-    );
+    return chunk && typeof chunk === "object" && "type" in chunk && !("candidates" in chunk);
   };
 
   // If StreamChunks, we need to reconstruct from raw data
@@ -551,8 +522,7 @@ async function processStreamChunks(
   const lastChunk = googleChunks[googleChunks.length - 1];
 
   // Find chunk with usage information
-  const usageChunk =
-    googleChunks.find((chunk) => chunk.usageMetadata) || lastChunk;
+  const usageChunk = googleChunks.find((chunk) => chunk.usageMetadata) || lastChunk;
 
   // Accumulate content
   let accumulatedContent = "";
@@ -611,9 +581,7 @@ async function processStreamChunks(
     get message() {
       return messages.filter((message) => message.role === "assistant").at(-1);
     },
-    stopReason: finishReason
-      ? mapGoogleFinishReason(finishReason)
-      : StopReason.UNSPECIFIED,
+    stopReason: finishReason ? mapGoogleFinishReason(finishReason) : StopReason.UNSPECIFIED,
     toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
     usage: usageChunk.usageMetadata
       ? {
@@ -621,8 +589,7 @@ async function processStreamChunks(
           outputTokens: usageChunk.usageMetadata.candidatesTokenCount || 0,
           totalTokens: usageChunk.usageMetadata.totalTokenCount || 0,
           reasoningTokens: usageChunk.usageMetadata.thoughtsTokenCount || 0,
-          cachedInputTokens:
-            usageChunk.usageMetadata.cachedContentTokenCount || 0,
+          cachedInputTokens: usageChunk.usageMetadata.cachedContentTokenCount || 0,
         }
       : {
           inputTokens: 0,
@@ -669,9 +636,7 @@ async function* executeStream(
 
   logger.debug("🔧 [Google] executeStream - model:", model);
   const toolNames =
-    requestParams.config?.tools?.[0]?.functionDeclarations?.map(
-      (f: any) => f.name,
-    ) || [];
+    requestParams.config?.tools?.[0]?.functionDeclarations?.map((f: any) => f.name) || [];
   logger.debug("🔧 [Google] executeStream - tools:", toolNames);
   // logger.debug('🔧 [Google] executeStream - full request:', JSON.stringify({ model, ...requestParams }, null, 2));
 
@@ -688,10 +653,7 @@ async function* executeStream(
       for (const part of parts) {
         if (part.functionCall) {
           hasToolCalls = true;
-          logger.debug(
-            "🔧 [Google] FUNCTION CALL:",
-            JSON.stringify(part.functionCall, null, 2),
-          );
+          logger.debug("🔧 [Google] FUNCTION CALL:", JSON.stringify(part.functionCall, null, 2));
         }
       }
       if (chunk.candidates?.[0]?.finishReason) {

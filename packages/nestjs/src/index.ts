@@ -26,13 +26,13 @@
  * })
  * export class AppModule {}
  *
- * // agent.controller.ts
- * import { EngineController, StreamAgent } from 'aidk-nestjs';
+ * // controller.ts
+ * import { EngineController, Stream } from 'aidk-nestjs';
  *
- * @Controller('api/agent')
- * export class AgentController {
+ * @Controller('api/run')
+ * export class RunController {
  *   @Post('stream')
- *   @StreamAgent()
+ *   @Stream()
  *   async stream(@Body() input: EngineInput) {
  *     return input;
  *   }
@@ -47,7 +47,7 @@ export { EngineModule } from "./engine.module";
 export type { EngineModuleOptions } from "./engine.module";
 
 // Controller decorators
-export { StreamAgent, ExecuteAgent } from "./decorators/agent";
+export { Stream, Execute, StreamAgent, ExecuteAgent } from "./decorators/agent";
 
 // Guards
 export { EngineContextGuard } from "./guards/engine-context.guard";

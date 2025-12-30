@@ -193,10 +193,7 @@ export interface EngineComponent {
    */
   onStart?: (com: COM) => Promise<void> | void;
 
-  onTickStart?: (
-    com: COM,
-    state: TickState,
-  ) => Promise<void> | void;
+  onTickStart?: (com: COM, state: TickState) => Promise<void> | void;
 
   /**
    * Declaratively render context for the current tick.
@@ -238,10 +235,7 @@ export interface EngineComponent {
    * @param com The persistent Context Object Model for this execution.
    * @param state Current tick state including previous and current.
    */
-  onTickEnd?: (
-    com: COM,
-    state: TickState,
-  ) => Promise<void> | void;
+  onTickEnd?: (com: COM, state: TickState) => Promise<void> | void;
 
   /**
    * Called after the entire execution completes (all ticks finished).
@@ -254,10 +248,7 @@ export interface EngineComponent {
    * @param com The persistent Context Object Model for this execution.
    * @param finalState The final COMInput state after all ticks.
    */
-  onComplete?: (
-    com: COM,
-    finalState: COMInput,
-  ) => Promise<void> | void;
+  onComplete?: (com: COM, finalState: COMInput) => Promise<void> | void;
 
   /**
    * Called immediately when a message is sent to the running execution.
@@ -288,11 +279,7 @@ export interface EngineComponent {
    * }
    * ```
    */
-  onMessage?: (
-    com: COM,
-    message: ExecutionMessage,
-    state: TickState,
-  ) => Promise<void> | void;
+  onMessage?: (com: COM, message: ExecutionMessage, state: TickState) => Promise<void> | void;
 
   /**
    * Called when an error occurs during engine execution.
@@ -302,24 +289,15 @@ export interface EngineComponent {
    * @param state Current tick state including error information.
    * @returns RecoveryAction to indicate whether to continue execution, or void/undefined to let error propagate
    */
-  onError?: (
-    com: COM,
-    state: TickState,
-  ) => Promise<RecoveryAction | void> | RecoveryAction | void;
+  onError?: (com: COM, state: TickState) => Promise<RecoveryAction | void> | RecoveryAction | void;
 }
 
 export type ComponentClass = new (props?: any) => EngineComponent;
-export type ComponentFactory = (
-  props?: any,
-) => EngineComponent | Promise<EngineComponent>;
+export type ComponentFactory = (props?: any) => EngineComponent | Promise<EngineComponent>;
 // Pure function component: React-style (props only) or Engine-style (props, com, state)
 export type PureFunctionComponent<P = any> =
   | ((props: P) => JSX.Element | null)
-  | ((
-      props: P,
-      com: COM,
-      state: TickState,
-    ) => JSX.Element | null);
+  | ((props: P, com: COM, state: TickState) => JSX.Element | null);
 // A ComponentDefinition can be an instance, a class, a factory, a pure function, or a Virtual Element
 export type ComponentDefinition =
   | EngineComponent
@@ -415,11 +393,7 @@ export abstract class Component<P = {}, S = {}> implements EngineComponent {
     return undefined;
   }
 
-  onMessage(
-    _com: COM,
-    _message: ExecutionMessage,
-    _state: TickState,
-  ): void | Promise<void> {
+  onMessage(_com: COM, _message: ExecutionMessage, _state: TickState): void | Promise<void> {
     // Override to handle messages sent to the execution
   }
 
@@ -445,10 +419,7 @@ export interface OnStart {
 }
 
 export interface OnTickStart {
-  onTickStart: (
-    com: COM,
-    state: TickState,
-  ) => Promise<void> | void;
+  onTickStart: (com: COM, state: TickState) => Promise<void> | void;
 }
 
 export interface OnAfterCompile {
@@ -461,32 +432,19 @@ export interface OnAfterCompile {
 }
 
 export interface OnTickEnd {
-  onTickEnd: (
-    com: COM,
-    state: TickState,
-  ) => Promise<void> | void;
+  onTickEnd: (com: COM, state: TickState) => Promise<void> | void;
 }
 
 export interface OnComplete {
-  onComplete: (
-    com: COM,
-    finalState: COMInput,
-  ) => Promise<void> | void;
+  onComplete: (com: COM, finalState: COMInput) => Promise<void> | void;
 }
 
 export interface OnError {
-  onError: (
-    com: COM,
-    state: TickState,
-  ) => Promise<RecoveryAction | void> | RecoveryAction | void;
+  onError: (com: COM, state: TickState) => Promise<RecoveryAction | void> | RecoveryAction | void;
 }
 
 export interface OnMessage {
-  onMessage: (
-    com: COM,
-    message: ExecutionMessage,
-    state: TickState,
-  ) => Promise<void> | void;
+  onMessage: (com: COM, message: ExecutionMessage, state: TickState) => Promise<void> | void;
 }
 
 export interface Render {

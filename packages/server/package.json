@@ -2,27 +2,32 @@
   "name": "aidk-server",
   "version": "0.1.0",
   "description": "Server utilities for AIDK agents",
-  "type": "module",
-  "main": "src/index.ts",
-  "files": [
-    "dist"
-  ],
   "keywords": [
-    "ai",
     "agent",
+    "ai",
     "server"
   ],
-  "author": "Ryan Lindgren",
+  "homepage": "https://github.com/rlindgren/aidk#readme",
+  "bugs": {
+    "url": "https://github.com/rlindgren/aidk/issues"
+  },
   "license": "ISC",
+  "author": "Ryan Lindgren",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/rlindgren/aidk.git",
     "directory": "packages/server"
   },
-  "bugs": {
-    "url": "https://github.com/rlindgren/aidk/issues"
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "main": "src/index.ts",
+  "publishConfig": {
+    "access": "public",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts"
   },
-  "homepage": "https://github.com/rlindgren/aidk#readme",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "test": "jest",
@@ -35,10 +40,5 @@
   },
   "dependencies": {
     "aidk": "workspace:*"
-  },
-  "publishConfig": {
-    "access": "public",
-    "main": "./dist/index.js",
-    "types": "./dist/index.d.ts"
   }
 }

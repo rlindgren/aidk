@@ -1,12 +1,12 @@
 /**
  * ChannelTransport - Abstract bidirectional transport interface
- * 
+ *
  * All transports appear bidirectional from the caller's perspective.
  * The transport encapsulates HOW it sends/receives:
  * - SSE: receives via EventSource, sends via HTTP POST
  * - WebSocket: sends and receives on same connection
  * - Polling: receives via polling, sends via HTTP POST
- * 
+ *
  * @example
  * ```typescript
  * // SSE transport (internally uses HTTP for send)
@@ -14,12 +14,12 @@
  *   buildUrl: () => '/events/sse',
  *   sendUrl: '/events',
  * });
- * 
+ *
  * // WebSocket transport (uses WS for both)
  * const transport = new WebSocketTransport({
  *   url: 'wss://api.example.com/ws',
  * });
- * 
+ *
  * // Both used the same way
  * transport.connect();
  * transport.onMessage((data) => console.log(data));
@@ -27,12 +27,12 @@
  * ```
  */
 
-export type TransportState = 
-  | 'disconnected' 
-  | 'connecting' 
-  | 'connected' 
-  | 'reconnecting' 
-  | 'offline';
+export type TransportState =
+  | "disconnected"
+  | "connecting"
+  | "connected"
+  | "reconnecting"
+  | "offline";
 
 export interface TransportInfo {
   state: TransportState;
@@ -61,36 +61,36 @@ export interface ChannelTransport {
   // ===========================================================================
   // Lifecycle
   // ===========================================================================
-  
+
   /** Connect to the transport */
   connect(): void;
-  
+
   /** Disconnect from the transport */
   disconnect(): void;
-  
+
   /** Force reconnection */
   reconnect(): void;
-  
+
   /** Dispose and cleanup all resources */
   dispose(): void;
 
   // ===========================================================================
   // Messaging
   // ===========================================================================
-  
+
   /**
    * Register a message handler.
    * @returns Unsubscribe function
    */
   onMessage(handler: (data: unknown) => void): () => void;
-  
+
   /**
    * Send data through the transport.
    * How this is implemented depends on the transport:
    * - SSE: HTTP POST to configured endpoint
    * - WebSocket: ws.send()
    * - Polling: HTTP POST
-   * 
+   *
    * @returns Response from the send operation (e.g., HTTP response body)
    */
   send<T = unknown>(data: unknown): Promise<T>;
@@ -98,13 +98,13 @@ export interface ChannelTransport {
   // ===========================================================================
   // State
   // ===========================================================================
-  
+
   /** Get current connection state */
   getState(): TransportState;
-  
+
   /** Get detailed connection info */
   getInfo(): TransportInfo;
-  
+
   /** Check if connected */
   isConnected(): boolean;
 }
@@ -115,14 +115,13 @@ export interface ChannelTransport {
 export interface TransportReconnectConfig {
   /** Base reconnect delay in ms (default: 1000) */
   reconnectDelay?: number;
-  
+
   /** Max reconnect delay in ms (default: 30000) */
   maxReconnectDelay?: number;
-  
+
   /** Max reconnect attempts (0 = infinite, default: 0) */
   maxReconnectAttempts?: number;
-  
+
   /** Jitter factor for reconnect delay (default: 0.25 = ±25%) */
   reconnectJitter?: number;
 }
-

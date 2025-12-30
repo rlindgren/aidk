@@ -68,12 +68,7 @@ export interface ExecutionMessage {
 /**
  * Execution status
  */
-export type ExecutionStatus =
-  | "running"
-  | "completed"
-  | "failed"
-  | "cancelled"
-  | "pending";
+export type ExecutionStatus = "running" | "completed" | "failed" | "cancelled" | "pending";
 export const ExecutionStatuses: ExecutionStatus[] = [
   "running",
   "completed",
@@ -247,11 +242,7 @@ export interface ExecutionHandle extends EventEmitter {
   /**
    * Emit signal for this execution (and its children)
    */
-  emitSignal(
-    signal: SignalType,
-    reason?: string,
-    metadata?: Record<string, any>,
-  ): void;
+  emitSignal(signal: SignalType, reason?: string, metadata?: Record<string, any>): void;
 
   /**
    * Register graceful shutdown hook for this execution

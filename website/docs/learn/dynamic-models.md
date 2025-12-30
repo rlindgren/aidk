@@ -44,7 +44,7 @@ class AdaptiveAgent extends Component {
 
 Start with a cheaper model, upgrade when the conversation gets complex:
 
-```tsx
+````tsx
 class SmartRouterAgent extends Component {
   private complexity = signal<"low" | "medium" | "high">("low");
 
@@ -81,7 +81,7 @@ class SmartRouterAgent extends Component {
     );
   }
 }
-```
+````
 
 ### Pattern 2: Task-Based Selection
 

@@ -1,6 +1,4 @@
-import type {
-  EphemeralPosition,
-} from "../com/types";
+import type { EphemeralPosition } from "../com/types";
 import type { ExecutableTool } from "../tool/tool";
 import type { SemanticContentBlock, ContentRenderer } from "../renderers";
 import type { ContentBlock, MessageRoles } from "aidk-shared";
@@ -239,10 +237,7 @@ export interface Effect {
   debugLabel?: string;
 }
 
-export type EffectCallback = () =>
-  | void
-  | EffectCleanup
-  | Promise<void | EffectCleanup>;
+export type EffectCallback = () => void | EffectCleanup | Promise<void | EffectCleanup>;
 export type EffectCleanup = () => void | Promise<void>;
 
 // ============================================================================
@@ -344,18 +339,12 @@ export interface FiberNode {
 export type FunctionComponent<P = Record<string, unknown>> =
   | ((props: P) => FiberChild | Promise<FiberChild>)
   | ((props: P, com: COM) => FiberChild | Promise<FiberChild>)
-  | ((
-      props: P,
-      com: COM,
-      state: TickState,
-    ) => FiberChild | Promise<FiberChild>);
+  | ((props: P, com: COM, state: TickState) => FiberChild | Promise<FiberChild>);
 
 /**
  * Class component constructor.
  */
-export type ClassComponent<P = Record<string, unknown>> = new (
-  props: P,
-) => ComponentInstance;
+export type ClassComponent<P = Record<string, unknown>> = new (props: P) => ComponentInstance;
 
 /**
  * Any component type.
@@ -376,36 +365,20 @@ export interface ComponentInstance {
   onMount?: (com: COM) => void | Promise<void>;
   onUnmount?: (com: COM) => void | Promise<void>;
   onStart?: (com: COM) => void | Promise<void>;
-  onTickStart?: (
-    com: COM,
-    state: TickState,
-  ) => void | Promise<void>;
-  onTickEnd?: (
-    com: COM,
-    state: TickState,
-  ) => void | Promise<void>;
+  onTickStart?: (com: COM, state: TickState) => void | Promise<void>;
+  onTickEnd?: (com: COM, state: TickState) => void | Promise<void>;
   onAfterCompile?: (
     com: COM,
     compiled: unknown,
     state: TickState,
     ctx: unknown,
   ) => void | Promise<void>;
-  onComplete?: (
-    com: COM,
-    finalState: unknown,
-  ) => void | Promise<void>;
+  onComplete?: (com: COM, finalState: unknown) => void | Promise<void>;
   onError?: (com: COM, state: TickState) => unknown;
-  onMessage?: (
-    com: COM,
-    state: TickState,
-    message: ExecutionMessage,
-  ) => void | Promise<void>;
+  onMessage?: (com: COM, state: TickState, message: ExecutionMessage) => void | Promise<void>;
 
   // Render
-  render?: (
-    com: COM,
-    state: TickState,
-  ) => FiberChild | Promise<FiberChild>;
+  render?: (com: COM, state: TickState) => FiberChild | Promise<FiberChild>;
 }
 
 // ============================================================================

@@ -231,15 +231,15 @@ Telemetry.setProvider(new DatadogProvider(datadogTracer));
 
 AIDK creates spans with consistent naming:
 
-| Operation | Span Name |
-|-----------|-----------|
-| Engine execute | `engine:execute` |
-| Engine stream | `engine:stream` |
-| Single tick | `engine:tick` |
-| Model call | `model:generate` |
+| Operation      | Span Name                 |
+| -------------- | ------------------------- |
+| Engine execute | `engine:execute`          |
+| Engine stream  | `engine:stream`           |
+| Single tick    | `engine:tick`             |
+| Model call     | `model:generate`          |
 | Tool execution | `tool:execute:{toolName}` |
-| Fork | `fork:execute` |
-| Spawn | `spawn:execute` |
+| Fork           | `fork:execute`            |
+| Spawn          | `spawn:execute`           |
 
 ### Span Naming Best Practices
 
@@ -276,7 +276,7 @@ class ParentAgent extends Component {
     return (
       <>
         <Fork
-          agent={<ChildAgent />}
+          root={<ChildAgent />}
           waitUntilComplete={true}
           onComplete={(result) => {
             // Child's token usage is now in parent's metrics
@@ -295,7 +295,7 @@ class ParentAgent extends Component {
 Spawned executions are independent—their metrics don't propagate to the parent:
 
 ```tsx
-<Spawn agent={<BackgroundLogger />} />
+<Spawn root={<BackgroundLogger />} />
 // BackgroundLogger's metrics are tracked separately
 ```
 
@@ -367,6 +367,7 @@ histogram.record(Date.now() - start, { tool: 'calculator' });
 ### 4. Set Up Alerts on Key Metrics
 
 Monitor these metrics in production:
+
 - `totalTokens` - Cost tracking
 - `failedExecutions` - Error rate
 - `durationMs` - Latency

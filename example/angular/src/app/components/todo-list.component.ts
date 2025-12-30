@@ -1,8 +1,8 @@
-import { Component, OnInit, DestroyRef, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { ChannelsService, ExecutionService, EngineService, ChannelEvent } from 'aidk-angular';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Component, OnInit, DestroyRef, inject } from "@angular/core";
+import { CommonModule } from "@angular/common";
+import { FormsModule } from "@angular/forms";
+import { ChannelsService, ExecutionService, EngineService, ChannelEvent } from "aidk-angular";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 
 interface Task {
   id: string;
@@ -11,7 +11,7 @@ interface Task {
   completed: boolean;
   createdAt?: string;
   updatedAt?: string;
-  userId?: string; /* Tasks are scoped to users */
+  userId?: string /* Tasks are scoped to users */;
 }
 
 interface TaskResponse {
@@ -21,7 +21,7 @@ interface TaskResponse {
 }
 
 @Component({
-  selector: 'app-todo-list',
+  selector: "app-todo-list",
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
@@ -88,7 +88,8 @@ interface TaskResponse {
       </div>
     </div>
   `,
-  styles: [`
+  styles: [
+    `
     :host {
       display: flex;
       flex-direction: column;
@@ -258,13 +259,14 @@ interface TaskResponse {
     .delete-btn:hover {
       color: var(--color-error);
     }
-  `],
+  `,
+  ],
 })
 export class TodoListComponent implements OnInit {
   tasks: Task[] = [];
   isLoading = false;
-  newTaskTitle = '';
-  newTaskDesc = '';
+  newTaskTitle = "";
+  newTaskDesc = "";
 
   private destroyRef = inject(DestroyRef);
 
@@ -287,25 +289,25 @@ export class TodoListComponent implements OnInit {
 
     // Subscribe to todo-list channel
     this.channelsService
-      .subscribe('todo-list')
+      .subscribe("todo-list")
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((event: ChannelEvent) => {
-        if (event.type === 'state_changed') {
+        if (event.type === "state_changed") {
           const payload = event.payload as { tasks?: Task[] };
           if (payload?.tasks) {
             this.tasks = payload.tasks;
           }
         }
-      })
+      });
   }
 
   private async fetchTasks(): Promise<void> {
     try {
       const params = new URLSearchParams();
       // Tasks are scoped by userId (not threadId)
-      const userId = this.engineService.userId || 'anonymous';
-      params.set('userId', userId);
-      
+      const userId = this.engineService.userId || "anonymous";
+      params.set("userId", userId);
+
       // Use relative URL (proxied by Angular dev server)
       const response = await fetch(`/api/tasks?${params}`);
       if (response.ok) {
@@ -315,7 +317,7 @@ export class TodoListComponent implements OnInit {
         }
       }
     } catch (err) {
-      console.error('Failed to fetch initial tasks:', err);
+      console.error("Failed to fetch initial tasks:", err);
     }
   }
 
@@ -336,12 +338,12 @@ export class TodoListComponent implements OnInit {
 
     const title = this.newTaskTitle.trim();
     const description = this.newTaskDesc.trim() || undefined;
-    this.newTaskTitle = '';
-    this.newTaskDesc = '';
+    this.newTaskTitle = "";
+    this.newTaskDesc = "";
 
     // userId is sent via session; no need to pass here
     this.channelsService
-      .publish<TaskResponse>('todo-list', 'create_task', {
+      .publish<TaskResponse>("todo-list", "create_task", {
         title,
         description,
       })
@@ -355,11 +357,11 @@ export class TodoListComponent implements OnInit {
         },
         error: (err: Error) => {
           // Revert on error
-          this.tasks = this.tasks.filter(t => t.id !== tempTask.id);
-          console.error('Failed to create task:', err);
+          this.tasks = this.tasks.filter((t) => t.id !== tempTask.id);
+          console.error("Failed to create task:", err);
         },
         complete: () => (this.isLoading = false),
-      })
+      });
   }
 
   toggleComplete(task: Task): void {
@@ -368,7 +370,7 @@ export class TodoListComponent implements OnInit {
 
     // userId is sent via session; no need to pass here
     this.channelsService
-      .publish<TaskResponse>('todo-list', 'toggle_complete', {
+      .publish<TaskResponse>("todo-list", "toggle_complete", {
         task_id: task.id,
       })
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -382,7 +384,7 @@ export class TodoListComponent implements OnInit {
         error: (err: Error) => {
           // Revert on error
           task.completed = !task.completed;
-          console.error('Failed to update task:', err);
+          console.error("Failed to update task:", err);
         },
       });
   }
@@ -394,7 +396,7 @@ export class TodoListComponent implements OnInit {
 
     // userId is sent via session; no need to pass here
     this.channelsService
-      .publish<TaskResponse>('todo-list', 'delete_task', {
+      .publish<TaskResponse>("todo-list", "delete_task", {
         task_id: task.id,
       })
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -408,7 +410,7 @@ export class TodoListComponent implements OnInit {
         error: (err: Error) => {
           // Revert on error
           this.tasks.splice(index, 0, task);
-          console.error('Failed to delete task:', err);
+          console.error("Failed to delete task:", err);
         },
       });
   }

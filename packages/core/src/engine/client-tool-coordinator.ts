@@ -1,4 +1,4 @@
-import type { AgentToolResult } from '../tool/tool';
+import type { AgentToolResult } from "../tool/tool";
 
 /**
  * Deferred promise pattern for async coordination
@@ -18,11 +18,11 @@ class Deferred<T> {
 
 /**
  * ClientToolCoordinator - Manages client tool execution and result coordination
- * 
+ *
  * Handles waiting for client tool results when requiresResponse is true.
  * Tools are streamed to the client, and the coordinator waits for results
  * to be sent back via the /api/channels/tool-results endpoint.
- * 
+ *
  * If no active execution is waiting (execution ended, timeout, etc.),
  * resolveResult() returns false and the application should handle persistence
  * and optionally trigger a new execution.
@@ -35,7 +35,7 @@ export class ClientToolCoordinator {
    * Wait for a client tool result.
    * Returns immediately with defaultResult if requiresResponse is false.
    * Otherwise waits for client to send result via resolveResult().
-   * 
+   *
    * @param toolUseId - ID of the tool call
    * @param defaultResult - Default result if requiresResponse is false
    * @param requiresResponse - Whether tool requires client response
@@ -46,7 +46,7 @@ export class ClientToolCoordinator {
     toolUseId: string,
     defaultResult: AgentToolResult,
     requiresResponse: boolean,
-    timeout: number = 30000
+    timeout: number = 30000,
   ): Promise<AgentToolResult> {
     // If tool doesn't require response, return default immediately
     if (!requiresResponse) {
@@ -75,11 +75,11 @@ export class ClientToolCoordinator {
 
   /**
    * Resolve a pending tool call with a result from the client.
-   * 
+   *
    * @param toolUseId - ID of the tool call
    * @param result - Result from client
    * @returns true if result was resolved to an active execution, false if no pending call found
-   * 
+   *
    * If false is returned, the execution likely ended (timeout, completion, cancellation).
    * The application should handle persistence and optionally trigger a new execution.
    */
@@ -104,7 +104,7 @@ export class ClientToolCoordinator {
 
   /**
    * Cancel waiting for a tool result (e.g., execution cancelled).
-   * 
+   *
    * @param toolUseId - ID of the tool call to cancel
    */
   cancelExecution(toolUseId: string): void {
@@ -135,4 +135,3 @@ export class ClientToolCoordinator {
     this.timeouts.clear();
   }
 }
-

@@ -1,6 +1,6 @@
 /**
  * In-Memory Store Implementation
- * 
+ *
  * Simple Map-based storage for development and testing.
  * Provides repository implementations that store data in memory.
  */
@@ -19,7 +19,7 @@ import type {
   InteractionRepository,
   ToolStateRepository,
   PersistenceRepositories,
-} from '../types';
+} from "../types";
 
 // =============================================================================
 // Store Interface
@@ -71,11 +71,13 @@ export function clearStore(store: InMemoryStore): void {
 export class InMemoryExecutionRepository implements ExecutionRepository {
   constructor(private store: InMemoryStore) {}
 
-  async create(data: Omit<ExecutionEntity, 'started_at'> & { started_at?: Date }): Promise<ExecutionEntity> {
+  async create(
+    data: Omit<ExecutionEntity, "started_at"> & { started_at?: Date },
+  ): Promise<ExecutionEntity> {
     const entity: ExecutionEntity = {
       ...data,
       started_at: data.started_at || new Date(),
-      tenant_id: data.tenant_id || 'default',
+      tenant_id: data.tenant_id || "default",
     };
     this.store.executions.set(entity.id, entity);
     return entity;
@@ -95,21 +97,21 @@ export class InMemoryExecutionRepository implements ExecutionRepository {
 
   async findByThreadId(threadId: string, limit = 100): Promise<ExecutionEntity[]> {
     return Array.from(this.store.executions.values())
-      .filter(e => e.thread_id === threadId)
+      .filter((e) => e.thread_id === threadId)
       .sort((a, b) => b.started_at.getTime() - a.started_at.getTime())
       .slice(0, limit);
   }
 
   async findByUserId(userId: string, limit = 100): Promise<ExecutionEntity[]> {
     return Array.from(this.store.executions.values())
-      .filter(e => e.user_id === userId)
+      .filter((e) => e.user_id === userId)
       .sort((a, b) => b.started_at.getTime() - a.started_at.getTime())
       .slice(0, limit);
   }
 
   async findByRootId(rootId: string): Promise<ExecutionEntity[]> {
     return Array.from(this.store.executions.values())
-      .filter(e => e.root_id === rootId)
+      .filter((e) => e.root_id === rootId)
       .sort((a, b) => a.started_at.getTime() - b.started_at.getTime());
   }
 
@@ -121,19 +123,19 @@ export class InMemoryExecutionRepository implements ExecutionRepository {
     offset?: number;
   }): Promise<ExecutionEntity[]> {
     let results = Array.from(this.store.executions.values());
-    
+
     if (params?.thread_id) {
-      results = results.filter(e => e.thread_id === params.thread_id);
+      results = results.filter((e) => e.thread_id === params.thread_id);
     }
     if (params?.user_id) {
-      results = results.filter(e => e.user_id === params.user_id);
+      results = results.filter((e) => e.user_id === params.user_id);
     }
     if (params?.tenant_id) {
-      results = results.filter(e => e.tenant_id === params.tenant_id);
+      results = results.filter((e) => e.tenant_id === params.tenant_id);
     }
-    
+
     results.sort((a, b) => b.started_at.getTime() - a.started_at.getTime());
-    
+
     const offset = params?.offset || 0;
     const limit = params?.limit || 100;
     return results.slice(offset, offset + limit);
@@ -157,8 +159,9 @@ export class InMemoryMetricsRepository implements MetricsRepository {
   }
 
   async findByExecutionId(executionId: string): Promise<MetricsEntity | null> {
-    return Array.from(this.store.metrics.values())
-      .find(m => m.execution_id === executionId) || null;
+    return (
+      Array.from(this.store.metrics.values()).find((m) => m.execution_id === executionId) || null
+    );
   }
 
   async aggregate(params?: {
@@ -167,37 +170,42 @@ export class InMemoryMetricsRepository implements MetricsRepository {
     tenant_id?: string;
   }): Promise<Partial<MetricsEntity>> {
     let metrics = Array.from(this.store.metrics.values());
-    
+
     if (params?.thread_id) {
-      metrics = metrics.filter(m => m.thread_id === params.thread_id);
+      metrics = metrics.filter((m) => m.thread_id === params.thread_id);
     }
     if (params?.user_id) {
-      metrics = metrics.filter(m => m.user_id === params.user_id);
+      metrics = metrics.filter((m) => m.user_id === params.user_id);
     }
     if (params?.tenant_id) {
-      metrics = metrics.filter(m => m.tenant_id === params.tenant_id);
+      metrics = metrics.filter((m) => m.tenant_id === params.tenant_id);
     }
-    
-    return metrics.reduce((acc, m) => ({
-      input_tokens: (acc.input_tokens || 0) + m.input_tokens,
-      output_tokens: (acc.output_tokens || 0) + m.output_tokens,
-      cached_tokens: (acc.cached_tokens || 0) + m.cached_tokens,
-      cost: (acc.cost || 0) + m.cost,
-      llm_calls: (acc.llm_calls || 0) + m.llm_calls,
-      tool_calls: (acc.tool_calls || 0) + m.tool_calls,
-      agent_calls: (acc.agent_calls || 0) + m.agent_calls,
-      function_calls: (acc.function_calls || 0) + m.function_calls,
-      code_runs: (acc.code_runs || 0) + m.code_runs,
-      executions: (acc.executions || 0) + m.executions,
-      requests: (acc.requests || 0) + m.requests,
-    }), {} as Partial<MetricsEntity>);
+
+    return metrics.reduce(
+      (acc, m) => ({
+        input_tokens: (acc.input_tokens || 0) + m.input_tokens,
+        output_tokens: (acc.output_tokens || 0) + m.output_tokens,
+        cached_tokens: (acc.cached_tokens || 0) + m.cached_tokens,
+        cost: (acc.cost || 0) + m.cost,
+        llm_calls: (acc.llm_calls || 0) + m.llm_calls,
+        tool_calls: (acc.tool_calls || 0) + m.tool_calls,
+        agent_calls: (acc.agent_calls || 0) + m.agent_calls,
+        function_calls: (acc.function_calls || 0) + m.function_calls,
+        code_runs: (acc.code_runs || 0) + m.code_runs,
+        executions: (acc.executions || 0) + m.executions,
+        requests: (acc.requests || 0) + m.requests,
+      }),
+      {} as Partial<MetricsEntity>,
+    );
   }
 }
 
 export class InMemoryMessageRepository implements MessageRepository {
   constructor(private store: InMemoryStore) {}
 
-  async create(data: Omit<MessageEntity, 'created_at'> & { created_at?: Date }): Promise<MessageEntity> {
+  async create(
+    data: Omit<MessageEntity, "created_at"> & { created_at?: Date },
+  ): Promise<MessageEntity> {
     const entity: MessageEntity = {
       ...data,
       created_at: data.created_at || new Date(),
@@ -208,31 +216,35 @@ export class InMemoryMessageRepository implements MessageRepository {
 
   async findByThreadId(threadId: string, limit = 100): Promise<MessageEntity[]> {
     return Array.from(this.store.messages.values())
-      .filter(m => m.thread_id === threadId)
+      .filter((m) => m.thread_id === threadId)
       .sort((a, b) => a.created_at.getTime() - b.created_at.getTime())
       .slice(0, limit);
   }
 
   async findByExecutionId(executionId: string): Promise<MessageEntity[]> {
     return Array.from(this.store.messages.values())
-      .filter(m => m.execution_id === executionId)
+      .filter((m) => m.execution_id === executionId)
       .sort((a, b) => a.created_at.getTime() - b.created_at.getTime());
   }
 
   /**
    * Find messages for a thread, including user-global events.
-   * 
+   *
    * User-global events (threadId = nil UUID) are interleaved with thread-specific
    * messages by timestamp, providing the agent with full context of what happened
    * across all the user's conversations.
    */
-  async findByThreadIdWithGlobalEvents(threadId: string, userId: string, limit = 100): Promise<MessageEntity[]> {
-    const GLOBAL_THREAD_ID = '00000000-0000-0000-0000-000000000000';
-    
+  async findByThreadIdWithGlobalEvents(
+    threadId: string,
+    userId: string,
+    limit = 100,
+  ): Promise<MessageEntity[]> {
+    const GLOBAL_THREAD_ID = "00000000-0000-0000-0000-000000000000";
+
     return Array.from(this.store.messages.values())
-      .filter(m => 
-        m.thread_id === threadId || 
-        (m.thread_id === GLOBAL_THREAD_ID && m.user_id === userId)
+      .filter(
+        (m) =>
+          m.thread_id === threadId || (m.thread_id === GLOBAL_THREAD_ID && m.user_id === userId),
       )
       .sort((a, b) => a.created_at.getTime() - b.created_at.getTime())
       .slice(0, limit);
@@ -242,7 +254,9 @@ export class InMemoryMessageRepository implements MessageRepository {
 export class InMemoryMessageBlockRepository implements MessageBlockRepository {
   constructor(private store: InMemoryStore) {}
 
-  async create(data: Omit<MessageBlockEntity, 'createdAt'> & { createdAt?: Date }): Promise<MessageBlockEntity> {
+  async create(
+    data: Omit<MessageBlockEntity, "createdAt"> & { createdAt?: Date },
+  ): Promise<MessageBlockEntity> {
     const entity: MessageBlockEntity = {
       ...data,
       createdAt: data.createdAt || new Date(),
@@ -253,7 +267,7 @@ export class InMemoryMessageBlockRepository implements MessageBlockRepository {
 
   async findByMessageId(messageId: string): Promise<MessageBlockEntity[]> {
     return Array.from(this.store.messageBlocks.values())
-      .filter(b => b.message_id === messageId)
+      .filter((b) => b.message_id === messageId)
       .sort((a, b) => a.block_index - b.block_index);
   }
 }
@@ -261,7 +275,9 @@ export class InMemoryMessageBlockRepository implements MessageBlockRepository {
 export class InMemoryInteractionRepository implements InteractionRepository {
   constructor(private store: InMemoryStore) {}
 
-  async create(data: Omit<InteractionEntity, 'created_at'> & { created_at?: Date }): Promise<InteractionEntity> {
+  async create(
+    data: Omit<InteractionEntity, "created_at"> & { created_at?: Date },
+  ): Promise<InteractionEntity> {
     const entity: InteractionEntity = {
       ...data,
       created_at: data.created_at || new Date(),
@@ -284,7 +300,7 @@ export class InMemoryInteractionRepository implements InteractionRepository {
 
   async findByThreadId(threadId: string): Promise<InteractionEntity[]> {
     return Array.from(this.store.interactions.values())
-      .filter(i => i.thread_id === threadId)
+      .filter((i) => i.thread_id === threadId)
       .sort((a, b) => b.created_at.getTime() - a.created_at.getTime());
   }
 }
@@ -292,10 +308,12 @@ export class InMemoryInteractionRepository implements InteractionRepository {
 export class InMemoryToolStateRepository implements ToolStateRepository {
   constructor(private store: InMemoryStore) {}
 
-  async create(data: Omit<ToolStateEntity, 'created_at' | 'updated_at'> & {
-    created_at?: Date;
-    updated_at?: Date;
-  }): Promise<ToolStateEntity> {
+  async create(
+    data: Omit<ToolStateEntity, "created_at" | "updated_at"> & {
+      created_at?: Date;
+      updated_at?: Date;
+    },
+  ): Promise<ToolStateEntity> {
     const now = new Date();
     const entity: ToolStateEntity = {
       ...data,
@@ -315,32 +333,36 @@ export class InMemoryToolStateRepository implements ToolStateRepository {
   }
 
   async findByToolAndThread(
-    toolId: string, 
+    toolId: string,
     threadId: string,
     userId?: string,
-    tenantId?: string
+    tenantId?: string,
   ): Promise<ToolStateEntity | null> {
-    return Array.from(this.store.toolState.values())
-      .find(t => {
+    return (
+      Array.from(this.store.toolState.values()).find((t) => {
         if (t.tool_id !== toolId || t.thread_id !== threadId) return false;
         if (userId && t.user_id !== userId) return false;
         if (tenantId && t.tenant_id !== tenantId) return false;
         return true;
-      }) || null;
+      }) || null
+    );
   }
 
   async findByToolAndUser(toolId: string, userId: string): Promise<ToolStateEntity[]> {
-    return Array.from(this.store.toolState.values())
-      .filter(t => t.tool_id === toolId && t.user_id === userId);
+    return Array.from(this.store.toolState.values()).filter(
+      (t) => t.tool_id === toolId && t.user_id === userId,
+    );
   }
 
-  async upsert(data: Omit<ToolStateEntity, 'id' | 'created_at' | 'updated_at'> & { 
-    updated_at?: Date;
-  }): Promise<ToolStateEntity> {
+  async upsert(
+    data: Omit<ToolStateEntity, "id" | "created_at" | "updated_at"> & {
+      updated_at?: Date;
+    },
+  ): Promise<ToolStateEntity> {
     // Find existing by tool_id + threadId
     const existing = await this.findByToolAndThread(data.tool_id, data.thread_id);
     const now = new Date();
-    
+
     if (existing) {
       // Update
       const updated: ToolStateEntity = {
@@ -384,4 +406,3 @@ export function createInMemoryRepositories(store: InMemoryStore): PersistenceRep
     toolStateRepo: new InMemoryToolStateRepository(store),
   };
 }
-

@@ -4,12 +4,12 @@ AIDK distinguishes between content that persists in the conversation history and
 
 ## Quick Comparison
 
-| Component | Persisted? | Rebuilds Each Tick? | Use For |
-|-----------|------------|---------------------|---------|
-| `Section` | Yes | No | Role definitions, static instructions |
-| `Grounding` | **No** | Yes | Current state, real-time data |
-| `Ephemeral` | **No** | Yes | Low-level ephemeral primitive |
-| `Timeline` | Yes | No | Conversation history |
+| Component   | Persisted? | Rebuilds Each Tick? | Use For                               |
+| ----------- | ---------- | ------------------- | ------------------------------------- |
+| `Section`   | Yes        | No                  | Role definitions, static instructions |
+| `Grounding` | **No**     | Yes                 | Current state, real-time data         |
+| `Ephemeral` | **No**     | Yes                 | Low-level ephemeral primitive         |
+| `Timeline`  | Yes        | No                  | Conversation history                  |
 
 ## Persisted Content: Section
 
@@ -23,6 +23,7 @@ Content inside `<Section>` is persisted as part of the system message. It become
 ```
 
 **Characteristics:**
+
 - Added to system message
 - Persists across all ticks
 - Part of conversation history
@@ -66,6 +67,7 @@ Content inside `<Grounding>` is **NOT persisted**. It provides current-state con
 ```
 
 **Characteristics:**
+
 - NOT added to conversation history
 - Rebuilt fresh each tick
 - Provides current-state context
@@ -131,13 +133,13 @@ class SupportAgent extends Component {
 
 Ephemeral content can be positioned at various points in the message list:
 
-| Position | Description |
-|----------|-------------|
-| `'start'` | At the beginning of messages |
-| `'end'` | At the end of messages (default for Ephemeral) |
-| `'after-system'` | After system messages |
-| `'before-user'` | Before the user's message |
-| `'after-user'` | After the user's message |
+| Position         | Description                                    |
+| ---------------- | ---------------------------------------------- |
+| `'start'`        | At the beginning of messages                   |
+| `'end'`          | At the end of messages (default for Ephemeral) |
+| `'after-system'` | After system messages                          |
+| `'before-user'`  | Before the user's message                      |
+| `'after-user'`   | After the user's message                       |
 
 ```tsx
 {/* Appears at the very start */}
@@ -178,6 +180,7 @@ Lower order values appear first.
 ### Token Efficiency
 
 Ephemeral content is not stored in conversation history, which means:
+
 - It doesn't consume tokens in stored messages
 - Fresh data is injected each tick
 - Previous states don't accumulate

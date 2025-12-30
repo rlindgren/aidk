@@ -2,8 +2,15 @@
  * Shared utilities for persistence hooks
  */
 
-import { Context, isWithinEngine, isNestedExecution, getExecutionInfo, type KernelContext, type ExecutionHandleImpl } from 'aidk';
-import { generateUUID } from 'aidk-express';
+import {
+  Context,
+  isWithinEngine,
+  isNestedExecution,
+  getExecutionInfo,
+  type KernelContext,
+  type ExecutionHandleImpl,
+} from "aidk";
+import { generateUUID } from "aidk-express";
 export { generateUUID };
 
 // Re-export execution helpers for convenience
@@ -13,14 +20,14 @@ export { isWithinEngine, isNestedExecution, getExecutionInfo };
  * Extract agent name from JSX element
  */
 export function getRootNameFromJSX(agent: any): string {
-  if (!agent) return 'unknown';
-  if (typeof agent === 'string') return agent;
-  if (typeof agent === 'function' && agent.name) return agent.name;
-  if (typeof agent === 'object' && 'type' in agent) {
-    if (typeof agent.type === 'function' && agent.type.name) return agent.type.name;
-    if (typeof agent.type === 'object' && 'name' in agent.type) return (agent.type as any).name;
+  if (!agent) return "unknown";
+  if (typeof agent === "string") return agent;
+  if (typeof agent === "function" && agent.name) return agent.name;
+  if (typeof agent === "object" && "type" in agent) {
+    if (typeof agent.type === "function" && agent.type.name) return agent.type.name;
+    if (typeof agent.type === "object" && "name" in agent.type) return (agent.type as any).name;
   }
-  return 'unknown';
+  return "unknown";
 }
 
 /**
@@ -41,7 +48,7 @@ export interface ExecutionContext {
 export function tryGetExecutionContext(input?: any): ExecutionContext | undefined {
   const ctx = Context.tryGet() as KernelContext | undefined;
   const handle = ctx?.executionHandle as ExecutionHandleImpl | undefined;
-  
+
   if (!handle || !ctx) {
     return undefined;
   }
@@ -49,9 +56,10 @@ export function tryGetExecutionContext(input?: any): ExecutionContext | undefine
   return {
     ctx,
     handle,
-    userId: (ctx.metadata['userId'] as string) || ctx.user?.id || (input as any)?.userId || 'anonymous',
-    tenantId: (ctx.metadata['tenantId'] as string) || (input as any)?.tenantId || 'default',
-    threadId: (ctx.metadata['threadId'] as string) || (input as any)?.threadId || generateUUID(),
+    userId:
+      (ctx.metadata["userId"] as string) || ctx.user?.id || (input as any)?.userId || "anonymous",
+    tenantId: (ctx.metadata["tenantId"] as string) || (input as any)?.tenantId || "default",
+    threadId: (ctx.metadata["threadId"] as string) || (input as any)?.threadId || generateUUID(),
   };
 }
 
@@ -68,4 +76,3 @@ export function getParentExecution(handle: ExecutionHandleImpl): any | undefined
 export function getInteraction(handle: ExecutionHandleImpl): any | undefined {
   return (handle as any).interactionEntity;
 }
-

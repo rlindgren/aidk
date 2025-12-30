@@ -1,7 +1,4 @@
-import type {
-  TextBlock as TextBlockType,
-  ReasoningBlock as ReasoningBlockType,
-} from "aidk-client";
+import type { TextBlock as TextBlockType, ReasoningBlock as ReasoningBlockType } from "aidk-client";
 import type { ReactNode } from "react";
 
 interface Props {

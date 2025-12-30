@@ -86,10 +86,7 @@ export function extractSemanticNode(
   fiber: FiberLike,
   currentRenderer?: ContentRenderer,
 ): SemanticNode {
-  const extract = (
-    node: any,
-    rendererContext?: ContentRenderer,
-  ): SemanticNode | SemanticNode[] => {
+  const extract = (node: any, rendererContext?: ContentRenderer): SemanticNode | SemanticNode[] => {
     if (typeof node === "string") {
       return { text: node };
     }
@@ -98,18 +95,14 @@ export function extractSemanticNode(
       if (isElement(node)) {
         // Get the element type as a string for lookup
         const typeName =
-          typeof node.type === "string"
-            ? node.type
-            : node.type?.name?.toLowerCase?.() || "";
+          typeof node.type === "string" ? node.type : node.type?.name?.toLowerCase?.() || "";
 
         // Extract children first
         const children = node.props?.children;
         let childNodes: SemanticNode[] = [];
 
         if (Array.isArray(children)) {
-          childNodes = children
-            .map((child) => extract(child, rendererContext))
-            .flat();
+          childNodes = children.map((child) => extract(child, rendererContext)).flat();
         } else if (children !== undefined && children !== null) {
           const extracted = extract(children, rendererContext);
           childNodes = Array.isArray(extracted) ? extracted : [extracted];
@@ -119,11 +112,7 @@ export function extractSemanticNode(
         const semanticType = INLINE_SEMANTIC_TYPES[typeName];
         if (semanticType) {
           // For media types, capture props for inline rendering
-          if (
-            semanticType === "image" ||
-            semanticType === "audio" ||
-            semanticType === "video"
-          ) {
+          if (semanticType === "image" || semanticType === "audio" || semanticType === "video") {
             return {
               semantic: semanticType,
               props: node.props || {},
@@ -186,15 +175,12 @@ export function extractSemanticNode(
 
   // Return container with children (even if single child, preserve structure)
   if (children.length === 0) {
-    return currentRenderer
-      ? { renderer: currentRenderer, children: [] }
-      : { text: "" };
+    return currentRenderer ? { renderer: currentRenderer, children: [] } : { text: "" };
   }
 
   // If we have renderer context and no child has renderer, attach it to root
   const hasRendererInChildren = children.some(
-    (n) =>
-      n && typeof n === "object" && "renderer" in n && n.renderer !== undefined,
+    (n) => n && typeof n === "object" && "renderer" in n && n.renderer !== undefined,
   );
 
   const rootNode: SemanticNode = { children };
@@ -213,10 +199,7 @@ export function extractSemanticNodeFromElement(
   element: JSX.Element,
   currentRenderer?: ContentRenderer,
 ): SemanticNode {
-  const extract = (
-    node: any,
-    rendererContext?: ContentRenderer,
-  ): SemanticNode | SemanticNode[] => {
+  const extract = (node: any, rendererContext?: ContentRenderer): SemanticNode | SemanticNode[] => {
     if (typeof node === "string") {
       return { text: node };
     }
@@ -224,9 +207,7 @@ export function extractSemanticNodeFromElement(
     if (node && typeof node === "object") {
       if (isElement(node)) {
         const typeName =
-          typeof node.type === "string"
-            ? node.type
-            : node.type?.name?.toLowerCase?.() || "";
+          typeof node.type === "string" ? node.type : node.type?.name?.toLowerCase?.() || "";
 
         // Check for Renderer component (enables nested renderer switching)
         // This handles both direct <Renderer> usage and wrapper components like <XML>, <Markdown>
@@ -248,9 +229,7 @@ export function extractSemanticNodeFromElement(
             let childNodes: SemanticNode[] = [];
 
             if (Array.isArray(children)) {
-              childNodes = children
-                .map((child) => extract(child, renderer))
-                .flat();
+              childNodes = children.map((child) => extract(child, renderer)).flat();
             } else if (children !== undefined && children !== null) {
               const extracted = extract(children, renderer);
               childNodes = Array.isArray(extracted) ? extracted : [extracted];
@@ -276,9 +255,7 @@ export function extractSemanticNodeFromElement(
           let childNodes: SemanticNode[] = [];
 
           if (Array.isArray(children)) {
-            childNodes = children
-              .map((child) => extract(child, renderer))
-              .flat();
+            childNodes = children.map((child) => extract(child, renderer)).flat();
           } else if (children !== undefined && children !== null) {
             const extracted = extract(children, renderer);
             childNodes = Array.isArray(extracted) ? extracted : [extracted];
@@ -294,9 +271,7 @@ export function extractSemanticNodeFromElement(
         let childNodes: SemanticNode[] = [];
 
         if (Array.isArray(children)) {
-          childNodes = children
-            .map((child) => extract(child, rendererContext))
-            .flat();
+          childNodes = children.map((child) => extract(child, rendererContext)).flat();
         } else if (children !== undefined && children !== null) {
           const extracted = extract(children, rendererContext);
           childNodes = Array.isArray(extracted) ? extracted : [extracted];
@@ -310,9 +285,7 @@ export function extractSemanticNodeFromElement(
           if (semanticType === "link" && node.props?.href) {
             props = { href: node.props.href };
           } else if (
-            (semanticType === "image" ||
-              semanticType === "audio" ||
-              semanticType === "video") &&
+            (semanticType === "image" || semanticType === "audio" || semanticType === "video") &&
             node.props
           ) {
             // Capture media-specific props (src, alt, etc.) but exclude children
@@ -349,12 +322,8 @@ export function extractSemanticNodeFromElement(
 
   const props = element.props || {};
   if (props.children !== undefined && props.children !== null) {
-    const children = Array.isArray(props.children)
-      ? props.children
-      : [props.children];
-    const extracted = children
-      .map((child: any) => extract(child, currentRenderer))
-      .flat();
+    const children = Array.isArray(props.children) ? props.children : [props.children];
+    const extracted = children.map((child: any) => extract(child, currentRenderer)).flat();
 
     if (extracted.length === 0) {
       return currentRenderer && currentRenderer !== undefined
@@ -407,9 +376,7 @@ export function extractTextFromElement(element: JSX.Element): string {
 
   const props = element.props || {};
   if (props.children !== undefined && props.children !== null) {
-    const children = Array.isArray(props.children)
-      ? props.children
-      : [props.children];
+    const children = Array.isArray(props.children) ? props.children : [props.children];
     return children.map(extract).join("");
   }
 
@@ -568,8 +535,7 @@ export function extractListStructure(listElement: JSX.Element): {
   const props = listElement.props || {};
   const ordered = props.ordered === true;
   const task = props.task === true ? true : undefined;
-  const items: (string | { text: string; checked?: boolean; nested?: any })[] =
-    [];
+  const items: (string | { text: string; checked?: boolean; nested?: any })[] = [];
 
   const rawChildren = props.children;
   const children = Array.isArray(rawChildren)
@@ -586,11 +552,7 @@ export function extractListStructure(listElement: JSX.Element): {
       continue;
     }
 
-    if (
-      child.type === ListItem ||
-      child.type === "li" ||
-      child.type === "listitem"
-    ) {
+    if (child.type === ListItem || child.type === "li" || child.type === "listitem") {
       const itemData = extractListItemData(child);
       items.push(itemData);
     }

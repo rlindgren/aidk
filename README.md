@@ -18,7 +18,7 @@
 
 Other frameworks: you configure an agent, call it, and hope for the best.
 
-AIDK: your component renders before *every* model call. The model responds, you see what happened, your code runs again, you decide what's next.
+AIDK: your component renders before _every_ model call. The model responds, you see what happened, your code runs again, you decide what's next.
 
 ```tsx
 render(com, state) {
@@ -49,6 +49,7 @@ No configuration for this. No "model fallback" setting. You just... do it.
 ## See it in action
 
 **Compose agents like UI components:**
+
 ```tsx
 render() {
   const messages = this.timeline();
@@ -79,6 +80,7 @@ render() {
 ```
 
 **Route to specialized agents by rendering them:**
+
 ```tsx
 render() {
   const intent = this.detectedIntent();
@@ -91,6 +93,7 @@ render() {
 ```
 
 **Tools that show the model what they know:**
+
 ```tsx
 const InventoryTool = createTool({
   name: "check_inventory",
@@ -119,6 +122,7 @@ const InventoryTool = createTool({
 ```
 
 **Intercept context before it goes to the model:**
+
 ```tsx
 onAfterCompile(com, compiled) {
   const tokens = estimateTokens(compiled);
@@ -133,6 +137,7 @@ onAfterCompile(com, compiled) {
 ```
 
 **Fork parallel work, await results:**
+
 ```tsx
 <Fork agent={<FactChecker claim={claim} />} waitUntilComplete={true}
       onComplete={(result) => this.verified.set(result)} />
@@ -144,6 +149,7 @@ onAfterCompile(com, compiled) {
 ```
 
 **Fire and forget background work:**
+
 ```tsx
 <Spawn agent={<AuditLogger interaction={state.current} />} />
 ```
@@ -182,13 +188,13 @@ npm install aidk aidk-ai-sdk ai @ai-sdk/openai
 
 ## Packages
 
-| Package | Purpose |
-|---------|---------|
-| `aidk` | Core runtime, components, state, tools |
-| `aidk-ai-sdk` | Vercel AI SDK adapter (OpenAI, Anthropic, Google) |
-| `aidk-express` | Express middleware, SSE streaming |
-| `aidk-react` | React hooks and components |
-| `aidk-client` | Browser client for real-time connections |
+| Package        | Purpose                                           |
+| -------------- | ------------------------------------------------- |
+| `aidk`         | Core runtime, components, state, tools            |
+| `aidk-ai-sdk`  | Vercel AI SDK adapter (OpenAI, Anthropic, Google) |
+| `aidk-express` | Express middleware, SSE streaming                 |
+| `aidk-react`   | React hooks and components                        |
+| `aidk-client`  | Browser client for real-time connections          |
 
 ## Documentation
 

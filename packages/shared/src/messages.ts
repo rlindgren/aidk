@@ -105,8 +105,7 @@ export function createUserMessage(
 ): UserMessage {
   return {
     role: "user",
-    content:
-      typeof content === "string" ? [{ type: "text", text: content }] : content,
+    content: typeof content === "string" ? [{ type: "text", text: content }] : content,
     metadata,
   };
 }
@@ -117,8 +116,7 @@ export function createAssistantMessage(
 ): AssistantMessage {
   return {
     role: "assistant",
-    content:
-      typeof content === "string" ? [{ type: "text", text: content }] : content,
+    content: typeof content === "string" ? [{ type: "text", text: content }] : content,
     metadata,
   };
 }
@@ -129,8 +127,7 @@ export function createSystemMessage(
 ): SystemMessage {
   return {
     role: "system",
-    content:
-      typeof content === "string" ? [{ type: "text", text: content }] : content,
+    content: typeof content === "string" ? [{ type: "text", text: content }] : content,
     metadata,
   };
 }
@@ -139,9 +136,7 @@ export function isUserMessage(message: Message): message is UserMessage {
   return message.role === "user";
 }
 
-export function isAssistantMessage(
-  message: Message,
-): message is AssistantMessage {
+export function isAssistantMessage(message: Message): message is AssistantMessage {
   return message.role === "assistant";
 }
 
@@ -164,8 +159,7 @@ export function createToolMessage(
 ): ToolMessage {
   return {
     role: "tool",
-    content:
-      typeof content === "string" ? [{ type: "text", text: content }] : content,
+    content: typeof content === "string" ? [{ type: "text", text: content }] : content,
     toolCallId,
     metadata,
   };
@@ -178,8 +172,7 @@ export function createEventMessage(
 ): EventMessage {
   return {
     role: "event",
-    content:
-      typeof content === "string" ? [{ type: "text", text: content }] : content,
+    content: typeof content === "string" ? [{ type: "text", text: content }] : content,
     eventType,
     metadata,
   };

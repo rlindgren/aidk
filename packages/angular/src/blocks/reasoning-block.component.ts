@@ -1,13 +1,11 @@
-import { Component, Input } from '@angular/core';
-import type { ReasoningBlock } from 'aidk-client';
-import { TextBlockComponent } from './text-block.component';
+import { Component, Input } from "@angular/core";
+import type { ReasoningBlock } from "aidk-client";
+import { TextBlockComponent } from "./text-block.component";
 
 @Component({
-  selector: 'aidk-reasoning-block',
+  selector: "aidk-reasoning-block",
   standalone: true,
-  imports: [
-    TextBlockComponent,
-  ],
+  imports: [TextBlockComponent],
   template: `
     @if (block.isRedacted) {
       <div style="color: #666; font-style: italic;">[Reasoning redacted]</div>
@@ -33,4 +31,3 @@ export class ReasoningBlockComponent {
   @Input() block!: ReasoningBlock;
   expanded = false;
 }
-

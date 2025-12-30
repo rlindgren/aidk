@@ -31,9 +31,7 @@ describe("EngineModule", () => {
       const mockEngine = createMockEngine();
       const dynamicModule = EngineModule.forRoot({ engine: mockEngine });
 
-      const engineProvider = dynamicModule.providers?.find(
-        (p: any) => p.provide === ENGINE_TOKEN,
-      );
+      const engineProvider = dynamicModule.providers?.find((p: any) => p.provide === ENGINE_TOKEN);
 
       expect(engineProvider).toBeDefined();
       expect((engineProvider as any).useValue).toBe(mockEngine);

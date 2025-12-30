@@ -1,9 +1,5 @@
 import { Context, type KernelContext } from "./context";
-import {
-  ProcedureGraph,
-  ProcedureNode,
-  type ProcedureStatus,
-} from "./procedure-graph";
+import { ProcedureGraph, ProcedureNode, type ProcedureStatus } from "./procedure-graph";
 import { Telemetry } from "./telemetry";
 import { AbortError } from "aidk-shared";
 
@@ -45,9 +41,7 @@ export class ExecutionTracker {
       // Use existing origin if set, otherwise find root node
       origin = ctx.origin;
       if (!origin && ctx.procedureGraph) {
-        const rootNode = ctx.procedureGraph
-          .getAllNodes()
-          .find((node) => !node.parentPid);
+        const rootNode = ctx.procedureGraph.getAllNodes().find((node) => !node.parentPid);
         origin = rootNode;
       }
     }
@@ -153,11 +147,7 @@ export class ExecutionTracker {
 
           // Update status
           const status: ProcedureStatus = isAbort ? "cancelled" : "failed";
-          ctx.procedureGraph!.updateStatus(
-            procedurePid,
-            status,
-            error as Error,
-          );
+          ctx.procedureGraph!.updateStatus(procedurePid, status, error as Error);
 
           span.recordError(error);
           this.sendMetricsToTelemetry(node, span);

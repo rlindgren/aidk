@@ -19,6 +19,7 @@ You can stop at any level. Each provides value independently.
 **Best for:** Teams that want JSX for context building but aren't ready to change execution logic.
 
 **What you get:**
+
 - JSX-based agent definitions
 - Dynamic context building
 - Type-safe components
@@ -26,7 +27,7 @@ You can stop at any level. Each provides value independently.
 
 ### Example
 
-``` tsx
+```tsx
 import { compile } from '@aidk/ai-sdk';
 import { generateText } from 'ai';
 import { openai } from '@ai-sdk/openai';
@@ -70,6 +71,7 @@ console.log(result.text);
 **Best for:** Teams ready to adopt multi-tick execution but want to control model calls.
 
 **What you get:**
+
 - Automatic multi-tick loop until completion
 - Tools automatically executed between ticks
 - Component lifecycle hooks (`onTickStart`, `onTickEnd`, etc.)
@@ -77,7 +79,7 @@ console.log(result.text);
 
 ### Example
 
-``` tsx
+```tsx
 import { createCompiler } from '@aidk/ai-sdk';
 import { generateText } from 'ai';
 import { openai } from '@ai-sdk/openai';
@@ -100,7 +102,7 @@ const result = await compiler.run(<MyAgent />, async (input) => {
 
 ### With Streaming
 
-``` tsx
+```tsx
 for await (const event of compiler.stream(
   <MyAgent />,
   async (input) => {
@@ -113,7 +115,7 @@ for await (const event of compiler.stream(
   if (event.type === 'chunk') {
     process.stdout.write(event.chunk.textDelta ?? '');
   }
-  
+
   if (event.type === 'tick_end') {
     console.log(`\n[Tick ${event.tick} complete]`);
   }
@@ -124,14 +126,14 @@ for await (const event of compiler.stream(
 
 Use signals for reactive state management:
 
-``` tsx
+```tsx
 import { Component, comState } from 'aidk';
 
 class SearchAgent extends Component {
   // State persists across ticks
   private query = comState<string>('query', '');
   private results = comState<any[]>('results', []);
-  
+
   onTickStart(com, state) {
     // Extract query from user message
     const lastMessage = state.current?.timeline?.at(-1);
@@ -139,12 +141,12 @@ class SearchAgent extends Component {
       this.query.set(extractQuery(lastMessage.content));
     }
   }
-  
+
   render(com, state) {
     return (
       <>
         <System>You are a search assistant.</System>
-        
+
         {this.results().length > 0 && (
           <User>
             Search results for "{this.query()}":
@@ -179,6 +181,7 @@ const result = await compiler.run(<SearchAgent />, async (input) => {
 **Best for:** Teams ready to let AIDK manage model execution.
 
 **What you get:**
+
 - Fully managed execution
 - Default model configuration
 - Streaming support
@@ -187,12 +190,12 @@ const result = await compiler.run(<SearchAgent />, async (input) => {
 
 ### Example
 
-``` tsx
+```tsx
 import { createCompiler } from '@aidk/ai-sdk';
 import { openai } from '@ai-sdk/openai';
 
 // Configure default model
-const compiler = createCompiler({ 
+const compiler = createCompiler({
   model: openai('gpt-4o'),
   temperature: 0.7,
   maxTokens: 4096,
@@ -206,7 +209,7 @@ console.log(result.text);
 
 ### Streaming
 
-``` tsx
+```tsx
 for await (const event of compiler.stream(<MyAgent />)) {
   if (event.type === 'chunk') {
     process.stdout.write(event.chunk.textDelta ?? '');
@@ -218,13 +221,13 @@ for await (const event of compiler.stream(<MyAgent />)) {
 
 You can still override the model per agent using the `<Model>` component:
 
-``` tsx
+```tsx
 import { Model } from '@aidk/ai-sdk';
 
 class AdaptiveAgent extends Component {
   render(com, state) {
     const needsPower = analyzePreviousResponse(state);
-    
+
     return (
       <>
         {needsPower ? (
@@ -232,7 +235,7 @@ class AdaptiveAgent extends Component {
         ) : (
           <Model model={openai('gpt-4o-mini')} />
         )}
-        
+
         <Timeline>{/* ... */}</Timeline>
       </>
     );
@@ -254,6 +257,7 @@ class AdaptiveAgent extends Component {
 **Best for:** Teams that want the simplest possible API.
 
 **What you get:**
+
 - API that mirrors `ai` SDK exactly
 - JSX as the first argument
 - Same return types as AI SDK
@@ -261,7 +265,7 @@ class AdaptiveAgent extends Component {
 
 ### Example
 
-``` tsx
+```tsx
 import { generateText, streamText } from '@aidk/ai-sdk';
 import { openai } from '@ai-sdk/openai';
 
@@ -299,6 +303,7 @@ const finalText = await text;
 **Best for:** Teams building production applications with complex requirements.
 
 **What you get:**
+
 - Full AIDK Engine with all features
 - Persistence and recovery
 - Execution handles with event streams
@@ -310,7 +315,7 @@ const finalText = await text;
 
 ### Example
 
-``` tsx
+```tsx
 import { createEngine } from 'aidk';
 import { createAiSdkModel } from '@aidk/ai-sdk';
 import { openai } from '@ai-sdk/openai';
@@ -348,24 +353,24 @@ const output = await result;
 class CoordinatorAgent extends Component {
   private marketData = comState<any>('market', null);
   private competitorData = comState<any>('competitors', null);
-  
+
   render(com, state) {
     return (
       <>
         <Model model={openai('gpt-4o')} />
-        
+
         {/* Parallel execution */}
-        <Fork 
-          agent={<ResearchAgent topic="market" />}
+        <Fork
+          root={<ResearchAgent topic="market" />}
           waitUntilComplete={true}
           onComplete={(r) => this.marketData.set(r)}
         />
-        <Fork 
-          agent={<ResearchAgent topic="competitors" />}
+        <Fork
+          root={<ResearchAgent topic="competitors" />}
           waitUntilComplete={true}
           onComplete={(r) => this.competitorData.set(r)}
         />
-        
+
         {/* Use results when ready */}
         {this.marketData() && this.competitorData() && (
           <Section audience="model">
@@ -406,7 +411,7 @@ Pick the simplest level that provides value:
 
 You can migrate one agent at a time:
 
-``` tsx
+```tsx
 // Old code - keep running
 const legacyResult = await generateText({
   model: openai('gpt-4o'),
@@ -423,7 +428,7 @@ const newResult = await generateText(<NewAgent />, {
 
 Use feature flags to test AIDK in production:
 
-``` tsx
+```tsx
 const useAIDK = await featureFlags.isEnabled('use-aidk', userId);
 
 const result = useAIDK
@@ -468,14 +473,3 @@ await engine.execute.run(input, <UserProfile />);
 - [Examples](/examples/progressive-adoption) - See each level in action
 - [Core Concepts](/docs/concepts) - Understand the architecture
 - [State Management](/docs/state-management) - Use signals effectively
-
-
-
-
-
-
-
-
-
-
-

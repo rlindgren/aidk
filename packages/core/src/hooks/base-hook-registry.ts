@@ -1,14 +1,10 @@
-import { HookRegistry } from './hook-registry';
+import { HookRegistry } from "./hook-registry";
 
 /**
  * Base class for hook registries that provides common overloaded register methods.
  * Reduces code duplication across ModelHookRegistry, ToolHookRegistry, etc.
  */
-export abstract class BaseHookRegistry<
-  THookName extends string,
-  TSelector,
-  THookMiddleware
-> {
+export abstract class BaseHookRegistry<THookName extends string, TSelector, THookMiddleware> {
   protected registry: HookRegistry<THookName, TSelector, THookMiddleware>;
 
   constructor() {
@@ -32,7 +28,7 @@ export abstract class BaseHookRegistry<
 
   /**
    * Register middleware for a hook.
-   * 
+   *
    * Overloads:
    * - register(hookName, selector, middleware) - specific hook, specific selector
    * - register(hookName, middleware) - specific hook, global selector
@@ -42,23 +38,15 @@ export abstract class BaseHookRegistry<
   register<T extends THookName>(
     hookName: T,
     selector: TSelector | undefined,
-    middleware: THookMiddleware
+    middleware: THookMiddleware,
   ): void;
-  register<T extends THookName>(
-    hookName: T,
-    middleware: THookMiddleware
-  ): void;
-  register(
-    selector: TSelector,
-    middleware: THookMiddleware
-  ): void;
-  register(
-    middleware: THookMiddleware
-  ): void;
+  register<T extends THookName>(hookName: T, middleware: THookMiddleware): void;
+  register(selector: TSelector, middleware: THookMiddleware): void;
+  register(middleware: THookMiddleware): void;
   register<T extends THookName>(
     arg1: T | TSelector | THookMiddleware,
     arg2?: TSelector | THookMiddleware | undefined,
-    arg3?: THookMiddleware
+    arg3?: THookMiddleware,
   ): void {
     const allHookNames = this.getAllHookNames();
 
@@ -97,12 +85,12 @@ export abstract class BaseHookRegistry<
   /**
    * Copy all hooks from another registry of the same type.
    * Useful for inheriting hooks from parent engine to child engine.
-   * 
+   *
    * @param sourceRegistry - The registry to copy hooks from
    */
   copyHooksFrom(sourceRegistry: BaseHookRegistry<THookName, TSelector, THookMiddleware>): void {
     const allHookNames = this.getAllHookNames();
-    
+
     for (const hookName of allHookNames) {
       const sourceHookMap = sourceRegistry.registry.getHookMap(hookName);
       if (sourceHookMap) {
@@ -116,4 +104,3 @@ export abstract class BaseHookRegistry<
     }
   }
 }
-

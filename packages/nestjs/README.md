@@ -34,14 +34,14 @@ export class AppModule {}
 // agent.controller.ts
 import { Controller, Post, Body, Res } from '@nestjs/common';
 import { Response } from 'express';
-import { StreamAgent } from 'aidk-nestjs';
+import { Stream } from 'aidk-nestjs';
 import { EngineInput } from 'aidk';
 import { TaskAssistant } from './agents/task-assistant';
 
-@Controller('api/agent')
-export class AgentController {
+@Controller('api/run')
+export class RunController {
   @Post('stream')
-  @StreamAgent(<TaskAssistant />)
+  @Stream(<TaskAssistant />)
   async stream(@Body() input: EngineInput, @Res() res: Response) {
     // Handler will be wrapped by interceptor
     return input;
@@ -77,8 +77,8 @@ export class StreamController {
 ## Key Exports
 
 - `EngineModule` - NestJS module for engine integration
-- `StreamAgent()` - Decorator for streaming agent execution
-- `ExecuteAgent()` - Decorator for non-streaming agent execution
+- `Stream()` - Decorator for streaming execution
+- `Execute()` - Decorator for non-streaming execution
 - `EngineContextInterceptor` - Interceptor that sets up execution context
 - `EngineContextGuard` - Guard that verifies context is available
 - `SSETransport` - SSE transport for real-time communication
@@ -86,4 +86,3 @@ export class StreamController {
 ## Documentation
 
 See the [full documentation](https://your-org.github.io/aidk).
-

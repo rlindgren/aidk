@@ -2,30 +2,32 @@
   "name": "aidk-client",
   "version": "0.1.0",
   "description": "Browser client for AIDK agents",
-  "type": "module",
-  "main": "src/index.ts",
-  "files": [
-    "dist"
-  ],
   "keywords": [
-    "ai",
     "agent",
-    "client",
-    "browser"
+    "ai",
+    "browser",
+    "client"
   ],
-  "author": "Ryan Lindgren",
+  "homepage": "https://github.com/rlindgren/aidk#readme",
+  "bugs": {
+    "url": "https://github.com/rlindgren/aidk/issues"
+  },
   "license": "ISC",
+  "author": "Ryan Lindgren",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/rlindgren/aidk.git",
     "directory": "packages/client"
   },
-  "bugs": {
-    "url": "https://github.com/rlindgren/aidk/issues"
-  },
-  "homepage": "https://github.com/rlindgren/aidk#readme",
-  "dependencies": {
-    "aidk-shared": "workspace:*"
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "main": "src/index.ts",
+  "publishConfig": {
+    "access": "public",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts"
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
@@ -37,9 +39,7 @@
     "prepublishOnly": "pnpm build",
     "dev": "tsc --watch"
   },
-  "publishConfig": {
-    "access": "public",
-    "main": "./dist/index.js",
-    "types": "./dist/index.d.ts"
+  "dependencies": {
+    "aidk-shared": "workspace:*"
   }
 }

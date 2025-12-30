@@ -11,12 +11,7 @@
       "Read(CONTRIBUTING.md)",
       "Read(packages/**/ARCHITECTURE.md)"
     ],
-    "deny": [
-      "Bash(rm -rf:*)",
-      "Bash(git push --force:*)",
-      "Read(*.env)",
-      "Write(*.env)"
-    ]
+    "deny": ["Bash(rm -rf:*)", "Bash(git push --force:*)", "Read(*.env)", "Write(*.env)"]
   },
   "env": {
     "NODE_ENV": "development"
@@ -32,4 +27,3 @@
     "⚙️ Local permissions: Add to .claude/settings.local.json (gitignored)"
   ]
 }
-

@@ -1,32 +1,32 @@
 /**
  * MCP Tool Component
- * 
+ *
  * A component that connects to an MCP server and registers its tools.
  * Supports runtime configuration (auth tokens, etc.) and tool filtering.
  */
 
-import { type EngineComponent, Component } from '../component/component';
-import { COM } from '../com/object-model';
-import { MCPClient } from './client';
-import { MCPService } from './service';
-import type { MCPConfig, MCPServerConfig } from './types';
-import { type JSX, createElement } from '../jsx/jsx-runtime';
-import type { ComponentBaseProps } from '../jsx/jsx-types';
+import { type EngineComponent, Component } from "../component/component";
+import { COM } from "../com/object-model";
+import { MCPClient } from "./client";
+import { MCPService } from "./service";
+import type { MCPConfig, MCPServerConfig } from "./types";
+import { type JSX, createElement } from "../jsx/jsx-runtime";
+import type { ComponentBaseProps } from "../jsx/jsx-types";
 
 /**
  * Normalizes Cursor-style config to full MCPConfig
  */
 function normalizeMCPConfig(serverName: string, config: MCPServerConfig | MCPConfig): MCPConfig {
   // If it's already a full MCPConfig, return as-is
-  if ('transport' in config && 'connection' in config) {
+  if ("transport" in config && "connection" in config) {
     return config as MCPConfig;
   }
-  
+
   // Convert Cursor-style config (assumes stdio transport)
   const mcpServerConfig = config as MCPServerConfig;
   return {
     serverName,
-    transport: 'stdio',
+    transport: "stdio",
     connection: {
       command: mcpServerConfig.command,
       args: mcpServerConfig.args || [],
@@ -62,39 +62,39 @@ export interface MCPToolComponentProps extends ComponentBaseProps, Partial<Engin
    * MCP server name (used as identifier)
    */
   server: string;
-  
+
   /**
    * Base MCP server configuration (Cursor-style or full MCPConfig)
    * This is the static configuration defined at component creation time.
    */
   config: MCPServerConfig | MCPConfig;
-  
+
   /**
    * Runtime configuration (merged with base config).
    * Useful for user-specific auth tokens, dynamic URLs, etc.
    * Can be passed from user context, execution input, etc.
    */
   runtimeConfig?: Partial<MCPConfig>;
-  
+
   /**
    * List of tool names to exclude from registration.
    * If provided, only tools NOT in this list will be registered.
    */
   exclude?: string[];
-  
+
   /**
    * List of tool names to include (whitelist).
    * If provided, only tools in this list will be registered.
    * Takes precedence over exclude.
    */
   include?: string[];
-  
+
   /**
    * Optional MCPClient instance (for sharing connections across components).
    * If not provided, creates a new instance.
    */
   mcpClient?: MCPClient;
-  
+
   /**
    * Optional prefix for tool names (to avoid conflicts).
    * Example: prefix="mcp_" → tool "read_file" becomes "mcp_read_file"
@@ -104,7 +104,7 @@ export interface MCPToolComponentProps extends ComponentBaseProps, Partial<Engin
 
 /**
  * MCPToolComponent connects to an MCP server and registers its tools into the context.
- * 
+ *
  * Usage:
  * ```tsx
  * // Simple usage with Cursor-style config
@@ -115,7 +115,7 @@ export interface MCPToolComponentProps extends ComponentBaseProps, Partial<Engin
  *     args: ['-y', '@modelcontextprotocol/server-postgres', 'postgresql://localhost/mydb'],
  *   }}
  * />
- * 
+ *
  * // With runtime config (auth token from user context)
  * <MCPToolComponent
  *   server="api-server"
@@ -128,7 +128,7 @@ export interface MCPToolComponentProps extends ComponentBaseProps, Partial<Engin
  *   }}
  *   exclude={['dangerous_tool']}
  * />
- * 
+ *
  * // With tool filtering
  * <MCPToolComponent
  *   server="filesystem"
@@ -168,10 +168,10 @@ class MCPToolComponent extends Component<MCPToolComponentProps> {
 
       if (this.props.include && this.props.include.length > 0) {
         // Whitelist: only include specified tools
-        filteredTools = tools.filter(t => this.props.include!.includes(t.name));
+        filteredTools = tools.filter((t) => this.props.include!.includes(t.name));
       } else if (this.props.exclude && this.props.exclude.length > 0) {
         // Blacklist: exclude specified tools
-        filteredTools = tools.filter(t => !this.props.exclude!.includes(t.name));
+        filteredTools = tools.filter((t) => !this.props.exclude!.includes(t.name));
       }
 
       // Register each filtered tool
@@ -227,10 +227,7 @@ class MCPToolComponent extends Component<MCPToolComponentProps> {
    * Update runtime configuration (useful for dynamic auth tokens, etc.)
    * This will reconnect and re-register tools with new config.
    */
-  async updateRuntimeConfig(
-    com: COM,
-    runtimeConfig: Partial<MCPConfig>
-  ): Promise<void> {
+  async updateRuntimeConfig(com: COM, runtimeConfig: Partial<MCPConfig>): Promise<void> {
     // Remove existing tools
     await this.onUnmount(com);
 
@@ -251,4 +248,3 @@ export function MCPTool(props: MCPToolComponentProps): JSX.Element {
 
 // Export the class
 export { MCPToolComponent };
-

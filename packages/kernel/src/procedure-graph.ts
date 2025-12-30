@@ -252,10 +252,7 @@ export class ProcedureGraph {
    * @param predicate Function to test each ancestor node
    * @returns True if any ancestor matches, false otherwise
    */
-  hasAncestor(
-    pid: string,
-    predicate: (node: ProcedureNode) => boolean,
-  ): boolean {
+  hasAncestor(pid: string, predicate: (node: ProcedureNode) => boolean): boolean {
     const node = this.procedures.get(pid);
     if (!node) {
       return false;

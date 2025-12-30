@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-namespace */
-import type { ComponentClass, ComponentFactory } from '../component/component';
-import type { ToolClass, ExecutableTool } from '../tool/tool';
-import type { ContentBlock, MessageRoles } from 'aidk-shared';
+import type { ComponentClass, ComponentFactory } from "../component/component";
+import type { ToolClass, ExecutableTool } from "../tool/tool";
+import type { ContentBlock, MessageRoles } from "aidk-shared";
 
 export namespace JSX {
   export interface Element {
@@ -9,7 +9,7 @@ export namespace JSX {
     props: any;
     key: string | number | null;
   }
-  
+
   /**
    * Allow function components to return Promise<Element> for async components.
    * This is valid in AIDK because we don't have UI rendering constraints.
@@ -17,16 +17,16 @@ export namespace JSX {
   export interface ElementChildrenAttribute {
     children: {};
   }
-  
+
   /**
    * Tell TypeScript that async functions returning Promise<Element> are valid components.
    */
   export type LibraryManagedAttributes<_C, P> = P;
-  
+
   /**
    * Allow async components by accepting Promise<Element> as a valid element type.
    */
-  export type ElementType = 
+  export type ElementType =
     | keyof IntrinsicElements
     | ((props: any) => Element | Promise<Element>)
     | { new (props: any): any };
@@ -40,7 +40,7 @@ export namespace JSX {
       /**
        * Audience for this section.
        */
-      audience?: 'user' | 'model' | 'all';
+      audience?: "user" | "model" | "all";
       /**
        * Section content - can be any type, or use children for ContentBlocks.
        * If children are provided, content prop is ignored.
@@ -57,7 +57,7 @@ export namespace JSX {
       /**
        * Visibility level.
        */
-      visibility?: 'model' | 'observer' | 'log';
+      visibility?: "model" | "observer" | "log";
       /**
        * Additional metadata.
        */
@@ -97,7 +97,7 @@ export namespace JSX {
       /**
        * Visibility level.
        */
-      visibility?: 'model' | 'observer' | 'log';
+      visibility?: "model" | "observer" | "log";
       /**
        * Additional metadata.
        */
@@ -114,7 +114,7 @@ export namespace JSX {
     // Content block primitives
     text: {
       text?: string;
-      children?: any;  // Allow JSX children for inline formatting
+      children?: any; // Allow JSX children for inline formatting
     };
     image: {
       source: any; // MediaSource
@@ -132,7 +132,7 @@ export namespace JSX {
     fragment: {};
     // Renderer components
     markdown: {
-      flavor?: 'github' | 'commonmark' | 'gfm';
+      flavor?: "github" | "commonmark" | "gfm";
       children?: any;
     };
     // Semantic primitives
@@ -283,13 +283,21 @@ type FunctionComponent<P = any> = (props: P) => JSX.Element | null;
 /**
  * Extract props type from function component.
  */
-type FunctionComponentProps<T> = (T extends (props: infer P) => any ? P : never) & { ref?: string; key?: string | number; children?: any };
+type FunctionComponentProps<T> = (T extends (props: infer P) => any ? P : never) & {
+  ref?: string;
+  key?: string | number;
+  children?: any;
+};
 
 /**
  * Extract props type from Component<P> class.
  * Components that extend Component<P> have their props type as the first generic parameter.
  */
-type ExtractComponentProps<T> = (T extends { props: infer P } ? P : never) & { ref?: string; key?: string | number; children?: any };
+type ExtractComponentProps<T> = (T extends { props: infer P } ? P : never) & {
+  ref?: string;
+  key?: string | number;
+  children?: any;
+};
 
 /**
  * jsx() function for React 17+ JSX transform compatibility.
@@ -300,50 +308,38 @@ type ExtractComponentProps<T> = (T extends { props: infer P } ? P : never) & { r
 export function jsx<T extends new (...args: any[]) => { props: any }>(
   type: T,
   props: ExtractComponentProps<InstanceType<T>>,
-  key?: string | number | null
+  key?: string | number | null,
 ): JSX.Element;
 // Overload 1b: Other component classes (fallback for classes without explicit props)
 export function jsx<T extends new (...args: any[]) => any>(
   type: T,
   props: any,
-  key?: string | number | null
+  key?: string | number | null,
 ): JSX.Element;
 // Overload 2: Function components
 export function jsx<T extends FunctionComponent<any>>(
   type: T,
   props: FunctionComponentProps<T>,
-  key?: string | number | null
+  key?: string | number | null,
 ): JSX.Element;
 // Overload 3: ComponentClass (from component.ts) - more specific than AnyComponentClass
 // Only matches classes that extend EngineComponent
 // IMPORTANT: This must NOT match FormattedTextBlock - it requires EngineComponent return type
-export function jsx(
-  type: ComponentClass,
-  props: any,
-  key?: string | number | null
-): JSX.Element;
+export function jsx(type: ComponentClass, props: any, key?: string | number | null): JSX.Element;
 // Overload 4: ComponentFactory
-export function jsx(
-  type: ComponentFactory,
-  props: any,
-  key?: string | number | null
-): JSX.Element;
+export function jsx(type: ComponentFactory, props: any, key?: string | number | null): JSX.Element;
 // Overload 5: Already a JSX.Element
-export function jsx(
-  type: JSX.Element,
-  props: any,
-  key?: string | number | null
-): JSX.Element;
+export function jsx(type: JSX.Element, props: any, key?: string | number | null): JSX.Element;
 // Overload 6: Intrinsic elements
 export function jsx<K extends keyof JSX.IntrinsicElements>(
   type: K,
   props: JSX.IntrinsicElements[K],
-  key?: string | number | null
+  key?: string | number | null,
 ): JSX.Element;
 // Implementation
 export function jsx(type: any, props: any, key?: string | number | null): JSX.Element {
   // If type is already a JSX.Element, return it
-  if (type && typeof type === 'object' && 'type' in type && 'props' in type) {
+  if (type && typeof type === "object" && "type" in type && "props" in type) {
     return type;
   }
   const normalizedProps = { ...props };
@@ -361,44 +357,36 @@ export function jsx(type: any, props: any, key?: string | number | null): JSX.El
 // Overload 1: Component classes that extend Component<P>
 export function jsxs<T extends new (...args: any[]) => { props: any }>(
   type: T,
-  props: ExtractComponentProps<InstanceType<T>> & { ref?: string; key?: string | number; children?: any },
-  key?: string | number | null
+  props: ExtractComponentProps<InstanceType<T>> & {
+    ref?: string;
+    key?: string | number;
+    children?: any;
+  },
+  key?: string | number | null,
 ): JSX.Element;
 // Overload 1b: Other component classes (fallback)
 export function jsxs<T extends new (...args: any[]) => any>(
   type: T,
   props: any,
-  key?: string | number | null
+  key?: string | number | null,
 ): JSX.Element;
 // Overload 2: Function components
 export function jsxs<T extends FunctionComponent<any>>(
   type: T,
   props: FunctionComponentProps<T>,
-  key?: string | number | null
+  key?: string | number | null,
 ): JSX.Element;
 // Overload 3: ComponentClass (from component.ts)
-export function jsxs(
-  type: ComponentClass,
-  props: any,
-  key?: string | number | null
-): JSX.Element;
+export function jsxs(type: ComponentClass, props: any, key?: string | number | null): JSX.Element;
 // Overload 4: ComponentFactory
-export function jsxs(
-  type: ComponentFactory,
-  props: any,
-  key?: string | number | null
-): JSX.Element;
+export function jsxs(type: ComponentFactory, props: any, key?: string | number | null): JSX.Element;
 // Overload 5: Already a JSX.Element
-export function jsxs(
-  type: JSX.Element,
-  props: any,
-  key?: string | number | null
-): JSX.Element;
+export function jsxs(type: JSX.Element, props: any, key?: string | number | null): JSX.Element;
 // Overload 6: Intrinsic elements
 export function jsxs<K extends keyof JSX.IntrinsicElements>(
   type: K,
   props: JSX.IntrinsicElements[K],
-  key?: string | number | null
+  key?: string | number | null,
 ): JSX.Element;
 // Implementation
 export function jsxs(type: any, props: any, key?: string | number | null): JSX.Element {
@@ -416,7 +404,7 @@ export function jsxDEV<T extends new (...args: any[]) => { props: any }>(
   key?: string | number | null,
   _isStaticChildren?: boolean,
   _source?: { fileName: string; lineNumber: number; columnNumber: number },
-  _self?: any
+  _self?: any,
 ): JSX.Element;
 // Overload 1b: Other component classes (fallback)
 export function jsxDEV<T extends new (...args: any[]) => any>(
@@ -425,7 +413,7 @@ export function jsxDEV<T extends new (...args: any[]) => any>(
   key?: string | number | null,
   _isStaticChildren?: boolean,
   _source?: { fileName: string; lineNumber: number; columnNumber: number },
-  _self?: any
+  _self?: any,
 ): JSX.Element;
 // Overload 2: Function components
 export function jsxDEV<T extends FunctionComponent<any>>(
@@ -434,7 +422,7 @@ export function jsxDEV<T extends FunctionComponent<any>>(
   key?: string | number | null,
   _isStaticChildren?: boolean,
   _source?: { fileName: string; lineNumber: number; columnNumber: number },
-  _self?: any
+  _self?: any,
 ): JSX.Element;
 // Overload 3: ComponentClass (from component.ts)
 export function jsxDEV(
@@ -443,7 +431,7 @@ export function jsxDEV(
   key?: string | number | null,
   _isStaticChildren?: boolean,
   _source?: { fileName: string; lineNumber: number; columnNumber: number },
-  _self?: any
+  _self?: any,
 ): JSX.Element;
 // Overload 4: ComponentFactory
 export function jsxDEV(
@@ -452,7 +440,7 @@ export function jsxDEV(
   key?: string | number | null,
   _isStaticChildren?: boolean,
   _source?: { fileName: string; lineNumber: number; columnNumber: number },
-  _self?: any
+  _self?: any,
 ): JSX.Element;
 // Overload 5: Already a JSX.Element
 export function jsxDEV(
@@ -461,7 +449,7 @@ export function jsxDEV(
   key?: string | number | null,
   _isStaticChildren?: boolean,
   _source?: { fileName: string; lineNumber: number; columnNumber: number },
-  _self?: any
+  _self?: any,
 ): JSX.Element;
 // Overload 6: Intrinsic elements
 export function jsxDEV<K extends keyof JSX.IntrinsicElements>(
@@ -470,16 +458,16 @@ export function jsxDEV<K extends keyof JSX.IntrinsicElements>(
   key?: string | number | null,
   _isStaticChildren?: boolean,
   _source?: { fileName: string; lineNumber: number; columnNumber: number },
-  _self?: any
+  _self?: any,
 ): JSX.Element;
 // Implementation
 export function jsxDEV(
-  type: any, 
-  props: any, 
+  type: any,
+  props: any,
   key?: string | number | null,
   _isStaticChildren?: boolean,
   _source?: { fileName: string; lineNumber: number; columnNumber: number },
-  _self?: any
+  _self?: any,
 ): JSX.Element {
   return jsx(type, props, key);
 }
@@ -488,11 +476,7 @@ export function jsxDEV(
  * createElement() function for legacy JSX transform or explicit usage.
  */
 // Overload 1: Already a JSX.Element (instance)
-export function createElement(
-  type: JSX.Element,
-  props: any,
-  ...children: any[]
-): JSX.Element;
+export function createElement(type: JSX.Element, props: any, ...children: any[]): JSX.Element;
 // Overload 2: Component classes that extend Component<P>
 export function createElement<T extends new (...args: any[]) => { props: any }>(
   type: T,
@@ -506,11 +490,7 @@ export function createElement<T extends new (...args: any[]) => any>(
   ...children: any[]
 ): JSX.Element;
 // Overload 3: ComponentClass (from component.ts - returns EngineComponent)
-export function createElement(
-  type: ComponentClass,
-  props: any,
-  ...children: any[]
-): JSX.Element;
+export function createElement(type: ComponentClass, props: any, ...children: any[]): JSX.Element;
 // Overload 4: Function components (relaxed constraint)
 export function createElement<T extends (props: any) => any>(
   type: T,
@@ -518,11 +498,7 @@ export function createElement<T extends (props: any) => any>(
   ...children: any[]
 ): JSX.Element;
 // Overload 5: ComponentFactory (returns Component, not JSX.Element)
-export function createElement(
-  type: ComponentFactory,
-  props: any,
-  ...children: any[]
-): JSX.Element;
+export function createElement(type: ComponentFactory, props: any, ...children: any[]): JSX.Element;
 // Overload 6: Intrinsic elements (must be last)
 export function createElement<K extends keyof JSX.IntrinsicElements>(
   type: K,
@@ -532,7 +508,7 @@ export function createElement<K extends keyof JSX.IntrinsicElements>(
 // Implementation
 export function createElement(type: any, props: any, ...children: any[]): JSX.Element {
   // If type is already a JSX.Element, return it (ignore props/children)
-  if (type && typeof type === 'object' && 'type' in type && 'props' in type) {
+  if (type && typeof type === "object" && "type" in type && "props" in type) {
     return type;
   }
   const normalizedProps = { ...props };
@@ -547,10 +523,10 @@ export function createElement(type: any, props: any, ...children: any[]): JSX.El
 }
 
 // Cast Fragment to any to avoid TS complaining about it not being a constructor/function
-export const Fragment: any = Symbol.for('aidk.fragment');
+export const Fragment: any = Symbol.for("aidk.fragment");
 
 export function isElement(node: any): node is JSX.Element {
-  return node && typeof node === 'object' && 'type' in node && 'props' in node;
+  return node && typeof node === "object" && "type" in node && "props" in node;
 }
 
 export function ensureElement(element: any, props: any = {}, children: any[] = []): JSX.Element {
@@ -560,14 +536,19 @@ export function ensureElement(element: any, props: any = {}, children: any[] = [
       return element;
     } else if (Array.isArray(element)) {
       // Array of ComponentDefinitions
-      const children = element.map(c => {
+      const children = element.map((c) => {
         if (isElement(c)) {
           return c;
         }
         // ComponentDefinition can be instance, class, factory, or function
         // createElement handles classes/functions, but instances need special handling
         // If it's an instance (object with render but not a function), wrap it
-        if (c && typeof c === 'object' && 'render' in c && typeof (c as any).constructor === 'function') {
+        if (
+          c &&
+          typeof c === "object" &&
+          "render" in c &&
+          typeof (c as any).constructor === "function"
+        ) {
           // It's an instance - use its constructor
           return createElement((c as any).constructor, {});
         }

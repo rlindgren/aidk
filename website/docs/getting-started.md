@@ -70,9 +70,9 @@ Update `package.json`:
 Create `src/agents/assistant.tsx`:
 
 ```tsx
-import { 
-  EngineComponent, 
-  COM, 
+import {
+  EngineComponent,
+  COM,
   TickState,
   Section,
   Message,
@@ -99,24 +99,24 @@ export class AssistantAgent extends Component {
     return (
       <>
         {/* Configure the AI model */}
-        <AiSdkModel 
+        <AiSdkModel
           model={openai('gpt-4o-mini')}
           providerOptions={{
             apiKey: process.env.OPENAI_API_KEY,
           }}
         />
-        
+
         {/* Conversation history - read from signal */}
         <Timeline>
           {this.timeline().map((entry, index) => (
-            <Message 
+            <Message
               key={index}
-              role={entry.message?.role || 'user'} 
-              content={entry.message?.content} 
+              role={entry.message?.role || 'user'}
+              content={entry.message?.content}
             />
           ))}
         </Timeline>
-        
+
         {/* System instructions - automatically formatted for the model */}
         <Section id="instructions" audience="model">
           You are a helpful assistant. Be concise and friendly.
@@ -140,7 +140,7 @@ export function Assistant(): JSX.Element {
 
 Create `src/server.ts`:
 
-``` tsx
+```tsx
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
@@ -189,7 +189,7 @@ curl -X POST http://localhost:3000/api/agent/stream \
 
 Create `src/tools/calculator.ts`:
 
-``` tsx
+```tsx
 import { createTool } from 'aidk';
 import { z } from 'zod';
 
@@ -240,7 +240,7 @@ pnpm add -D @nestjs/cli typescript
 
 ### Setup
 
-``` tsx
+```tsx
 // app.module.ts
 import { Module } from '@nestjs/common';
 import { EngineModule } from 'aidk-nestjs';
@@ -260,11 +260,11 @@ export class AppModule {}
 
 ### Controller
 
-``` tsx
+```tsx
 // agent.controller.ts
 import { Controller, Post, Body, Res, UseInterceptors } from '@nestjs/common';
 import { Response } from 'express';
-import { StreamAgent, EngineContextInterceptor } from 'aidk-nestjs';
+import { Stream, EngineContextInterceptor } from 'aidk-nestjs';
 import { EngineInput } from 'aidk';
 import { Assistant } from './agents/assistant';
 
@@ -272,7 +272,7 @@ import { Assistant } from './agents/assistant';
 @UseInterceptors(EngineContextInterceptor)
 export class AgentController {
   @Post('stream')
-  @StreamAgent(<Assistant />)
+  @Stream(<Assistant />)
   async stream(@Body() input: EngineInput, @Res() res: Response) {
     return input;
   }
@@ -292,4 +292,3 @@ See the [React Integration](./integrations/react.md) or [Angular Integration](./
 - [Tools Guide](./guides/tools.md) - Create powerful tools
 - [Channels Guide](./guides/channels.md) - Real-time updates
 - [API Reference](./api/README.md) - Full API documentation
-

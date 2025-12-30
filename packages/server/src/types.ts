@@ -1,6 +1,6 @@
 /**
  * Shared Server Types
- * 
+ *
  * Framework-agnostic entity interfaces and repository patterns
  * for engine persistence and state management.
  */
@@ -13,8 +13,8 @@ import type { MessageRoles } from "aidk";
 
 export interface ExecutionEntity {
   id: string;
-  type: 'agent' | 'model' | 'tool';
-  status: 'running' | 'completed' | 'failed' | 'cancelled';
+  type: "agent" | "model" | "tool";
+  status: "running" | "completed" | "failed" | "cancelled";
   root_id?: string;
   parent_id?: string;
   thread_id?: string;
@@ -51,7 +51,7 @@ export interface MessageEntity {
   execution_id: string;
   interaction_id?: string;
   thread_id: string;
-  user_id?: string;  // For user-global events (threadId = nil UUID)
+  user_id?: string; // For user-global events (threadId = nil UUID)
   role: MessageRoles;
   content: string; // JSON string
   source?: string;
@@ -98,7 +98,7 @@ export interface ToolStateEntity {
 // =============================================================================
 
 export interface ExecutionRepository {
-  create(data: Omit<ExecutionEntity, 'startedAt'> & { startedAt?: Date }): Promise<ExecutionEntity>;
+  create(data: Omit<ExecutionEntity, "startedAt"> & { startedAt?: Date }): Promise<ExecutionEntity>;
   update(id: string, updates: Partial<ExecutionEntity>): Promise<ExecutionEntity | null>;
   findById(id: string): Promise<ExecutionEntity | null>;
   findByThreadId(threadId: string, limit?: number): Promise<ExecutionEntity[]>;
@@ -128,10 +128,10 @@ export interface MetricsRepository {
  * Nil UUID used for user-global events (not tied to any specific thread).
  * @see libs/engine/example/backend/src/services/todo-list.service.ts
  */
-export const GLOBAL_THREAD_ID = '00000000-0000-0000-0000-000000000000';
+export const GLOBAL_THREAD_ID = "00000000-0000-0000-0000-000000000000";
 
 export interface MessageRepository {
-  create(data: Omit<MessageEntity, 'createdAt'> & { createdAt?: Date }): Promise<MessageEntity>;
+  create(data: Omit<MessageEntity, "createdAt"> & { createdAt?: Date }): Promise<MessageEntity>;
   findByThreadId(threadId: string, limit?: number): Promise<MessageEntity[]>;
   findByExecutionId(executionId: string): Promise<MessageEntity[]>;
   /**
@@ -139,38 +139,50 @@ export interface MessageRepository {
    * Returns thread-specific messages + any events with threadId = GLOBAL_THREAD_ID for this user.
    * Results are ordered by createdAt for proper interleaving.
    */
-  findByThreadIdWithGlobalEvents(threadId: string, userId: string, limit?: number): Promise<MessageEntity[]>;
+  findByThreadIdWithGlobalEvents(
+    threadId: string,
+    userId: string,
+    limit?: number,
+  ): Promise<MessageEntity[]>;
 }
 
 export interface MessageBlockRepository {
-  create(data: Omit<MessageBlockEntity, 'created_at'> & { createdAt?: Date }): Promise<MessageBlockEntity>;
+  create(
+    data: Omit<MessageBlockEntity, "created_at"> & { createdAt?: Date },
+  ): Promise<MessageBlockEntity>;
   findByMessageId(messageId: string): Promise<MessageBlockEntity[]>;
 }
 
 export interface InteractionRepository {
-  create(data: Omit<InteractionEntity, 'created_at'> & { createdAt?: Date }): Promise<InteractionEntity>;
+  create(
+    data: Omit<InteractionEntity, "created_at"> & { createdAt?: Date },
+  ): Promise<InteractionEntity>;
   update(id: string, updates: Partial<InteractionEntity>): Promise<InteractionEntity | null>;
   findById(id: string): Promise<InteractionEntity | null>;
   findByThreadId(threadId: string): Promise<InteractionEntity[]>;
 }
 
 export interface ToolStateRepository {
-  create(data: Omit<ToolStateEntity, 'created_at' | 'updated_at'> & { 
-    created_at?: Date; 
-    updated_at?: Date; 
-  }): Promise<ToolStateEntity>;
+  create(
+    data: Omit<ToolStateEntity, "created_at" | "updated_at"> & {
+      created_at?: Date;
+      updated_at?: Date;
+    },
+  ): Promise<ToolStateEntity>;
   update(id: string, updates: Partial<ToolStateEntity>): Promise<ToolStateEntity | null>;
   findByToolAndThread(
-    tool_id: string, 
-    thread_id: string, 
-    user_id?: string, 
-    tenant_id?: string
+    tool_id: string,
+    thread_id: string,
+    user_id?: string,
+    tenant_id?: string,
   ): Promise<ToolStateEntity | null>;
   findByToolAndUser(toolId: string, userId: string): Promise<ToolStateEntity[]>;
   /** Create or update tool state by tool_id + threadId */
-  upsert(data: Omit<ToolStateEntity, 'id' | 'created_it' | 'updated_at'> & { 
-    updated_at?: Date;
-  }): Promise<ToolStateEntity>;
+  upsert(
+    data: Omit<ToolStateEntity, "id" | "created_it" | "updated_at"> & {
+      updated_at?: Date;
+    },
+  ): Promise<ToolStateEntity>;
 }
 
 // =============================================================================
@@ -185,4 +197,3 @@ export interface PersistenceRepositories {
   interactionRepo: InteractionRepository;
   toolStateRepo: ToolStateRepository;
 }
-

@@ -1,19 +1,19 @@
 /**
  * Execution Helpers
- * 
+ *
  * Utilities for understanding execution context - whether an execution
  * is standalone, nested, what originated it, etc.
- * 
+ *
  * Useful for persistence, logging, and conditional behavior based on
  * execution hierarchy.
  */
 
-import type { KernelContext } from './context';
-import type { ProcedureNode } from './procedure-graph';
+import type { KernelContext } from "./context";
+import type { ProcedureNode } from "./procedure-graph";
 
 /**
  * Check if this is a standalone (root) execution or nested within another.
- * 
+ *
  * @example
  * ```typescript
  * if (isStandaloneExecution(ctx)) {
@@ -38,7 +38,7 @@ export function isNestedExecution(ctx: KernelContext): boolean {
 /**
  * Get the name of the procedure that originated this execution chain.
  * Returns the origin's name if nested, or current procedure name if standalone.
- * 
+ *
  * @example
  * ```typescript
  * const origin = getOriginName(ctx);
@@ -60,7 +60,7 @@ export function getOriginNode(ctx: KernelContext): ProcedureNode | undefined {
 /**
  * Check if this execution is within an engine execution (engine:execute or engine:stream).
  * Useful for persistence to know if engine is handling top-level tracking.
- * 
+ *
  * @example
  * ```typescript
  * if (isWithinEngine(ctx)) {
@@ -74,15 +74,16 @@ export function isWithinEngine(ctx: KernelContext): boolean {
   if (!ctx.procedureGraph || !ctx.procedurePid) {
     return false;
   }
-  
-  return ctx.procedureGraph.hasAncestor(ctx.procedurePid, 
-    node => node.name?.startsWith('engine:') ?? false
+
+  return ctx.procedureGraph.hasAncestor(
+    ctx.procedurePid,
+    (node) => node.name?.startsWith("engine:") ?? false,
   );
 }
 
 /**
  * Check if this execution has an ancestor with a specific procedure name.
- * 
+ *
  * @example
  * ```typescript
  * if (hasAncestorNamed(ctx, 'engine:stream')) {
@@ -94,13 +95,13 @@ export function hasAncestorNamed(ctx: KernelContext, name: string): boolean {
   if (!ctx.procedureGraph || !ctx.procedurePid) {
     return false;
   }
-  
+
   return ctx.procedureGraph.hasAncestorWithName(ctx.procedurePid, name);
 }
 
 /**
  * Check if this execution has an ancestor matching a predicate.
- * 
+ *
  * @example
  * ```typescript
  * if (hasAncestorMatching(ctx, n => n.metadata?.type === 'agent')) {
@@ -109,13 +110,13 @@ export function hasAncestorNamed(ctx: KernelContext, name: string): boolean {
  * ```
  */
 export function hasAncestorMatching(
-  ctx: KernelContext, 
-  predicate: (node: ProcedureNode) => boolean
+  ctx: KernelContext,
+  predicate: (node: ProcedureNode) => boolean,
 ): boolean {
   if (!ctx.procedureGraph || !ctx.procedurePid) {
     return false;
   }
-  
+
   return ctx.procedureGraph.hasAncestor(ctx.procedurePid, predicate);
 }
 
@@ -143,7 +144,7 @@ export function getRootPid(ctx: KernelContext): string | undefined {
 
 /**
  * Get execution hierarchy info - useful for logging and persistence.
- * 
+ *
  * @example
  * ```typescript
  * const info = getExecutionInfo(ctx);
@@ -188,4 +189,3 @@ export function getExecutionInfo(ctx: KernelContext): {
     depth,
   };
 }
-

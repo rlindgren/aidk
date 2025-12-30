@@ -12,22 +12,22 @@ const engine = new Engine(config?: EngineConfig);
 
 ### EngineConfig
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `id` | `string` | Optional unique identifier (auto-generated if not provided) |
-| `name` | `string` | Human-readable name for the engine |
-| `model` | `ModelInstance \| string` | Default model adapter or registry key |
-| `tools` | `(ToolClass \| ExecutableTool \| string)[]` | Tools available to the engine |
-| `maxTicks` | `number` | Maximum ticks before stopping (default: 10) |
-| `mcpServers` | `Record<string, MCPServerConfig>` | MCP server configurations |
-| `channels` | `ChannelServiceConfig \| ChannelService` | Channel service for real-time communication |
-| `root` | `JSX.Element \| ComponentDefinition` | Default root component |
-| `lifecycleHooks` | `EngineLifecycleHooks` | Lifecycle hook configuration |
-| `hooks` | `EngineStaticHooks` | Static hook configuration |
-| `toolExecution` | `ToolExecutionOptions` | Tool execution configuration |
-| `renderers` | `Record<string, Renderer>` | Custom renderers |
-| `persistExecutionState` | `(state) => Promise<void>` | Persistence callback |
-| `loadExecutionState` | `(pid) => Promise<ExecutionState>` | State loading callback |
+| Property                | Type                                        | Description                                                 |
+| ----------------------- | ------------------------------------------- | ----------------------------------------------------------- |
+| `id`                    | `string`                                    | Optional unique identifier (auto-generated if not provided) |
+| `name`                  | `string`                                    | Human-readable name for the engine                          |
+| `model`                 | `ModelInstance \| string`                   | Default model adapter or registry key                       |
+| `tools`                 | `(ToolClass \| ExecutableTool \| string)[]` | Tools available to the engine                               |
+| `maxTicks`              | `number`                                    | Maximum ticks before stopping (default: 10)                 |
+| `mcpServers`            | `Record<string, MCPServerConfig>`           | MCP server configurations                                   |
+| `channels`              | `ChannelServiceConfig \| ChannelService`    | Channel service for real-time communication                 |
+| `root`                  | `JSX.Element \| ComponentDefinition`        | Default root component                                      |
+| `lifecycleHooks`        | `EngineLifecycleHooks`                      | Lifecycle hook configuration                                |
+| `hooks`                 | `EngineStaticHooks`                         | Static hook configuration                                   |
+| `toolExecution`         | `ToolExecutionOptions`                      | Tool execution configuration                                |
+| `renderers`             | `Record<string, Renderer>`                  | Custom renderers                                            |
+| `persistExecutionState` | `(state) => Promise<void>`                  | Persistence callback                                        |
+| `loadExecutionState`    | `(pid) => Promise<ExecutionState>`          | State loading callback                                      |
 
 ## Methods
 
@@ -40,6 +40,7 @@ const result = await engine.execute(input, agent?);
 ```
 
 **Parameters:**
+
 - `input: EngineInput` - Input data including timeline, messages, etc.
 - `agent?: ComponentDefinition` - Optional agent component (uses config root if not provided)
 
@@ -75,6 +76,7 @@ const handle = engine.fork(agent, input, options?);
 ```
 
 **Parameters:**
+
 - `agent: JSX.Element | ComponentDefinition` - Agent to execute
 - `input: EngineInput` - Input data
 - `options?: ForkOptions` - Fork configuration
@@ -109,6 +111,7 @@ const handle = engine.spawn(agent, input, options?);
 ```
 
 **Parameters:**
+
 - `agent: JSX.Element | ComponentDefinition` - Agent to execute
 - `input: EngineInput` - Input data
 - `options?: SpawnOptions` - Spawn configuration
@@ -166,17 +169,17 @@ const unsubscribe = engine.onAfterCompile((compiled, state, handle) => { ... });
 
 ### Hook Types
 
-| Hook | Parameters | When Called |
-|------|------------|-------------|
-| `onInit` | `(engine)` | After engine construction |
-| `onShutdown` | `(engine, reason?)` | During graceful shutdown |
-| `onDestroy` | `(engine)` | When engine is destroyed |
-| `onExecutionStart` | `(input, agent?, handle?)` | Before first tick |
-| `onExecutionEnd` | `(output, handle?)` | After successful completion |
-| `onExecutionError` | `(error, handle?)` | On execution error |
-| `onTickStart` | `(tick, state, handle?)` | At start of each tick |
-| `onTickEnd` | `(tick, state, response, handle?)` | At end of each tick |
-| `onAfterCompile` | `(compiled, state, handle?)` | After component compilation |
+| Hook               | Parameters                         | When Called                 |
+| ------------------ | ---------------------------------- | --------------------------- |
+| `onInit`           | `(engine)`                         | After engine construction   |
+| `onShutdown`       | `(engine, reason?)`                | During graceful shutdown    |
+| `onDestroy`        | `(engine)`                         | When engine is destroyed    |
+| `onExecutionStart` | `(input, agent?, handle?)`         | Before first tick           |
+| `onExecutionEnd`   | `(output, handle?)`                | After successful completion |
+| `onExecutionError` | `(error, handle?)`                 | On execution error          |
+| `onTickStart`      | `(tick, state, handle?)`           | At start of each tick       |
+| `onTickEnd`        | `(tick, state, response, handle?)` | At end of each tick         |
+| `onAfterCompile`   | `(compiled, state, handle?)`       | After component compilation |
 
 ## Properties
 
@@ -292,6 +295,7 @@ engine.onSignal('shutdown', (event) => {
 ```
 
 **Signal Types:**
+
 - `shutdown` - Engine shutting down
 - `abort` - Execution aborted
 - `interrupt` - Execution interrupted

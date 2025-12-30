@@ -3,7 +3,6 @@
   "version": "0.0.0",
   "private": true,
   "description": "Example applications using AIDK",
-  "packageManager": "pnpm@10.25.0",
   "scripts": {
     "dev:express": "pnpm --filter aidk-express-example dev",
     "dev:react": "pnpm --filter aidk-react-example dev",
@@ -13,5 +12,6 @@
     "clean": "turbo clean",
     "dev": "turbo dev",
     "start": "turbo start"
-  }
+  },
+  "packageManager": "pnpm@10.25.0"
 }

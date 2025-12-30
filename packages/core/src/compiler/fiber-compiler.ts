@@ -21,40 +21,15 @@ import type {
 import type { ExecutionMessage } from "../engine/execution-types";
 import type { JSX } from "../jsx/jsx-runtime";
 import { isElement, Fragment } from "../jsx/jsx-runtime";
-import type {
-  CompiledStructure,
-  CompiledSection,
-  CompiledTimelineEntry,
-} from "./types";
+import type { CompiledStructure, CompiledSection, CompiledTimelineEntry } from "./types";
 import type { ContentRenderer, SemanticContentBlock } from "../renderers";
 import { MarkdownRenderer } from "../renderers";
-import {
-  Section,
-  Tool,
-  Entry,
-  Ephemeral,
-  Timeline,
-} from "../jsx/components/primitives";
-import {
-  Text,
-  Code,
-  Image,
-  Json,
-  Document,
-  Audio,
-  Video,
-} from "../jsx/components/content";
+import { Section, Tool, Entry, Ephemeral, Timeline } from "../jsx/components/primitives";
+import { Text, Code, Image, Json, Document, Audio, Video } from "../jsx/components/content";
 import { Renderer } from "../jsx/components/renderer";
-import {
-  bindCOMSignals,
-  cleanupSignals,
-  PROPS_SIGNAL_SYMBOL,
-} from "../state";
+import { bindCOMSignals, cleanupSignals, PROPS_SIGNAL_SYMBOL } from "../state";
 import type { Signal } from "../state/signal";
-import {
-  initializeContentBlockMappers,
-  type ContentBlockMapper,
-} from "./content-block-registry";
+import { initializeContentBlockMappers, type ContentBlockMapper } from "./content-block-registry";
 import { extractSemanticNodeFromElement } from "./extractors";
 import {
   ComponentHookRegistry,
@@ -78,12 +53,7 @@ import type {
   CompileResult,
 } from "./types";
 import { FiberFlags, EffectPhase, HookTag } from "./types";
-import {
-  createFiber,
-  createWorkInProgress,
-  getChildFibers,
-  traverseFiber,
-} from "./fiber";
+import { createFiber, createWorkInProgress, getChildFibers, traverseFiber } from "./fiber";
 import { setRenderContext, setScheduleWork } from "../state/hooks";
 
 const log = Logger.for("FiberCompiler");
@@ -95,8 +65,7 @@ function isFragment(type: unknown): type is symbol {
   return (
     type === Fragment ||
     type === FragmentSymbol ||
-    (typeof type === "symbol" &&
-      (type as symbol).description === "aidk.fragment")
+    (typeof type === "symbol" && (type as symbol).description === "aidk.fragment")
   );
 }
 
@@ -166,8 +135,7 @@ export class FiberCompiler {
 
   // Effect queues (by phase)
   private effectsByPhase = new Map<EffectPhase, Effect[]>();
-  private afterCompileCallbacks: Array<(compiled: CompiledStructure) => void> =
-    [];
+  private afterCompileCallbacks: Array<(compiled: CompiledStructure) => void> = [];
 
   // Work scheduling
   private pendingWork: FiberNode[] = [];
@@ -189,11 +157,7 @@ export class FiberCompiler {
   // Config
   private config: FiberCompilerConfig;
 
-  constructor(
-    com: COM,
-    hookRegistry?: ComponentHookRegistry,
-    config: FiberCompilerConfig = {},
-  ) {
+  constructor(com: COM, hookRegistry?: ComponentHookRegistry, config: FiberCompilerConfig = {}) {
     this.com = com;
     this.hookRegistry = hookRegistry;
     this.config = {
@@ -272,10 +236,7 @@ export class FiberCompiler {
    * Compile JSX element into CompiledStructure.
    * Runs within AsyncLocalStorage context to ensure thread-safe compiler access.
    */
-  async compile(
-    element: JSX.Element,
-    state: TickState,
-  ): Promise<CompiledStructure> {
+  async compile(element: JSX.Element, state: TickState): Promise<CompiledStructure> {
     // Run compilation within compiler context to maintain isolation
     return compilerContext.run(this, async () => {
       this.tickState = state;
@@ -284,17 +245,10 @@ export class FiberCompiler {
       try {
         // Create or update root fiber
         if (this.current === null) {
-          this.workInProgress = createFiber(
-            element.type,
-            element.props || {},
-            element.key,
-          );
+          this.workInProgress = createFiber(element.type, element.props || {}, element.key);
           this.workInProgress.flags |= FiberFlags.Placement;
         } else {
-          this.workInProgress = createWorkInProgress(
-            this.current,
-            element.props || {},
-          );
+          this.workInProgress = createWorkInProgress(this.current, element.props || {});
         }
 
         // Phase 1: Render - build fiber tree
@@ -331,8 +285,7 @@ export class FiberCompiler {
     state: TickState,
     options: { maxIterations?: number } = {},
   ): Promise<CompileResult> {
-    const maxIterations =
-      options.maxIterations ?? this.config.maxCompileIterations!;
+    const maxIterations = options.maxIterations ?? this.config.maxCompileIterations!;
     const recompileReasons: string[] = [];
     let iterations = 0;
     let compiled: CompiledStructure;
@@ -385,8 +338,7 @@ export class FiberCompiler {
     return {
       compiled: compiled!,
       iterations,
-      forcedStable:
-        iterations >= maxIterations && this.com._wasRecompileRequested(),
+      forcedStable: iterations >= maxIterations && this.com._wasRecompileRequested(),
       recompileReasons,
     };
   }
@@ -416,10 +368,7 @@ export class FiberCompiler {
       await traverseFiber(this.current, async (fiber) => {
         if (fiber.stateNode?.onTickStart) {
           try {
-            const wrapped = this.getWrappedMethod(
-              fiber.stateNode,
-              "onTickStart",
-            );
+            const wrapped = this.getWrappedMethod(fiber.stateNode, "onTickStart");
             await wrapped(this.com, state);
           } catch (err) {
             const instanceName = fiber.stateNode.constructor?.name || "unknown";
@@ -456,16 +405,12 @@ export class FiberCompiler {
               const errorState: TickState = {
                 ...state,
                 error: {
-                  error:
-                    error instanceof Error ? error : new Error(String(error)),
+                  error: error instanceof Error ? error : new Error(String(error)),
                   phase: "tick_end",
                   recoverable: true,
                 },
               };
-              const errorWrapped = this.getWrappedMethod(
-                fiber.stateNode,
-                "onError",
-              );
+              const errorWrapped = this.getWrappedMethod(fiber.stateNode, "onError");
               await errorWrapped(this.com, errorState);
             } else {
               // Re-throw if no error handler
@@ -510,10 +455,7 @@ export class FiberCompiler {
       if (fiber.stateNode?.onAfterCompile) {
         const instanceName = fiber.stateNode.constructor?.name || "unknown";
         try {
-          const wrapped = this.getWrappedMethod(
-            fiber.stateNode,
-            "onAfterCompile",
-          );
+          const wrapped = this.getWrappedMethod(fiber.stateNode, "onAfterCompile");
           await wrapped(this.com, compiled, state, ctx);
         } catch (err) {
           log.error({ err, component: instanceName }, "onAfterCompile error");
@@ -523,10 +465,7 @@ export class FiberCompiler {
       // Function components with useAfterCompile
       let hook = fiber.memoizedState;
       while (hook !== null) {
-        if (
-          hook.tag === HookTag.AfterCompile &&
-          typeof hook.memoizedState === "function"
-        ) {
+        if (hook.tag === HookTag.AfterCompile && typeof hook.memoizedState === "function") {
           hook.memoizedState(this.com, compiled, state);
         }
         hook = hook.next;
@@ -561,10 +500,7 @@ export class FiberCompiler {
    * @param message The execution message
    * @param state Current tick state
    */
-  async notifyOnMessage(
-    message: ExecutionMessage,
-    state: TickState,
-  ): Promise<void> {
+  async notifyOnMessage(message: ExecutionMessage, state: TickState): Promise<void> {
     if (!this.current) {
       return; // No fiber tree yet
     }
@@ -584,10 +520,7 @@ export class FiberCompiler {
       // Function components with useOnMessage
       let hook = fiber.memoizedState;
       while (hook !== null) {
-        if (
-          hook.tag === HookTag.OnMessage &&
-          typeof hook.memoizedState === "function"
-        ) {
+        if (hook.tag === HookTag.OnMessage && typeof hook.memoizedState === "function") {
           try {
             await hook.memoizedState(this.com, message, state);
           } catch (err) {
@@ -610,17 +543,11 @@ export class FiberCompiler {
   // Render Phase
   // ============================================================================
 
-  private async performRender(
-    fiber: FiberNode,
-    element: JSX.Element,
-  ): Promise<void> {
+  private async performRender(fiber: FiberNode, element: JSX.Element): Promise<void> {
     await this.beginWork(fiber, element);
   }
 
-  private async beginWork(
-    fiber: FiberNode,
-    element: JSX.Element,
-  ): Promise<void> {
+  private async beginWork(fiber: FiberNode, element: JSX.Element): Promise<void> {
     const { type, props } = element;
     fiber.type = type;
     fiber.props = props || {};
@@ -631,32 +558,17 @@ export class FiberCompiler {
       if (this.isHostPrimitive(type)) {
         await this.updatePrimitiveComponent(fiber, props || {});
       } else if (this.isClassComponent(type)) {
-        await this.updateClassComponent(
-          fiber,
-          type as ClassComponent,
-          props || {},
-        );
+        await this.updateClassComponent(fiber, type as ClassComponent, props || {});
       } else {
-        await this.updateFunctionComponent(
-          fiber,
-          type as FunctionComponent,
-          props || {},
-        );
+        await this.updateFunctionComponent(fiber, type as FunctionComponent, props || {});
       }
     } else if (isFragment(type)) {
-      await this.reconcileChildren(
-        fiber,
-        this.normalizeChildren(props?.children),
-      );
+      await this.reconcileChildren(fiber, this.normalizeChildren(props?.children));
     } else if (typeof type === "string") {
       await this.updateHostComponent(fiber, type, props || {});
     } else if (typeof type === "object" && type !== null) {
       // Direct instance
-      await this.updateDirectInstance(
-        fiber,
-        type as ComponentInstance,
-        props || {},
-      );
+      await this.updateDirectInstance(fiber, type as ComponentInstance, props || {});
     }
   }
 
@@ -686,23 +598,15 @@ export class FiberCompiler {
 
       if (Component.length >= 3) {
         children = await (
-          Component as (
-            p: unknown,
-            c: COM,
-            s: TickState,
-          ) => FiberChild | Promise<FiberChild>
+          Component as (p: unknown, c: COM, s: TickState) => FiberChild | Promise<FiberChild>
         )(props, this.com, this.tickState!);
       } else if (Component.length === 2) {
-        children = await (
-          Component as (
-            p: unknown,
-            c: COM,
-          ) => FiberChild | Promise<FiberChild>
-        )(props, this.com);
+        children = await (Component as (p: unknown, c: COM) => FiberChild | Promise<FiberChild>)(
+          props,
+          this.com,
+        );
       } else {
-        children = await (
-          Component as (p: unknown) => FiberChild | Promise<FiberChild>
-        )(props);
+        children = await (Component as (p: unknown) => FiberChild | Promise<FiberChild>)(props);
       }
 
       // Hook chain is already saved in fiber.memoizedState during hook calls
@@ -726,10 +630,7 @@ export class FiberCompiler {
         // BUT reconcile its children from props.children
         const element = children as JSX.Element;
         if (element.props?.children !== undefined) {
-          await this.reconcileChildren(
-            fiber,
-            this.normalizeChildren(element.props.children),
-          );
+          await this.reconcileChildren(fiber, this.normalizeChildren(element.props.children));
         } else {
           fiber.child = null;
         }
@@ -809,10 +710,7 @@ export class FiberCompiler {
 
     // Render
     const children = instance.render
-      ? await this.getWrappedMethod(instance, "render")(
-          this.com,
-          this.tickState!,
-        )
+      ? await this.getWrappedMethod(instance, "render")(this.com, this.tickState!)
       : null;
 
     if (children !== null && children !== undefined) {
@@ -853,10 +751,7 @@ export class FiberCompiler {
     }
 
     const children = instance.render
-      ? await this.getWrappedMethod(instance, "render")(
-          this.com,
-          this.tickState!,
-        )
+      ? await this.getWrappedMethod(instance, "render")(this.com, this.tickState!)
       : null;
 
     if (children !== null && children !== undefined) {
@@ -876,10 +771,7 @@ export class FiberCompiler {
     // It's stored directly on the section/entry, not reconciled as children
     // Only props.children needs reconciliation here
     if (props.children !== undefined) {
-      await this.reconcileChildren(
-        fiber,
-        this.normalizeChildren(props.children),
-      );
+      await this.reconcileChildren(fiber, this.normalizeChildren(props.children));
     } else {
       fiber.child = null;
     }
@@ -892,10 +784,7 @@ export class FiberCompiler {
   ): Promise<void> {
     // Host components just reconcile children
     if (props.children !== undefined) {
-      await this.reconcileChildren(
-        fiber,
-        this.normalizeChildren(props.children),
-      );
+      await this.reconcileChildren(fiber, this.normalizeChildren(props.children));
     }
   }
 
@@ -903,10 +792,7 @@ export class FiberCompiler {
   // Reconciliation
   // ============================================================================
 
-  private async reconcileChildren(
-    parent: FiberNode,
-    children: NormalizedChild[],
-  ): Promise<void> {
+  private async reconcileChildren(parent: FiberNode, children: NormalizedChild[]): Promise<void> {
     const oldChildren = getChildFibers(parent.alternate);
 
     let previousFiber: FiberNode | null = null;
@@ -919,12 +805,7 @@ export class FiberCompiler {
       let newFiber: FiberNode | null = null;
 
       if (child.kind === "element") {
-        newFiber = await this.reconcileElement(
-          parent,
-          oldFiber,
-          child.element,
-          i,
-        );
+        newFiber = await this.reconcileElement(parent, oldFiber, child.element, i);
         if (oldFiber && this.canReuse(oldFiber, child.element)) {
           oldIndex++;
         }
@@ -970,29 +851,20 @@ export class FiberCompiler {
   ): Promise<FiberNode> {
     if (oldFiber && this.canReuse(oldFiber, element)) {
       // Reuse existing fiber
-      const workInProgress = createWorkInProgress(
-        oldFiber,
-        element.props || {},
-      );
+      const workInProgress = createWorkInProgress(oldFiber, element.props || {});
       await this.beginWork(workInProgress, element);
       return workInProgress;
     }
 
     // Create new fiber
-    const newFiber = createFiber(
-      element.type,
-      element.props || {},
-      element.key,
-    );
+    const newFiber = createFiber(element.type, element.props || {}, element.key);
     newFiber.flags |= FiberFlags.Placement;
     await this.beginWork(newFiber, element);
     return newFiber;
   }
 
   private canReuse(oldFiber: FiberNode, element: JSX.Element): boolean {
-    return (
-      oldFiber.type === element.type && oldFiber.key === (element.key ?? null)
-    );
+    return oldFiber.type === element.type && oldFiber.key === (element.key ?? null);
   }
 
   private createContentBlockFiber(block: unknown, index: number): FiberNode {
@@ -1180,10 +1052,7 @@ export class FiberCompiler {
     }
   }
 
-  private bindPropsSignals(
-    instance: ComponentInstance,
-    props: Record<string, unknown>,
-  ): void {
+  private bindPropsSignals(instance: ComponentInstance, props: Record<string, unknown>): void {
     if (!props) return;
 
     const propsSignals = new Map<string, Signal<unknown>>();
@@ -1201,9 +1070,7 @@ export class FiberCompiler {
           if (typeof jsxPropKey === "string") {
             const propValue = props[jsxPropKey];
             if (propValue !== undefined) {
-              (value as unknown as { set: (v: unknown) => void }).set(
-                propValue,
-              );
+              (value as unknown as { set: (v: unknown) => void }).set(propValue);
             }
             propsSignals.set(jsxPropKey, value as Signal<unknown>);
           }
@@ -1212,14 +1079,9 @@ export class FiberCompiler {
     }
   }
 
-  private updatePropsSignals(
-    instance: ComponentInstance,
-    newProps: Record<string, unknown>,
-  ): void {
+  private updatePropsSignals(instance: ComponentInstance, newProps: Record<string, unknown>): void {
     const inst = instance as unknown as Record<string, unknown>;
-    const propsSignals = inst._propsSignals as
-      | Map<string, Signal<unknown>>
-      | undefined;
+    const propsSignals = inst._propsSignals as Map<string, Signal<unknown>> | undefined;
     if (!propsSignals) return;
 
     for (const [key, signal] of propsSignals) {
@@ -1284,9 +1146,7 @@ export class FiberCompiler {
    * - Conditional tool rendering (tools can be added/removed dynamically)
    * - Module identity issues (onTickStart inheritance may not work)
    */
-  private async reregisterToolsFromFibers(
-    fiber: FiberNode | null,
-  ): Promise<void> {
+  private async reregisterToolsFromFibers(fiber: FiberNode | null): Promise<void> {
     if (!fiber) return;
 
     const instance = fiber.stateNode as any;
@@ -1338,10 +1198,7 @@ export class FiberCompiler {
     }
 
     const componentClass = instance.constructor;
-    const componentName = getComponentName(
-      instance as EngineComponent,
-      componentClass,
-    );
+    const componentName = getComponentName(instance as EngineComponent, componentClass);
     const componentTags = getComponentTags(componentClass);
 
     const methodsToWrap: ComponentHookName[] = [
@@ -1367,10 +1224,9 @@ export class FiberCompiler {
         );
 
         // Create a Procedure for the component method with middleware applied
-        const procedure = createEngineProcedure(
-          { name: methodName },
-          originalMethod as any,
-        ).use(...(middleware as any[]));
+        const procedure = createEngineProcedure({ name: methodName }, originalMethod as any).use(
+          ...(middleware as any[]),
+        );
 
         if (!this.wrappedMethods.has(instance)) {
           this.wrappedMethods.set(instance, new Map());
@@ -1383,10 +1239,7 @@ export class FiberCompiler {
   /**
    * Gets the wrapped version of a component method, or the original if no wrapper exists.
    */
-  private getWrappedMethod(
-    instance: ComponentInstance,
-    methodName: ComponentHookName,
-  ): Function {
+  private getWrappedMethod(instance: ComponentInstance, methodName: ComponentHookName): Function {
     const wrapped = this.wrappedMethods.get(instance)?.get(methodName);
     if (wrapped) {
       return wrapped;
@@ -1460,10 +1313,7 @@ export class FiberCompiler {
     // Check for Component base class or render method
     let current = proto;
     while (current && current !== Object.prototype) {
-      if (
-        current.constructor?.name === "Component" ||
-        typeof current.render === "function"
-      ) {
+      if (current.constructor?.name === "Component" || typeof current.render === "function") {
         return true;
       }
       current = Object.getPrototypeOf(current);
@@ -1517,17 +1367,11 @@ export class FiberCompiler {
    * Check if a fiber type matches a component function or name.
    * Handles cross-module identity issues by also checking name.
    */
-  private isType(
-    type: ComponentType,
-    component: unknown,
-    name: string,
-  ): boolean {
+  private isType(type: ComponentType, component: unknown, name: string): boolean {
     return (
       type === component ||
       (typeof type === "function" && type.name === name) ||
-      (typeof type === "object" &&
-        type !== null &&
-        (type as { name?: string }).name === name)
+      (typeof type === "object" && type !== null && (type as { name?: string }).name === name)
     );
   }
 
@@ -1597,9 +1441,7 @@ export class FiberCompiler {
     rendererStack: ContentRenderer[],
   ): void {
     const currentRenderer =
-      rendererStack.length > 0
-        ? rendererStack[rendererStack.length - 1]
-        : this.defaultRenderer;
+      rendererStack.length > 0 ? rendererStack[rendererStack.length - 1] : this.defaultRenderer;
 
     const type = fiber.type;
     const props = fiber.props;
@@ -1609,13 +1451,7 @@ export class FiberCompiler {
       const renderer = props.instance as ContentRenderer;
       if (renderer) {
         rendererStack.push(renderer);
-        this.traverseChildren(
-          fiber,
-          collected,
-          orderIndex,
-          inSectionOrMessage,
-          rendererStack,
-        );
+        this.traverseChildren(fiber, collected, orderIndex, inSectionOrMessage, rendererStack);
         rendererStack.pop();
       }
       return;
@@ -1677,9 +1513,7 @@ export class FiberCompiler {
         content = this.collectContentFromFiber(fiber, currentRenderer);
       } else {
         // No children - check for content in props
-        const messageProps = props.message as
-          | Record<string, unknown>
-          | undefined;
+        const messageProps = props.message as Record<string, unknown> | undefined;
         const messageContent = messageProps?.content; // Message component puts content here
         const directContent = props.content; // Or might be passed directly
         const sourceContent = messageContent ?? directContent;
@@ -1700,15 +1534,12 @@ export class FiberCompiler {
 
       // message entry
       if (props.kind === "message") {
-        const messageProps = props.message as
-          | Record<string, unknown>
-          | undefined;
-        const role =
-          messageProps?.role as CompiledTimelineEntry["message"] extends {
-            role: infer R;
-          }
-            ? R
-            : string;
+        const messageProps = props.message as Record<string, unknown> | undefined;
+        const role = messageProps?.role as CompiledTimelineEntry["message"] extends {
+          role: infer R;
+        }
+          ? R
+          : string;
 
         if (role === "system") {
           collected.systemMessageItems.push({
@@ -1721,8 +1552,7 @@ export class FiberCompiler {
           const entry: CompiledTimelineEntry = {
             kind: "message",
             message: {
-              role: (role ||
-                "user") as CompiledTimelineEntry["message"] extends {
+              role: (role || "user") as CompiledTimelineEntry["message"] extends {
                 role: infer R;
               }
                 ? R
@@ -1731,13 +1561,8 @@ export class FiberCompiler {
             },
             tags: props.tags as string[] | undefined,
             visibility: props.visibility as CompiledTimelineEntry["visibility"],
-            metadata: messageProps?.metadata as
-              | Record<string, unknown>
-              | undefined,
-            renderer:
-              currentRenderer !== this.defaultRenderer
-                ? currentRenderer
-                : undefined,
+            metadata: messageProps?.metadata as Record<string, unknown> | undefined,
+            renderer: currentRenderer !== this.defaultRenderer ? currentRenderer : undefined,
           };
           collected.timelineEntries.push(entry);
         }
@@ -1794,9 +1619,7 @@ export class FiberCompiler {
             const metadata = toolAny.metadata as Record<string, unknown>;
             const name = metadata.name as string;
             if (name) {
-              const existingIndex = collected.tools.findIndex(
-                (t) => t.name === name,
-              );
+              const existingIndex = collected.tools.findIndex((t) => t.name === name);
               const toolEntry = {
                 name,
                 tool: toolDef as CompiledStructure["tools"][number]["tool"],
@@ -1826,13 +1649,7 @@ export class FiberCompiler {
     }
 
     // Recurse
-    this.traverseChildren(
-      fiber,
-      collected,
-      orderIndex,
-      inSectionOrMessage,
-      rendererStack,
-    );
+    this.traverseChildren(fiber, collected, orderIndex, inSectionOrMessage, rendererStack);
   }
 
   private traverseChildren(
@@ -1844,13 +1661,7 @@ export class FiberCompiler {
   ): void {
     let child = fiber.child;
     while (child) {
-      this.traverseAndCollect(
-        child,
-        collected,
-        orderIndex,
-        inSectionOrMessage,
-        rendererStack,
-      );
+      this.traverseAndCollect(child, collected, orderIndex, inSectionOrMessage, rendererStack);
       child = child.sibling;
     }
   }
@@ -1961,21 +1772,12 @@ export class FiberCompiler {
     }
   }
 
-  private mergeSections(
-    existing: CompiledSection,
-    incoming: CompiledSection,
-  ): CompiledSection {
+  private mergeSections(existing: CompiledSection, incoming: CompiledSection): CompiledSection {
     let combinedContent: unknown;
 
-    if (
-      typeof existing.content === "string" &&
-      typeof incoming.content === "string"
-    ) {
+    if (typeof existing.content === "string" && typeof incoming.content === "string") {
       combinedContent = `${existing.content}\n${incoming.content}`;
-    } else if (
-      Array.isArray(existing.content) &&
-      Array.isArray(incoming.content)
-    ) {
+    } else if (Array.isArray(existing.content) && Array.isArray(incoming.content)) {
       combinedContent = [...existing.content, ...incoming.content];
     } else {
       combinedContent = [existing.content, incoming.content];

@@ -200,10 +200,7 @@ export class SSETransport implements ChannelTransport {
     this.eventSource.onerror = (e) => {
       const isClosed = this.eventSource?.readyState === 2;
 
-      if (
-        this.connectionState === "connected" ||
-        this.connectionState === "connecting"
-      ) {
+      if (this.connectionState === "connected" || this.connectionState === "connecting") {
         this.lastError = TransportError.connection("SSE connection error");
         this.config.callbacks.onError?.(e);
         this.handleDisconnect(isClosed ? "closed" : "error");
@@ -218,10 +215,7 @@ export class SSETransport implements ChannelTransport {
   }
 
   private handleDisconnect(reason: string): void {
-    if (
-      this.connectionState === "disconnected" ||
-      this.connectionState === "reconnecting"
-    ) {
+    if (this.connectionState === "disconnected" || this.connectionState === "reconnecting") {
       return;
     }
 
@@ -250,17 +244,12 @@ export class SSETransport implements ChannelTransport {
   }
 
   private calculateReconnectDelay(): number {
-    const exponentialDelay =
-      this.config.reconnectDelay * Math.pow(2, this.reconnectAttempts);
+    const exponentialDelay = this.config.reconnectDelay * Math.pow(2, this.reconnectAttempts);
 
     // Cap the delay at maxReconnectDelay, but don't reset attempts
     // Attempts are only reset on successful connection (in onopen handler)
-    const cappedDelay = Math.min(
-      exponentialDelay,
-      this.config.maxReconnectDelay,
-    );
-    const jitter =
-      cappedDelay * this.config.reconnectJitter * (Math.random() * 2 - 1);
+    const cappedDelay = Math.min(exponentialDelay, this.config.maxReconnectDelay);
+    const jitter = cappedDelay * this.config.reconnectJitter * (Math.random() * 2 - 1);
     return Math.round(cappedDelay + jitter);
   }
 

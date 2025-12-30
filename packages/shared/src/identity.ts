@@ -47,8 +47,7 @@ export const CONTENT_COMPONENT_SYMBOL = Symbol.for("aidk.contentComponent");
  */
 export function hasSymbol(value: unknown, symbol: symbol): boolean {
   return (
-    typeof value === "function" &&
-    (value as unknown as Record<symbol, unknown>)[symbol] === true
+    typeof value === "function" && (value as unknown as Record<symbol, unknown>)[symbol] === true
   );
 }
 

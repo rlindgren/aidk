@@ -36,9 +36,7 @@ export function normalizeModelInput<TConfig extends ModelConfig = ModelConfig>(
   const resolvedModel = mergedInput.model ?? config.model;
 
   if (!resolvedModel) {
-    throw new Error(
-      "Model identifier must be provided via input.model or configuration",
-    );
+    throw new Error("Model identifier must be provided via input.model or configuration");
   }
 
   if (!mergedInput.messages) {
@@ -59,9 +57,7 @@ export function normalizeModelInput<TConfig extends ModelConfig = ModelConfig>(
   return normalized;
 }
 
-export function resolveTools(
-  toolReferences: ModelToolReference[],
-): NormalizedModelTool[] {
+export function resolveTools(toolReferences: ModelToolReference[]): NormalizedModelTool[] {
   const resolved: NormalizedModelTool[] = [];
 
   for (const ref of toolReferences) {
@@ -85,9 +81,7 @@ export function resolveTools(
         // If not found in registry, we can't resolve it here.
         // It might be resolved later or ignored.
         // For now, we warn.
-        console.warn(
-          `Tool reference '${ref}' not found in registry during normalization.`,
-        );
+        console.warn(`Tool reference '${ref}' not found in registry during normalization.`);
       }
       continue;
     }
@@ -110,17 +104,11 @@ function isExecutableTool(obj: any): obj is ExecutableTool {
 
 function isToolMetadata(obj: any): obj is ToolMetadata {
   return (
-    obj &&
-    typeof obj === "object" &&
-    "name" in obj &&
-    "description" in obj &&
-    "parameters" in obj
+    obj && typeof obj === "object" && "name" in obj && "description" in obj && "parameters" in obj
   );
 }
 
-export function normalizeMessages(
-  messages: string | string[] | Message[],
-): Message[] {
+export function normalizeMessages(messages: string | string[] | Message[]): Message[] {
   if (typeof messages === "string") {
     return [
       {

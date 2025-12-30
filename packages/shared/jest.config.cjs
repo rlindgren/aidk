@@ -1,13 +1,16 @@
 module.exports = {
-  displayName: 'aidk-shared',
-  preset: '../../jest.preset.js',  // Shared preset
-  testEnvironment: 'node',
+  displayName: "aidk-shared",
+  preset: "../../jest.preset.js", // Shared preset
+  testEnvironment: "node",
   transform: {
-    '^.+\\.tsx?$': ['ts-jest', {
-      tsconfig: '<rootDir>/tsconfig.spec.json',
-      useESM: true,
-    }],
+    "^.+\\.tsx?$": [
+      "ts-jest",
+      {
+        tsconfig: "<rootDir>/tsconfig.spec.json",
+        useESM: true,
+      },
+    ],
   },
-  testMatch: ['**/*.spec.ts', '**/*.spec.tsx'],
-  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
+  testMatch: ["**/*.spec.ts", "**/*.spec.tsx"],
+  moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json"],
 };

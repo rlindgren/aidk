@@ -21,11 +21,7 @@ export function waitForEvent<T = unknown>(
   return new Promise((resolve, reject) => {
     const timeout = setTimeout(() => {
       emitter.removeListener(eventName, handler);
-      reject(
-        new Error(
-          `Timeout waiting for event '${eventName}' after ${timeoutMs}ms`,
-        ),
-      );
+      reject(new Error(`Timeout waiting for event '${eventName}' after ${timeoutMs}ms`));
     }, timeoutMs);
 
     const handler = (data: T) => {
@@ -82,11 +78,7 @@ export async function waitFor(
     message?: string;
   } = {},
 ): Promise<void> {
-  const {
-    timeout = 5000,
-    interval = 50,
-    message = "Condition not met",
-  } = options;
+  const { timeout = 5000, interval = 50, message = "Condition not met" } = options;
   const startTime = Date.now();
 
   while (Date.now() - startTime < timeout) {
@@ -281,9 +273,7 @@ export function parseSSEBuffer(buffer: string): Array<{
   id?: string;
 }> {
   const events = buffer.split("\n\n");
-  return events
-    .map((e) => parseSSEEvent(e))
-    .filter((e): e is NonNullable<typeof e> => e !== null);
+  return events.map((e) => parseSSEEvent(e)).filter((e): e is NonNullable<typeof e> => e !== null);
 }
 
 /**

@@ -1,8 +1,8 @@
-import { Component, Input } from '@angular/core';
-import type { CodeBlock } from 'aidk-client';
+import { Component, Input } from "@angular/core";
+import type { CodeBlock } from "aidk-client";
 
 @Component({
-  selector: 'aidk-code-block',
+  selector: "aidk-code-block",
   standalone: true,
   template: `
     <div>
@@ -20,4 +20,3 @@ import type { CodeBlock } from 'aidk-client';
 export class CodeBlockComponent {
   @Input() block!: CodeBlock;
 }
-

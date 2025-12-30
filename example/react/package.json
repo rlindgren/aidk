@@ -12,9 +12,9 @@
   },
   "dependencies": {
     "aidk-react": "link:../../packages/react",
+    "marked": "^17.0.0",
     "react": "^19.2.1",
-    "react-dom": "^19.2.1",
-    "marked": "^17.0.0"
+    "react-dom": "^19.2.1"
   },
   "devDependencies": {
     "@types/react": "^19.2.7",
@@ -27,4 +27,3 @@
     "vite": "^5.2.0"
   }
 }
-

@@ -29,6 +29,7 @@ Each execution runs through discrete **ticks**. Each tick has five phases:
 ### Phase 1: Tick Start
 
 Before rendering begins:
+
 - Check abort signals
 - Call `onTickStart` lifecycle hooks on all mounted components
 - Components can react to the previous model response
@@ -49,6 +50,7 @@ class MyAgent extends Component {
 ### Phase 2: Compilation
 
 The JSX tree renders to a compiled structure:
+
 - Components execute their `render()` methods
 - The fiber reconciler tracks component instances across ticks
 - State persists—components aren't recreated each tick
@@ -76,6 +78,7 @@ render(com: COM, state: TickState) {
 ### Phase 3: Model Execution
 
 The compiled context goes to the model:
+
 - Sections become system/user messages
 - Timeline becomes conversation history
 - Tools become function definitions
@@ -86,6 +89,7 @@ Streaming is native—chunks flow as events through the execution handle.
 ### Phase 4: Tool Execution
 
 If the model calls tools:
+
 - Tools execute **in parallel** (not sequentially)
 - Each tool can require confirmation independently
 - Tool results feed back into the execution state
@@ -114,6 +118,7 @@ const CalculatorTool = createTool({
 ### Phase 5: Tick End
 
 After the model responds:
+
 - Call `onTickEnd` lifecycle hooks
 - Resolve tick control (should we continue or stop?)
 - Components can request stop/continue
@@ -137,14 +142,14 @@ onTickEnd(com, state) {
 
 ### Prompt Rendering vs. Runtime Execution
 
-| Prompt Rendering | AIDK Runtime |
-|------------------|--------------|
-| One-shot context generation | Continuous tick loop |
-| Stateless between calls | Persistent component state |
-| External loop for multi-turn | Built-in tick iteration |
-| Callbacks for tool results | Render cycle with results |
-| Template interpolation | Fiber-based reconciliation |
-| Hope the output is right | React to what actually happened |
+| Prompt Rendering             | AIDK Runtime                    |
+| ---------------------------- | ------------------------------- |
+| One-shot context generation  | Continuous tick loop            |
+| Stateless between calls      | Persistent component state      |
+| External loop for multi-turn | Built-in tick iteration         |
+| Callbacks for tool results   | Render cycle with results       |
+| Template interpolation       | Fiber-based reconciliation      |
+| Hope the output is right     | React to what actually happened |
 
 ### Your Code Runs Between Model Calls
 
@@ -232,10 +237,10 @@ Run parallel executions:
 
 ```tsx
 // Fork: Child inherits parent's abort signal
-<Fork agent={<ResearchAgent />} waitUntilComplete={true} />
+<Fork root={<ResearchAgent />} waitUntilComplete={true} />
 
 // Spawn: Independent execution
-<Spawn agent={<BackgroundLogger />} />
+<Spawn root={<BackgroundLogger />} />
 ```
 
 ### Messages During Execution

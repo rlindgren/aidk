@@ -1,5 +1,5 @@
 /* Engine Example - Angular Frontend Styles */
-@import 'aidk-angular/markdown.css';
+@import "aidk-angular/markdown.css";
 
 :root {
   --color-bg: #0f0f0f;
@@ -26,7 +26,11 @@
 }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
   background: var(--color-bg);
   color: var(--color-text);
   line-height: 1.5;
@@ -49,7 +53,8 @@ button:disabled {
   cursor: not-allowed;
 }
 
-input, textarea {
+input,
+textarea {
   font-family: inherit;
   font-size: 14px;
   background: var(--color-surface);
@@ -60,12 +65,14 @@ input, textarea {
   width: 100%;
 }
 
-input:focus, textarea:focus {
+input:focus,
+textarea:focus {
   outline: none;
   border-color: var(--color-primary);
 }
 
-input::placeholder, textarea::placeholder {
+input::placeholder,
+textarea::placeholder {
   color: var(--color-text-muted);
 }
 
@@ -95,4 +102,3 @@ input[type="checkbox"] {
   accent-color: var(--color-primary);
   cursor: pointer;
 }
-

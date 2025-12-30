@@ -11,9 +11,9 @@ pnpm add aidk aidk-kernel
 ## Usage
 
 ```tsx
-import { 
-  EngineComponent, 
-  ContextObjectModel, 
+import {
+  EngineComponent,
+  ContextObjectModel,
   TickState,
   Section,
   Message,
@@ -71,4 +71,3 @@ const result = await engine.execute(
 ## Documentation
 
 See the [full documentation](https://your-org.github.io/aidk).
-

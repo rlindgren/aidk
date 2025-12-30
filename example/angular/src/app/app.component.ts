@@ -1,11 +1,11 @@
-import { Component, NgZone } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { ChatComponent } from './components/chat.component';
-import { TodoListComponent } from './components/todo-list.component';
-import { EngineService } from 'aidk-angular';
+import { Component, NgZone } from "@angular/core";
+import { CommonModule } from "@angular/common";
+import { ChatComponent } from "./components/chat.component";
+import { TodoListComponent } from "./components/todo-list.component";
+import { EngineService } from "aidk-angular";
 
 @Component({
-  selector: 'app-root',
+  selector: "app-root",
   standalone: true,
   imports: [CommonModule, ChatComponent, TodoListComponent],
   template: `
@@ -34,7 +34,8 @@ import { EngineService } from 'aidk-angular';
       </footer>
     </div>
   `,
-  styles: [`
+  styles: [
+    `
     .app {
       height: 100vh;
       display: flex;
@@ -106,26 +107,25 @@ import { EngineService } from 'aidk-angular';
         grid-template-rows: 1fr 1fr;
       }
     }
-  `],
+  `,
+  ],
 })
 export class AppComponent {
-  constructor(
-    private engineService: EngineService
-  ) {
+  constructor(private engineService: EngineService) {
     // Set userId in constructor so it's available before child ngOnInit hooks run
     // In a real app, this would come from auth service after login
     this.engineService.updateConfig({
-      userId: 'demo-user',
+      userId: "demo-user",
       callbacks: {
-        onConnect: () => console.log('Connected!'),
-        onDisconnect: (reason) => console.log('Disconnected:', reason),
+        onConnect: () => console.log("Connected!"),
+        onDisconnect: (reason) => console.log("Disconnected:", reason),
         onReconnecting: (attempt, delay) => console.log(`Retry ${attempt} in ${delay}ms`),
         onReconnected: (attempts) => console.log(`Reconnected after ${attempts} attempts`),
-        onReconnectFailed: (attempts) => console.log('Gave up after', attempts),
-        onError: (error) => console.error('SSE error:', error),
-        onOffline: () => console.log('Browser went offline'),
-        onOnline: () => console.log('Browser back online'),
-        onStateChange: (state, info) => console.log('State changed:', state, info),
+        onReconnectFailed: (attempts) => console.log("Gave up after", attempts),
+        onError: (error) => console.error("SSE error:", error),
+        onOffline: () => console.log("Browser went offline"),
+        onOnline: () => console.log("Browser back online"),
+        onStateChange: (state, info) => console.log("State changed:", state, info),
       },
     });
   }

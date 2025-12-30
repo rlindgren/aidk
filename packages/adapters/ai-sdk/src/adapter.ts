@@ -79,8 +79,7 @@ export type ToolResultOutput =
   | {
       type: "content";
       value: Array<
-        | { type: "text"; text: string }
-        | { type: "media"; data: string; mediaType: string }
+        { type: "text"; text: string } | { type: "media"; data: string; mediaType: string }
       >;
     };
 
@@ -166,8 +165,7 @@ export function convertToolsToToolSet(tools?: ModelToolReference[]): ToolSet {
       const toolDef = toolRef as ExecutableTool;
 
       const libraryOptions = toolDef.metadata?.libraryOptions || {};
-      const libraryProviderOptions =
-        libraryOptions["ai-sdk"]?.providerOptions || {};
+      const libraryProviderOptions = libraryOptions["ai-sdk"]?.providerOptions || {};
       const providerOptions = mergeDeep<ProviderToolOptions>(
         {},
         toolDef.metadata.providerOptions || {},
@@ -185,8 +183,7 @@ export function convertToolsToToolSet(tools?: ModelToolReference[]): ToolSet {
     } else if ("name" in toolRef && "parameters" in toolRef) {
       const toolDef = toolRef as ToolDefinition;
       const libraryOptions = toolDef.libraryOptions || {};
-      const libraryProviderOptions =
-        libraryOptions["ai-sdk"]?.providerOptions || {};
+      const libraryProviderOptions = libraryOptions["ai-sdk"]?.providerOptions || {};
       const providerOptions = mergeDeep<ProviderToolOptions>(
         {},
         toolDef.providerOptions || {},
@@ -225,12 +222,7 @@ export function convertToolsToToolSet(tools?: ModelToolReference[]): ToolSet {
  * ```
  */
 export function createAiSdkModel(config: AiSdkAdapterConfig): AiSdkAdapter {
-  const {
-    model,
-    system: defaultSystem,
-    tools: defaultTools,
-    ...defaultParams
-  } = config;
+  const { model, system: defaultSystem, tools: defaultTools, ...defaultParams } = config;
 
   return createLanguageModel<
     ModelInput,
@@ -280,24 +272,15 @@ export function createAiSdkModel(config: AiSdkAdapterConfig): AiSdkAdapter {
     transformers: {
       prepareInput: (input) => {
         const { libraryOptions = {}, providerOptions = {}, ...params } = input;
-        const sdkOptions =
-          (libraryOptions as LibraryGenerationOptions["ai-sdk"]) || {};
-        const {
-          tools: adapterTools,
-          system: adapterSystem,
-          ...restOfLibraryOptions
-        } = sdkOptions;
+        const sdkOptions = (libraryOptions as LibraryGenerationOptions["ai-sdk"]) || {};
+        const { tools: adapterTools, system: adapterSystem, ...restOfLibraryOptions } = sdkOptions;
 
         // Ensure messages is Message[]
         const messages = Array.isArray(params.messages)
           ? params.messages.filter((m): m is Message => typeof m !== "string")
           : [];
 
-        const aiSdkMessages = toAiSdkMessages(
-          messages,
-          adapterSystem,
-          defaultSystem,
-        );
+        const aiSdkMessages = toAiSdkMessages(messages, adapterSystem, defaultSystem);
 
         // Merge tools: default -> adapter -> input
         const inputToolSet = convertToolsToToolSet(params.tools);
@@ -314,10 +297,8 @@ export function createAiSdkModel(config: AiSdkAdapterConfig): AiSdkAdapter {
           temperature: params.temperature ?? defaultParams.temperature,
           maxOutputTokens: params.maxTokens ?? defaultParams.maxTokens,
           topP: params.topP ?? defaultParams.topP,
-          frequencyPenalty:
-            params.frequencyPenalty ?? defaultParams.frequencyPenalty,
-          presencePenalty:
-            params.presencePenalty ?? defaultParams.presencePenalty,
+          frequencyPenalty: params.frequencyPenalty ?? defaultParams.frequencyPenalty,
+          presencePenalty: params.presencePenalty ?? defaultParams.presencePenalty,
           ...restOfLibraryOptions,
           providerOptions: {
             ...defaultParams.providerOptions,
@@ -348,9 +329,7 @@ export function createAiSdkModel(config: AiSdkAdapterConfig): AiSdkAdapter {
                 name: toolCall.toolName,
                 input: (toolCall as any).args || (toolCall as any).input || {},
                 metadata: (toolCall as any).providerMetadata,
-                executedBy: (toolCall as any).providerExecuted
-                  ? "provider"
-                  : undefined,
+                executedBy: (toolCall as any).providerExecuted ? "provider" : undefined,
               };
             }) || [],
           stopReason: toStopReason(output.finishReason),
@@ -474,8 +453,7 @@ export function createAiSdkModel(config: AiSdkAdapterConfig): AiSdkAdapter {
                     inputTokens: chunk.usage.promptTokens ?? 0,
                     outputTokens: chunk.usage.completionTokens ?? 0,
                     totalTokens:
-                      (chunk.usage.promptTokens ?? 0) +
-                      (chunk.usage.completionTokens ?? 0),
+                      (chunk.usage.promptTokens ?? 0) + (chunk.usage.completionTokens ?? 0),
                   }
                 : undefined,
               stopReason: toStopReason(chunk.finishReason),
@@ -628,9 +606,7 @@ export function toAiSdkMessages(
     } else if (msg.role === "tool") {
       // Tool role messages - extract tool_result blocks
       const toolResults = msg.content
-        .filter(
-          (block): block is ToolResultBlock => block.type === "tool_result",
-        )
+        .filter((block): block is ToolResultBlock => block.type === "tool_result")
         .map((block) => ({
           type: "tool-result" as const,
           toolCallId: block.toolUseId,
@@ -682,10 +658,7 @@ export function toAiSdkMessages(
  * - { type: 'error-json', value: JSONValue }
  * - { type: 'content', value: Array<{ type: 'text', text: string } | { type: 'media', data: string, mediaType: string }> }
  */
-export function mapToolResultContent(
-  content: ContentBlock[],
-  isError?: boolean,
-): ToolResultOutput {
+export function mapToolResultContent(content: ContentBlock[], isError?: boolean): ToolResultOutput {
   if (!content || content.length === 0) {
     return isError
       ? { type: "error-text" as const, value: "Tool execution failed" }
@@ -711,8 +684,7 @@ export function mapToolResultContent(
 
   // Multiple blocks → use 'content' type with array
   const value: Array<
-    | { type: "text"; text: string }
-    | { type: "media"; data: string; mediaType: string }
+    { type: "text"; text: string } | { type: "media"; data: string; mediaType: string }
   > = content.map((block) => {
     if (block.type === "text") {
       return { type: "text" as const, text: (block as TextBlock).text };
@@ -754,9 +726,7 @@ export function mapToolResultContent(
 }
 
 export function fromAiSdkMessages(
-  messages:
-    | GenerateTextResult<ToolSet, unknown>["response"]["messages"]
-    | undefined,
+  messages: GenerateTextResult<ToolSet, unknown>["response"]["messages"] | undefined,
 ): Message[] {
   if (!messages || messages.length === 0) {
     return []; // Return empty array - no fake empty assistant messages
@@ -776,14 +746,7 @@ export function fromAiSdkMessages(
 
 export function mapContentBlocksToAiSdkContent(
   content: ContentBlock[],
-): (
-  | TextPart
-  | ImagePart
-  | FilePart
-  | ReasoningUIPart
-  | ToolCallPart
-  | ToolResultPart
-)[] {
+): (TextPart | ImagePart | FilePart | ReasoningUIPart | ToolCallPart | ToolResultPart)[] {
   return content
     .map((block) => mapContentBlockToAiSdkPart(block))
     .filter((part): part is NonNullable<typeof part> => part !== undefined);
@@ -791,14 +754,7 @@ export function mapContentBlocksToAiSdkContent(
 
 export function mapContentBlockToAiSdkPart(
   block: ContentBlock,
-):
-  | TextPart
-  | ImagePart
-  | FilePart
-  | ReasoningUIPart
-  | ToolCallPart
-  | ToolResultPart
-  | undefined {
+): TextPart | ImagePart | FilePart | ReasoningUIPart | ToolCallPart | ToolResultPart | undefined {
   switch (block.type) {
     case "text":
       return { type: "text", text: block.text };
@@ -1012,13 +968,7 @@ export function mapAiSdkContentToContentBlocks(
 }
 
 export function mapAiSdkPartToContentBlock(
-  part:
-    | TextPart
-    | ImagePart
-    | FilePart
-    | ReasoningUIPart
-    | ToolCallPart
-    | ToolResultPart,
+  part: TextPart | ImagePart | FilePart | ReasoningUIPart | ToolCallPart | ToolResultPart,
 ): ContentBlock | undefined {
   switch (part.type) {
     case "text":
@@ -1038,10 +988,7 @@ export function mapAiSdkPartToContentBlock(
             : { type: "base64", data: imageData },
           mimeType: part.mediaType,
         } as ImageBlock;
-      } else if (
-        imageData instanceof Uint8Array ||
-        Buffer.isBuffer(imageData)
-      ) {
+      } else if (imageData instanceof Uint8Array || Buffer.isBuffer(imageData)) {
         return {
           type: "image",
           source: bufferToBase64Source(imageData, part.mediaType),
@@ -1085,8 +1032,7 @@ export function mapAiSdkPartToContentBlock(
         toolUseId: part.toolCallId,
         name: part.toolName,
         content: mapToolResultToContentBlocks(output),
-        isError:
-          typeof output === "object" && output !== null && "error" in output,
+        isError: typeof output === "object" && output !== null && "error" in output,
       } as ToolResultBlock;
     }
 
@@ -1139,9 +1085,7 @@ export function mapToolResultToContentBlocks(result: any): ContentBlock[] {
   }
 
   // Object result → JSON block
-  return [
-    { type: "json", text: JSON.stringify(result), data: result } as JsonBlock,
-  ];
+  return [{ type: "json", text: JSON.stringify(result), data: result } as JsonBlock];
 }
 
 // ============================================================================
@@ -1213,9 +1157,7 @@ export function messagesToEngineInput(messages: Message[]): EngineInput {
  * Convert AI SDK messages directly to EngineInput.
  * Convenience function that chains fromAiSdkInputMessages → messagesToEngineInput.
  */
-export function aiSdkMessagesToEngineInput(
-  messages?: ModelMessage[],
-): EngineInput {
+export function aiSdkMessagesToEngineInput(messages?: ModelMessage[]): EngineInput {
   if (!messages || messages.length === 0) {
     return { timeline: [], sections: {} };
   }
@@ -1261,10 +1203,7 @@ export function toAiSdkCompiledInput(
         }
       } else if (msg.role === "tool") {
         const toolResults = msg.content
-          .filter(
-            (block: any): block is ToolResultBlock =>
-              block.type === "tool_result",
-          )
+          .filter((block: any): block is ToolResultBlock => block.type === "tool_result")
           .map((block) => ({
             type: "tool-result" as const,
             toolCallId: block.toolUseId,

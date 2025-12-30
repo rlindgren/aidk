@@ -1,18 +1,21 @@
 module.exports = {
-  displayName: 'aidk-server',
-  preset: '../../jest.preset.js',  // Shared preset
-  testEnvironment: 'node',
+  displayName: "aidk-server",
+  preset: "../../jest.preset.js", // Shared preset
+  testEnvironment: "node",
   transform: {
-    '^.+\\.tsx?$': ['ts-jest', {
-      tsconfig: '<rootDir>/tsconfig.spec.json',
-      useESM: true,
-    }],
+    "^.+\\.tsx?$": [
+      "ts-jest",
+      {
+        tsconfig: "<rootDir>/tsconfig.spec.json",
+        useESM: true,
+      },
+    ],
   },
   moduleNameMapper: {
     // Map internal packages for tests
-    '^aidk$': '<rootDir>/src/index.ts',
-    '^aidk/(.*)$': '<rootDir>/src/$1'
+    "^aidk$": "<rootDir>/src/index.ts",
+    "^aidk/(.*)$": "<rootDir>/src/$1",
   },
-  testMatch: ['**/*.spec.ts', '**/*.spec.tsx'],
-  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
+  testMatch: ["**/*.spec.ts", "**/*.spec.tsx"],
+  moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json"],
 };

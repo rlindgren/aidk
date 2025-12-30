@@ -88,12 +88,7 @@ export {
 } from "./execution-handler";
 
 // Channel abstraction (uses core ChannelClient internally)
-export {
-  defineChannel,
-  type Channel,
-  type ChannelDefinition,
-  type type,
-} from "./channel";
+export { defineChannel, type Channel, type ChannelDefinition, type type } from "./channel";
 
 // Re-export ChannelEvent from core
 export type { ChannelEvent } from "./core";

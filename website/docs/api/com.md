@@ -34,6 +34,7 @@ com.addMessage(
 ```
 
 **Parameters:**
+
 - `message: Message` - The message to add
 - `options.tags?: TimelineTag[]` - Optional categorization tags
 - `options.visibility?: TimelineVisibility` - `'visible'` | `'hidden'` | `'collapsed'`
@@ -80,6 +81,7 @@ com.addSection({
 ```
 
 Sections with the same ID are merged:
+
 - Strings: concatenated with newline
 - Arrays: concatenated
 - Objects: shallow merged
@@ -114,6 +116,7 @@ com.addTool(myTool);
 ```
 
 **Behavior:**
+
 - Stores the executable tool for execution
 - Converts Zod schemas to JSON Schema for provider compatibility
 - Emits `tool:registered` event
@@ -168,6 +171,7 @@ com.addToolDefinition({
 COM-level state shared across all components.
 
 > **State patterns by context**:
+>
 > - **Class components**: Use `comState` (reactive, class property)
 > - **Functional components**: Use `useComState` (reactive, hook)
 > - **Tools via `createTool`**: Use `com.setState`/`com.getState` (direct COM access)

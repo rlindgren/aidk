@@ -5,12 +5,12 @@
     "outDir": "dist",
     "tsBuildInfoFile": "dist/.tsbuildinfo",
     "composite": true,
-    "lib": ["ES2022", "DOM"],
+    "lib": ["ES2022", "DOM"]
   },
   "references": [
     { "path": "../shared" },
     { "path": "./tsconfig.build.json" },
     { "path": "./tsconfig.spec.json" }
   ],
-  "include": [],
+  "include": []
 }

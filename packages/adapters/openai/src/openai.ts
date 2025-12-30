@@ -26,9 +26,7 @@ const logger = Logger.for("OpenAIAdapter");
 /**
  * Factory function for creating OpenAI model adapter using createModel
  */
-export function createOpenAIModel(
-  config: OpenAIAdapterConfig = {},
-): OpenAIAdapter {
+export function createOpenAIModel(config: OpenAIAdapterConfig = {}): OpenAIAdapter {
   const client = config.client ?? new OpenAI(buildClientOptions(config));
 
   return createLanguageModel<
@@ -118,9 +116,7 @@ export function buildClientOptions(config: OpenAIAdapterConfig): ClientOptions {
  * OpenAI messages (one per tool result), as OpenAI requires separate
  * role='tool' messages for each tool call response.
  */
-export function toOpenAIMessages(
-  message: Message,
-): ChatCompletionMessageParam[] {
+export function toOpenAIMessages(message: Message): ChatCompletionMessageParam[] {
   const content: any[] = [];
   const tool_calls: any[] = [];
   const toolResultMessages: ChatCompletionMessageParam[] = [];
@@ -188,11 +184,7 @@ export function toOpenAIMessages(
   }
 
   // If this message only contains tool_results, return those
-  if (
-    toolResultMessages.length > 0 &&
-    content.length === 0 &&
-    tool_calls.length === 0
-  ) {
+  if (toolResultMessages.length > 0 && content.length === 0 && tool_calls.length === 0) {
     return toolResultMessages;
   }
 
@@ -335,11 +327,7 @@ async function processOutput(output: ChatCompletion): Promise<ModelOutput> {
   const openaiMessage = choice?.message;
 
   if (!openaiMessage) {
-    throw new AdapterError(
-      "openai",
-      "No message in OpenAI response",
-      "ADAPTER_RESPONSE",
-    );
+    throw new AdapterError("openai", "No message in OpenAI response", "ADAPTER_RESPONSE");
   }
 
   const content: ContentBlock[] = [];
@@ -404,8 +392,7 @@ async function processOutput(output: ChatCompletion): Promise<ModelOutput> {
       outputTokens: output.usage?.completion_tokens ?? 0,
       totalTokens: output.usage?.total_tokens ?? 0,
       reasoningTokens: 0,
-      cachedInputTokens:
-        output.usage?.prompt_tokens_details?.cached_tokens ?? 0,
+      cachedInputTokens: output.usage?.prompt_tokens_details?.cached_tokens ?? 0,
     },
     raw: output,
   };
@@ -469,21 +456,12 @@ async function processStreamChunks(
   chunks: ChatCompletionChunk[] | StreamChunk[],
 ): Promise<ModelOutput> {
   if (chunks.length === 0) {
-    throw new AdapterError(
-      "openai",
-      "No chunks to process",
-      "ADAPTER_RESPONSE",
-    );
+    throw new AdapterError("openai", "No chunks to process", "ADAPTER_RESPONSE");
   }
 
   // Check if chunks are StreamChunks (from engine) or ChatCompletionChunks (raw from provider)
   const isStreamChunk = (chunk: any): chunk is StreamChunk => {
-    return (
-      chunk &&
-      typeof chunk === "object" &&
-      "type" in chunk &&
-      !("choices" in chunk)
-    );
+    return chunk && typeof chunk === "object" && "type" in chunk && !("choices" in chunk);
   };
 
   // If StreamChunks, we need to reconstruct from raw data
@@ -491,9 +469,7 @@ async function processStreamChunks(
     // Chunks are StreamChunks - extract raw ChatCompletionChunk from raw property
     const openaiChunks = chunks
       .map((c) => (c as StreamChunk).raw)
-      .filter(
-        (c) => c && typeof c === "object" && "choices" in c,
-      ) as ChatCompletionChunk[];
+      .filter((c) => c && typeof c === "object" && "choices" in c) as ChatCompletionChunk[];
 
     if (openaiChunks.length === 0) {
       throw new AdapterError(
@@ -541,8 +517,7 @@ async function processStreamChunks(
                 ...existing.function,
                 ...toolCallDelta.function,
                 arguments:
-                  (existing.function?.arguments || "") +
-                  (toolCallDelta.function.arguments || ""),
+                  (existing.function?.arguments || "") + (toolCallDelta.function.arguments || ""),
               }
             : existing.function,
         });
@@ -611,8 +586,7 @@ async function processStreamChunks(
       outputTokens: usageChunk.usage?.completion_tokens ?? 0,
       totalTokens: usageChunk.usage?.total_tokens ?? 0,
       reasoningTokens: 0,
-      cachedInputTokens:
-        usageChunk.usage?.prompt_tokens_details?.cached_tokens ?? 0,
+      cachedInputTokens: usageChunk.usage?.prompt_tokens_details?.cached_tokens ?? 0,
     },
     raw: openaiChunks,
   };
@@ -647,14 +621,8 @@ async function* executeStream(
     "\n🔧 [OpenAI] executeStream - tools:",
     input.tools?.map((t: any) => t.function.name),
   );
-  logger.debug(
-    "🔧 [OpenAI] executeStream - message count:",
-    input.messages.length,
-  );
-  logger.debug(
-    "🔧 [OpenAI] executeStream - full request:",
-    JSON.stringify(input, null, 2),
-  );
+  logger.debug("🔧 [OpenAI] executeStream - message count:", input.messages.length);
+  logger.debug("🔧 [OpenAI] executeStream - full request:", JSON.stringify(input, null, 2));
 
   const stream = await client.chat.completions.create({
     ...input,

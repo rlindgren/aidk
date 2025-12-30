@@ -68,22 +68,15 @@ export class SSETransport implements ChannelTransport {
     metadata?: ConnectionMetadata & { res?: Response; channels?: string[] },
   ): Promise<void> {
     if (!metadata?.res) {
-      console.warn(
-        `SSE connect called without Response object for connection ${connectionId}`,
-      );
+      console.warn(`SSE connect called without Response object for connection ${connectionId}`);
       return;
     }
 
     const { res, channels = [], ...restMetadata } = metadata;
 
     // Check global connection limit
-    if (
-      this.config.maxConnections &&
-      this.connections.size >= this.config.maxConnections
-    ) {
-      this.log(
-        `Connection rejected: max connections (${this.config.maxConnections}) reached`,
-      );
+    if (this.config.maxConnections && this.connections.size >= this.config.maxConnections) {
+      this.log(`Connection rejected: max connections (${this.config.maxConnections}) reached`);
       res.status(503).json({
         error: "Too many connections",
         message: "Server connection limit reached. Please try again later.",
@@ -93,17 +86,14 @@ export class SSETransport implements ChannelTransport {
 
     // Check per-user connection limit
     if (this.config.maxConnectionsPerUser && restMetadata.userId) {
-      const userConnections = this.countUserConnections(
-        restMetadata.userId as string,
-      );
+      const userConnections = this.countUserConnections(restMetadata.userId as string);
       if (userConnections >= this.config.maxConnectionsPerUser) {
         this.log(
           `Connection rejected: user ${restMetadata.userId} at max connections (${this.config.maxConnectionsPerUser})`,
         );
         res.status(429).json({
           error: "Too many connections",
-          message:
-            "You have too many active connections. Please close some and try again.",
+          message: "You have too many active connections. Please close some and try again.",
         });
         return;
       }
@@ -316,9 +306,7 @@ export class SSETransport implements ChannelTransport {
    */
   async send(event: ChannelEvent): Promise<void> {
     const target = event.target;
-    const sourceConnectionId = event.metadata?.["sourceConnectionId"] as
-      | string
-      | undefined;
+    const sourceConnectionId = event.metadata?.["sourceConnectionId"] as string | undefined;
 
     let targetConnections: Set<string>;
 
@@ -352,10 +340,7 @@ export class SSETransport implements ChannelTransport {
       const connection = this.connections.get(connectionId);
       if (!connection) continue;
 
-      if (
-        connection.channels.size > 0 &&
-        !connection.channels.has(event.channel)
-      ) {
+      if (connection.channels.size > 0 && !connection.channels.has(event.channel)) {
         continue;
       }
 

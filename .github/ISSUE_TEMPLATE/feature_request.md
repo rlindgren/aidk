@@ -21,4 +21,3 @@ Any alternative solutions or workarounds you've considered.
 ## Additional Context
 
 Any other context, mockups, or examples.
-

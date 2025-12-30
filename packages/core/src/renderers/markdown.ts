@@ -301,9 +301,7 @@ export class MarkdownRenderer extends Renderer {
 
     // Build header row
     if (headers.length > 0) {
-      const headerCells = headers.map((h, i) =>
-        String(h || "").padEnd(colWidths[i]),
-      );
+      const headerCells = headers.map((h, i) => String(h || "").padEnd(colWidths[i]));
       lines.push(`| ${headerCells.join(" | ")} |`);
 
       // Build separator row with alignment
@@ -323,9 +321,7 @@ export class MarkdownRenderer extends Renderer {
 
     // Build data rows
     for (const row of rows) {
-      const cells = row.map((cell, i) =>
-        String(cell || "").padEnd(colWidths[i] || 3),
-      );
+      const cells = row.map((cell, i) => String(cell || "").padEnd(colWidths[i] || 3));
       lines.push(`| ${cells.join(" | ")} |`);
     }
 
@@ -394,10 +390,7 @@ export class MarkdownRenderer extends Renderer {
     };
   }
 
-  protected applyBlockLevelFormatting(
-    block: SemanticContentBlock,
-    formattedText: string,
-  ): string {
+  protected applyBlockLevelFormatting(block: SemanticContentBlock, formattedText: string): string {
     // Apply heading prefix if semantic type is heading
     if (block.semantic?.type === "heading") {
       const level = block.semantic.level || 1;
@@ -425,8 +418,7 @@ export class MarkdownRenderer extends Renderer {
 
       case "json":
         const jsonBlock = block as any;
-        const jsonText =
-          jsonBlock.text || JSON.stringify(jsonBlock.data || {}, null, 2);
+        const jsonText = jsonBlock.text || JSON.stringify(jsonBlock.data || {}, null, 2);
         return [
           {
             ...jsonBlock,
@@ -447,9 +439,7 @@ export class MarkdownRenderer extends Renderer {
           const actor = ua.actor || "User";
           // Capitalize "user" to "User" (case-insensitive check)
           const capitalizedActor =
-            typeof actor === "string" && actor.toLowerCase() === "user"
-              ? "User"
-              : actor;
+            typeof actor === "string" && actor.toLowerCase() === "user" ? "User" : actor;
           parts.push(capitalizedActor);
           if (ua.action) parts.push(ua.action);
           if (ua.target) parts.push(`on ${ua.target}`);
@@ -476,10 +466,8 @@ export class MarkdownRenderer extends Renderer {
         if (!text || text.trim() === "") {
           const entityPart = sc.entity || "entity";
           const fieldPart = sc.field ? `.${sc.field}` : "";
-          const fromPart =
-            sc.from !== undefined ? JSON.stringify(sc.from) : "undefined";
-          const toPart =
-            sc.to !== undefined ? JSON.stringify(sc.to) : "undefined";
+          const fromPart = sc.from !== undefined ? JSON.stringify(sc.from) : "undefined";
+          const toPart = sc.to !== undefined ? JSON.stringify(sc.to) : "undefined";
           text = `${entityPart}${fieldPart}: ${fromPart} → ${toPart}`;
         }
         return [{ ...sc, type: "text", text } as TextBlock];

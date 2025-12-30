@@ -1,45 +1,21 @@
-import type {
-  Middleware,
-  MiddlewarePipeline,
-  Procedure,
-  HandleFactory,
-} from "aidk-kernel";
+import type { Middleware, MiddlewarePipeline, Procedure, HandleFactory } from "aidk-kernel";
 import { Logger } from "aidk-kernel";
 import { Context } from "../context";
 import type { EngineContext } from "../types";
-import {
-  createEngineProcedure,
-  applyRegistryMiddleware,
-  isProcedure,
-} from "../procedure";
+import { createEngineProcedure, applyRegistryMiddleware, isProcedure } from "../procedure";
 import { EventEmitter } from "node:events";
 import { randomUUID } from "node:crypto";
 import type { ModelInstance, ModelInput, ModelOutput } from "../model/model";
 import { type ToolClass } from "../tool/tool";
 import { toolRegistry, modelRegistry } from "../utils/registry";
-import type {
-  TickState,
-  ComponentDefinition,
-} from "../component/component";
-import type {
-  COMInput,
-  EngineInput,
-} from "../com/types";
+import type { TickState, ComponentDefinition } from "../component/component";
+import type { COMInput, EngineInput } from "../com/types";
 import { COM } from "../com/object-model";
 import type { ToolExecutionOptions } from "../types";
-import {
-  ToolExecutionType,
-  type ExecutableTool,
-  type ToolConfirmationResult,
-} from "../tool/tool";
+import { ToolExecutionType, type ExecutableTool, type ToolConfirmationResult } from "../tool/tool";
 import type { AgentToolCall, AgentToolResult, StreamChunk } from "aidk-shared";
 import { ToolExecutor } from "./tool-executor";
-import {
-  type JSX,
-  createElement,
-  Fragment,
-  ensureElement,
-} from "../jsx/jsx-runtime";
+import { type JSX, createElement, Fragment, ensureElement } from "../jsx/jsx-runtime";
 import { MarkdownRenderer, XMLRenderer } from "../renderers";
 import { type EngineStreamEvent } from "./engine-events";
 import { type EngineResponse } from "./engine-response";
@@ -53,16 +29,8 @@ import {
   type ModelHookName,
   type ModelHookMiddleware,
 } from "../model/model-hooks";
-import {
-  ToolHookRegistry,
-  type ToolHookName,
-  type ToolHookMiddleware,
-} from "../tool/tool-hooks";
-import {
-  EngineHookRegistry,
-  type EngineHookName,
-  type EngineHookMiddleware,
-} from "./engine-hooks";
+import { ToolHookRegistry, type ToolHookName, type ToolHookMiddleware } from "../tool/tool-hooks";
+import { EngineHookRegistry, type EngineHookName, type EngineHookMiddleware } from "./engine-hooks";
 import {
   EngineLifecycleHookRegistry,
   type EngineLifecycleHookName,
@@ -88,22 +56,12 @@ import {
   type SignalType,
   type SignalEvent,
 } from "./execution-types";
-import {
-  createEngineHandleFactory,
-  ExecutionHandleImpl,
-} from "./execution-handle";
+import { createEngineHandleFactory, ExecutionHandleImpl } from "./execution-handle";
 import type { CompiledStructure } from "../compiler/types";
 import type { Renderer } from "../renderers/base";
-import {
-  isAbortError,
-  mergeAbortSignals,
-  AbortError,
-} from "../utils/abort-utils";
+import { isAbortError, mergeAbortSignals, AbortError } from "../utils/abort-utils";
 import { NotFoundError, StateError, ValidationError } from "aidk-shared";
-import {
-  CompileJSXService,
-  type CompileSession,
-} from "../utils/compile-jsx-service";
+import { CompileJSXService, type CompileSession } from "../utils/compile-jsx-service";
 
 // Module-level logger for Engine
 const log = Logger.for("Engine");
@@ -115,23 +73,17 @@ function isAsyncIterable(obj: any): obj is AsyncIterable<any> {
 
 export interface EngineLifecycleHooks {
   // Hooks can be Procedures or async functions (will be wrapped in Procedures)
-  onInit?: (
-    | EngineLifecycleHook<"onInit">
-    | ((engine: Engine) => Promise<void> | void)
-  )[];
+  onInit?: (EngineLifecycleHook<"onInit"> | ((engine: Engine) => Promise<void> | void))[];
   onShutdown?: (
     | EngineLifecycleHook<"onShutdown">
     | ((engine: Engine, reason?: string) => Promise<void> | void)
   )[];
-  onDestroy?: (
-    | EngineLifecycleHook<"onDestroy">
-    | ((engine: Engine) => Promise<void> | void)
-  )[];
+  onDestroy?: (EngineLifecycleHook<"onDestroy"> | ((engine: Engine) => Promise<void> | void))[];
   onExecutionStart?: (
     | EngineLifecycleHook<"onExecutionStart">
     | ((
         input: EngineInput,
-        agent?: ComponentDefinition,
+        root?: ComponentDefinition,
         handle?: ExecutionHandle,
       ) => Promise<void> | void)
   )[];
@@ -145,11 +97,7 @@ export interface EngineLifecycleHooks {
   )[];
   onTickStart?: (
     | EngineLifecycleHook<"onTickStart">
-    | ((
-        tick: number,
-        state: TickState,
-        handle?: ExecutionHandle,
-      ) => Promise<void> | void)
+    | ((tick: number, state: TickState, handle?: ExecutionHandle) => Promise<void> | void)
   )[];
   onTickEnd?: (
     | EngineLifecycleHook<"onTickEnd">
@@ -231,9 +179,8 @@ export class Engine extends EventEmitter {
   private toolHooksRegistry: ToolHookRegistry;
   private engineHooksRegistry: EngineHookRegistry;
   private lifecycleHooksRegistry: EngineLifecycleHookRegistry;
-  private unregisteredLifecycleHooks: WeakSet<
-    EngineLifecycleHook<EngineLifecycleHookName>
-  > = new WeakSet();
+  private unregisteredLifecycleHooks: WeakSet<EngineLifecycleHook<EngineLifecycleHookName>> =
+    new WeakSet();
   private mcpClient?: MCPClient;
   private mcpService?: MCPService;
   private _channelService?: ChannelService;
@@ -247,13 +194,10 @@ export class Engine extends EventEmitter {
   // For stream: handler returns AsyncIterable<EngineStreamEvent>, so TOutput = AsyncIterable<EngineStreamEvent>
   // Initialized in constructor via buildProcedures()
   private executeProc!: Procedure<
-    (input: EngineInput, agent?: ComponentDefinition) => Promise<COMInput>
+    (input: EngineInput, root?: ComponentDefinition) => Promise<COMInput>
   >;
   private streamProc!: Procedure<
-    (
-      input: EngineInput,
-      agent?: ComponentDefinition,
-    ) => AsyncIterable<EngineStreamEvent>
+    (input: EngineInput, root?: ComponentDefinition) => AsyncIterable<EngineStreamEvent>
   >;
 
   get model(): ModelInstance | undefined {
@@ -310,9 +254,7 @@ export class Engine extends EventEmitter {
     if (dynamicExecuteMw.length > 0) {
       // Apply dynamic hooks on top of base procedure
       // Cast to correct type - hooks are typed as Middleware<any[]> but work with our procedure signature
-      return this.executeProc.use(
-        ...(normalizeEngineMiddleware(dynamicExecuteMw) as any),
-      );
+      return this.executeProc.use(...(normalizeEngineMiddleware(dynamicExecuteMw) as any));
     }
     return this.executeProc;
   }
@@ -323,9 +265,7 @@ export class Engine extends EventEmitter {
     if (dynamicStreamMw.length > 0) {
       // Apply dynamic hooks on top of base procedure
       // Cast to correct type - hooks are typed as Middleware<any[]> but work with our procedure signature
-      return this.streamProc.use(
-        ...(normalizeEngineMiddleware(dynamicStreamMw) as any),
-      );
+      return this.streamProc.use(...(normalizeEngineMiddleware(dynamicStreamMw) as any));
     }
     return this.streamProc;
   }
@@ -397,10 +337,7 @@ export class Engine extends EventEmitter {
   /**
    * Internal execute implementation (called by Procedure)
    */
-  private async executeInternal(
-    input: EngineInput,
-    agent?: ComponentDefinition,
-  ): Promise<COMInput> {
+  private async executeInternal(input: EngineInput, root?: ComponentDefinition): Promise<COMInput> {
     // Get handle from context (created by handle factory)
     const ctx = Context.get();
     if (!ctx?.executionHandle) {
@@ -415,14 +352,8 @@ export class Engine extends EventEmitter {
 
     // Create the actual execute implementation
     const executeImpl = async (): Promise<COMInput> => {
-      const rootElement = this.getRootElement(agent);
-      const iterator = this.iterateTicks(
-        input,
-        rootElement,
-        false,
-        handle,
-        this._channelService,
-      );
+      const rootElement = this.getRootElement(root);
+      const iterator = this.iterateTicks(input, rootElement, false, handle, this._channelService);
       let lastComInput: COMInput | undefined;
 
       for await (const event of iterator) {
@@ -448,8 +379,7 @@ export class Engine extends EventEmitter {
         system: [],
       };
       handle.complete(result);
-      const graphToUpdate =
-        handle.executionGraphForStatus || this.executionGraph;
+      const graphToUpdate = handle.executionGraphForStatus || this.executionGraph;
       if (graphToUpdate && typeof graphToUpdate.updateStatus === "function") {
         graphToUpdate.updateStatus(handle.pid, "completed");
       } else {
@@ -468,7 +398,7 @@ export class Engine extends EventEmitter {
    */
   private async *streamInternal(
     input: EngineInput,
-    agent?: ComponentDefinition,
+    root?: ComponentDefinition,
   ): AsyncIterable<EngineStreamEvent> {
     // Get handle from context (created by handle factory)
     const ctx = Context.get();
@@ -482,17 +412,9 @@ export class Engine extends EventEmitter {
     }
     const handle = ctx.executionHandle as ExecutionHandleImpl;
 
-    const streamImpl = async function* (
-      this: Engine,
-    ): AsyncIterable<EngineStreamEvent> {
-      const rootElement = this.getRootElement(agent);
-      const iterator = this.iterateTicks(
-        input,
-        rootElement,
-        true,
-        handle,
-        this._channelService,
-      );
+    const streamImpl = async function* (this: Engine): AsyncIterable<EngineStreamEvent> {
+      const rootElement = this.getRootElement(root);
+      const iterator = this.iterateTicks(input, rootElement, true, handle, this._channelService);
 
       // Set iterator on handle so handle.stream() works
       handle.setStreamIterator(iterator);
@@ -524,12 +446,8 @@ export class Engine extends EventEmitter {
             metadata: {},
             system: [],
           });
-          const graphToUpdate =
-            handle.executionGraphForStatus || this.executionGraph;
-          if (
-            graphToUpdate &&
-            typeof graphToUpdate.updateStatus === "function"
-          ) {
+          const graphToUpdate = handle.executionGraphForStatus || this.executionGraph;
+          if (graphToUpdate && typeof graphToUpdate.updateStatus === "function") {
             graphToUpdate.updateStatus(handle.pid, "completed");
           } else {
             this.executionGraph.updateStatus(handle.pid, "completed");
@@ -553,10 +471,7 @@ export class Engine extends EventEmitter {
           const mcpConfig = normalizeMCPConfig(serverName, config);
           await this.mcpService!.connect(mcpConfig);
         } catch (error) {
-          log.error(
-            { err: error, serverName },
-            "Failed to initialize MCP server",
-          );
+          log.error({ err: error, serverName }, "Failed to initialize MCP server");
           // Continue with other servers even if one fails
         }
       },
@@ -596,9 +511,7 @@ export class Engine extends EventEmitter {
    * @param handler Async function that receives the engine instance and optional reason
    * @returns Unregister function
    */
-  onShutdown(
-    handler: (engine: Engine, reason?: string) => Promise<void> | void,
-  ): () => void {
+  onShutdown(handler: (engine: Engine, reason?: string) => Promise<void> | void): () => void {
     const procedure = createEngineProcedure(
       {
         name: "engine:onShutdown",
@@ -626,10 +539,7 @@ export class Engine extends EventEmitter {
    * @param handler Signal handler
    * @returns Unsubscribe function
    */
-  onSignal(
-    signal: SignalType,
-    handler: (event: SignalEvent) => void,
-  ): () => void {
+  onSignal(signal: SignalType, handler: (event: SignalEvent) => void): () => void {
     this.on(signal, handler);
     return () => this.off(signal, handler);
   }
@@ -710,26 +620,16 @@ export class Engine extends EventEmitter {
    * Build execute and stream procedures with middleware.
    * @param includeDynamic Whether to include dynamic middleware from registries
    */
-  private buildProcedures({
-    includeDynamic,
-  }: {
-    includeDynamic: boolean;
-  }): void {
+  private buildProcedures({ includeDynamic }: { includeDynamic: boolean }): void {
     const handleFactory = createEngineHandleFactory(this.executionGraph);
 
     // Get static middleware from class
-    const staticExecuteMw =
-      (this.constructor as typeof Engine).middleware?.execute || [];
-    const staticStreamMw =
-      (this.constructor as typeof Engine).middleware?.stream || [];
+    const staticExecuteMw = (this.constructor as typeof Engine).middleware?.execute || [];
+    const staticStreamMw = (this.constructor as typeof Engine).middleware?.stream || [];
 
     // Get dynamic middleware from registries if requested
-    const dynamicExecuteMw = includeDynamic
-      ? this.engineHooks.getMiddleware("execute")
-      : [];
-    const dynamicStreamMw = includeDynamic
-      ? this.engineHooks.getMiddleware("stream")
-      : [];
+    const dynamicExecuteMw = includeDynamic ? this.engineHooks.getMiddleware("execute") : [];
+    const dynamicStreamMw = includeDynamic ? this.engineHooks.getMiddleware("stream") : [];
 
     // Build execute procedure
     // Cast handleFactory for compatibility - createEngineProcedure expects HandleFactory<any> (KernelContext by default)
@@ -743,15 +643,10 @@ export class Engine extends EventEmitter {
         },
         handleFactory: handleFactory as HandleFactory<any>,
       },
-      async (
-        input: EngineInput,
-        agent?: ComponentDefinition,
-      ): Promise<COMInput> => {
-        return this.executeInternal(input, agent);
+      async (input: EngineInput, root?: ComponentDefinition): Promise<COMInput> => {
+        return this.executeInternal(input, root);
       },
-    ) as Procedure<
-      (input: EngineInput, agent?: ComponentDefinition) => Promise<COMInput>
-    >;
+    ) as Procedure<(input: EngineInput, root?: ComponentDefinition) => Promise<COMInput>>;
 
     this.executeProc = applyRegistryMiddleware(
       executeProcBase,
@@ -774,15 +669,12 @@ export class Engine extends EventEmitter {
       },
       async function* (
         input: EngineInput,
-        agent?: ComponentDefinition,
+        root?: ComponentDefinition,
       ): AsyncIterable<EngineStreamEvent> {
-        yield* streamInternalBound(input, agent);
+        yield* streamInternalBound(input, root);
       },
     ) as Procedure<
-      (
-        input: EngineInput,
-        agent?: ComponentDefinition,
-      ) => AsyncIterable<EngineStreamEvent>
+      (input: EngineInput, root?: ComponentDefinition) => AsyncIterable<EngineStreamEvent>
     >;
 
     this.streamProc = applyRegistryMiddleware(
@@ -817,10 +709,7 @@ export class Engine extends EventEmitter {
       for (const [hookName, middleware] of Object.entries(hooks.component)) {
         if (middleware && Array.isArray(middleware)) {
           for (const mw of middleware) {
-            targetEngine.componentHooks.register(
-              hookName as ComponentHookName,
-              mw,
-            );
+            targetEngine.componentHooks.register(hookName as ComponentHookName, mw);
           }
         }
       }
@@ -895,10 +784,7 @@ export class Engine extends EventEmitter {
    * Hooks in the config can be either Procedures or async functions.
    * If they're functions, we wrap them in Procedures.
    */
-  private registerLifecycleHooks(
-    targetEngine: Engine,
-    hooks: EngineLifecycleHooks,
-  ): void {
+  private registerLifecycleHooks(targetEngine: Engine, hooks: EngineLifecycleHooks): void {
     for (const [hookName, hookArray] of Object.entries(hooks)) {
       if (hookArray && Array.isArray(hookArray)) {
         for (const hook of hookArray) {
@@ -998,13 +884,13 @@ export class Engine extends EventEmitter {
 
   /**
    * Register onExecutionStart lifecycle hook.
-   * @param handler Async function that receives input, agent, and handle
+   * @param handler Async function that receives input, root, and handle
    * @returns Unregister function
    */
   onExecutionStart(
     handler: (
       input: EngineInput,
-      agent?: ComponentDefinition,
+      root?: ComponentDefinition,
       handle?: ExecutionHandle,
     ) => Promise<void> | void,
   ): () => void {
@@ -1017,10 +903,7 @@ export class Engine extends EventEmitter {
    * @returns Unregister function
    */
   onExecutionEnd(
-    handler: (
-      output: COMInput,
-      handle?: ExecutionHandle,
-    ) => Promise<void> | void,
+    handler: (output: COMInput, handle?: ExecutionHandle) => Promise<void> | void,
   ): () => void {
     return this.createLifecycleHook("onExecutionEnd", handler);
   }
@@ -1042,11 +925,7 @@ export class Engine extends EventEmitter {
    * @returns Unregister function
    */
   onTickStart(
-    handler: (
-      tick: number,
-      state: TickState,
-      handle?: ExecutionHandle,
-    ) => Promise<void> | void,
+    handler: (tick: number, state: TickState, handle?: ExecutionHandle) => Promise<void> | void,
   ): () => void {
     return this.createLifecycleHook("onTickStart", handler);
   }
@@ -1094,11 +973,7 @@ export class Engine extends EventEmitter {
         if (typeof comModel === "string") {
           const model = modelRegistry.get(comModel);
           if (!model) {
-            throw new NotFoundError(
-              "model",
-              comModel,
-              "Model not found in registry",
-            );
+            throw new NotFoundError("model", comModel, "Model not found in registry");
           }
           return model;
         }
@@ -1111,11 +986,7 @@ export class Engine extends EventEmitter {
       if (typeof this.config.model === "string") {
         const model = modelRegistry.get(this.config.model);
         if (!model) {
-          throw new NotFoundError(
-            "model",
-            this.config.model,
-            "Model not found in registry",
-          );
+          throw new NotFoundError("model", this.config.model, "Model not found in registry");
         }
         return model;
       }
@@ -1186,9 +1057,7 @@ export class Engine extends EventEmitter {
     if (generateMiddleware.length > 0) {
       // model.generate is a Procedure, use type-safe helper
       wrapped.generate = applyRegistryMiddleware(
-        model.generate as Procedure<
-          (input: ModelInput) => Promise<ModelOutput>
-        >,
+        model.generate as Procedure<(input: ModelInput) => Promise<ModelOutput>>,
         ...normalizeModelHookMiddleware(generateMiddleware),
       );
     } else {
@@ -1200,9 +1069,7 @@ export class Engine extends EventEmitter {
     if (streamMiddleware.length > 0) {
       // model.stream is a Procedure, use type-safe helper
       wrapped.stream = applyRegistryMiddleware(
-        model.stream as unknown as Procedure<
-          (input: ModelInput) => AsyncIterable<StreamChunk>
-        >,
+        model.stream as unknown as Procedure<(input: ModelInput) => AsyncIterable<StreamChunk>>,
         ...normalizeModelHookMiddleware(streamMiddleware),
       );
     } else {
@@ -1259,16 +1126,16 @@ export class Engine extends EventEmitter {
   /**
    * Resolves the root element for execution.
    * Priority:
-   * 1. Agent passed to execute/stream (highest priority)
+   * 1. Root passed to execute/stream (highest priority)
    * 2. Engine's default root component (from config)
    * 3. Empty Fragment (fallback)
    */
   private getRootElement(
-    agent?: JSX.Element | ComponentDefinition | ComponentDefinition[],
+    rootArg?: JSX.Element | ComponentDefinition | ComponentDefinition[],
   ): JSX.Element {
-    // If agent is provided, use it (overrides config root)
-    if (agent !== undefined) {
-      return ensureElement(agent);
+    // If root is provided, use it (overrides config root)
+    if (rootArg !== undefined) {
+      return ensureElement(rootArg);
     }
 
     // Fall back to Engine's default root component
@@ -1324,11 +1191,7 @@ export class Engine extends EventEmitter {
   private isRecoverableModelError(error: any): boolean {
     log.debug({ err: error }, "Checking if model error is recoverable");
     // Network errors are usually recoverable
-    if (
-      error.code === "ETIMEDOUT" ||
-      error.code === "ECONNRESET" ||
-      error.code === "ENOTFOUND"
-    ) {
+    if (error.code === "ETIMEDOUT" || error.code === "ECONNRESET" || error.code === "ENOTFOUND") {
       return true;
     }
 
@@ -1426,7 +1289,7 @@ export class Engine extends EventEmitter {
   }
 
   /**
-   * Core tick loop - executes the agent across multiple ticks
+   * Core tick loop - executes the root component across multiple ticks
    * Ported from Engine v1 - maintains full feature parity
    */
   private async *iterateTicks(
@@ -1526,9 +1389,9 @@ export class Engine extends EventEmitter {
         modelGetter: (com) => this.getRawModel(com),
         abortChecker: () => shouldAbort,
         processMethods: {
-          fork: (forkInput, agent, options) => {
+          fork: (forkInput, root, options) => {
             return this.fork(
-              agent || rootElement,
+              root || rootElement,
               forkInput,
               options
                 ? {
@@ -1539,9 +1402,9 @@ export class Engine extends EventEmitter {
                 : undefined,
             );
           },
-          spawn: (spawnInput, agent, options) => {
+          spawn: (spawnInput, root, options) => {
             return this.spawn(
-              agent || rootElement,
+              root || rootElement,
               spawnInput,
               options
                 ? {
@@ -1600,35 +1463,26 @@ export class Engine extends EventEmitter {
         if (ctx) {
           // Subscribe to 'execution' channel for message events
           // The subscription is already scoped to this session via channelService.subscribe()
-          channelUnsubscribe = channelService.subscribe(
-            ctx,
-            "execution",
-            async (event) => {
-              // Handle message events for this session
-              if (event.type === "message" && session) {
-                // Check if targetPid is specified - if so, only handle if it matches
-                // If no targetPid, accept all messages for this session
-                const targetPid =
-                  event.metadata?.["targetPid"] ||
-                  (event.payload as any)?.targetPid;
-                if (targetPid && targetPid !== handle.pid) {
-                  return; // Skip - message is for a different execution in this session
-                }
-
-                try {
-                  await session.sendMessage({
-                    type: (event.payload as any)?.type || "channel",
-                    content: (event.payload as any)?.content ?? event.payload,
-                  });
-                } catch (err) {
-                  log.error(
-                    { err, pid: handle.pid },
-                    "Error processing channel message",
-                  );
-                }
+          channelUnsubscribe = channelService.subscribe(ctx, "execution", async (event) => {
+            // Handle message events for this session
+            if (event.type === "message" && session) {
+              // Check if targetPid is specified - if so, only handle if it matches
+              // If no targetPid, accept all messages for this session
+              const targetPid = event.metadata?.["targetPid"] || (event.payload as any)?.targetPid;
+              if (targetPid && targetPid !== handle.pid) {
+                return; // Skip - message is for a different execution in this session
               }
-            },
-          );
+
+              try {
+                await session.sendMessage({
+                  type: (event.payload as any)?.type || "channel",
+                  content: (event.payload as any)?.content ?? event.payload,
+                });
+              } catch (err) {
+                log.error({ err, pid: handle.pid }, "Error processing channel message");
+              }
+            }
+          });
         }
       }
 
@@ -1660,9 +1514,7 @@ export class Engine extends EventEmitter {
               session.tick,
               session.previous,
             );
-            throw new AbortError(
-              session.com.abortReason || "Operation aborted",
-            );
+            throw new AbortError(session.com.abortReason || "Operation aborted");
           }
 
           yield {
@@ -1768,8 +1620,7 @@ export class Engine extends EventEmitter {
                     session.previous,
                   );
                   throw new AbortError(
-                    session.com.abortReason ||
-                      "Operation aborted during model streaming",
+                    session.com.abortReason || "Operation aborted during model streaming",
                   );
                 }
 
@@ -1846,8 +1697,7 @@ export class Engine extends EventEmitter {
           Context.emit("tick:model:response", { tick: session.tick, response });
 
           // 3. Tool Execution (Engine's responsibility)
-          let toolResults: AgentToolResult[] =
-            response.executedToolResults || [];
+          let toolResults: AgentToolResult[] = response.executedToolResults || [];
 
           // Yield events for already-executed tools (from provider/adapter)
           for (const result of toolResults) {
@@ -1901,49 +1751,42 @@ export class Engine extends EventEmitter {
                   const events: ToolProcessingEvent[] = [];
                   toolEvents.set(call.id, events);
 
-                  const { result, confirmCheck, confirmation: _confirmation } =
-                    await this.toolExecutor.processToolWithConfirmation(
-                      call,
-                      com,
-                      configTools,
-                      {
-                        onConfirmationRequired: async (call, message) => {
-                          events.push({
-                            type: "tool_confirmation_required",
-                            call,
-                            message,
-                          });
-                        },
-                        onConfirmationResult: async (confirmation, call) => {
-                          events.push({
-                            type: "tool_confirmation_result",
-                            confirmation,
-                            call,
-                          });
-                          // Call lifecycle hooks for confirmation
-                          await this.callLifecycleHooks("onToolConfirmation", [
-                            confirmation,
-                            call,
-                            handle,
-                          ]);
-                        },
-                      },
-                    );
+                  const {
+                    result,
+                    confirmCheck,
+                    confirmation: _confirmation,
+                  } = await this.toolExecutor.processToolWithConfirmation(call, com, configTools, {
+                    onConfirmationRequired: async (call, message) => {
+                      events.push({
+                        type: "tool_confirmation_required",
+                        call,
+                        message,
+                      });
+                    },
+                    onConfirmationResult: async (confirmation, call) => {
+                      events.push({
+                        type: "tool_confirmation_result",
+                        confirmation,
+                        call,
+                      });
+                      // Call lifecycle hooks for confirmation
+                      await this.callLifecycleHooks("onToolConfirmation", [
+                        confirmation,
+                        call,
+                        handle,
+                      ]);
+                    },
+                  });
 
                   // Mark as executed by engine
                   result.executedBy = "engine";
 
                   // Call lifecycle hooks for client tool results
                   if (
-                    confirmCheck?.tool?.metadata?.type ===
-                      ToolExecutionType.CLIENT &&
+                    confirmCheck?.tool?.metadata?.type === ToolExecutionType.CLIENT &&
                     confirmCheck?.tool?.metadata?.requiresResponse === true
                   ) {
-                    await this.callLifecycleHooks("onClientToolResult", [
-                      result,
-                      call,
-                      handle,
-                    ]);
+                    await this.callLifecycleHooks("onClientToolResult", [result, call, handle]);
                   }
 
                   return { call, result, events };
@@ -2212,17 +2055,12 @@ export class Engine extends EventEmitter {
         ...JSON.parse(JSON.stringify(parentResult.timeline)),
       ];
     } else if (inherit.timeline === "reference" && parentResult.timeline) {
-      inherited.timeline = [
-        ...(inherited.timeline || []),
-        ...parentResult.timeline,
-      ];
+      inherited.timeline = [...(inherited.timeline || []), ...parentResult.timeline];
     }
 
     // Inherit sections
     if (inherit.sections === "copy" && parentResult["sections"]) {
-      inherited["sections"] = JSON.parse(
-        JSON.stringify(parentResult["sections"]),
-      );
+      inherited["sections"] = JSON.parse(JSON.stringify(parentResult["sections"]));
     } else if (inherit.sections === "reference" && parentResult["sections"]) {
       inherited["sections"] = parentResult["sections"];
     }
@@ -2279,7 +2117,7 @@ export class Engine extends EventEmitter {
    * Spawn a new independent execution.
    */
   spawn(
-    agent: JSX.Element | ComponentDefinition | ComponentDefinition[],
+    root: JSX.Element | ComponentDefinition | ComponentDefinition[],
     input: EngineInput,
     options?: {
       engineClass?: typeof Engine;
@@ -2291,8 +2129,7 @@ export class Engine extends EventEmitter {
     const pid = generatePid("spawn");
     const rootPid = pid;
 
-    const EngineClass =
-      options?.engineClass || (this.constructor as typeof Engine);
+    const EngineClass = options?.engineClass || (this.constructor as typeof Engine);
     const childEngine = new EngineClass({
       ...this.config,
       ...options?.engineConfig,
@@ -2311,7 +2148,7 @@ export class Engine extends EventEmitter {
 
     this.executionGraph.register(handle);
 
-    this.runForkSpawnExecution(childEngine, handle, agent, input, options)
+    this.runForkSpawnExecution(childEngine, handle, root, input, options)
       .catch((error) => {
         handle.fail(error);
         this.executionGraph.updateStatus(pid, "failed", error);
@@ -2330,7 +2167,7 @@ export class Engine extends EventEmitter {
    * Fork a new execution with inherited state from parent.
    */
   fork(
-    agent: JSX.Element | ComponentDefinition | ComponentDefinition[],
+    root: JSX.Element | ComponentDefinition | ComponentDefinition[],
     input: EngineInput,
     options?: {
       parentPid?: string;
@@ -2353,15 +2190,10 @@ export class Engine extends EventEmitter {
 
     const parentHandle = this.executionGraph.getHandle(parentPid);
     if (!parentHandle) {
-      throw new NotFoundError(
-        "execution",
-        parentPid,
-        "Parent execution not found",
-      );
+      throw new NotFoundError("execution", parentPid, "Parent execution not found");
     }
 
-    const EngineClass =
-      options?.engineClass || (this.constructor as typeof Engine);
+    const EngineClass = options?.engineClass || (this.constructor as typeof Engine);
     const shouldInheritHooks = options?.inherit?.hooks !== false;
 
     // Build child engine config - exclude lifecycle hooks if not inheriting
@@ -2378,15 +2210,11 @@ export class Engine extends EventEmitter {
     const childEngine = new EngineClass(childConfig);
 
     if (shouldInheritHooks) {
-      childEngine.componentHooksRegistry.copyHooksFrom(
-        this.componentHooksRegistry,
-      );
+      childEngine.componentHooksRegistry.copyHooksFrom(this.componentHooksRegistry);
       childEngine.modelHooksRegistry.copyHooksFrom(this.modelHooksRegistry);
       childEngine.toolHooksRegistry.copyHooksFrom(this.toolHooksRegistry);
       childEngine.engineHooksRegistry.copyHooksFrom(this.engineHooksRegistry);
-      childEngine.lifecycleHooksRegistry.copyHooksFrom(
-        this.lifecycleHooksRegistry,
-      );
+      childEngine.lifecycleHooksRegistry.copyHooksFrom(this.lifecycleHooksRegistry);
     }
 
     if (options?.hooks) {
@@ -2397,10 +2225,7 @@ export class Engine extends EventEmitter {
 
     // Register fork-specific lifecycle hooks (composed with inherited hooks)
     if (options?.engineConfig?.lifecycleHooks) {
-      this.registerLifecycleHooks(
-        childEngine,
-        options.engineConfig.lifecycleHooks,
-      );
+      this.registerLifecycleHooks(childEngine, options.engineConfig.lifecycleHooks);
     }
 
     const pid = generatePid("fork");
@@ -2424,34 +2249,23 @@ export class Engine extends EventEmitter {
     // If parent has already completed, fork runs independently (orphaned fork)
     const parentSignalRaw = parentHandle.getCancelSignal();
     const parentSignal =
-      parentHandle.status === "running" &&
-      parentSignalRaw &&
-      !parentSignalRaw.aborted
+      parentHandle.status === "running" && parentSignalRaw && !parentSignalRaw.aborted
         ? parentSignalRaw
         : undefined;
 
     const mergedSignal = mergeAbortSignals(
-      [forkController.signal, parentSignal, options?.signal].filter(
-        Boolean,
-      ) as AbortSignal[],
+      [forkController.signal, parentSignal, options?.signal].filter(Boolean) as AbortSignal[],
     );
 
     this.executionGraph.register(handle, parentPid);
 
-    const inheritedInput = this.prepareInheritedInput(
-      input,
-      parentHandle,
-      options?.inherit,
-    );
-    const inheritedContext = this.prepareInheritedContext(
-      options,
-      parentHandle,
-    );
+    const inheritedInput = this.prepareInheritedInput(input, parentHandle, options?.inherit);
+    const inheritedContext = this.prepareInheritedContext(options, parentHandle);
 
     this.runForkSpawnExecution(
       childEngine,
       handle,
-      agent,
+      root,
       inheritedInput,
       {
         ...inheritedContext,
@@ -2477,7 +2291,7 @@ export class Engine extends EventEmitter {
   private async runForkSpawnExecution(
     childEngine: Engine,
     handle: ExecutionHandleImpl,
-    agent: JSX.Element | ComponentDefinition | ComponentDefinition[],
+    root: JSX.Element | ComponentDefinition | ComponentDefinition[],
     input: EngineInput,
     options?: {
       parentPid?: string;
@@ -2490,16 +2304,18 @@ export class Engine extends EventEmitter {
     _parentHandle?: ExecutionHandle,
   ) {
     try {
-      const { engineClass: _engineClass, engineConfig: _engineConfig, channels: _channels, ...kernelOptions } =
-        options || {};
+      const {
+        engineClass: _engineClass,
+        engineConfig: _engineConfig,
+        channels: _channels,
+        ...kernelOptions
+      } = options || {};
 
       // Note: Engine's execute method is a Procedure, so we call it directly
-      // Normalize agent to single ComponentDefinition or undefined
-      const normalizedAgent: ComponentDefinition | undefined = Array.isArray(
-        agent,
-      )
+      // Normalize root to single ComponentDefinition or undefined
+      const normalizedRoot: ComponentDefinition | undefined = Array.isArray(root)
         ? undefined // Arrays handled by getRootElement
-        : (agent as ComponentDefinition | undefined);
+        : (root as ComponentDefinition | undefined);
 
       // Pass the fork handle in context so the handle factory reuses it instead of creating a new one
       // This ensures abort signals propagate correctly to the fork execution
@@ -2509,7 +2325,7 @@ export class Engine extends EventEmitter {
           ...kernelOptions,
           executionHandle: handle, // Pass fork handle so it's reused by handle factory
         } as Partial<EngineContext>)
-        .call(input, normalizedAgent);
+        .call(input, normalizedRoot);
 
       // Ensure result is COMInput (not AsyncIterable)
       if (isAsyncIterable(result)) {
@@ -2587,8 +2403,7 @@ export class Engine extends EventEmitter {
     let completedCount = 0;
 
     for (const handle of allExecutions) {
-      executionsByStatus[handle.status] =
-        (executionsByStatus[handle.status] || 0) + 1;
+      executionsByStatus[handle.status] = (executionsByStatus[handle.status] || 0) + 1;
       executionsByType[handle.type] = (executionsByType[handle.type] || 0) + 1;
 
       if (
@@ -2602,8 +2417,7 @@ export class Engine extends EventEmitter {
       }
     }
 
-    const averageExecutionTime =
-      completedCount > 0 ? totalDuration / completedCount : 0;
+    const averageExecutionTime = completedCount > 0 ? totalDuration / completedCount : 0;
 
     return {
       activeExecutions,
@@ -2612,10 +2426,7 @@ export class Engine extends EventEmitter {
         "running" | "completed" | "failed" | "cancelled" | "pending",
         number
       >,
-      executionsByType: executionsByType as Record<
-        "root" | "spawn" | "fork",
-        number
-      >,
+      executionsByType: executionsByType as Record<"root" | "spawn" | "fork", number>,
       averageExecutionTime,
       memoryUsage: process.memoryUsage(),
       timestamp: new Date(),
@@ -2720,9 +2531,7 @@ export class Engine extends EventEmitter {
  * and hook registry middleware (EngineHookMiddleware<'execute' | 'stream'>[]).
  */
 function normalizeEngineMiddleware<T extends EngineHookName>(
-  middleware?:
-    | Middleware<[EngineInput, ComponentDefinition?]>[]
-    | EngineHookMiddleware<T>[],
+  middleware?: Middleware<[EngineInput, ComponentDefinition?]>[] | EngineHookMiddleware<T>[],
 ): (Middleware<any[]> | MiddlewarePipeline)[] {
   if (!middleware || middleware.length === 0) {
     return [];

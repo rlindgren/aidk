@@ -1,3 +1,2 @@
-export * from './todo-list.service';
-export * from './scratchpad.service';
-
+export * from "./todo-list.service";
+export * from "./scratchpad.service";

@@ -30,10 +30,10 @@ Please do NOT open a public issue for security vulnerabilities.
 ### Disclosure Policy
 
 We follow responsible disclosure:
+
 1. Reporter notifies us privately
 2. We assess and develop a fix
 3. We release the fix
 4. We publicly disclose the issue (with credit to reporter)
 
 Thank you for helping keep AIDK secure!
-

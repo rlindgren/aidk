@@ -17,7 +17,7 @@ import { openai } from '@ai-sdk/openai';
 import { anthropic } from '@ai-sdk/anthropic';
 
 // OpenAI
-<AiSdkModel 
+<AiSdkModel
   model={openai('gpt-4o')}
   providerOptions={{
     apiKey: process.env.OPENAI_API_KEY,
@@ -25,12 +25,12 @@ import { anthropic } from '@ai-sdk/anthropic';
 />
 
 // Anthropic
-<AiSdkModel 
+<AiSdkModel
   model={anthropic('claude-3-5-sonnet-20241022')}
 />
 
 // With options
-<AiSdkModel 
+<AiSdkModel
   model={openai('gpt-4o')}
   temperature={0.7}
   maxTokens={4096}
@@ -51,4 +51,3 @@ Any provider supported by the [Vercel AI SDK](https://sdk.vercel.ai/providers):
 ## Documentation
 
 See the [full documentation](https://your-org.github.io/aidk).
-

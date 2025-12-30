@@ -2,8 +2,8 @@
   "name": "aidk-angular-example",
   "version": "0.0.1",
   "private": true,
-  "author": "Ryan Lindgren",
   "license": "ISC",
+  "author": "Ryan Lindgren",
   "scripts": {
     "start": "npm run dev",
     "build": "npx ng build",
@@ -12,23 +12,22 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "aidk-angular": "link:../../packages/angular",
-    "@angular/core": "^20.0.0",
     "@angular/common": "^20.0.0",
+    "@angular/core": "^20.0.0",
+    "@angular/forms": "^20.0.0",
     "@angular/platform-browser": "^20.0.0",
     "@angular/router": "^20.0.0",
-    "@angular/forms": "^20.0.0",
+    "aidk-angular": "link:../../packages/angular",
+    "marked": "^17.0.0",
     "rxjs": "^7.0.0",
     "tslib": "^2.6.0",
-    "zone.js": "^0.15.0",
-    "marked": "^17.0.0"
+    "zone.js": "^0.15.0"
   },
   "devDependencies": {
+    "@angular-devkit/build-angular": "^20.0.3",
     "@angular/cli": "^20.0.3",
     "@angular/compiler": "^20.0.3",
-    "@angular-devkit/build-angular": "^20.0.3",
     "@angular/compiler-cli": "^20.0.3",
     "@angular/language-service": "^20.0.3"
   }
 }
-

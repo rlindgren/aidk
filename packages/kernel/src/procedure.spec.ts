@@ -9,22 +9,18 @@ import { Context } from "./context";
 
 describe("Kernel Procedure", () => {
   it("should execute a simple handler", async () => {
-    const proc = createProcedure(
-      { name: "test" },
-      async (input: number) => input * 2,
-    );
+    const proc = createProcedure({ name: "test" }, async (input: number) => input * 2);
     const result = await proc(5);
     expect(result).toBe(10);
   });
 
   it("should run middleware", async () => {
-    const proc = createProcedure(
-      { name: "test" },
-      async (input: number) => input,
-    ).use(async (args, envelope, next) => {
-      const res = await next();
-      return res + 1;
-    });
+    const proc = createProcedure({ name: "test" }, async (input: number) => input).use(
+      async (args, envelope, next) => {
+        const res = await next();
+        return res + 1;
+      },
+    );
 
     const result = await proc(1);
     expect(result).toBe(2);
@@ -87,10 +83,7 @@ describe("Kernel Procedure", () => {
   });
 
   it("should support input transformation in middleware", async () => {
-    const proc = createProcedure(
-      { name: "test" },
-      async (input: number) => input * 10,
-    )
+    const proc = createProcedure({ name: "test" }, async (input: number) => input * 10)
       .use(async (args, envelope, next) => {
         // Transform input: multiply by 2
         return next([2]); // Pass transformed input
@@ -106,13 +99,12 @@ describe("Kernel Procedure", () => {
   });
 
   it("should use original input if middleware does not transform", async () => {
-    const proc = createProcedure(
-      { name: "test" },
-      async (input: number) => input * 2,
-    ).use(async (args, envelope, next) => {
-      // Don't transform - just call next() without args
-      return next();
-    });
+    const proc = createProcedure({ name: "test" }, async (input: number) => input * 2).use(
+      async (args, envelope, next) => {
+        // Don't transform - just call next() without args
+        return next();
+      },
+    );
 
     const result = await proc(5);
     // Input flow: 5 -> (mw1 doesn't transform) -> handler(5 * 2 = 10)
@@ -120,10 +112,7 @@ describe("Kernel Procedure", () => {
   });
 
   it("should support mixed transformation and non-transformation middleware", async () => {
-    const proc = createProcedure(
-      { name: "test" },
-      async (input: number) => input * 2,
-    )
+    const proc = createProcedure({ name: "test" }, async (input: number) => input * 2)
       .use(async (args, envelope, next) => {
         // Transform: multiply by 2
         return next([10]);
@@ -214,12 +203,9 @@ describe("Procedure v2 - Decorators", () => {
         },
       );
 
-      private processChunk = createHook(
-        { name: "stream:chunk" },
-        async (chunk: string) => {
-          return chunk.toUpperCase();
-        },
-      );
+      private processChunk = createHook({ name: "stream:chunk" }, async (chunk: string) => {
+        return chunk.toUpperCase();
+      });
     }
 
     const instance = new TestClass();
@@ -300,21 +286,15 @@ describe("Procedure v2 - Hooks as Procedures", () => {
   });
 
   it("should track parent-child in execution graph", async () => {
-    const stream = createProcedure(
-      { name: "stream" },
-      async function* (_input: string) {
-        const processChunk = createHook(
-          { name: "stream:chunk" },
-          async (chunk: string) => {
-            return chunk;
-          },
-        );
+    const stream = createProcedure({ name: "stream" }, async function* (_input: string) {
+      const processChunk = createHook({ name: "stream:chunk" }, async (chunk: string) => {
+        return chunk;
+      });
 
-        for (const chunk of ["a", "b", "c"]) {
-          yield await processChunk(chunk);
-        }
-      },
-    );
+      for (const chunk of ["a", "b", "c"]) {
+        yield await processChunk(chunk);
+      }
+    });
 
     const ctx = Context.create();
     const results: string[] = [];
@@ -370,13 +350,10 @@ describe("Procedure Timeout", () => {
   });
 
   it("should not apply timeout when set to 0", async () => {
-    const proc = createProcedure(
-      { name: "no-timeout", timeout: 0 },
-      async () => {
-        await new Promise((resolve) => setTimeout(resolve, 10));
-        return "done";
-      },
-    );
+    const proc = createProcedure({ name: "no-timeout", timeout: 0 }, async () => {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      return "done";
+    });
 
     const result = await proc();
     expect(result).toBe("done");
@@ -384,10 +361,7 @@ describe("Procedure Timeout", () => {
 
   it("should clear timeout on successful completion", async () => {
     // This test ensures we don't have timer leaks
-    const proc = createProcedure(
-      { name: "fast", timeout: 5000 },
-      async () => "done",
-    );
+    const proc = createProcedure({ name: "fast", timeout: 5000 }, async () => "done");
 
     const result = await proc();
     expect(result).toBe("done");
@@ -408,14 +382,8 @@ describe("Procedure Timeout", () => {
 
 describe("Procedure Pipe", () => {
   it("should pipe two procedures together", async () => {
-    const double = createProcedure(
-      { name: "double" },
-      async (n: number) => n * 2,
-    );
-    const addTen = createProcedure(
-      { name: "addTen" },
-      async (n: number) => n + 10,
-    );
+    const double = createProcedure({ name: "double" }, async (n: number) => n * 2);
+    const addTen = createProcedure({ name: "addTen" }, async (n: number) => n + 10);
 
     const pipeline = double.pipe(addTen);
     const result = await pipeline(5);
@@ -425,16 +393,9 @@ describe("Procedure Pipe", () => {
   });
 
   it("should chain multiple pipes", async () => {
-    const parse = createProcedure({ name: "parse" }, async (json: string) =>
-      JSON.parse(json),
-    );
-    const getName = createProcedure(
-      { name: "getName" },
-      async (obj: { name: string }) => obj.name,
-    );
-    const toUpper = createProcedure({ name: "toUpper" }, async (s: string) =>
-      s.toUpperCase(),
-    );
+    const parse = createProcedure({ name: "parse" }, async (json: string) => JSON.parse(json));
+    const getName = createProcedure({ name: "getName" }, async (obj: { name: string }) => obj.name);
+    const toUpper = createProcedure({ name: "toUpper" }, async (s: string) => s.toUpperCase());
 
     const pipeline = parse.pipe(getName).pipe(toUpper);
     const result = await pipeline('{"name": "hello"}');
@@ -446,10 +407,7 @@ describe("Procedure Pipe", () => {
     const willFail = createProcedure({ name: "fail" }, async () => {
       throw new Error("oops");
     });
-    const shouldNotRun = createProcedure(
-      { name: "never" },
-      async (x: any) => x,
-    );
+    const shouldNotRun = createProcedure({ name: "never" }, async (x: any) => x);
 
     const pipeline = willFail.pipe(shouldNotRun);
 
@@ -482,14 +440,11 @@ describe("Procedure Pipe", () => {
   it("should preserve context through piped procedures", async () => {
     const traceIds: string[] = [];
 
-    const captureTrace = createProcedure(
-      { name: "capture" },
-      async (n: number) => {
-        const ctx = Context.tryGet();
-        if (ctx?.traceId) traceIds.push(ctx.traceId);
-        return n;
-      },
-    );
+    const captureTrace = createProcedure({ name: "capture" }, async (n: number) => {
+      const ctx = Context.tryGet();
+      if (ctx?.traceId) traceIds.push(ctx.traceId);
+      return n;
+    });
 
     const addOne = createProcedure({ name: "addOne" }, async (n: number) => {
       const ctx = Context.tryGet();

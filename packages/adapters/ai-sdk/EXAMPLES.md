@@ -42,6 +42,7 @@ console.log(result.text);
 ```
 
 **What this gets you:**
+
 - JSX-based agent definition
 - Dynamic compilation before each model call
 - Multi-tick execution (components can request continuation)
@@ -70,7 +71,7 @@ for await (const event of compiler.stream(
   if (event.type === 'chunk') {
     process.stdout.write(event.chunk.textDelta || '');
   }
-  
+
   if (event.type === 'tick_end') {
     console.log(`\n[Tick ${event.result.tick} complete]`);
   }
@@ -88,18 +89,18 @@ class SearchAgent extends Component {
   // State persists across ticks
   private searchQuery = comState('');
   private results = comState<any[]>([]);
-  
+
   render(com, state) {
     // Extract query from conversation
     const lastMessage = state.previous?.timeline?.at(-1);
     if (lastMessage?.role === 'user') {
       this.searchQuery.value = extractQuery(lastMessage.content);
     }
-    
+
     return (
       <>
         <System>You are a search assistant.</System>
-        
+
         {/* Show search results if we have them */}
         {this.results.value.length > 0 && (
           <User>
@@ -175,16 +176,16 @@ function ParallelAgent() {
   return (
     <>
       <System>Running parallel tasks...</System>
-      
+
       {/* Fork inherits state from parent */}
-      <Fork 
+      <Fork
         ref="task1"
         input={{ timeline: [] }}
         waitUntilComplete={true}
       >
         <System>Task 1: Analyze sentiment</System>
       </Fork>
-      
+
       {/* Spawn is independent */}
       <Spawn
         ref="task2"
@@ -193,7 +194,7 @@ function ParallelAgent() {
       >
         <System>Task 2: Extract entities</System>
       </Spawn>
-      
+
       {/* Access results via refs */}
       {state.refs.task1?.status === 'completed' && (
         <User>
@@ -271,16 +272,16 @@ function ConversationAgent() {
   return (
     <>
       <System>You are helpful.</System>
-      
+
       {/* ai-sdk content format */}
-      <Message 
-        role="user" 
+      <Message
+        role="user"
         content={[
           { type: 'text', text: 'What is in this image?' },
           { type: 'image', image: 'https://example.com/image.png' },
-        ]} 
+        ]}
       />
-      
+
       {/* Convenience wrappers */}
       <User>Follow-up question</User>
       <Assistant>Previous response</Assistant>
@@ -306,16 +307,3 @@ You are here → Just JSX → Add state → Add tools → Fork/spawn → Full En
 ```
 
 Start anywhere. Move at your own pace. Never break existing code.
-
-
-
-
-
-
-
-
-
-
-
-
-

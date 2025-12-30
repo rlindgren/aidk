@@ -96,6 +96,7 @@ try {
 ```
 
 **Parameters:**
+
 - `options.timeout?: number` - Maximum wait time in milliseconds
 
 **Returns:** `Promise<COMInput>` - The final context state
@@ -111,9 +112,11 @@ handle.cancel('User requested cancellation');
 ```
 
 **Parameters:**
+
 - `reason?: string` - Optional cancellation reason
 
 **Behavior:**
+
 1. Sets status to `"cancelled"`
 2. Emits abort signal to children
 3. Aborts the internal abort controller
@@ -147,9 +150,11 @@ await handle.send({
 ```
 
 **Parameters:**
+
 - `message: Omit<ExecutionMessage, 'id' | 'timestamp'>` - Message to send
 
 **Behavior:**
+
 1. Message is delivered immediately to component `onMessage` hooks
 2. Message is queued for `TickState.queuedMessages` in the next tick
 
@@ -165,11 +170,13 @@ handle.emitSignal('interrupt', 'Pausing for user input');
 ```
 
 **Parameters:**
+
 - `signal: SignalType` - Signal type (`'abort'`, `'interrupt'`, `'pause'`, `'resume'`, `'shutdown'`)
 - `reason?: string` - Optional reason
 - `metadata?: Record<string, any>` - Optional metadata
 
 **Behavior:**
+
 - Signal is emitted on this handle
 - Signal propagates to all fork children (not spawns)
 - Abort signals trigger the cancel controller

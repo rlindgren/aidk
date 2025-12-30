@@ -657,7 +657,7 @@ import { Markdown, XML } from "aidk";
 
 Test your components with both renderers:
 
-``` tsx
+```tsx
 import { MarkdownRenderer, XMLRenderer, Markdown, XML } from 'aidk';
 import { render } from './test-utils';
 
@@ -693,6 +693,4 @@ describe('OrderSummary', () => {
 ---
 
 **Next:** [Creating Tools](/docs/guides/tools)
-
-
 

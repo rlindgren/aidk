@@ -59,11 +59,7 @@
 
 // Core Engine
 export { Engine } from "./engine";
-export type {
-  EngineConfig,
-  EngineLifecycleHooks,
-  EngineStaticHooks,
-} from "./engine";
+export type { EngineConfig, EngineLifecycleHooks, EngineStaticHooks } from "./engine";
 
 // Execution
 export * from "./execution-handle";

@@ -62,16 +62,10 @@ const tabs = ['agent', 'usage', 'output']
 
     <!-- Navigation -->
     <div class="level-nav">
-      <button
-        :disabled="activeLevel === 0"
-        @click="activeLevel--"
-        class="nav-button"
-      >
+      <button :disabled="activeLevel === 0" @click="activeLevel--" class="nav-button">
         ← Previous
       </button>
-      <span class="level-indicator">
-        Level {{ activeLevel + 1 }} of {{ levels.length }}
-      </span>
+      <span class="level-indicator"> Level {{ activeLevel + 1 }} of {{ levels.length }} </span>
       <button
         :disabled="activeLevel === levels.length - 1"
         @click="activeLevel++"
@@ -241,21 +235,10 @@ const tabs = ['agent', 'usage', 'output']
   .level-selector {
     flex-wrap: wrap;
   }
-  
+
   .level-button {
     flex: 1;
     min-width: 60px;
   }
 }
 </style>
-
-
-
-
-
-
-
-
-
-
-

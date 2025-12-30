@@ -38,9 +38,7 @@ describe("ID Generators", () => {
   describe("uuidV4Generator", () => {
     it("should generate valid UUID v4 format", () => {
       const uuid = uuidV4Generator();
-      expect(uuid).toMatch(
-        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
-      );
+      expect(uuid).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
     });
 
     it("should generate unique IDs", () => {
@@ -279,9 +277,7 @@ describe("Input Transformers", () => {
       const messages: StandardRequestBody["messages"] = [
         {
           role: "user",
-          content: [
-            { type: "image", imageUrl: "https://example.com/image.png" },
-          ],
+          content: [{ type: "image", imageUrl: "https://example.com/image.png" }],
         },
       ];
 
@@ -337,9 +333,7 @@ describe("Input Transformers", () => {
   describe("defaultInputTransformer", () => {
     it("should transform body to engine input", () => {
       const body: StandardRequestBody = {
-        messages: [
-          { role: "user", content: [{ type: "text", text: "Hello" }] },
-        ],
+        messages: [{ role: "user", content: [{ type: "text", text: "Hello" }] }],
       };
       const context: RequestContext = {
         threadId: "thread-123",
@@ -375,19 +369,17 @@ describe("Input Transformers", () => {
         conversation: Array<{ from: string; message: string }>;
       }
 
-      const transformer = createInputTransformer<CustomBody>(
-        (body, context) => ({
-          timeline: body.conversation.map((msg) => ({
-            kind: "message" as const,
-            message: {
-              role: msg.from === "bot" ? "assistant" : "user",
-              content: [{ type: "text", text: msg.message }],
-            },
-            metadata: {},
-          })),
-          metadata: { threadId: context.threadId },
-        }),
-      );
+      const transformer = createInputTransformer<CustomBody>((body, context) => ({
+        timeline: body.conversation.map((msg) => ({
+          kind: "message" as const,
+          message: {
+            role: msg.from === "bot" ? "assistant" : "user",
+            content: [{ type: "text", text: msg.message }],
+          },
+          metadata: {},
+        })),
+        metadata: { threadId: context.threadId },
+      }));
 
       const body: CustomBody = {
         conversation: [
@@ -579,9 +571,7 @@ describe("Request Context Attachment", () => {
     it("should throw when context not present", () => {
       const request: any = {};
 
-      expect(() => requireContext(request)).toThrow(
-        "AIDK context not found on request",
-      );
+      expect(() => requireContext(request)).toThrow("AIDK context not found on request");
     });
 
     it("should include helpful error message", () => {

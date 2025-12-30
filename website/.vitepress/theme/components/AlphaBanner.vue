@@ -8,7 +8,7 @@
           <span class="alpha-badge">ALPHA</span>
           <span>v0.1.x — APIs may change.</span>
         </div>
-        
+
         <a href="/aidk/docs/getting-started">Get started anyway</a>
       </div>
     </div>

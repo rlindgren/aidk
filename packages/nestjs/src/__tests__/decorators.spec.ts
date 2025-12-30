@@ -1,78 +1,80 @@
 /**
  * Tests for NestJS Decorators
  *
- * Tests the StreamAgent and ExecuteAgent decorators.
+ * Tests the Stream and Execute decorators.
  */
 
 import "reflect-metadata";
-import { StreamAgent, ExecuteAgent } from "../decorators/agent";
-import { AGENT_TOKEN } from "../tokens";
+import { Stream, Execute, StreamAgent, ExecuteAgent } from "../decorators/agent";
+import { ROOT_TOKEN, AGENT_TOKEN } from "../tokens";
 
 describe("NestJS Decorators", () => {
-  describe("StreamAgent", () => {
+  describe("Stream", () => {
     it("should set metadata with type stream", () => {
       class TestController {
-        @StreamAgent()
+        @Stream()
         testMethod() {}
       }
 
-      const metadata = Reflect.getMetadata(
-        AGENT_TOKEN,
-        TestController.prototype.testMethod,
-      );
-      expect(metadata).toEqual({ type: "stream", agent: undefined });
+      const metadata = Reflect.getMetadata(ROOT_TOKEN, TestController.prototype.testMethod);
+      expect(metadata).toEqual({ type: "stream", root: undefined });
     });
 
-    it("should accept an agent JSX element", () => {
-      const mockAgent = { type: "MockAgent", props: {} };
+    it("should accept a root JSX element", () => {
+      const mockRoot = { type: "MockRoot", props: {} };
 
       class TestController {
-        @StreamAgent(mockAgent as any)
+        @Stream(mockRoot as any)
         testMethod() {}
       }
 
-      const metadata = Reflect.getMetadata(
-        AGENT_TOKEN,
-        TestController.prototype.testMethod,
-      );
-      expect(metadata).toEqual({ type: "stream", agent: mockAgent });
+      const metadata = Reflect.getMetadata(ROOT_TOKEN, TestController.prototype.testMethod);
+      expect(metadata).toEqual({ type: "stream", root: mockRoot });
     });
   });
 
-  describe("ExecuteAgent", () => {
+  describe("Execute", () => {
     it("should set metadata with type execute", () => {
       class TestController {
-        @ExecuteAgent()
+        @Execute()
         testMethod() {}
       }
 
-      const metadata = Reflect.getMetadata(
-        AGENT_TOKEN,
-        TestController.prototype.testMethod,
-      );
-      expect(metadata).toEqual({ type: "execute", agent: undefined });
+      const metadata = Reflect.getMetadata(ROOT_TOKEN, TestController.prototype.testMethod);
+      expect(metadata).toEqual({ type: "execute", root: undefined });
     });
 
-    it("should accept an agent JSX element", () => {
-      const mockAgent = { type: "MockAgent", props: { tools: [] } };
+    it("should accept a root JSX element", () => {
+      const mockRoot = { type: "MockRoot", props: { tools: [] } };
 
       class TestController {
-        @ExecuteAgent(mockAgent as any)
+        @Execute(mockRoot as any)
         testMethod() {}
       }
 
-      const metadata = Reflect.getMetadata(
-        AGENT_TOKEN,
-        TestController.prototype.testMethod,
-      );
-      expect(metadata).toEqual({ type: "execute", agent: mockAgent });
+      const metadata = Reflect.getMetadata(ROOT_TOKEN, TestController.prototype.testMethod);
+      expect(metadata).toEqual({ type: "execute", root: mockRoot });
     });
   });
 
-  describe("AGENT_TOKEN", () => {
+  describe("Deprecated aliases", () => {
+    it("StreamAgent should be an alias for Stream", () => {
+      expect(StreamAgent).toBe(Stream);
+    });
+
+    it("ExecuteAgent should be an alias for Execute", () => {
+      expect(ExecuteAgent).toBe(Execute);
+    });
+
+    it("AGENT_TOKEN should be an alias for ROOT_TOKEN", () => {
+      expect(AGENT_TOKEN).toBe(ROOT_TOKEN);
+    });
+  });
+
+  describe("ROOT_TOKEN", () => {
     it("should be a unique symbol", () => {
-      expect(typeof AGENT_TOKEN).toBe("symbol");
-      expect(AGENT_TOKEN.description).toBe("AGENT");
+      expect(typeof ROOT_TOKEN).toBe("symbol");
+      expect(ROOT_TOKEN.description).toBe("ROOT");
     });
   });
 });

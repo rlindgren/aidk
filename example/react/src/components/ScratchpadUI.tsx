@@ -1,13 +1,13 @@
 /**
  * Scratchpad UI Component
- * 
+ *
  * A collapsible sticky note panel that appears in the chat window.
  * Thread-scoped: notes are specific to the current conversation.
  */
 
-import { useState } from 'react';
-import { ScratchpadNote } from '../hooks/useScratchpad';
-import './ScratchpadUI.css';
+import { useState } from "react";
+import { ScratchpadNote } from "../hooks/useScratchpad";
+import "./ScratchpadUI.css";
 
 interface ScratchpadUIProps {
   notes: ScratchpadNote[];
@@ -17,42 +17,34 @@ interface ScratchpadUIProps {
   onClear: () => void;
 }
 
-export function ScratchpadUI({ 
-  notes, 
-  isLoading, 
-  onAddNote, 
-  onRemoveNote, 
-  onClear 
+export function ScratchpadUI({
+  notes,
+  isLoading,
+  onAddNote,
+  onRemoveNote,
+  onClear,
 }: ScratchpadUIProps) {
   const [isExpanded, setIsExpanded] = useState(true);
-  const [newNote, setNewNote] = useState('');
+  const [newNote, setNewNote] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (newNote.trim() && !isLoading) {
       onAddNote(newNote.trim());
-      setNewNote('');
+      setNewNote("");
     }
   };
 
   // Always render - header should always be visible
   return (
-    <div className={`scratchpad ${isExpanded ? 'expanded' : 'collapsed'}`}>
-      <div 
-        className="scratchpad-header"
-        onClick={() => setIsExpanded(!isExpanded)}
-      >
+    <div className={`scratchpad ${isExpanded ? "expanded" : "collapsed"}`}>
+      <div className="scratchpad-header" onClick={() => setIsExpanded(!isExpanded)}>
         <div className="scratchpad-title">
           <span>Notes</span>
-          {notes.length > 0 && (
-            <span className="note-count">({notes.length})</span>
-          )}
+          {notes.length > 0 && <span className="note-count">({notes.length})</span>}
         </div>
-        <button 
-          className="toggle-btn"
-          aria-label={isExpanded ? 'Collapse' : 'Expand'}
-        >
-          {isExpanded ? '▾' : '▸'}
+        <button className="toggle-btn" aria-label={isExpanded ? "Collapse" : "Expand"}>
+          {isExpanded ? "▾" : "▸"}
         </button>
       </div>
 
@@ -66,9 +58,9 @@ export function ScratchpadUI({
             <div className="notes-list">
               {notes.map((note) => (
                 <div key={note.id} className={`note-item source-${note.source}`}>
-                  <span className="note-source">{note.source === 'model' ? 'AI' : '—'}</span>
+                  <span className="note-source">{note.source === "model" ? "AI" : "—"}</span>
                   <span className="note-text">{note.text}</span>
-                  <button 
+                  <button
                     className="remove-btn"
                     onClick={() => onRemoveNote(note.id)}
                     title="Remove"
@@ -103,4 +95,3 @@ export function ScratchpadUI({
     </div>
   );
 }
-

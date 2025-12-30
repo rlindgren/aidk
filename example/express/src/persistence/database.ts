@@ -1,10 +1,10 @@
 /**
  * In-memory storage for the example application.
- * 
+ *
  * Re-exports from shared/server and provides a singleton store.
  */
 
-import { createInMemoryStore, type InMemoryStore } from 'aidk-express';
+import { createInMemoryStore, type InMemoryStore } from "aidk-express";
 
 // Re-export types for backwards compatibility
 export type {
@@ -15,9 +15,9 @@ export type {
   MessageBlockEntity,
   InteractionEntity,
   ToolStateEntity,
-} from 'aidk-express';
+} from "aidk-express";
 
-export { generateUUID } from 'aidk-express';
+export { generateUUID } from "aidk-express";
 
 // Singleton store
 let store: InMemoryStore | null = null;
@@ -25,7 +25,7 @@ let store: InMemoryStore | null = null;
 export function getStore(): InMemoryStore {
   if (!store) {
     store = createInMemoryStore();
-    console.log('In-memory store initialized');
+    console.log("In-memory store initialized");
   }
   return store;
 }

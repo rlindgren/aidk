@@ -1,31 +1,10 @@
 import type { JSX } from "../jsx/jsx-runtime";
-import {
-  COM,
-  type COMTickStatus,
-  type COMTickDecision,
-} from "../com/object-model";
-import type {
-  COMInput,
-  COMOutput,
-  COMTimelineEntry,
-  EngineInput,
-} from "../com/types";
-import {
-  FiberCompiler,
-  type CompileStabilizationOptions,
-  StructureRenderer,
-} from "../compiler";
-import {
-  MarkdownRenderer,
-  XMLRenderer,
-  type ContentRenderer,
-} from "../renderers";
+import { COM, type COMTickStatus, type COMTickDecision } from "../com/object-model";
+import type { COMInput, COMOutput, COMTimelineEntry, EngineInput } from "../com/types";
+import { FiberCompiler, type CompileStabilizationOptions, StructureRenderer } from "../compiler";
+import { MarkdownRenderer, XMLRenderer, type ContentRenderer } from "../renderers";
 import type { Renderer } from "../renderers/base";
-import type {
-  TickState,
-  ComponentDefinition,
-  RecoveryAction,
-} from "../component/component";
+import type { TickState, ComponentDefinition, RecoveryAction } from "../component/component";
 import type { CompiledStructure } from "../compiler/types";
 import type { ToolClass, ExecutableTool } from "../tool/tool";
 import type { ModelInstance, ModelInput } from "../model/model";
@@ -51,19 +30,11 @@ import { ChannelService, type ChannelServiceConfig } from "../channels/service";
 import { toolRegistry } from "./registry";
 import { isAsyncIterable, Logger } from "aidk-kernel";
 import { ensureElement } from "../jsx/jsx-runtime";
-import type {
-  ExecutionHandle,
-  ExecutionMessage,
-} from "../engine/execution-types";
+import type { ExecutionHandle, ExecutionMessage } from "../engine/execution-types";
 import { getWaitHandles } from "../jsx/components/fork-spawn-helpers";
 import type { EngineResponse } from "../engine/engine-response";
 import type { AgentToolResult } from "aidk-shared";
-import {
-  AbortError,
-  NotFoundError,
-  StateError,
-  ValidationError,
-} from "aidk-shared";
+import { AbortError, NotFoundError, StateError, ValidationError } from "aidk-shared";
 import { createEngineProcedure } from "../procedure";
 
 const log = Logger.for("CompileJSXService");
@@ -380,10 +351,7 @@ export interface RunStreamCallbacks<TChunk = unknown> {
    * Convert accumulated chunks into TickResultInput.
    * Required when onTick returns an AsyncIterable.
    */
-  finalizeChunks?: (
-    chunks: TChunk[],
-    tick: number,
-  ) => Promise<TickResultInput> | TickResultInput;
+  finalizeChunks?: (chunks: TChunk[], tick: number) => Promise<TickResultInput> | TickResultInput;
 
   /**
    * Optional: Called when a tick starts (before compilation).
@@ -588,17 +556,10 @@ export class CompileSession {
     };
 
     let { compiled, iterations, forcedStable, recompileReasons } =
-      await this.compiler.compileUntilStable(
-        this.rootElement,
-        this._tickState,
-        compileOptions,
-      );
+      await this.compiler.compileUntilStable(this.rootElement, this._tickState, compileOptions);
 
     if (iterations > 1) {
-      log.debug(
-        { iterations, reasons: recompileReasons },
-        "Compilation stabilized",
-      );
+      log.debug({ iterations, reasons: recompileReasons }, "Compilation stabilized");
     }
     if (forcedStable) {
       log.warn("Compilation forced stable at max iterations");
@@ -612,15 +573,14 @@ export class CompileSession {
     ]);
 
     // Wait for forks/spawns and re-compile if needed
-    const { compiled: finalCompiled } =
-      await this.service.waitForForksAndRecompile(
-        this._com,
-        this.compiler,
-        this.rootElement,
-        this._tickState,
-        compiled,
-        this.handle,
-      );
+    const { compiled: finalCompiled } = await this.service.waitForForksAndRecompile(
+      this._com,
+      this.compiler,
+      this.rootElement,
+      this._tickState,
+      compiled,
+      this.handle,
+    );
 
     // Apply compiled structure
     this.structureRenderer.apply(finalCompiled);
@@ -647,10 +607,7 @@ export class CompileSession {
         try {
           modelInput = await model.fromEngineState(formatted);
         } catch (error) {
-          log.error(
-            { err: error },
-            "Failed to transform COMInput to ModelInput",
-          );
+          log.error({ err: error }, "Failed to transform COMInput to ModelInput");
         }
       } else if (model) {
         modelInput = formatted as unknown as ModelInput;
@@ -840,9 +797,7 @@ export class CompileSession {
     ]);
 
     // 10. Resolve tick control
-    const defaultStatus: COMTickStatus = response.shouldStop
-      ? "completed"
-      : "continue";
+    const defaultStatus: COMTickStatus = response.shouldStop ? "completed" : "continue";
     const tickControl = this._com._resolveTickControl(
       defaultStatus,
       response.stopReason?.reason,
@@ -852,10 +807,7 @@ export class CompileSession {
     // 11. Update session state
     this._current = current;
 
-    if (
-      tickControl.status === "aborted" ||
-      tickControl.status === "completed"
-    ) {
+    if (tickControl.status === "aborted" || tickControl.status === "completed") {
       this._shouldContinue = false;
       this._stopReason = tickControl.terminationReason;
     } else {
@@ -1047,9 +999,7 @@ export class CompileSession {
    * });
    * ```
    */
-  async sendMessage(
-    message: Omit<ExecutionMessage, "id" | "timestamp">,
-  ): Promise<void> {
+  async sendMessage(message: Omit<ExecutionMessage, "id" | "timestamp">): Promise<void> {
     const fullMessage: ExecutionMessage = {
       ...message,
       id: `msg_${this._messageIdCounter++}`,
@@ -1202,8 +1152,7 @@ export class CompileJSXService {
   constructor(private config: CompileJSXServiceConfig = {}) {
     // Initialize hook registries (use provided ones or create new)
     // Note: Only component and lifecycle hooks are service concerns
-    this.componentHooksRegistry =
-      config.hookRegistries?.components || new ComponentHookRegistry();
+    this.componentHooksRegistry = config.hookRegistries?.components || new ComponentHookRegistry();
     this.lifecycleHooksRegistry =
       config.hookRegistries?.lifecycle || new EngineLifecycleHookRegistry();
 
@@ -1267,15 +1216,10 @@ export class CompileJSXService {
   private registerHooks(): void {
     // Register component hooks
     if (this.config.componentHooks && !this.config.hookRegistries?.components) {
-      for (const [hookName, middleware] of Object.entries(
-        this.config.componentHooks,
-      )) {
+      for (const [hookName, middleware] of Object.entries(this.config.componentHooks)) {
         if (middleware && Array.isArray(middleware)) {
           for (const mw of middleware) {
-            this.componentHooksRegistry.register(
-              hookName as ComponentHookName,
-              mw,
-            );
+            this.componentHooksRegistry.register(hookName as ComponentHookName, mw);
           }
         }
       }
@@ -1283,9 +1227,7 @@ export class CompileJSXService {
 
     // Register lifecycle hooks
     if (this.config.lifecycleHooks && !this.config.hookRegistries?.lifecycle) {
-      for (const [hookName, hookArray] of Object.entries(
-        this.config.lifecycleHooks,
-      )) {
+      for (const [hookName, hookArray] of Object.entries(this.config.lifecycleHooks)) {
         if (hookArray && Array.isArray(hookArray)) {
           for (const hook of hookArray) {
             this.lifecycleHooksRegistry.register(
@@ -1329,10 +1271,7 @@ export class CompileJSXService {
           const mcpConfig = normalizeMCPConfig(serverName, config);
           await this.mcpService!.discoverAndRegister(mcpConfig, com);
         } catch (error) {
-          log.error(
-            { err: error, serverName },
-            "Failed to initialize MCP server",
-          );
+          log.error({ err: error, serverName }, "Failed to initialize MCP server");
         }
       },
     );
@@ -1411,12 +1350,8 @@ export class CompileJSXService {
         if (capabilityWithTransformation?.messageTransformation) {
           // Resolve transformation config (could be function or object)
           const transformation =
-            typeof capabilityWithTransformation.messageTransformation ===
-            "function"
-              ? capabilityWithTransformation.messageTransformation(
-                  modelId,
-                  provider,
-                )
+            typeof capabilityWithTransformation.messageTransformation === "function"
+              ? capabilityWithTransformation.messageTransformation(modelId, provider)
               : capabilityWithTransformation.messageTransformation;
 
           // Resolve preferred renderer (could be function or string)
@@ -1436,8 +1371,7 @@ export class CompileJSXService {
       }
     } else {
       // Use default renderer
-      const defaultRenderer =
-        this.config.defaultRenderer || this.renderers.markdown;
+      const defaultRenderer = this.config.defaultRenderer || this.renderers.markdown;
       structureRenderer.setDefaultRenderer(defaultRenderer);
     }
 
@@ -1505,25 +1439,13 @@ export class CompileJSXService {
     const element = ensureElement(rootElement);
 
     // Setup compilation infrastructure
-    const { com, compiler, structureRenderer } = await this.setup(
-      input,
-      element,
-      handle,
-    );
+    const { com, compiler, structureRenderer } = await this.setup(input, element, handle);
 
     // Note: onExecutionStart is NOT called here - it's an Engine lifecycle hook
     // that Engine should call with its own error handling
 
     // Create and return session
-    return new CompileSession(
-      this,
-      com,
-      compiler,
-      structureRenderer,
-      element,
-      handle,
-      maxTicks,
-    );
+    return new CompileSession(this, com, compiler, structureRenderer, element, handle, maxTicks);
   }
 
   /**
@@ -1536,12 +1458,7 @@ export class CompileJSXService {
    * @param current Current tick's state (userInput for tick 1, model output for tick 2+)
    * @returns TickState ready for compilation
    */
-  prepareTickState(
-    com: COM,
-    tick: number,
-    previous?: COMInput,
-    current?: COMOutput,
-  ): TickState {
+  prepareTickState(com: COM, tick: number, previous?: COMInput, current?: COMOutput): TickState {
     // For tick 1, use userInput if current not provided
     if (tick === 1 && !current) {
       const userInput = com.getUserInput();
@@ -1558,11 +1475,7 @@ export class CompileJSXService {
       current: current as COMInput,
       stopReason: undefined,
       stop: (reason: string) => {
-        throw new StateError(
-          "stopped",
-          "running",
-          `Compilation stopped: ${reason}`,
-        );
+        throw new StateError("stopped", "running", `Compilation stopped: ${reason}`);
       },
       channels: undefined,
       queuedMessages: com.getQueuedMessages(),
@@ -1657,15 +1570,11 @@ export class CompileJSXService {
       com._resetRecompileRequest();
 
       // Re-compile to allow components to see fork results
-      const recompileResult = await compiler.compileUntilStable(
-        rootElement,
-        tickState,
-        {
-          maxIterations: 50,
-          trackMutations: process.env["NODE_ENV"] === "development",
-          ...this.config.compileOptions,
-        },
-      );
+      const recompileResult = await compiler.compileUntilStable(rootElement, tickState, {
+        maxIterations: 50,
+        trackMutations: process.env["NODE_ENV"] === "development",
+        ...this.config.compileOptions,
+      });
 
       // Update compiled structure with recompiled result
       compiled = recompileResult.compiled;
@@ -1681,11 +1590,7 @@ export class CompileJSXService {
       }
 
       // Call onAfterCompile hook again for the recompiled structure
-      await this.callLifecycleHooks("onAfterCompile", [
-        compiled,
-        tickState,
-        handle,
-      ]);
+      await this.callLifecycleHooks("onAfterCompile", [compiled, tickState, handle]);
 
       return {
         compiled,
@@ -1714,10 +1619,7 @@ export class CompileJSXService {
   ): Promise<COMInput> {
     const session = await this.createSession(config);
 
-    while (
-      session.shouldContinue() &&
-      session.tick <= (config.maxTicks ?? Infinity)
-    ) {
+    while (session.shouldContinue() && session.tick <= (config.maxTicks ?? Infinity)) {
       const compiled = await session.compileTick();
       const result = await fn(compiled);
       await session.ingestTickResult(result);
@@ -1784,10 +1686,7 @@ export class CompileJSXService {
 
     const session = await this.createSession(config);
 
-    while (
-      session.shouldContinue() &&
-      session.tick <= (config.maxTicks ?? Infinity)
-    ) {
+    while (session.shouldContinue() && session.tick <= (config.maxTicks ?? Infinity)) {
       const tick = session.tick;
 
       // Optional tick start callback
@@ -1929,23 +1828,12 @@ export class CompileJSXService {
       await compiler.compileUntilStable(rootElement, tickState, compileOptions);
 
     // Call onAfterCompile hook
-    await this.callLifecycleHooks("onAfterCompile", [
-      compiled,
-      tickState,
-      handle,
-    ]);
+    await this.callLifecycleHooks("onAfterCompile", [compiled, tickState, handle]);
 
     // Wait for forks/spawns to complete and re-compile if needed
     // This happens BEFORE applying structures so fork results are included
     const { compiled: finalCompiled, recompiled: _recompiled } =
-      await this.waitForForksAndRecompile(
-        com,
-        compiler,
-        rootElement,
-        tickState,
-        compiled,
-        handle,
-      );
+      await this.waitForForksAndRecompile(com, compiler, rootElement, tickState, compiled, handle);
 
     // Apply compiled structure (possibly recompiled after forks)
     structureRenderer.apply(finalCompiled);
@@ -1981,9 +1869,7 @@ export class CompileJSXService {
       tickControl,
       stopReason:
         tickState.stopReason?.reason ||
-        (typeof tickState.stopReason === "string"
-          ? tickState.stopReason
-          : undefined),
+        (typeof tickState.stopReason === "string" ? tickState.stopReason : undefined),
     };
   }
 
@@ -2063,21 +1949,14 @@ export class CompileJSXService {
       await compiler.compileUntilStable(rootElement, tickState, compileOptions);
 
     if (iterations > 1) {
-      log.debug(
-        { iterations, reasons: recompileReasons },
-        "Compilation stabilized",
-      );
+      log.debug({ iterations, reasons: recompileReasons }, "Compilation stabilized");
     }
     if (forcedStable) {
       log.warn("Compilation forced stable at max iterations");
     }
 
     // Call onAfterCompile hook
-    await this.callLifecycleHooks("onAfterCompile", [
-      compiled,
-      tickState,
-      handle,
-    ]);
+    await this.callLifecycleHooks("onAfterCompile", [compiled, tickState, handle]);
 
     // Wait for forks/spawns and re-compile if needed
     const { compiled: finalCompiled } = await this.waitForForksAndRecompile(
@@ -2119,10 +1998,7 @@ export class CompileJSXService {
           try {
             modelInput = await model.fromEngineState(formatted);
           } catch (error) {
-            log.error(
-              { err: error },
-              "Failed to transform COMInput to ModelInput",
-            );
+            log.error({ err: error }, "Failed to transform COMInput to ModelInput");
             // Don't throw - let Engine handle it
           }
         } else {

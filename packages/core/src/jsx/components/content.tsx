@@ -1,7 +1,7 @@
-import { createElement, type JSX } from '../jsx-runtime';
-import type { ContentBlock as ContentBlockType, MediaSource } from 'aidk-shared';
-import { CodeLanguage } from 'aidk-shared';
-import type { ComponentBaseProps } from '../jsx-types';
+import { createElement, type JSX } from "../jsx-runtime";
+import type { ContentBlock as ContentBlockType, MediaSource } from "aidk-shared";
+import { CodeLanguage } from "aidk-shared";
+import type { ComponentBaseProps } from "../jsx-types";
 
 /**
  * Content component primitives for composing Message content.
@@ -15,7 +15,10 @@ export interface ContentBlockProps extends ComponentBaseProps {
  * Helper to create a content block component.
  * This wraps createElement to provide type-safe content block creation.
  */
-function createContentBlock<TProps extends ContentBlockProps>(block: (props: TProps) => JSX.Element, props: TProps): JSX.Element {
+function createContentBlock<TProps extends ContentBlockProps>(
+  block: (props: TProps) => JSX.Element,
+  props: TProps,
+): JSX.Element {
   return createElement(block, props);
 }
 
@@ -25,23 +28,23 @@ export type { ContentBlockType };
 /**
  * Text content block.
  * Usage: <Text>Hello world</Text> or <Text text="Hello" />
- * 
+ *
  * Children take precedence over text prop (React convention - explicit wins).
  * Children can include JSX formatting elements (bold, italic, code, etc.)
  * which will be collected and formatted appropriately.
- * 
+ *
  * @example
  * // Plain text
  * <Text>Hello world</Text>
- * 
+ *
  * // With inline formatting
  * <Text>Hello <b>bold</b> and <inlineCode>code</inlineCode></Text>
- * 
+ *
  * // With dynamic content
  * <Text><b>{isOld ? '[OLD] ' : ''}</b>{message.text}</Text>
  */
 export interface TextProps extends ContentBlockProps {
-  children?: any;  // Allow JSX children for inline formatting
+  children?: any; // Allow JSX children for inline formatting
   text?: string;
 }
 export function Text(props: TextProps): JSX.Element {
@@ -118,7 +121,7 @@ export function Code(props: CodeProps): JSX.Element {
 /**
  * JSON content block.
  * Usage: <Json data={{ key: 'value' }} />
- * 
+ *
  * Children take precedence over text prop (React convention - explicit wins).
  */
 export interface JsonProps extends ContentBlockProps {
@@ -128,11 +131,14 @@ export interface JsonProps extends ContentBlockProps {
 }
 export function Json(props: JsonProps): JSX.Element {
   // Children win over props (more explicit, React convention)
-  const childrenText = props.children !== undefined
-    ? (typeof props.children === 'string' ? props.children : props.children?.join('') || '')
-    : undefined;
-  const text = childrenText ?? props.text ?? '';
-  return createContentBlock<JsonProps>(Json, { ...omit(props, ['children']), text });
+  const childrenText =
+    props.children !== undefined
+      ? typeof props.children === "string"
+        ? props.children
+        : props.children?.join("") || ""
+      : undefined;
+  const text = childrenText ?? props.text ?? "";
+  return createContentBlock<JsonProps>(Json, { ...omit(props, ["children"]), text });
 }
 
 function omit<T, K extends keyof T>(obj: T, keys: K[]): Omit<T, K> {

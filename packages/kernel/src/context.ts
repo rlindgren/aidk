@@ -246,9 +246,7 @@ export class Context {
    * });
    * ```
    */
-  static create(
-    overrides: Partial<Omit<KernelContext, "events">> = {},
-  ): KernelContext {
+  static create(overrides: Partial<Omit<KernelContext, "events">> = {}): KernelContext {
     return {
       requestId: overrides.requestId ?? crypto.randomUUID(),
       traceId: overrides.traceId ?? crypto.randomUUID(),
@@ -326,10 +324,7 @@ export class Context {
    * ]);
    * ```
    */
-  static fork<T>(
-    overrides: Partial<KernelContext>,
-    fn: () => Promise<T>,
-  ): Promise<T> {
+  static fork<T>(overrides: Partial<KernelContext>, fn: () => Promise<T>): Promise<T> {
     const childCtx = Context.child(overrides);
     return Context.run(childCtx, fn);
   }

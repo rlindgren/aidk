@@ -139,7 +139,7 @@ yarn add aidk
 
 Create a test file to verify everything works:
 
-``` tsx
+```tsx
 // test.ts
 import { Component } from 'aidk';
 
@@ -181,7 +181,7 @@ npx tsx test.ts
 ## Version Compatibility
 
 | AIDK Version | Node.js | TypeScript |
-|--------------|---------|------------|
+| ------------ | ------- | ---------- |
 | 1.x          | ≥ 20    | ≥ 5.0      |
 
 ## Monorepo Setup
@@ -254,14 +254,3 @@ CMD ["node", "dist/server.js"]
 </div>
 
 </div>
-
-
-
-
-
-
-
-
-
-
-

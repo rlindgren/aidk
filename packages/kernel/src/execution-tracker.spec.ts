@@ -48,16 +48,12 @@ describe("ExecutionTracker", () => {
   describe("basic tracking", () => {
     it("should track a procedure execution", async () => {
       const result = await runInContext(async () => {
-        return ExecutionTracker.track(
-          ctx,
-          { name: "test-proc" },
-          async (node) => {
-            expect(node).toBeDefined();
-            expect(node.name).toBe("test-proc");
-            expect(node.status).toBe("running");
-            return "result";
-          },
-        );
+        return ExecutionTracker.track(ctx, { name: "test-proc" }, async (node) => {
+          expect(node).toBeDefined();
+          expect(node.name).toBe("test-proc");
+          expect(node.status).toBe("running");
+          return "result";
+        });
       });
 
       expect(result).toBe("result");
@@ -69,11 +65,7 @@ describe("ExecutionTracker", () => {
       expect(ctx.procedureGraph).toBeUndefined();
 
       await runInContext(async () => {
-        return ExecutionTracker.track(
-          ctx,
-          { name: "test" },
-          async () => "result",
-        );
+        return ExecutionTracker.track(ctx, { name: "test" }, async () => "result");
       });
 
       expect(ctx.procedureGraph).toBeDefined();
@@ -81,36 +73,26 @@ describe("ExecutionTracker", () => {
 
     it("should track nested procedures", async () => {
       await runInContext(async () => {
-        return ExecutionTracker.track(
-          ctx,
-          { name: "parent" },
-          async (parentNode) => {
-            // Inside forked context, use Context.get() to get current context
-            const parentCtx = Context.get();
-            expect(parentCtx.procedurePid).toBe(parentNode.pid);
+        return ExecutionTracker.track(ctx, { name: "parent" }, async (parentNode) => {
+          // Inside forked context, use Context.get() to get current context
+          const parentCtx = Context.get();
+          expect(parentCtx.procedurePid).toBe(parentNode.pid);
 
-            await ExecutionTracker.track(
-              parentCtx,
-              { name: "child" },
-              async (childNode) => {
-                const childCtx = Context.get();
-                expect(childNode.parentPid).toBe(parentNode.pid);
-                expect(childCtx.procedurePid).toBe(childNode.pid);
-                return "child-result";
-              },
-            );
+          await ExecutionTracker.track(parentCtx, { name: "child" }, async (childNode) => {
+            const childCtx = Context.get();
+            expect(childNode.parentPid).toBe(parentNode.pid);
+            expect(childCtx.procedurePid).toBe(childNode.pid);
+            return "child-result";
+          });
 
-            // After child completes, parent context is still active
-            expect(Context.get().procedurePid).toBe(parentNode.pid);
-            return "parent-result";
-          },
-        );
+          // After child completes, parent context is still active
+          expect(Context.get().procedurePid).toBe(parentNode.pid);
+          return "parent-result";
+        });
       });
 
       expect(ctx.procedureGraph!.getCount()).toBe(2);
-      const children = ctx.procedureGraph!.getChildren(
-        ctx.procedureGraph!.getAllNodes()[0].pid,
-      );
+      const children = ctx.procedureGraph!.getChildren(ctx.procedureGraph!.getAllNodes()[0].pid);
       expect(children.length).toBeGreaterThan(0);
     });
   });
@@ -155,40 +137,30 @@ describe("ExecutionTracker", () => {
 
     it("should propagate metrics to parent on completion", async () => {
       await runInContext(async () => {
-        return ExecutionTracker.track(
-          ctx,
-          { name: "parent" },
-          async (parentNode) => {
-            const parentCtx = Context.get();
+        return ExecutionTracker.track(ctx, { name: "parent" }, async (parentNode) => {
+          const parentCtx = Context.get();
 
-            // Parent adds its own metrics
-            parentCtx.metrics!["usage.inputTokens"] = 50;
+          // Parent adds its own metrics
+          parentCtx.metrics!["usage.inputTokens"] = 50;
 
-            await ExecutionTracker.track(
-              parentCtx,
-              { name: "child" },
-              async (_childNode) => {
-                // Use Context.get() to access the child's forked context
-                const childCtx = Context.get();
-                childCtx.metrics!["usage.inputTokens"] = 100;
-                return "child-result";
-              },
-            );
+          await ExecutionTracker.track(parentCtx, { name: "child" }, async (_childNode) => {
+            // Use Context.get() to access the child's forked context
+            const childCtx = Context.get();
+            childCtx.metrics!["usage.inputTokens"] = 100;
+            return "child-result";
+          });
 
-            // After child completes, verify child has metrics
-            const childNode = parentCtx.procedureGraph!.getChildNodes(
-              parentNode.pid,
-            )[0];
-            expect(childNode).toBeDefined();
-            expect(childNode!.getMetric("usage.inputTokens")).toBe(100);
+          // After child completes, verify child has metrics
+          const childNode = parentCtx.procedureGraph!.getChildNodes(parentNode.pid)[0];
+          expect(childNode).toBeDefined();
+          expect(childNode!.getMetric("usage.inputTokens")).toBe(100);
 
-            // Parent should have its own metrics PLUS child's metrics propagated
-            // Parent: 50 + Child propagated: 100 = 150
-            expect(parentNode.getMetric("usage.inputTokens")).toBe(150);
+          // Parent should have its own metrics PLUS child's metrics propagated
+          // Parent: 50 + Child propagated: 100 = 150
+          expect(parentNode.getMetric("usage.inputTokens")).toBe(150);
 
-            return "parent-result";
-          },
-        );
+          return "parent-result";
+        });
       });
     });
   });
@@ -216,9 +188,7 @@ describe("ExecutionTracker", () => {
         });
       });
 
-      expect(Telemetry.getHistogram).toHaveBeenCalledWith(
-        "procedure.usage.inputTokens",
-      );
+      expect(Telemetry.getHistogram).toHaveBeenCalledWith("procedure.usage.inputTokens");
     });
   });
 
@@ -244,11 +214,7 @@ describe("ExecutionTracker", () => {
 
       await expect(
         runInContext(async () => {
-          return ExecutionTracker.track(
-            ctx,
-            { name: "test" },
-            async () => "result",
-          );
+          return ExecutionTracker.track(ctx, { name: "test" }, async () => "result");
         }),
       ).rejects.toThrow("Operation aborted");
 

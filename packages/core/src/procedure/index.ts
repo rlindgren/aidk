@@ -4,11 +4,7 @@
  * @module aidk/procedure
  */
 
-import {
-  applyRegistryMiddleware,
-  type Procedure,
-  wrapProcedure,
-} from "aidk-kernel";
+import { applyRegistryMiddleware, type Procedure, wrapProcedure } from "aidk-kernel";
 import { telemetryMiddleware, errorMiddleware } from "../middleware/defaults";
 import { getGlobalMiddleware } from "../config";
 
