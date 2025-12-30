@@ -1,7 +1,7 @@
 {
   "name": "aidk-express",
-  "version": "0.1.0",
-  "description": "Express middleware for AIDK agents",
+  "version": "0.1.1",
+  "description": "Express middleware for AIDK",
   "keywords": [
     "agent",
     "ai",

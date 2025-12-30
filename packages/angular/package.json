@@ -1,7 +1,7 @@
 {
   "name": "aidk-angular",
-  "version": "0.1.0",
-  "description": "Angular bindings for AIDK agents",
+  "version": "0.1.1",
+  "description": "Angular bindings for AIDK",
   "keywords": [
     "agent",
     "ai",

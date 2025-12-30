@@ -1,7 +1,7 @@
 {
   "name": "aidk-server",
-  "version": "0.1.0",
-  "description": "Server utilities for AIDK agents",
+  "version": "0.1.1",
+  "description": "Server utilities for AIDK",
   "keywords": [
     "agent",
     "ai",

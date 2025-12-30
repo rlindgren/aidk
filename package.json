@@ -1,9 +1,8 @@
 {
   "name": "aidk-workspace",
   "version": "0.0.1",
-  "description": "JSX framework for building AI agents",
+  "description": "JSX framework for building AI applications",
   "keywords": [
-    "agent",
     "ai",
     "anthropic",
     "google",

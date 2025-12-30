@@ -1,6 +1,6 @@
 {
   "name": "aidk-shared",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Shared types and utilities for AIDK",
   "keywords": [
     "agent",
@@ -35,7 +35,8 @@
     "./timeline": "./src/timeline.ts",
     "./errors": "./src/errors.ts",
     "./identity": "./src/identity.ts",
-    "./testing": "./src/testing/index.ts"
+    "./testing": "./src/testing/index.ts",
+    "./utils": "./src/utils/index.ts"
   },
   "publishConfig": {
     "access": "public",
@@ -87,6 +88,10 @@
       "./testing": {
         "types": "./dist/testing/index.d.ts",
         "import": "./dist/testing/index.js"
+      },
+      "./utils": {
+        "types": "./dist/utils/index.d.ts",
+        "import": "./dist/utils/index.js"
       }
     },
     "main": "./dist/index.js",

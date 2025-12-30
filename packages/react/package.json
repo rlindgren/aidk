@@ -1,7 +1,7 @@
 {
   "name": "aidk-react",
-  "version": "0.1.0",
-  "description": "React bindings for AIDK agents",
+  "version": "0.1.1",
+  "description": "React bindings for AIDK",
   "keywords": [
     "agent",
     "ai",

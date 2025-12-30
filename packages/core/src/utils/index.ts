@@ -12,9 +12,8 @@
  * @module aidk/utils
  */
 
-export * from "./merge-deep";
+export * from "aidk-shared/utils";
 export * from "./compile-jsx-service";
 export * from "./abort-utils";
 export * from "./registry";
 export * from "./normalization";
-export * from "./entity-ids";
