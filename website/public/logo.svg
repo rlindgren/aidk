@@ -1,43 +1,20 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 50">
   <defs>
-    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#3b9eff;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#74bfff;stop-opacity:1" />
-    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="1.5" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
   </defs>
-  
-  <!-- Background circle -->
-  <circle cx="100" cy="100" r="90" fill="url(#grad)" opacity="0.1"/>
-  
-  <!-- Outer hexagon -->
-  <polygon points="100,20 170,55 170,125 100,160 30,125 30,55" 
-           fill="none" stroke="url(#grad)" stroke-width="4"/>
-  
-  <!-- Inner components -->
-  <circle cx="100" cy="100" r="30" fill="url(#grad)"/>
-  
-  <!-- Connection lines -->
-  <line x1="100" y1="70" x2="100" y2="40" stroke="url(#grad)" stroke-width="2"/>
-  <line x1="126" y1="85" x2="150" y2="70" stroke="url(#grad)" stroke-width="2"/>
-  <line x1="126" y1="115" x2="150" y2="130" stroke="url(#grad)" stroke-width="2"/>
-  <line x1="74" y1="115" x2="50" y2="130" stroke="url(#grad)" stroke-width="2"/>
-  <line x1="74" y1="85" x2="50" y2="70" stroke="url(#grad)" stroke-width="2"/>
-  
-  <!-- Nodes -->
-  <circle cx="100" cy="40" r="8" fill="#3b9eff"/>
-  <circle cx="150" cy="70" r="8" fill="#3b9eff"/>
-  <circle cx="150" cy="130" r="8" fill="#3b9eff"/>
-  <circle cx="50" cy="130" r="8" fill="#3b9eff"/>
-  <circle cx="50" cy="70" r="8" fill="#3b9eff"/>
+
+  <!-- Left chevron -->
+  <path d="M30 14 L18 25 L30 36" fill="none" stroke="#7eb8e7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
+
+  <!-- AIDK text -->
+  <text x="75" y="33" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="26" font-weight="600" fill="white" text-anchor="middle" letter-spacing="1">AIDK</text>
+
+  <!-- Right chevron -->
+  <path d="M120 14 L132 25 L120 36" fill="none" stroke="#7eb8e7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
 </svg>
-
-
-
-
-
-
-
-
-
-
-

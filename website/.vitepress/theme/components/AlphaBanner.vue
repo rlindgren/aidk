@@ -1,13 +1,15 @@
 <script setup></script>
 
 <template>
-  <div class="alpha-banner-wrapper">
-    <div class="alpha-banner">
-      <span class="alpha-badge">ALPHA</span>
-      <span
-        >v0.1.x — APIs may change.
-        <a href="/aidk/docs/getting-started">Get started anyway</a></span
-      >
+  <div class="VPHomeHero alpha-banner-wrapper">
+    <div class="container">
+      <div class="alpha-banner">
+        <span class="alpha-badge">ALPHA</span>
+        <span
+          >v0.1.x — APIs may change.
+          <a href="/aidk/docs/getting-started">Get started anyway</a></span
+        >
+      </div>
     </div>
   </div>
 </template>
@@ -17,8 +19,27 @@
   width: 100%;
   display: flex;
   justify-content: center;
-  padding: 0;
-  margin-top: 24px;
+  padding: 0 24px;
+  margin-bottom: 24px;
+}
+
+.alpha-banner-wrapper .container {
+  display: flex;
+  margin: 0 auto;
+  max-width: 1152px;
+  flex: 1;
+}
+
+@media (min-width: 640px) {
+  .alpha-banner-wrapper{
+    padding: 0 48px;
+  }
+}
+
+@media (min-width: 960px) {
+  .alpha-banner-wrapper {
+    padding: 0 64px;
+  }
 }
 
 .alpha-banner {

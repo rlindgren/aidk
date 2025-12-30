@@ -13,7 +13,8 @@ export default {
   },
   Layout() {
     return h(DefaultTheme.Layout, null, {
-      "home-hero-actions-after": () => h(AlphaBanner),
+      // "home-hero-info-before": () => h("img", { src: "logo-banner.svg", alt: "AIDK", style: { maxWidth: "400px", width: "100%" } }),
+      "home-hero-after": () => h(AlphaBanner),
     });
   },
 };

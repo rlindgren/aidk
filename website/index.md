@@ -3,8 +3,11 @@ layout: home
 
 hero:
   name: AIDK
-  text: Runtime Engine for Model-Driven Applications
-  tagline: Your code runs between model calls. Build agents today. Build world model apps tomorrow.
+  text: JSX Runtime for AI Applications
+  # tagline: Programming, not configuration.
+  image:
+    src: /logo-mark.svg
+    alt: AIDK
   actions:
     - theme: brand
       text: Get Started
@@ -41,9 +44,35 @@ features:
 
 <div class="vp-doc custom-home">
 
-## Not a template system. A runtime.
+## Your code runs between model calls.
 
-AIDK is a **runtime execution engine** for model-driven applications. Your code compiles to context, the model responds, tools execute, state updates—and the cycle repeats.
+Other frameworks: configure an agent, call it, hope for the best.
+
+AIDK: your component renders before **every** model call. The model responds, your code runs, you decide what happens next.
+
+```tsx
+render(com, state) {
+  // This runs on EVERY tick. Not once. Every time.
+  const lastResponse = getLastAssistantMessage(state);
+
+  // Swap models based on what just happened
+  const needsUpgrade = lastResponse?.includes("I'm not sure");
+
+  return (
+    <>
+      <Model model={needsUpgrade ? gpt4 : gpt4mini} />
+
+      {needsUpgrade && (
+        <System>The user needs more help. Take your time. Be thorough.</System>
+      )}
+
+      <Timeline>{this.timeline()}</Timeline>
+    </>
+  );
+}
+```
+
+No configuration for this. No "model fallback" setting. You just... do it.
 
 ```mermaid
 flowchart LR
@@ -53,122 +82,115 @@ flowchart LR
     D --> A
 ```
 
-Other frameworks give you an agent loop and ask you to configure it. AIDK gives you the loop. **You decide what happens inside it.**
-
-```tsx
-class ResearchAgent extends Component {
-  private sources = comState<Source[]>("sources", []);
-  private timeline = comState<COMTimelineEntry[]>("timeline", []);
-
-  onTickStart(com, state) {
-    // Accumulate timeline entries across ticks
-    if (state.current?.timeline) {
-      this.timeline.set([...this.timeline(), ...state.current.timeline]);
-    }
-  }
-
-  render(com, state) {
-    return (
-      <>
-        <Model model={openai("gpt-4o")} />
-
-        <System>
-          You are a research assistant. Search for information, then synthesize
-          findings.
-        </System>
-
-        <SearchTool />
-
-        {/* Show sources the model has gathered */}
-        {this.sources().length > 0 && (
-          <Grounding title="Sources Found">
-            {this.sources().map((s) => (
-              <Section key={s.id} title={s.title}>
-                {s.summary}
-              </Section>
-            ))}
-          </Grounding>
-        )}
-
-        {/* You control how the timeline renders */}
-        <Timeline>
-          {this.timeline().map((entry) => (
-            <Message key={entry.id} {...entry.message} />
-          ))}
-        </Timeline>
-      </>
-    );
-  }
-}
-```
-
-Every tick: your component compiles, the model responds, tools execute, state updates. Next tick: compile again with new state. That's the runtime loop. **You control the interface.**
+Each tick: compile JSX → call model → execute tools → update state → your code runs again.
 
 ---
 
-## Want to do X? Just do it.
+## See it in action
 
 <div class="just-do-it">
 
-**Want to swap models mid-conversation?**
+**Compose agents like UI components:**
 
 ```tsx
-<Model model={state.tick > 5 ? gpt4 : gpt4mini} />
-```
+render() {
+  const messages = this.timeline();
+  const cutoff = messages.length - 10;
 
-**Want to summarize old messages to save tokens?**
+  return (
+    <Section title="Research Assistant">
+      <System>{this.systemPrompt()}</System>
 
-```tsx
-{
-  messages.map((msg, i) =>
-    i < messages.length - 10 ? (
-      <Message role={msg.role}>[Earlier: {msg.summary}]</Message>
-    ) : (
-      <Message {...msg} />
-    ),
+      <Grounding title="Knowledge Base">
+        <Document src={this.activeDoc()} />
+        <List title="Related">{this.relatedDocs().map(d => d.title)}</List>
+      </Grounding>
+
+      <SearchTool onResult={(r) => this.results.set(r)} />
+
+      <Timeline>
+        {messages.map((msg, i) => (
+          <Message key={msg.id} role={msg.role}>
+            {i < cutoff && msg.role === 'user' && <Meta>({formatRelative(msg.timestamp)})</Meta>}
+            {msg.content}
+          </Message>
+        ))}
+      </Timeline>
+    </Section>
   );
 }
 ```
 
-**Want to show image descriptions but let the model hydrate originals on demand?**
+**Route to specialized agents by rendering them:**
 
 ```tsx
-<HydrateTool images={images} />;
-{
-  images.map((img) => (
-    <Grounding key={img.id}>
-      Image {img.id}: {img.description}
-      (use hydrate tool to see original)
-    </Grounding>
-  ));
+render() {
+  const intent = this.detectedIntent();
+
+  if (intent === "refund") return <RefundAgent customer={this.customer()} />;
+  if (intent === "technical") return <TechSupportAgent />;
+
+  return <TriageAgent onIntent={(i) => this.detectedIntent.set(i)} />;
 }
 ```
 
-**Want XML for some parts and Markdown for others?**
+**Tools that show the model what they know:**
 
 ```tsx
-<Section format="xml">
-  <StructuredData data={schema} />
-</Section>
-<Section format="markdown">
-  {freeformInstructions}
-</Section>
+const InventoryTool = createTool({
+  name: "check_inventory",
+  description: "Check stock levels for a product",
+  parameters: z.object({
+    sku: z.string().describe("Product SKU to check"),
+  }),
+
+  async onMount(com) {
+    com.setState("inventory", await fetchInventory());
+  },
+
+  render(com) {
+    const items = com.getState("inventory") || [];
+    return (
+      <Grounding title="Current Inventory">
+        {items.map(i => `${i.sku}: ${i.qty} in stock`).join("\n")}
+      </Grounding>
+    );
+  },
+
+  handler: async ({ sku }) => { /* ... */ }
+});
 ```
 
-**Want to run verification in parallel and wait for results?**
+**Intercept context before it goes to the model:**
 
 ```tsx
-<Fork
-  agent={<FactChecker claim={claim} />}
-  waitUntilComplete={true}
-  onComplete={(r) => this.verified.set(r)}
-/>
+onAfterCompile(com, compiled) {
+  const tokens = estimateTokens(compiled);
+
+  if (tokens > 100000) {
+    const compacted = compactOldMessages(this.timeline(), 20);
+    this.timeline.set(compacted);
+    com.requestRecompile();
+  }
+}
 ```
 
-**Want to log to an external service without blocking?**
+**Fork parallel work, await results:**
 
 ```tsx
-<Spawn agent={<AuditLogger interaction={state} />} />
+<Fork agent={<FactChecker claim={claim} />} waitUntilComplete={true}
+      onComplete={(result) => this.verified.set(result)} />
+
+<Fork agent={<SourceFinder topic={topic} />} waitUntilComplete={true}
+      onComplete={(result) => this.sources.set(result)} />
+
+{/* Both complete before the parent continues */}
+```
+
+**Fire-and-forget background work:**
+
+```tsx
+<Spawn agent={<AuditLogger interaction={state.current} />} />
 ```
 
 </div>

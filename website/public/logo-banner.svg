@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 310 90">
+  <defs>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Left chevron -->
+  <path d="M50 10 L20 45 L50 80" fill="none" stroke="#7eb8e7" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
+
+  <!-- AIDK text -->
+  <text x="155" y="69" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="72" font-weight="600" fill="white" text-anchor="middle" letter-spacing="4">AIDK</text>
+
+  <!-- Right chevron -->
+  <path d="M260 10 L290 45 L260 80" fill="none" stroke="#7eb8e7" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
+</svg>

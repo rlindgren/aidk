@@ -1,221 +1,202 @@
-# AIDK - AI Development Kit
+<p align="center">
+  <img src="./website/public/logo-banner.svg" alt="AIDK" width="400" />
+</p>
 
-A declarative, JSX-based framework for building AI agents and applications.
+<p align="center">
+  <strong>JSX Runtime for AI Applications</strong>
+</p>
 
-## Features
+<p align="center">
+  <a href="https://rlindgren.github.io/aidk/">Documentation</a> ·
+  <a href="https://rlindgren.github.io/aidk/docs/getting-started">Getting Started</a> ·
+  <a href="./example/">Examples</a>
+</p>
 
-- **🎯 Declarative Agent Definition** - Define agents using JSX components
-- **🔄 Streaming First** - Built-in support for streaming responses
-- **🛠️ Tool System** - Type-safe tool definitions with Zod schemas
-- **📡 Real-time Channels** - WebSocket/SSE channels for live updates
-- **🔌 Adapter Pattern** - Swap AI providers (OpenAI, Google, AI SDK)
-- **⚛️ React & Angular** - Framework bindings for frontend integration
-- **🎭 Hooks System** - Extensible middleware for model, tool, and engine events
+---
 
-## Packages
+## Your code runs between model calls.
 
-| Package        | Description                                      |
-| -------------- | ------------------------------------------------ |
-| `aidk`         | Core framework - JSX runtime, engine, components |
-| `aidk-kernel`  | Execution primitives, context, telemetry         |
-| `aidk-client`  | Browser client for connecting to AIDK backends   |
-| `aidk-express` | Express.js middleware and SSE transport          |
-| `aidk-server`  | Server utilities and channel adapters            |
-| `aidk-react`   | React hooks and components                       |
-| `aidk-angular` | Angular services and components                  |
-| `aidk-ai-sdk`  | Vercel AI SDK adapter                            |
-| `aidk-openai`  | OpenAI direct adapter                            |
-| `aidk-google`  | Google AI / Vertex AI adapter                    |
+Other frameworks: you configure an agent, call it, and hope for the best.
 
-## Quick Start
-
-### Installation
-
-```bash
-# Core packages
-pnpm add aidk aidk-kernel
-
-# Choose your adapter
-pnpm add aidk-ai-sdk ai @ai-sdk/openai  # Vercel AI SDK
-# or
-pnpm add aidk-openai                     # Direct OpenAI
-# or
-pnpm add aidk-google                     # Google AI
-
-# Server integration
-pnpm add aidk-express express
-
-# Frontend (pick one)
-pnpm add aidk-react aidk-client          # React
-pnpm add aidk-angular aidk-client        # Angular
-```
-
-### Define an Agent
+AIDK: your component renders before *every* model call. The model responds, you see what happened, your code runs again, you decide what's next.
 
 ```tsx
-// agents/assistant.tsx
-import {
-  EngineComponent,
-  ContextObjectModel,
-  TickState,
-  Section,
-  Message,
-  Timeline,
-} from "aidk";
-import { AiSdkModel } from "aidk-ai-sdk";
-import { openai } from "@ai-sdk/openai";
+render(com, state) {
+  // This runs on EVERY tick. Not once. Every time.
+  const lastResponse = getLastAssistantMessage(state);
 
-export class AssistantAgent extends Component {
-  render(com: COM, state: TickState) {
-    return (
-      <>
-        <AiSdkModel model={openai("gpt-4o-mini")} />
-
-        <Timeline>
-          {state.current?.timeline?.map((entry, i) => (
-            <Message
-              key={i}
-              role={entry.message?.role}
-              content={entry.message?.content}
-            />
-          ))}
-        </Timeline>
-
-        <Section id="instructions" audience="model">
-          You are a helpful assistant.
-        </Section>
-      </>
-    );
-  }
-}
-```
-
-### Create Tools
-
-```tsx
-import { createTool } from "aidk";
-import { z } from "zod";
-
-export const calculatorTool = createTool({
-  name: "calculator",
-  description: "Perform mathematical calculations",
-  parameters: z.object({
-    expression: z.string().describe("Math expression to evaluate"),
-  }),
-  execute: async ({ expression }) => {
-    const result = eval(expression); // Use a proper math parser in production
-    return { result };
-  },
-});
-```
-
-### Set Up Server
-
-```typescript
-// server.ts
-import express from 'express';
-import { createEngine } from 'aidk';
-import { createExpressMiddleware } from 'aidk-express';
-import { AssistantAgent } from './agents/assistant';
-
-const app = express();
-const engine = createEngine();
-
-app.use('/api/agent', createExpressMiddleware({
-  engine,
-  agent: <AssistantAgent />,
-}));
-
-app.listen(3000);
-```
-
-### Connect from Frontend (React)
-
-```tsx
-import { useEngineClient, useExecution } from "aidk-react";
-
-function Chat() {
-  const { client } = useEngineClient({ baseUrl: "http://localhost:3000" });
-  const { messages, send, isStreaming } = useExecution({
-    client,
-    agentId: "assistant",
-  });
+  // Swap models based on what just happened
+  const needsUpgrade = lastResponse?.includes("I'm not sure");
 
   return (
-    <div>
-      {messages.map((msg, i) => (
-        <div key={i}>{msg.content}</div>
-      ))}
-      <input onKeyDown={(e) => e.key === "Enter" && send(e.target.value)} />
-    </div>
+    <>
+      <Model model={needsUpgrade ? gpt4 : gpt4mini} />
+
+      {needsUpgrade && (
+        <System>The user needs more help. Take your time. Be thorough.</System>
+      )}
+
+      <Timeline>{this.timeline()}</Timeline>
+    </>
   );
 }
 ```
 
-## Architecture
+No configuration for this. No "model fallback" setting. You just... do it.
+
+---
+
+## See it in action
+
+**Compose agents like UI components:**
+```tsx
+render() {
+  const messages = this.timeline();
+  const cutoff = messages.length - 10;
+
+  return (
+    <Section title="Research Assistant">
+      <System>{this.systemPrompt()}</System>
+
+      <Grounding title="Knowledge Base">
+        <Document src={this.activeDoc()} />
+        <List title="Related">{this.relatedDocs().map(d => d.title)}</List>
+      </Grounding>
+
+      <SearchTool onResult={(r) => this.results.set(r)} />
+
+      <Timeline>
+        {messages.map((msg, i) => (
+          <Message key={msg.id} role={msg.role}>
+            {i < cutoff && msg.role === 'user' && <Meta>({formatRelative(msg.timestamp)})</Meta>}
+            {msg.content}
+          </Message>
+        ))}
+      </Timeline>
+    </Section>
+  );
+}
+```
+
+**Route to specialized agents by rendering them:**
+```tsx
+render() {
+  const intent = this.detectedIntent();
+
+  if (intent === "refund") return <RefundAgent customer={this.customer()} />;
+  if (intent === "technical") return <TechSupportAgent />;
+
+  return <TriageAgent onIntent={(i) => this.detectedIntent.set(i)} />;
+}
+```
+
+**Tools that show the model what they know:**
+```tsx
+const InventoryTool = createTool({
+  name: "check_inventory",
+  description: "Check stock levels for a product",
+  parameters: z.object({
+    sku: z.string().describe("Product SKU to check"),
+  }),
+
+  // Load data when the tool mounts
+  async onMount(com) {
+    com.setState("inventory", await fetchInventory());
+  },
+
+  // Render current state as context the model sees
+  render(com) {
+    const items = com.getState("inventory") || [];
+    return (
+      <Grounding title="Current Inventory">
+        {items.map(i => `${i.sku}: ${i.qty} in stock`).join("\n")}
+      </Grounding>
+    );
+  },
+
+  handler: async ({ sku }) => { /* ... */ }
+});
+```
+
+**Intercept context before it goes to the model:**
+```tsx
+onAfterCompile(com, compiled) {
+  const tokens = estimateTokens(compiled);
+
+  if (tokens > 100000) {
+    // Too big. Compact old messages.
+    const compacted = compactOldMessages(this.timeline(), 20);
+    this.timeline.set(compacted);
+    com.requestRecompile();
+  }
+}
+```
+
+**Fork parallel work, await results:**
+```tsx
+<Fork agent={<FactChecker claim={claim} />} waitUntilComplete={true}
+      onComplete={(result) => this.verified.set(result)} />
+
+<Fork agent={<SourceFinder topic={topic} />} waitUntilComplete={true}
+      onComplete={(result) => this.sources.set(result)} />
+
+{/* Both complete before the parent continues */}
+```
+
+**Fire and forget background work:**
+```tsx
+<Spawn agent={<AuditLogger interaction={state.current} />} />
+```
+
+---
+
+## The mental model
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                        Frontend                             │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
-│  │ aidk-react  │  │aidk-angular │  │    aidk-client      │  │
-│  └─────────────┘  └─────────────┘  └─────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              │ HTTP/SSE/WebSocket
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│                         Server                              │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
-│  │aidk-express │  │ aidk-server │  │      Channels       │  │
-│  └─────────────┘  └─────────────┘  └─────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│                      Core Engine                            │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
-│  │    aidk     │  │ aidk-kernel │  │      Adapters       │  │
-│  │  (engine,   │  │  (context,  │  │ (ai-sdk, openai,    │  │
-│  │   jsx,      │  │   spans,    │  │  google)            │  │
-│  │   tools)    │  │  telemetry) │  │                     │  │
-│  └─────────────┘  └─────────────┘  └─────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────┐
+│                    TICK LOOP                    │
+│                                                 │
+│    ┌─────────┐    ┌─────────┐    ┌─────────┐    │
+│    │ COMPILE │ -> │  MODEL  │ -> │  TOOLS  │    │
+│    └─────────┘    └─────────┘    └─────────┘    │
+│        ^                              │         │
+│        │         ┌─────────┐          │         │
+│        └──────── │  STATE  │ <────────┘         │
+│                  └─────────┘                    │
+│                                                 │
+│   Your component's render() runs on every tick  │
+└─────────────────────────────────────────────────┘
 ```
+
+Each tick: compile JSX → call model → execute tools → update state → repeat.
+
+Your code sees everything. Your code controls everything.
+
+---
+
+## Install
+
+```bash
+npm install aidk aidk-ai-sdk ai @ai-sdk/openai
+```
+
+## Packages
+
+| Package | Purpose |
+|---------|---------|
+| `aidk` | Core runtime, components, state, tools |
+| `aidk-ai-sdk` | Vercel AI SDK adapter (OpenAI, Anthropic, Google) |
+| `aidk-express` | Express middleware, SSE streaming |
+| `aidk-react` | React hooks and components |
+| `aidk-client` | Browser client for real-time connections |
 
 ## Documentation
 
-- [Documentation Website](https://rlindgren.github.io/aidk/)
-- [Getting Started](https://rlindgren.github.io/aidk/docs/getting-started)
+- [What is AIDK?](https://rlindgren.github.io/aidk/docs/) — The full picture
+- [Getting Started](https://rlindgren.github.io/aidk/docs/getting-started) — 5-minute quickstart
+- [Runtime Architecture](https://rlindgren.github.io/aidk/docs/concepts/runtime-architecture) — The tick loop explained
 - [API Reference](https://rlindgren.github.io/aidk/api/)
-- [Examples](./example/)
-
-## Development
-
-```bash
-# Install dependencies
-pnpm install
-
-# Run tests
-pnpm test
-
-# Type check
-pnpm typecheck
-
-# Build all packages
-pnpm build
-
-# Run example backend
-cd example && pnpm dev:backend
-
-# Run example frontend
-cd example && pnpm dev:frontend
-```
-
-## Contributing
-
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for development setup and guidelines.
 
 ## License
 
-[LICENSE](./LICENSE)
+MIT

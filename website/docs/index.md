@@ -1,6 +1,10 @@
-# AIDK
+<p align="center" style="margin: 2rem 0;">
+  <img src="/logo-banner.svg" alt="AIDK" style="max-width: 400px; width: 100%;" />
+</p>
 
-**A runtime engine for model-driven applications.**
+<p align="center" style="font-size: 1.2rem; color: var(--vp-c-text-2); margin-bottom: 2rem;">
+  <strong>A JSX runtime engine for model-driven applications.</strong><br/>
+</p>
 
 ## Not a template system. A runtime.
 
@@ -467,17 +471,16 @@ UI frameworks build User Interfaces. AIDK builds **Model Interfaces**.
 
 A User Interface presents information to humans in formats native to them: buttons, forms, text, images. A Model Interface presents information to LLMs in formats native to them: messages, sections, tool definitions, structured content.
 
-AIDK bridges both. The same components render to users (via your frontend) and to models (via the context). A `<Scratchpad />` component shows notes to the user in the UI and describes those notes to the model in the context. One source of truth. Two audiences.
+AIDK bridges both. State flows from the server to both audiences—the model sees it as context, the user sees it as UI. Different components, same source of truth.
 
 ```tsx
-// This component serves both audiences
+// Server: AIDK component renders context for the model
 class Scratchpad extends Component {
   private notes = comState<Note[]>("notes", []);
 
   render(com: COM) {
     const noteList = this.notes();
 
-    // For the model: describe the notes in natural language
     return (
       <Section audience="model">
         <Paragraph>The user has {noteList.length} notes:</Paragraph>
@@ -491,9 +494,18 @@ class Scratchpad extends Component {
   }
 }
 
-// The user sees the same notes in the frontend (via channels)
-// The model sees them in the context (via the render above)
-// Both stay in sync because they share state
+// Client: React component renders UI for the user
+function ScratchpadUI() {
+  const notes = useChannel<Note[]>("notes", []);
+
+  return (
+    <ul>
+      {notes.map((n) => <li key={n.id}>{n.text}</li>)}
+    </ul>
+  );
+}
+
+// Same state, two renderings—one for the model, one for the user
 ```
 
 This is **context engineering**—the discipline of crafting what the model sees. AIDK gives you the tools to do it programmatically, reactively, and at scale.

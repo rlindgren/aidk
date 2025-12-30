@@ -30,28 +30,27 @@ export default withMermaid(defineConfig({
   },
 
   head: [
-    ["link", { rel: "icon", type: "image/svg+xml", href: "/aidk/logo.svg" }],
+    ["link", { rel: "icon", type: "image/svg+xml", href: "/aidk/logo-mark.svg" }],
     ["meta", { name: "theme-color", content: "#3b9eff" }],
+    // Open Graph
     ["meta", { property: "og:type", content: "website" }],
-    [
-      "meta",
-      {
-        property: "og:title",
-        content: "AIDK - Runtime Engine for Model-Driven Applications",
-      },
-    ],
-    [
-      "meta",
-      {
-        property: "og:description",
-        content:
-          "Your code runs between model calls. Build agents today. Build world model apps tomorrow.",
-      },
-    ],
+    ["meta", { property: "og:site_name", content: "AIDK" }],
+    ["meta", { property: "og:title", content: "AIDK - Runtime Engine for Model-Driven Applications" }],
+    ["meta", { property: "og:description", content: "Your code runs between model calls. Build agents today. Build world model apps tomorrow." }],
+    ["meta", { property: "og:image", content: "https://rlindgren.github.io/aidk/og-image.png" }],
+    ["meta", { property: "og:image:type", content: "image/png" }],
+    ["meta", { property: "og:image:width", content: "1200" }],
+    ["meta", { property: "og:image:height", content: "630" }],
+    // Twitter Card
+    ["meta", { name: "twitter:card", content: "summary_large_image" }],
+    ["meta", { name: "twitter:title", content: "AIDK - Runtime Engine for Model-Driven Applications" }],
+    ["meta", { name: "twitter:description", content: "Your code runs between model calls. Build agents today. Build world model apps tomorrow." }],
+    ["meta", { name: "twitter:image", content: "https://rlindgren.github.io/aidk/og-image.png" }],
   ],
 
   themeConfig: {
-    logo: "/logo.svg",
+    logo: "/logo-mark.svg",
+    siteTitle: "AIDK",
 
     nav: [
       { text: "Docs", link: "/docs/" },

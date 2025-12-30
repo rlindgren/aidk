@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630">
+  <defs>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="#2a2a2e"/>
+
+  <!-- Left chevron -->
+  <path d="M490 260 L460 295 L490 330" fill="none" stroke="#7eb8e7" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
+
+  <!-- AIDK text -->
+  <text x="600" y="320" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="72" font-weight="600" fill="white" text-anchor="middle" letter-spacing="4">AIDK</text>
+
+  <!-- Right chevron -->
+  <path d="M710 260 L740 295 L710 330" fill="none" stroke="#7eb8e7" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
+
+  <!-- Tagline -->
+  <text x="600" y="380" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="24" font-weight="400" fill="#888888" text-anchor="middle" letter-spacing="1">Runtime for model-driven applications</text>
+</svg>
