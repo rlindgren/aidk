@@ -1,30 +1,48 @@
 {
   "name": "aidk-workspace",
   "version": "0.0.1",
-  "description": "React-inspired JSX framework for building AI agents",
-  "main": "index.ts",
-  "types": "index.ts",
+  "description": "JSX framework for building AI agents",
   "keywords": [
-    "ai",
     "agent",
+    "ai",
+    "anthropic",
+    "google",
     "jsx",
     "llm",
-    "openai",
-    "anthropic",
-    "google"
+    "openai"
   ],
-  "author": "Ryan Lindgren",
+  "homepage": "https://github.com/rlindgren/aidk#readme",
+  "bugs": {
+    "url": "https://github.com/rlindgren/aidk/issues"
+  },
   "license": "ISC",
+  "author": "Ryan Lindgren",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/rlindgren/aidk.git"
   },
-  "bugs": {
-    "url": "https://github.com/rlindgren/aidk/issues"
+  "main": "index.ts",
+  "types": "index.ts",
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      }
+    },
+    "files": [
+      "dist",
+      "!dist/**/*.spec.*",
+      "!dist/**/*.map"
+    ],
+    "main": "dist/index.js",
+    "registry": "https://registry.npmjs.org/",
+    "tag": "latest",
+    "types": "dist/index.d.ts"
   },
-  "homepage": "https://github.com/rlindgren/aidk#readme",
-  "packageManager": "pnpm@10.25.0",
   "scripts": {
+    "prepare": "simple-git-hooks",
     "build": "turbo build",
     "test": "turbo test",
     "typecheck": "turbo typecheck",
@@ -38,29 +56,10 @@
     "version-packages": "changeset version",
     "publish-packages": "turbo run test build && changeset publish"
   },
-  "publishConfig": {
-    "access": "public",
-    "registry": "https://registry.npmjs.org/",
-    "tag": "latest",
-    "main": "dist/index.js",
-    "types": "dist/index.d.ts",
-    "exports": {
-      ".": {
-        "types": "./dist/index.d.ts",
-        "import": "./dist/index.js"
-      }
-    },
-    "files": [
-      "dist",
-      "!dist/**/*.spec.*",
-      "!dist/**/*.map"
-    ]
-  },
-  "peerDependencies": {
-    "zod": "^4.1.13"
-  },
   "devDependencies": {
     "@changesets/cli": "^2.0.0",
+    "@commitlint/cli": "^20.2.0",
+    "@commitlint/config-conventional": "^20.2.0",
     "@jest/test-sequencer": "^30.2.0",
     "@types/jest": "^30.0.0",
     "@types/node": "^25.0.0",
@@ -71,8 +70,17 @@
     "jest": "^30.0.0",
     "oxfmt": "^0.21.0",
     "oxlint": "^1.36.0",
+    "simple-git-hooks": "^2.13.1",
     "ts-jest": "^29.0.0",
     "turbo": "^2.6.3",
     "typescript": "^5.9.3"
-  }
+  },
+  "peerDependencies": {
+    "zod": "^4.1.13"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "pnpm run format:check && pnpm run lint:all",
+    "commit-msg": "npx --no -- commitlint --edit ${1}"
+  },
+  "packageManager": "pnpm@10.25.0"
 }
