@@ -11,7 +11,7 @@ Complete, runnable examples demonstrating AIDK features.
 
 ## Running Examples
 
-All examples are in the [`example/`](https://github.com/rlindgren/aidk/tree/main/example) directory.
+All examples are in the [`example/`](https://github.com/rlindgren/aidk/tree/master/example) directory.
 
 ```bash
 # Clone the repo

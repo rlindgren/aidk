@@ -79,5 +79,5 @@
   "useHTMLEncodedBrackets": true,
   "sanitizeComments": true,
   "disableSources": false,
-  "sourceLinkTemplate": "https://github.com/rlindgren/aidk/blob/main/{path}#L{line}"
+  "sourceLinkTemplate": "https://github.com/rlindgren/aidk/blob/master/{path}#L{line}"
 }

@@ -173,7 +173,7 @@ export default withMermaid(defineConfig({
     },
 
     editLink: {
-      pattern: "https://github.com/rlindgren/aidk/edit/main/website/:path",
+      pattern: "https://github.com/rlindgren/aidk/edit/master/website/:path",
       text: "Edit this page on GitHub",
     },
   },

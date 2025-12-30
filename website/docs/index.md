@@ -73,7 +73,7 @@ AIDK is a **context engineering framework**—a platform for building applicatio
 - [Context Object Model](./concepts/context-object-model.md) - The shared state tree (like DOM for AI)
 - [Tick Lifecycle](./concepts/tick-lifecycle.md) - Complete hook reference
 - [State Management](./state-management.md) - Signals and reactive state
-- [Examples](https://github.com/your-org/aidk/tree/main/example) - Working applications
+- [Examples](https://github.com/your-org/aidk/tree/master/example) - Working applications
 
 ---
 

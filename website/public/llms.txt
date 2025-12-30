@@ -19,7 +19,7 @@ AIDK is a TypeScript framework for building AI agents using familiar React patte
 ## Source Code
 
 - Repository: https://github.com/aidk/aidk
-- AI Agent Guide: https://github.com/aidk/aidk/blob/main/CLAUDE.md
+- AI Agent Guide: https://github.com/aidk/aidk/blob/master/CLAUDE.md
 
 ## Key Concepts
 

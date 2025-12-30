@@ -611,4 +611,4 @@ Track errors and fall back to more reliable models.
 - Build a routing decision dashboard
 - Experiment with different classification methods
 
-See the full source in the [example directory](https://github.com/rlindgren/aidk/tree/main/example).
+See the full source in the [example directory](https://github.com/rlindgren/aidk/tree/master/example).

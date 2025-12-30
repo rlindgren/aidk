@@ -849,6 +849,7 @@ npm install aidk aidk-ai-sdk ai @ai-sdk/openai
 .cta-buttons {
   display: flex;
   gap: 0.75rem;
+  margin-top: 12px;
   justify-content: center;
   flex-wrap: wrap;
 }
@@ -866,6 +867,7 @@ npm install aidk aidk-ai-sdk ai @ai-sdk/openai
 
 .cta-buttons a:hover {
   background: var(--vp-c-brand-3);
+  color: white;
 }
 
 .cta-buttons a:not(:first-child) {

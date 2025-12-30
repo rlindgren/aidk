@@ -476,4 +476,4 @@ The backend extracts user info from headers and makes it available via `Context.
 - Add task sharing between users
 - Persist data to a real database
 
-See the full source in the [example directory](https://github.com/rlindgren/aidk/tree/main/example).
+See the full source in the [example directory](https://github.com/rlindgren/aidk/tree/master/example).
