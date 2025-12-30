@@ -1,6 +1,7 @@
 {
   "name": "aidk-workspace",
   "version": "0.0.1",
+  "private": true,
   "description": "JSX framework for building AI applications",
   "keywords": [
     "ai",
@@ -20,26 +21,7 @@
     "type": "git",
     "url": "git+https://github.com/rlindgren/aidk.git"
   },
-  "main": "index.ts",
-  "types": "index.ts",
-  "publishConfig": {
-    "access": "public",
-    "exports": {
-      ".": {
-        "types": "./dist/index.d.ts",
-        "import": "./dist/index.js"
-      }
-    },
-    "files": [
-      "dist",
-      "!dist/**/*.spec.*",
-      "!dist/**/*.map"
-    ],
-    "main": "dist/index.js",
-    "registry": "https://registry.npmjs.org/",
-    "tag": "latest",
-    "types": "dist/index.d.ts"
-  },
+
   "scripts": {
     "prepare": "simple-git-hooks",
     "build": "turbo build",
