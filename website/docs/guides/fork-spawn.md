@@ -138,22 +138,39 @@ You can also use children instead of the `root` prop:
 
 ### Fork with Input
 
-Pass data to the forked agent:
+Pass data to the forked agent via component props or EngineInput:
 
 ```tsx
+{/* Option 1: Pass data as component props (preferred) */}
+<Fork
+  root={
+    <AnalysisAgent
+      topic="Q4 revenue"
+      depth="detailed"
+      sources={["internal", "external"]}
+    />
+  }
+  waitUntilComplete={true}
+  onComplete={(analysis) => this.analysis.set(analysis)}
+/>
+
+{/* Option 2: Use EngineInput with metadata */}
 <Fork
   root={<AnalysisAgent />}
   input={{
-    topic: "Q4 revenue",
-    depth: "detailed",
-    sources: ["internal", "external"],
+    timeline: [],
+    metadata: {
+      topic: "Q4 revenue",
+      depth: "detailed",
+      sources: ["internal", "external"],
+    },
   }}
   waitUntilComplete={true}
   onComplete={(analysis) => this.analysis.set(analysis)}
 />
 ```
 
-The input becomes the `EngineInput` for the forked execution (typically containing a timeline).
+The `input` prop accepts `EngineInput` (timeline, sections, metadata). For custom data, either pass it as component props or use `metadata`.
 
 ## Spawn: Independent Execution
 
@@ -243,7 +260,7 @@ class ParallelWorkflow extends Component {
         {pending.map((task) => (
           <Fork
             key={task.id}
-            agent={this.getAgentForTask(task.id)}
+            root={this.getAgentForTask(task.id)}
             waitUntilComplete={true}
             onComplete={(result) =>
               this.updateTask(task.id, {

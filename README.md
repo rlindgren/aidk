@@ -139,10 +139,10 @@ onAfterCompile(com, compiled) {
 **Fork parallel work, await results:**
 
 ```tsx
-<Fork agent={<FactChecker claim={claim} />} waitUntilComplete={true}
+<Fork root={<FactChecker claim={claim} />} waitUntilComplete={true}
       onComplete={(result) => this.verified.set(result)} />
 
-<Fork agent={<SourceFinder topic={topic} />} waitUntilComplete={true}
+<Fork root={<SourceFinder topic={topic} />} waitUntilComplete={true}
       onComplete={(result) => this.sources.set(result)} />
 
 {/* Both complete before the parent continues */}
@@ -151,7 +151,7 @@ onAfterCompile(com, compiled) {
 **Fire and forget background work:**
 
 ```tsx
-<Spawn agent={<AuditLogger interaction={state.current} />} />
+<Spawn root={<AuditLogger interaction={state.current} />} />
 ```
 
 ---

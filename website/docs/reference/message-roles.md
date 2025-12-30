@@ -169,6 +169,84 @@ The `event` role isn't natively supported by most models. AIDK transforms it:
 
 The exact transformation is configurable via `messageTransformation` in model options.
 
+### Role Mapping Configuration
+
+Different providers support different roles. AIDK's `MessageTransformationConfig` controls how non-standard roles are mapped:
+
+```typescript
+messageTransformation: {
+  roleMapping: {
+    /**
+     * Role for event messages:
+     * - 'user': Most compatible (default)
+     * - 'developer': Use developer role (Claude, newer OpenAI)
+     * - 'system': Treat as system context
+     */
+    event: 'user' | 'developer' | 'system',
+
+    /**
+     * Role for ephemeral content (Grounding, Ephemeral):
+     * - 'user': Most compatible (default)
+     * - 'developer': Use developer role (Claude, newer OpenAI)
+     * - 'system': Treat as system context
+     */
+    ephemeral: 'user' | 'developer' | 'system',
+  },
+}
+```
+
+### Provider-Specific Defaults
+
+| Provider         | Event Role  | Ephemeral Role | Notes                               |
+| ---------------- | ----------- | -------------- | ----------------------------------- |
+| Anthropic Claude | `developer` | `developer`    | Native developer role support       |
+| OpenAI GPT-4+    | `developer` | `developer`    | Newer models support developer role |
+| OpenAI GPT-3.5   | `user`      | `user`         | Use user role fallback              |
+| Google Gemini    | `user`      | `user`         | Use user role                       |
+
+### Configuring Role Mapping
+
+**Per-model configuration:**
+
+```typescript
+const model = createLanguageModel({
+  metadata: {
+    id: 'claude-3',
+    capabilities: [{
+      messageTransformation: {
+        roleMapping: {
+          event: 'developer',
+          ephemeral: 'developer',
+        },
+      },
+    }],
+  },
+  // ...
+});
+```
+
+**Dynamic configuration based on provider:**
+
+```typescript
+messageTransformation: (modelId: string, provider?: string) => ({
+  roleMapping: {
+    event: provider === 'anthropic' ? 'developer' : 'user',
+    ephemeral: provider === 'anthropic' ? 'developer' : 'user',
+  },
+})
+```
+
+**Per-request override:**
+
+```typescript
+const result = await model.generate.call({
+  messages: [...],
+  messageTransformation: {
+    roleMapping: { event: 'user' },  // Override for this request
+  },
+});
+```
+
 ## JSX Components for Messages
 
 ### Message Component

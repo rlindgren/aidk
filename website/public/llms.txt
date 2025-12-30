@@ -46,7 +46,7 @@ const Calculator = createTool({
 Stream agent responses in real-time:
 ```tsx
 for await (const event of engine.stream(agent, input)) {
-  if (event.type === 'model_chunk') console.log(event.chunk.delta);
+  if (event.type === 'content_delta') console.log(event.delta);
 }
 ```
 

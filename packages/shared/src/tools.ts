@@ -8,7 +8,8 @@
 import type { ContentBlock } from "./blocks";
 
 /**
- * Tool execution type determines how and where the tool is executed.
+ * Tool execution type determines how and where the tool is CONFIGURED to execute.
+ * This is the tool's definition - where it SHOULD run.
  */
 export enum ToolExecutionType {
   /**
@@ -37,6 +38,22 @@ export enum ToolExecutionType {
 }
 
 /**
+ * Tool executor identifies WHO actually executed a tool.
+ *
+ * Different from ToolExecutionType which is WHERE the tool is configured to run.
+ * A SERVER-type tool can be executed by either the engine or an adapter library.
+ */
+export type ToolExecutor =
+  /** Executed by AIDK engine's ToolExecutor */
+  | "engine"
+  /** Executed by adapter library (e.g., AI SDK with maxSteps) */
+  | "adapter"
+  /** Executed by the AI provider (e.g., OpenAI code interpreter, Google grounding) */
+  | "provider"
+  /** Executed by the client (browser/frontend) */
+  | "client";
+
+/**
  * Tool intent describes WHAT the tool does, independent of WHERE it runs.
  * Used by clients to determine how to render/handle tool calls.
  */
@@ -60,49 +77,46 @@ export enum ToolIntent {
   COMPUTE = "compute",
 }
 
+// ============================================================================
+// Tool Call & Result Types
+// ============================================================================
+
 /**
- * Model tool call - represents a tool call made by the model.
- * Platform-independent structure used in streaming and execution.
+ * Tool call - represents a tool call made by the model.
+ *
+ * Used in streaming, execution tracking, and message content.
  */
-export interface ModelToolCall {
+export interface ToolCall {
+  /** Unique ID for this tool call (correlates with tool_result) */
   id: string;
+  /** Tool name */
   name: string;
+  /** Tool input parameters */
   input: Record<string, unknown>;
+  /** Result of tool execution (present after execution) */
+  result?: ToolResult;
 }
 
 /**
- * Agent tool call - represents a tool call in the agent execution context.
+ * Tool result - represents the result of a tool execution.
+ *
  * Used in stream events and execution tracking.
  */
-export interface AgentToolCall {
-  id: string;
-  name: string;
-  input: Record<string, unknown>;
-  toolResult?: AgentToolResult;
-}
-
-/**
- * Agent tool result - represents the result of a tool execution.
- * Used in stream events and execution tracking.
- */
-export interface AgentToolResult {
+export interface ToolResult {
+  /** Optional unique ID for the result itself */
   id?: string;
-  /** ID of the tool call this result is for (matches AgentToolCall.id) */
+  /** ID of the tool call this result is for (matches ToolCall.id) */
   toolUseId: string;
+  /** Tool name */
   name: string;
+  /** Whether execution succeeded */
   success: boolean;
-  content: ContentBlock[]; // Tool results are ContentBlock[] instead of raw output
-  error?: string; // Error message if success is false
-
-  /**
-   * Who executed this tool.
-   * - 'engine': Executed by Engine's ToolExecutor
-   * - 'provider': Executed by the LLM provider (e.g., OpenAI code interpreter)
-   * - 'adapter': Executed by the model adapter library (e.g., AI SDK with maxSteps > 1)
-   * - 'client': Executed by the client (browser/frontend)
-   */
-  executedBy?: "engine" | "provider" | "adapter" | "client";
-
+  /** Result content (tool results are ContentBlock[] for rich output) */
+  content: ContentBlock[];
+  /** Error message if success is false */
+  error?: string;
+  /** Who executed this tool */
+  executedBy?: ToolExecutor;
   /**
    * Execution metadata for observability.
    */
@@ -113,6 +127,25 @@ export interface AgentToolResult {
     [key: string]: unknown;
   };
 }
+
+// ============================================================================
+// Legacy Type Aliases (Deprecated - for backward compatibility)
+// ============================================================================
+
+/**
+ * @deprecated Use ToolCall instead
+ */
+export type ModelToolCall = ToolCall;
+
+/**
+ * @deprecated Use ToolCall instead
+ */
+export type AgentToolCall = ToolCall;
+
+/**
+ * @deprecated Use ToolResult instead
+ */
+export type AgentToolResult = ToolResult;
 
 /**
  * Simplified tool definition - platform-independent base structure.

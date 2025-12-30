@@ -130,8 +130,85 @@ import {
 
 1. **Read the relevant ARCHITECTURE.md** before modifying a package
 2. **Run tests** after changes: `pnpm test`
-3. **Update ARCHITECTURE.md** if you change APIs or behavior
+3. **Update documentation** - see Documentation Requirements below
 4. **Use existing patterns** - check similar code in the codebase
+
+## Documentation Requirements
+
+**Documentation is not optional.** All documentation must be kept comprehensive and up-to-date. This is imperative—documentation serves three critical audiences:
+
+1. **Developers** using AIDK as a library
+2. **AI agents** working on the codebase (including you)
+3. **Contributors** understanding design decisions
+
+### What Must Be Updated
+
+When changing code, you MUST update all relevant documentation:
+
+| Change Type                                | Documentation to Update                                 |
+| ------------------------------------------ | ------------------------------------------------------- |
+| API changes (types, interfaces, functions) | JSDoc/TSDoc comments, ARCHITECTURE.md, website docs     |
+| New features                               | ARCHITECTURE.md, website docs, CLAUDE.md if significant |
+| Behavior changes                           | ARCHITECTURE.md, relevant website guides                |
+| Event types, enums, constants              | Type comments, CONVENTIONS.md, website API docs         |
+| Bug fixes affecting documented behavior    | Correct any inaccurate docs                             |
+
+### JSDoc/TSDoc Standards
+
+All exported types, interfaces, functions, and classes MUST have comprehensive JSDoc comments:
+
+````typescript
+/**
+ * Executes an agent component and streams events in real-time.
+ *
+ * The engine compiles JSX components each tick, calls the model,
+ * executes tools, and yields events throughout the process.
+ *
+ * @param input - Engine input containing timeline, sections, and metadata
+ * @param agent - Optional agent component (uses config root if not provided)
+ * @returns Async iterable of EngineStreamEvent for real-time consumption
+ *
+ * @example
+ * ```typescript
+ * for await (const event of engine.stream(input, <MyAgent />)) {
+ *   if (event.type === 'content_delta') {
+ *     process.stdout.write(event.delta);
+ *   }
+ * }
+ * ```
+ */
+stream(input: EngineInput, agent?: ComponentDefinition): AsyncIterable<EngineStreamEvent>
+````
+
+### ARCHITECTURE.md Files
+
+Each package and major subsystem has an ARCHITECTURE.md that must document:
+
+- **Purpose** - What the module does and why it exists
+- **Key concepts** - Core abstractions and their relationships
+- **Data flow** - How data moves through the system
+- **API surface** - Public types, functions, and their contracts
+- **Examples** - Code showing typical usage patterns
+
+### Website Documentation
+
+The `website/docs/` directory contains user-facing documentation:
+
+- `api/` - API reference (engine.md, execution-handle.md, com.md)
+- `concepts/` - Conceptual guides (runtime-architecture.md, tick-lifecycle.md)
+- `guides/` - How-to guides (tools.md, fork-spawn.md, etc.)
+
+**These docs are the primary resource for developers using AIDK.** They must be accurate, comprehensive, and include working code examples.
+
+### Documentation Checklist
+
+Before completing any change:
+
+- [ ] All new/modified exports have JSDoc comments
+- [ ] ARCHITECTURE.md reflects current behavior
+- [ ] Website docs are updated if user-facing
+- [ ] Code examples in docs actually work
+- [ ] Type definitions match documentation
 
 ## Package Dependencies
 
@@ -175,10 +252,15 @@ The engine yields events during execution:
 ```typescript
 for await (const event of engine.stream(agent, input)) {
   switch (event.type) {
-    case "model_chunk": // Incremental model output
+    case "execution_start": // Execution started
+    case "tick_start": // New tick starting
+    case "content_delta": // Incremental text content
+    case "reasoning_delta": // Incremental reasoning/thinking
     case "tool_call": // Tool being called
     case "tool_result": // Tool result
-    case "agent_end": // Agent finished
+    case "tick_end": // Tick completed
+    case "execution_end": // Execution finished
+    case "engine_error": // Error occurred
   }
 }
 ```

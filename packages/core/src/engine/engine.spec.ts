@@ -200,22 +200,25 @@ describe("Engine v2", () => {
       }
 
       expect(events.length).toBeGreaterThan(0);
-      expect(events.some((e) => e.type === "agent_start")).toBe(true);
+      expect(events.some((e) => e.type === "execution_start")).toBe(true);
       expect(events.some((e) => e.type === "tick_start")).toBe(true);
-      expect(events.some((e) => e.type === "agent_end")).toBe(true);
+      expect(events.some((e) => e.type === "execution_end")).toBe(true);
 
-      // Check for stream chunks (opaque)
-      const chunks = events.filter((e) => e.type === "model_chunk");
-      expect(chunks.length).toBeGreaterThan(0);
-      // Chunks are opaque, but we can verify they exist
-      if (chunks.length > 0) {
-        expect(chunks[0].chunk).toBeDefined();
-      }
+      // Check for stream chunks (passed through from model)
+      // Note: Stream events now have 'type' and base fields, not wrapped in 'chunk'
+      const streamEvents = events.filter(
+        (e) =>
+          e.type !== "execution_start" &&
+          e.type !== "tick_start" &&
+          e.type !== "tick_end" &&
+          e.type !== "execution_end",
+      );
+      expect(streamEvents.length).toBeGreaterThan(0);
 
       // Check final output
-      const endEvent = events.find((e) => e.type === "agent_end");
+      const endEvent = events.find((e) => e.type === "execution_end");
       expect(endEvent).toBeDefined();
-      if (endEvent?.type === "agent_end") {
+      if (endEvent?.type === "execution_end") {
         expect(endEvent.output).toBeDefined();
         expect(endEvent.output.timeline).toBeDefined();
         expect(Array.isArray(endEvent.output.timeline)).toBe(true);

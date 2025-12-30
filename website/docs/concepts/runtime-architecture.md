@@ -268,9 +268,9 @@ const { handle, result } = await engine.execute.withHandle().call(input, <Agent 
 for await (const event of handle.stream()) {
   switch (event.type) {
     case 'tick_start': console.log(`Tick ${event.tick}`); break;
-    case 'model_chunk': process.stdout.write(event.delta); break;
+    case 'content_delta': process.stdout.write(event.delta); break;
     case 'tool_call': console.log(`Tool: ${event.name}`); break;
-    case 'tick_end': console.log('Tick complete'); break;
+    case 'execution_end': console.log('Execution complete'); break;
   }
 }
 

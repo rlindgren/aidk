@@ -67,7 +67,25 @@ export * from "./execution-types";
 export * from "./execution-graph";
 
 // Events and Response
-export type { EngineStreamEvent } from "./engine-events";
+export {
+  StopReason,
+  isStreamEvent,
+  isEngineEvent,
+  isDeltaEvent,
+  isFinalEvent,
+  generateEventId,
+  createEventBase,
+  createExecutionStartEvent,
+  createExecutionEndEvent,
+  createTickStartEvent,
+  createTickEndEvent,
+  createToolCallEvent,
+  createToolResultEvent,
+  createToolConfirmationRequiredEvent,
+  createToolConfirmationResultEvent,
+  createEngineErrorEvent,
+} from "./engine-events";
+export type { StreamEventBase, StreamEvent, EngineEvent, EngineStreamEvent } from "./engine-events";
 export type { EngineResponse } from "./engine-response";
 
 // Hooks

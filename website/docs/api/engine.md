@@ -54,13 +54,15 @@ Execute an agent and stream events in real-time.
 const handle = await engine.stream(input, agent?);
 for await (const event of handle) {
   switch (event.type) {
+    case 'execution_start': // Execution beginning
     case 'tick_start': // Tick beginning
-    case 'model_chunk': // Streaming model output
+    case 'content_delta': // Streaming text content
+    case 'reasoning_delta': // Streaming reasoning content
     case 'tool_call': // Tool being called
     case 'tool_result': // Tool execution result
     case 'tick_end': // Tick completed
-    case 'agent_end': // Execution finished
-    case 'error': // Error occurred
+    case 'execution_end': // Execution finished
+    case 'engine_error': // Error occurred
   }
 }
 ```

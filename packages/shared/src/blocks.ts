@@ -42,6 +42,7 @@ import {
   VideoMimeType,
   CodeLanguage,
 } from "./block-types";
+import type { ToolExecutor } from "./tools";
 
 /**
  * Base properties shared by all content blocks.
@@ -190,12 +191,9 @@ export interface ToolResultBlock extends BaseContentBlock {
   readonly isError?: boolean;
   /**
    * Who executed this tool.
-   * - 'engine': Executed by Engine's ToolExecutor
-   * - 'provider': Executed by the LLM provider (e.g., OpenAI code interpreter)
-   * - 'adapter': Executed by the model adapter library (e.g., AI SDK with maxSteps > 1)
-   * - 'client': Executed by the client (browser/frontend)
+   * @see ToolExecutor for possible values
    */
-  readonly executedBy?: "engine" | "provider" | "adapter" | "client";
+  readonly executedBy?: ToolExecutor;
 }
 
 /**

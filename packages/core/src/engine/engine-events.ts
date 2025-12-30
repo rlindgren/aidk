@@ -1,49 +1,283 @@
-import type { AgentToolCall, AgentToolResult, ToolConfirmationResult } from "../tool/tool";
-import type { COMInput } from "../com/types";
-import type { EngineResponse } from "./engine-response";
+/**
+ * Engine Stream Events
+ *
+ * Re-exports and extends the platform-independent streaming types from aidk-shared.
+ * The engine emits EngineStreamEvent = StreamEvent | EngineEvent.
+ *
+ * Event Pattern:
+ * - StreamEvent: Model output events (content, reasoning, messages, tool calls)
+ * - EngineEvent: Orchestration events (execution lifecycle, ticks, tool results)
+ *
+ * For each streamable entity, events follow:
+ *   [thing]_start → [thing]_delta (0..n) → [thing]_end → [thing] (final)
+ */
+
+// Re-export all streaming types from shared
+export {
+  // Enums
+  StopReason,
+  StreamChunkType,
+  // Type guards
+  isStreamEvent,
+  isEngineEvent,
+  isDeltaEvent,
+  isFinalEvent,
+} from "aidk-shared";
+
+export type {
+  // Base types
+  StreamEventBase,
+  TokenUsage,
+  // Content events
+  ContentStartEvent,
+  ContentDeltaEvent,
+  ContentEndEvent,
+  ContentEvent,
+  // Reasoning events
+  ReasoningStartEvent,
+  ReasoningDeltaEvent,
+  ReasoningEndEvent,
+  ReasoningEvent,
+  // Message events
+  MessageStartEvent,
+  MessageEndEvent,
+  MessageEvent,
+  // Tool call events (model requesting tool)
+  ToolCallStartEvent,
+  ToolCallDeltaEvent,
+  ToolCallEndEvent,
+  ToolCallEvent,
+  // Tool result events
+  ToolResultEvent,
+  // Tool confirmation events
+  ToolConfirmationRequiredEvent,
+  ToolConfirmationResultEvent,
+  // Execution lifecycle
+  ExecutionStartEvent,
+  ExecutionEndEvent,
+  ExecutionEvent,
+  // Tick lifecycle
+  TickStartEvent,
+  TickEndEvent,
+  TickEvent,
+  // Error events
+  StreamErrorEvent,
+  EngineErrorEvent,
+  // Union types
+  StreamEvent,
+  EngineEvent,
+  EngineStreamEvent,
+  // Legacy
+  StreamChunk,
+} from "aidk-shared";
+
+// ============================================================================
+// Event Creation Helpers
+// ============================================================================
+
+import type {
+  StreamEventBase,
+  ExecutionStartEvent,
+  ExecutionEndEvent,
+  TickStartEvent,
+  TickEndEvent,
+  ToolCallEvent,
+  ToolResultEvent,
+  ToolConfirmationRequiredEvent,
+  ToolConfirmationResultEvent,
+  EngineErrorEvent,
+  TokenUsage,
+  StopReason,
+  ToolExecutor,
+} from "aidk-shared";
+
+let eventIdCounter = 0;
 
 /**
- * Engine Stream Events (Model-Agnostic)
+ * Generate a unique event ID
  */
-export type EngineStreamEvent =
-  | {
-      type: "execution_start";
-      executionId: string;
-      threadId: string;
-      sessionId?: string;
-      timestamp: string;
-    }
-  | { type: "agent_start"; agent_name: string; timestamp: string }
-  | { type: "tick_start"; tick: number; timestamp: string }
-  | { type: "model_chunk"; chunk: unknown; tick: number } // Opaque chunk from model
-  | { type: "tool_call"; call: AgentToolCall; tick: number }
-  | { type: "tool_result"; result: AgentToolResult; tick: number }
-  | {
-      type: "tool_confirmation_required";
-      call: AgentToolCall;
-      message: string;
-      tick: number;
-    }
-  | {
-      type: "tool_confirmation_result";
-      confirmation: ToolConfirmationResult;
-      tick: number;
-    }
-  | {
-      type: "tick_end";
-      tick: number;
-      response: EngineResponse;
-      timestamp: string;
-    }
-  | { type: "agent_end"; output: COMInput; timestamp: string }
-  | {
-      type: "execution_end";
-      executionId: string;
-      threadId: string;
-      sessionId?: string;
-      timestamp: string;
-    }
-  | { type: "error"; error: Error; timestamp: string };
+export function generateEventId(): string {
+  return `evt_${Date.now()}_${++eventIdCounter}`;
+}
 
-/** @deprecated Use EngineStreamEvent instead */
-export type AgentStreamEvent = EngineStreamEvent;
+/**
+ * Create base event fields
+ */
+export function createEventBase(tick: number = 1): StreamEventBase {
+  return {
+    id: generateEventId(),
+    tick,
+    timestamp: new Date().toISOString(),
+  };
+}
+
+/**
+ * Create an execution_start event
+ */
+export function createExecutionStartEvent(params: {
+  executionId: string;
+  threadId: string;
+  parentExecutionId?: string;
+  rootExecutionId?: string;
+  componentName?: string;
+  sessionId?: string;
+  tick?: number;
+}): ExecutionStartEvent {
+  return {
+    type: "execution_start",
+    ...createEventBase(params.tick ?? 1),
+    executionId: params.executionId,
+    threadId: params.threadId,
+    parentExecutionId: params.parentExecutionId,
+    rootExecutionId: params.rootExecutionId,
+    componentName: params.componentName,
+    sessionId: params.sessionId,
+  };
+}
+
+/**
+ * Create an execution_end event
+ */
+export function createExecutionEndEvent(params: {
+  executionId: string;
+  threadId: string;
+  parentExecutionId?: string;
+  rootExecutionId?: string;
+  output: unknown;
+  sessionId?: string;
+  tick?: number;
+}): ExecutionEndEvent {
+  return {
+    type: "execution_end",
+    ...createEventBase(params.tick ?? 1),
+    executionId: params.executionId,
+    threadId: params.threadId,
+    parentExecutionId: params.parentExecutionId,
+    rootExecutionId: params.rootExecutionId,
+    output: params.output,
+    sessionId: params.sessionId,
+  };
+}
+
+/**
+ * Create a tick_start event
+ */
+export function createTickStartEvent(tick: number): TickStartEvent {
+  return {
+    type: "tick_start",
+    ...createEventBase(tick),
+    tick,
+  };
+}
+
+/**
+ * Create a tick_end event
+ */
+export function createTickEndEvent(tick: number, usage?: TokenUsage): TickEndEvent {
+  return {
+    type: "tick_end",
+    ...createEventBase(tick),
+    tick,
+    usage,
+  };
+}
+
+/**
+ * Create a tool_call event
+ */
+export function createToolCallEvent(params: {
+  callId: string;
+  name: string;
+  input: Record<string, unknown>;
+  blockIndex: number;
+  tick: number;
+  startedAt: string;
+}): ToolCallEvent {
+  return {
+    type: "tool_call",
+    ...createEventBase(params.tick),
+    callId: params.callId,
+    name: params.name,
+    input: params.input,
+    blockIndex: params.blockIndex,
+    startedAt: params.startedAt,
+    completedAt: new Date().toISOString(),
+  };
+}
+
+/**
+ * Create a tool_result event
+ */
+export function createToolResultEvent(params: {
+  callId: string;
+  name: string;
+  result: unknown;
+  isError?: boolean;
+  executedBy: ToolExecutor;
+  tick: number;
+  startedAt: string;
+}): ToolResultEvent {
+  return {
+    type: "tool_result",
+    ...createEventBase(params.tick),
+    callId: params.callId,
+    name: params.name,
+    result: params.result,
+    isError: params.isError,
+    executedBy: params.executedBy,
+    startedAt: params.startedAt,
+    completedAt: new Date().toISOString(),
+  };
+}
+
+/**
+ * Create a tool_confirmation_required event
+ */
+export function createToolConfirmationRequiredEvent(params: {
+  callId: string;
+  name: string;
+  input: Record<string, unknown>;
+  message: string;
+  tick: number;
+}): ToolConfirmationRequiredEvent {
+  return {
+    type: "tool_confirmation_required",
+    ...createEventBase(params.tick),
+    callId: params.callId,
+    name: params.name,
+    input: params.input,
+    message: params.message,
+  };
+}
+
+/**
+ * Create a tool_confirmation_result event
+ */
+export function createToolConfirmationResultEvent(params: {
+  callId: string;
+  confirmed: boolean;
+  always?: boolean;
+  tick: number;
+}): ToolConfirmationResultEvent {
+  return {
+    type: "tool_confirmation_result",
+    ...createEventBase(params.tick),
+    callId: params.callId,
+    confirmed: params.confirmed,
+    always: params.always,
+  };
+}
+
+/**
+ * Create an engine_error event
+ */
+export function createEngineErrorEvent(error: Error | string, tick: number = 1): EngineErrorEvent {
+  return {
+    type: "engine_error",
+    ...createEventBase(tick),
+    error: {
+      message: error instanceof Error ? error.message : error,
+      code: error instanceof Error ? (error as any).code : undefined,
+    },
+  };
+}

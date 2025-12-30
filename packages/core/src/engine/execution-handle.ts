@@ -545,7 +545,7 @@ export class ExecutionHandleImpl
   /**
    * Create execution state for persistence
    */
-  toState(agent: any, input: any, currentTick: number, previous?: COMInput): ExecutionState {
+  toState(component: any, input: any, currentTick: number, previous?: COMInput): ExecutionState {
     return {
       pid: this.pid,
       parentPid: this.parentPid,
@@ -553,7 +553,7 @@ export class ExecutionHandleImpl
       type: this.type,
       status: this.status,
       input,
-      agent,
+      component,
       currentTick,
       previous,
       startedAt: this.startedAt,

@@ -253,10 +253,21 @@ describe("ExecutionHandleImpl", () => {
   describe("stream", () => {
     it("should stream execution events", async () => {
       const events: EngineStreamEvent[] = [
-        { type: "agent_start", agent_name: "test", timestamp: new Date().toISOString() },
-        { type: "tick_start", tick: 1, timestamp: new Date().toISOString() },
         {
-          type: "agent_end",
+          type: "execution_start",
+          id: "evt_1",
+          tick: 1,
+          timestamp: new Date().toISOString(),
+          executionId: "test-exec",
+          threadId: "test-thread",
+        },
+        { type: "tick_start", id: "evt_2", tick: 1, timestamp: new Date().toISOString() },
+        {
+          type: "execution_end",
+          id: "evt_3",
+          tick: 1,
+          executionId: "test-exec",
+          threadId: "test-thread",
           output: {
             timeline: [],
             sections: {},
@@ -376,7 +387,7 @@ describe("ExecutionHandleImpl", () => {
       handle.incrementTick();
       handle.incrementTick();
 
-      const agent = {} as any;
+      const component = {} as any;
       const input = { timeline: [] };
       const previous: COMInput = {
         timeline: [],
@@ -387,14 +398,14 @@ describe("ExecutionHandleImpl", () => {
         system: [],
       };
 
-      const state = handle.toState(agent, input, 2, previous);
+      const state = handle.toState(component, input, 2, previous);
 
       expect(state.pid).toBe(handle.pid);
       expect(state.rootPid).toBe(handle.rootPid);
       expect(state.type).toBe(handle.type);
       expect(state.status).toBe("running");
       expect(state.input).toBe(input);
-      expect(state.agent).toBe(agent);
+      expect(state.component).toBe(component);
       expect(state.currentTick).toBe(2);
       expect(state.previous).toBe(previous);
       expect(state.startedAt).toBe(handle.startedAt);

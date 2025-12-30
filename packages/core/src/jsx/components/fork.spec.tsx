@@ -88,7 +88,7 @@ describe("Fork Component", () => {
         ),
       };
 
-      const Agent = () => <Fork agent={forkAgent} input={{ timeline: [] }} />;
+      const Agent = () => <Fork root={forkAgent} input={{ timeline: [] }} />;
 
       const result = await engine.execute.call({ timeline: [] }, <Agent />);
 
@@ -101,7 +101,7 @@ describe("Fork Component", () => {
       };
 
       const Agent = () => (
-        <Fork agent={forkAgent} input={{ timeline: [] }}>
+        <Fork root={forkAgent} input={{ timeline: [] }}>
           <Message role="user" content="Children prop" />
         </Fork>
       );

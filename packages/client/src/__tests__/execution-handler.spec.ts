@@ -115,10 +115,12 @@ describe("Message Helpers", () => {
       expect(result).toBe(messages);
     });
 
-    it("should throw for invalid input", () => {
-      expect(() => normalizeMessageInput(123 as any)).toThrow(
-        "input must be string | Message | Message[] | ContentBlock[], received number",
-      );
+    it("should handle non-standard input gracefully", () => {
+      // The shared normalizeMessageInput is permissive and doesn't throw for invalid input
+      // It relies on TypeScript for type safety at compile time
+      const result = normalizeMessageInput(123 as any);
+      expect(result).toHaveLength(1);
+      expect(result[0].role).toBe("user");
     });
   });
 });
@@ -211,7 +213,15 @@ describe("StreamProcessor", () => {
       processor.processEvent(
         {
           type: "tool_call",
-          call: { id: "tool-1", name: "search", input: { query: "test" } },
+          id: "evt_1",
+          tick: 1,
+          timestamp: new Date().toISOString(),
+          callId: "tool-1",
+          name: "search",
+          input: { query: "test" },
+          blockIndex: 0,
+          startedAt: new Date().toISOString(),
+          completedAt: new Date().toISOString(),
         } as any,
         context,
         true,
@@ -237,7 +247,15 @@ describe("StreamProcessor", () => {
       processor.processEvent(
         {
           type: "tool_call",
-          call: { id: "tool-1", name: "search", input: {} },
+          id: "evt_1",
+          tick: 1,
+          timestamp: new Date().toISOString(),
+          callId: "tool-1",
+          name: "search",
+          input: {},
+          blockIndex: 0,
+          startedAt: new Date().toISOString(),
+          completedAt: new Date().toISOString(),
         } as any,
         context,
         true,
@@ -247,12 +265,16 @@ describe("StreamProcessor", () => {
       processor.processEvent(
         {
           type: "tool_result",
-          result: {
-            toolUseId: "tool-1",
-            name: "search",
-            success: true,
-            content: [{ type: "text", text: "Result" }],
-          },
+          id: "evt_2",
+          tick: 1,
+          timestamp: new Date().toISOString(),
+          callId: "tool-1",
+          name: "search",
+          result: [{ type: "text", text: "Result" }],
+          isError: false,
+          executedBy: "engine",
+          startedAt: new Date().toISOString(),
+          completedAt: new Date().toISOString(),
         } as any,
         context,
         true,
@@ -265,22 +287,32 @@ describe("StreamProcessor", () => {
       expect(toolMessage?.content[0].type).toBe("tool_result");
     });
 
-    it("should handle agent_end event", () => {
+    it("should handle execution_end event", () => {
       const context = createContext();
       const result = { output: "done" };
 
-      processor.processEvent({ type: "agent_end", output: result } as any, context, false);
+      processor.processEvent({ type: "execution_end", output: result } as any, context, false);
 
       expect(onComplete).toHaveBeenCalledWith(result);
     });
 
     it("should handle error event", () => {
       const context = createContext();
-      const error = new Error("Something went wrong");
 
-      processor.processEvent({ type: "error", error } as any, context, false);
+      processor.processEvent(
+        {
+          type: "error",
+          id: "evt_1",
+          tick: 1,
+          timestamp: new Date().toISOString(),
+          error: { message: "Something went wrong" },
+        } as any,
+        context,
+        false,
+      );
 
-      expect(onError).toHaveBeenCalledWith(error);
+      expect(onError).toHaveBeenCalledWith(expect.any(Error));
+      expect(onError.mock.calls[0][0].message).toBe("Something went wrong");
     });
   });
 
@@ -338,7 +370,7 @@ describe("ExecutionHandler", () => {
     it("should add user message to messages", async () => {
       mockClient.stream.mockImplementation(async function* () {
         yield { type: "execution_start" };
-        yield { type: "agent_end", output: {} };
+        yield { type: "execution_end", output: {} };
       });
 
       await handler.sendMessage("test-agent", "Hello");
@@ -354,7 +386,7 @@ describe("ExecutionHandler", () => {
       mockClient.stream.mockImplementation(async function* () {
         streamingDuringCall = handler.getIsStreaming();
         yield { type: "execution_start" };
-        yield { type: "agent_end", output: {} };
+        yield { type: "execution_end", output: {} };
       });
 
       await handler.sendMessage("test-agent", "Hello");
@@ -366,7 +398,7 @@ describe("ExecutionHandler", () => {
     it("should call onStreamingChange", async () => {
       mockClient.stream.mockImplementation(async function* () {
         yield { type: "execution_start" };
-        yield { type: "agent_end", output: {} };
+        yield { type: "execution_end", output: {} };
       });
 
       await handler.sendMessage("test-agent", "Hello");
@@ -391,7 +423,7 @@ describe("ExecutionHandler", () => {
     it("should pass threadId to client", async () => {
       mockClient.stream.mockImplementation(async function* () {
         yield { type: "execution_start" };
-        yield { type: "agent_end", output: {} };
+        yield { type: "execution_end", output: {} };
       });
 
       await handler.sendMessage("test-agent", "Hello", {
@@ -407,7 +439,7 @@ describe("ExecutionHandler", () => {
     it("should accept different input types", async () => {
       mockClient.stream.mockImplementation(async function* () {
         yield { type: "execution_start" };
-        yield { type: "agent_end", output: {} };
+        yield { type: "execution_end", output: {} };
       });
 
       // String
@@ -433,7 +465,7 @@ describe("ExecutionHandler", () => {
 
       // Verify new client is used
       newClient.stream.mockImplementation(async function* () {
-        yield { type: "agent_end", output: {} };
+        yield { type: "execution_end", output: {} };
       });
 
       handler.sendMessage("test-agent", "Test");
@@ -447,7 +479,7 @@ describe("ExecutionHandler", () => {
     it("should update threadId from execution_start", async () => {
       mockClient.stream.mockImplementation(async function* () {
         yield { type: "execution_start", threadId: "new-thread" };
-        yield { type: "agent_end", output: {} };
+        yield { type: "execution_end", output: {} };
       });
 
       await handler.sendMessage("test-agent", "Hello");
@@ -459,14 +491,14 @@ describe("ExecutionHandler", () => {
     it("should use existing threadId for subsequent calls", async () => {
       mockClient.stream.mockImplementation(async function* () {
         yield { type: "execution_start", threadId: "first-thread" };
-        yield { type: "agent_end", output: {} };
+        yield { type: "execution_end", output: {} };
       });
 
       await handler.sendMessage("test-agent", "First");
 
       mockClient.stream.mockImplementation(async function* () {
         yield { type: "execution_start" };
-        yield { type: "agent_end", output: {} };
+        yield { type: "execution_end", output: {} };
       });
 
       await handler.sendMessage("test-agent", "Second");

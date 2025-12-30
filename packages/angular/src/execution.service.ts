@@ -14,13 +14,7 @@ import { Injectable, type OnDestroy } from "@angular/core";
 import { BehaviorSubject, Subject, Observable, throwError } from "rxjs";
 import { takeUntil, tap, finalize, catchError } from "rxjs/operators";
 import { EngineService } from "./engine.service";
-import {
-  type Message,
-  StreamProcessor,
-  type StreamEvent,
-  createMessage,
-  normalizeMessageInput,
-} from "aidk-client";
+import { type Message, StreamProcessor, createMessage, normalizeMessageInput } from "aidk-client";
 import type { EngineStreamEvent, MessageInput } from "aidk-client";
 
 @Injectable()
@@ -127,7 +121,7 @@ export class ExecutionService implements OnDestroy {
     return this.engineService.stream(agentId, engineInput).pipe(
       tap((event) => {
         const result = this.processor.processEvent(
-          event as StreamEvent,
+          event as EngineStreamEvent,
           { assistantMessage, assistantMessageId },
           addedAssistantMessage,
         );

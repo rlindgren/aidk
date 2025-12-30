@@ -12,7 +12,7 @@
 
 import { EngineClient } from "./engine-client";
 import type { Message, ContentBlock, EngineStreamEvent } from "./types";
-import { ValidationError } from "aidk-shared";
+import { normalizeMessageInput as normalizeInput, type MessageInput } from "aidk-shared";
 
 // =============================================================================
 // Message Helpers
@@ -45,53 +45,14 @@ export function createMessage(
 }
 
 /**
- * Flexible message input types
+ * Re-export MessageInput from shared for backward compatibility
  */
-export type MessageInput =
-  | string // Simple text -> user message
-  | ContentBlock // Single block -> user message
-  | ContentBlock[] // Multiple blocks -> user message
-  | Message // Full message
-  | Message[]; // Multiple messages
+export type { MessageInput };
 
 /**
- * Normalize flexible input to Message array
+ * Re-export normalizeMessageInput from shared for backward compatibility
  */
-export function normalizeMessageInput(
-  input: MessageInput,
-  defaultRole: Message["role"] = "user",
-): Message[] {
-  // Already an array of messages
-  if (Array.isArray(input) && input.length > 0 && "role" in input[0]) {
-    return input as Message[];
-  }
-
-  // Single message
-  if (typeof input === "object" && "role" in input && "content" in input) {
-    return [input as Message];
-  }
-
-  // String -> text block in user message
-  if (typeof input === "string") {
-    return [createMessage(defaultRole, input)];
-  }
-
-  // Single content block
-  if (typeof input === "object" && "type" in input) {
-    return [createMessage(defaultRole, [input as ContentBlock])];
-  }
-
-  // Array of content blocks
-  if (Array.isArray(input)) {
-    return [createMessage(defaultRole, input as ContentBlock[])];
-  }
-
-  throw ValidationError.type(
-    "input",
-    "string | Message | Message[] | ContentBlock[]",
-    typeof input,
-  );
-}
+export const normalizeMessageInput = normalizeInput;
 
 // =============================================================================
 // Stream Event Types
@@ -216,6 +177,9 @@ export class StreamProcessor {
     const { assistantMessage, assistantMessageId } = context;
 
     switch (event.type) {
+      // =========================================================================
+      // Execution Lifecycle Events
+      // =========================================================================
       case "execution_start":
         // Execution started with thread context
         if (event.threadId) {
@@ -224,182 +188,147 @@ export class StreamProcessor {
         break;
 
       case "execution_end":
-        // Execution ended
+        // Execution ended with output
+        if (event.output) {
+          this.callbacks.onComplete?.(event.output);
+        }
         break;
 
-      case "agent_start":
-        // Agent started - could emit event
-        break;
-
+      // =========================================================================
+      // Tick Lifecycle Events
+      // =========================================================================
       case "tick_start":
         // New tick starting
         break;
 
-      case "model_chunk":
-        // Process the chunk based on its type
-        const chunk = event.chunk as any;
-        if (!chunk?.type) break;
+      case "tick_end":
+        // Tick completed
+        break;
 
-        switch (chunk.type) {
-          // Message lifecycle - create placeholder here
-          case "message_start":
-            if (!addedAssistantMessage) {
-              this.addMessage(assistantMessage);
-              addedAssistantMessage = true;
-            }
-            break;
-          case "message_end":
-            // Message ended - could extract final usage stats from chunk.usage
-            break;
-
-          // Reasoning/thinking chunks
-          case "reasoning_start":
-          case "reasoning_delta":
-          case "reasoning_end":
-            if (chunk.reasoning) {
-              this.updateMessage(assistantMessageId, (msg) => {
-                const existingReasoning = msg.content.find((b) => b.type === "reasoning") as any;
-                if (existingReasoning) {
-                  return {
-                    ...msg,
-                    content: msg.content.map((b) =>
-                      b.type === "reasoning"
-                        ? { ...b, text: (b as any).text + chunk.reasoning }
-                        : b,
-                    ),
-                  };
-                } else {
-                  // Add reasoning block at the start of content
-                  return {
-                    ...msg,
-                    content: [{ type: "reasoning", text: chunk.reasoning }, ...msg.content],
-                  };
-                }
-              });
-            }
-            break;
-
-          // Content chunks
-          case "content_start":
-            // Content block starting - could track by chunk.id for multi-block support
-            break;
-          case "content_delta":
-            if (chunk.delta) {
-              // Check if this is tool input streaming (blockType: 'tool_use')
-              if (chunk.blockType === "tool_use") {
-                // Tool input streaming - informational only, full input arrives via tool_call event
-                break;
-              }
-
-              // Check if this is tool result content streaming (blockType: 'tool_result')
-              if (chunk.blockType === "tool_result") {
-                // Tool result content streaming - accumulate in the most recent tool_result block
-                this.updateMessage(assistantMessageId, (msg) => {
-                  const toolResultBlocks = msg.content.filter((b) => b.type === "tool_result");
-                  if (toolResultBlocks.length > 0) {
-                    const lastToolResult = toolResultBlocks[toolResultBlocks.length - 1];
-                    // Append delta to the last text block in tool_result content, or create new text block
-                    const updatedContent = [...lastToolResult.content];
-                    const lastTextBlock = updatedContent[updatedContent.length - 1];
-                    if (lastTextBlock?.type === "text") {
-                      updatedContent[updatedContent.length - 1] = {
-                        ...lastTextBlock,
-                        text: lastTextBlock.text + chunk.delta,
-                      };
-                    } else {
-                      updatedContent.push({ type: "text", text: chunk.delta });
-                    }
-
-                    return {
-                      ...msg,
-                      content: msg.content.map((b) =>
-                        b === lastToolResult ? { ...b, content: updatedContent } : b,
-                      ),
-                    };
-                  }
-                  return msg;
-                });
-                break;
-              }
-
-              // Regular text content delta
-              this.updateMessage(assistantMessageId, (msg) => {
-                const existingText = msg.content.find((b) => b.type === "text") as any;
-                if (existingText) {
-                  return {
-                    ...msg,
-                    content: msg.content.map((b) =>
-                      b.type === "text" ? { ...b, text: (b as any).text + chunk.delta } : b,
-                    ),
-                  };
-                } else {
-                  return {
-                    ...msg,
-                    content: [...msg.content, { type: "text", text: chunk.delta }],
-                  };
-                }
-              });
-            }
-            break;
-          case "content_end":
-            // Content block ended
-            break;
-
-          // Tool-related chunks
-          case "tool_call":
-            // Handled via the tool_call event type above
-            break;
-          case "tool_result":
-            // Provider-executed tool result (web search, code execution, etc.)
-            // Add as tool_result block to assistant message
-            this.updateMessage(assistantMessageId, (msg) => ({
-              ...msg,
-              content: [
-                ...msg.content,
-                {
-                  type: "tool_result",
-                  toolUseId: chunk.toolCallId,
-                  name: chunk.toolName,
-                  content: Array.isArray(chunk.toolResult)
-                    ? chunk.toolResult
-                    : [{ type: "text", text: String(chunk.toolResult) }],
-                  isError: chunk.isToolError || false,
-                  executedBy: chunk.providerExecuted ? "provider" : "engine",
-                } as ContentBlock,
-              ],
-            }));
-            break;
-
-          // Step lifecycle
-          case "step_start":
-            // Step starting - could emit event or track metadata
-            break;
-          case "step_end":
-            // Step ended - could extract usage stats from chunk.usage
-            break;
-
-          // Errors
-          case "error":
-            if (chunk.raw?.error) {
-              this.callbacks.onError?.(
-                chunk.raw.error instanceof Error
-                  ? chunk.raw.error
-                  : new Error(String(chunk.raw.error)),
-              );
-            }
-            break;
+      // =========================================================================
+      // Message Lifecycle Events
+      // =========================================================================
+      case "message_start":
+        // Create assistant message placeholder
+        if (!addedAssistantMessage) {
+          this.addMessage(assistantMessage);
+          addedAssistantMessage = true;
         }
         break;
 
-      case "tool_call":
+      case "message_end":
+        // Message ended - could extract final usage stats
+        break;
+
+      // =========================================================================
+      // Content Events
+      // =========================================================================
+      case "content_start":
+        // Content block starting
+        break;
+
+      case "content_delta":
+        // Check if this is tool input streaming (blockType: 'tool_use')
+        if (event.blockType === "tool_use") {
+          // Tool input streaming - informational only, full input arrives via tool_call event
+          break;
+        }
+
+        // Check if this is tool result content streaming (blockType: 'tool_result')
+        if (event.blockType === "tool_result") {
+          // Tool result content streaming - accumulate in the most recent tool_result block
+          this.updateMessage(assistantMessageId, (msg) => {
+            const toolResultBlocks = msg.content.filter((b) => b.type === "tool_result");
+            if (toolResultBlocks.length > 0) {
+              const lastToolResult = toolResultBlocks[toolResultBlocks.length - 1];
+              const updatedContent = [...lastToolResult.content];
+              const lastTextBlock = updatedContent[updatedContent.length - 1];
+              if (lastTextBlock?.type === "text") {
+                updatedContent[updatedContent.length - 1] = {
+                  ...lastTextBlock,
+                  text: lastTextBlock.text + event.delta,
+                };
+              } else {
+                updatedContent.push({ type: "text", text: event.delta });
+              }
+              return {
+                ...msg,
+                content: msg.content.map((b) =>
+                  b === lastToolResult ? { ...b, content: updatedContent } : b,
+                ),
+              };
+            }
+            return msg;
+          });
+          break;
+        }
+
+        // Regular text content delta
+        this.updateMessage(assistantMessageId, (msg) => {
+          const existingText = msg.content.find((b) => b.type === "text") as any;
+          if (existingText) {
+            return {
+              ...msg,
+              content: msg.content.map((b) =>
+                b.type === "text" ? { ...b, text: (b as any).text + event.delta } : b,
+              ),
+            };
+          } else {
+            return {
+              ...msg,
+              content: [...msg.content, { type: "text", text: event.delta }],
+            };
+          }
+        });
+        break;
+
+      case "content_end":
+        // Content block ended
+        break;
+
+      // =========================================================================
+      // Reasoning Events
+      // =========================================================================
+      case "reasoning_start":
+        // Reasoning block starting
+        break;
+
+      case "reasoning_delta":
+        this.updateMessage(assistantMessageId, (msg) => {
+          const existingReasoning = msg.content.find((b) => b.type === "reasoning") as any;
+          if (existingReasoning) {
+            return {
+              ...msg,
+              content: msg.content.map((b) =>
+                b.type === "reasoning" ? { ...b, text: (b as any).text + event.delta } : b,
+              ),
+            };
+          } else {
+            // Add reasoning block at the start of content
+            return {
+              ...msg,
+              content: [{ type: "reasoning", text: event.delta }, ...msg.content],
+            };
+          }
+        });
+        break;
+
+      case "reasoning_end":
+        // Reasoning block ended
+        break;
+
+      // =========================================================================
+      // Tool Events
+      // =========================================================================
+      case "tool_call": {
         // Find current block count to know where this tool_use will be
         const currentMsg = this.messages.find((m) => m.id === assistantMessageId);
-        const blockIndex = currentMsg?.content.length ?? 0;
+        const blockIdx = currentMsg?.content.length ?? 0;
 
         // Register in index for O(1) lookup when result arrives
-        this.toolUseIndex.set(event.call.id, {
+        this.toolUseIndex.set(event.callId, {
           messageId: assistantMessageId,
-          blockIndex,
+          blockIndex: blockIdx,
         });
 
         this.updateMessage(assistantMessageId, (msg) => ({
@@ -408,52 +337,59 @@ export class StreamProcessor {
             ...msg.content,
             {
               type: "tool_use",
-              toolUseId: event.call.id,
-              name: event.call.name,
-              input: event.call.input,
+              toolUseId: event.callId,
+              name: event.name,
+              input: event.input,
             } as ContentBlock,
           ],
         }));
         break;
+      }
 
-      case "tool_result":
-        // Backend sends: { toolUseId, name, success, content, error, executedBy }
-        const toolResult = event.result as any;
-
+      case "tool_result": {
         // Build the tool result block
-        const toolResultBlock: ContentBlock = {
+        const resultBlock: ContentBlock = {
           type: "tool_result",
-          toolUseId: toolResult.toolUseId,
-          name: toolResult.name,
-          content: toolResult.content || [],
-          isError: !toolResult.success,
-          executedBy: toolResult.executedBy,
+          toolUseId: event.callId,
+          name: event.name,
+          content: Array.isArray(event.result)
+            ? event.result
+            : [{ type: "text", text: String(event.result) }],
+          isError: event.isError || false,
+          executedBy: event.executedBy,
         };
 
         // Patch the tool_use block with the result (O(1) lookup)
-        const location = this.toolUseIndex.get(toolResult.toolUseId);
+        const location = this.toolUseIndex.get(event.callId);
         if (location) {
-          this.patchToolUseWithResult(location, toolResultBlock);
+          this.patchToolUseWithResult(location, resultBlock);
         }
 
         // Also add tool result as separate message (for API/model compatibility)
-        const toolResultMessage = createMessage("tool", [toolResultBlock]);
-        this.addMessage(toolResultMessage);
+        const toolMessage = createMessage("tool", [resultBlock]);
+        this.addMessage(toolMessage);
+        break;
+      }
+
+      case "tool_confirmation_required":
+        // Tool requires user confirmation - could emit event
         break;
 
-      case "tick_end":
-        // Tick completed
+      case "tool_confirmation_result":
+        // Confirmation result received
         break;
 
-      case "agent_end":
-        // Extract threadId from result metadata
-        const result = event.output as any;
-        this.callbacks.onComplete?.(result);
-        break;
-
+      // =========================================================================
+      // Error Events
+      // =========================================================================
       case "error":
-        const error = event.error instanceof Error ? event.error : new Error(String(event.error));
-        this.callbacks.onError?.(error);
+        // Stream error from model
+        this.callbacks.onError?.(new Error(event.error.message));
+        break;
+
+      case "engine_error":
+        // Engine error
+        this.callbacks.onError?.(new Error(event.error.message));
         break;
     }
 

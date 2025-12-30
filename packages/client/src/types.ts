@@ -36,6 +36,7 @@ import type {
   AgentToolResult,
   ClientToolDefinition,
   ToolConfirmationResult,
+  EngineStreamEvent,
 } from "aidk-shared";
 
 // Re-export for convenience
@@ -58,6 +59,7 @@ export type {
   ContentInput,
   ContentInputArray,
   TimelineEntry,
+  EngineStreamEvent,
 };
 export {
   StreamChunkType,
@@ -127,52 +129,6 @@ export interface ExecutionResult {
     [key: string]: unknown;
   };
 }
-
-// =============================================================================
-// Stream Event Types
-// =============================================================================
-
-/**
- * Engine stream event types - matches backend EngineStreamEvent
- */
-export type EngineStreamEvent =
-  | {
-      type: "execution_start";
-      executionId: string;
-      threadId: string;
-      sessionId?: string;
-      timestamp: string;
-    }
-  | { type: "agent_start"; agent_name: string; timestamp: string }
-  | { type: "tick_start"; tick: number; timestamp: string }
-  | { type: "model_chunk"; chunk: StreamChunk; tick: number }
-  | { type: "tool_call"; call: AgentToolCall; tick: number }
-  | { type: "tool_result"; result: AgentToolResult; tick: number }
-  | {
-      type: "tool_confirmation_required";
-      call: AgentToolCall;
-      message: string;
-      tick: number;
-    }
-  | {
-      type: "tool_confirmation_result";
-      confirmation: ToolConfirmationResult;
-      tick: number;
-    }
-  | { type: "tick_end"; tick: number; response: unknown; timestamp: string }
-  | { type: "agent_end"; output: unknown; timestamp: string }
-  | {
-      type: "execution_end";
-      executionId: string;
-      threadId: string;
-      sessionId?: string;
-      timestamp: string;
-    }
-  | {
-      type: "error";
-      error: { message: string; [key: string]: unknown };
-      timestamp: string;
-    };
 
 // =============================================================================
 // Channel Types

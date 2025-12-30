@@ -464,7 +464,7 @@ export class AiSdkCompiler {
     return {
       fork: (
         input: EngineInput,
-        agent?: ComponentDefinition,
+        root?: ComponentDefinition,
         options?: {
           parentPid?: string;
           inherit?: ForkInheritanceOptions;
@@ -477,9 +477,8 @@ export class AiSdkCompiler {
         const handle = new ProcessHandle("fork", options?.parentPid, parentHandle?.rootPid);
         this.executions.set(handle.pid, handle);
 
-        if (agent && this.currentExecutor) {
-          const element =
-            typeof agent === "function" ? { type: agent, props: {}, key: null } : agent;
+        if (root && this.currentExecutor) {
+          const element = typeof root === "function" ? { type: root, props: {}, key: null } : root;
           const messages = this.engineInputToMessages(input);
 
           this.runInternal(element as JSX.Element, messages, this.currentExecutor)
@@ -494,7 +493,7 @@ export class AiSdkCompiler {
 
       spawn: (
         input: EngineInput,
-        agent?: ComponentDefinition,
+        root?: ComponentDefinition,
         _options?: {
           engineConfig?: Partial<EngineConfig>;
         },
@@ -502,9 +501,8 @@ export class AiSdkCompiler {
         const handle = new ProcessHandle("spawn");
         this.executions.set(handle.pid, handle);
 
-        if (agent && this.currentExecutor) {
-          const element =
-            typeof agent === "function" ? { type: agent, props: {}, key: null } : agent;
+        if (root && this.currentExecutor) {
+          const element = typeof root === "function" ? { type: root, props: {}, key: null } : root;
           const messages = this.engineInputToMessages(input);
 
           this.runInternal(element as JSX.Element, messages, this.currentExecutor)

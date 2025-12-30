@@ -678,43 +678,40 @@ class OrchestratorAgent extends Component {
 ### Stream Event Types
 
 ```typescript
+// All events include base fields: id, tick, timestamp, raw?
+
 type EngineStreamEvent =
-  | {
-      type: "execution_start";
-      executionId: string;
-      threadId: string;
-      timestamp: string;
-    }
-  | { type: "agent_start"; agent_name: string; timestamp: string }
-  | { type: "tick_start"; tick: number; timestamp: string }
-  | { type: "model_chunk"; chunk: unknown; tick: number } // Opaque chunk from model
-  | { type: "tool_call"; call: AgentToolCall; tick: number }
-  | {
-      type: "tool_confirmation_required";
-      call: AgentToolCall;
-      message: string;
-      tick: number;
-    }
-  | {
-      type: "tool_confirmation_result";
-      confirmation: ToolConfirmationResult;
-      tick: number;
-    }
-  | { type: "tool_result"; result: AgentToolResult; tick: number }
-  | {
-      type: "tick_end";
-      tick: number;
-      response: EngineResponse;
-      timestamp: string;
-    }
-  | { type: "agent_end"; output: COMInput; timestamp: string }
-  | {
-      type: "execution_end";
-      executionId: string;
-      threadId: string;
-      timestamp: string;
-    }
-  | { type: "error"; error: Error; timestamp: string };
+  // Execution lifecycle
+  | { type: "execution_start"; executionId: string; threadId: string; ... }
+  | { type: "execution_end"; executionId: string; threadId: string; output: unknown; ... }
+
+  // Tick lifecycle
+  | { type: "tick_start"; tick: number; ... }
+  | { type: "tick_end"; tick: number; usage?: TokenUsage; ... }
+
+  // Message lifecycle (from model)
+  | { type: "message_start"; role: "assistant"; ... }
+  | { type: "message_end"; stopReason: StopReason; usage?: TokenUsage; ... }
+
+  // Content streaming (from model)
+  | { type: "content_start"; blockType: BlockType; blockIndex: number; ... }
+  | { type: "content_delta"; blockType: BlockType; blockIndex: number; delta: string; ... }
+  | { type: "content_end"; blockType: BlockType; blockIndex: number; ... }
+
+  // Reasoning streaming (from model)
+  | { type: "reasoning_start"; blockIndex: number; ... }
+  | { type: "reasoning_delta"; blockIndex: number; delta: string; ... }
+  | { type: "reasoning_end"; blockIndex: number; ... }
+
+  // Tool events
+  | { type: "tool_call"; callId: string; name: string; input: Record<string, unknown>; ... }
+  | { type: "tool_result"; callId: string; name: string; result: unknown; isError?: boolean; executedBy: ToolExecutor; ... }
+  | { type: "tool_confirmation_required"; callId: string; name: string; message: string; ... }
+  | { type: "tool_confirmation_result"; callId: string; confirmed: boolean; ... }
+
+  // Errors
+  | { type: "error"; error: { message: string; code?: string }; ... }  // Stream error
+  | { type: "engine_error"; error: { message: string; code?: string }; ... };  // Engine error
 ```
 
 ### Streaming Flow
@@ -729,30 +726,30 @@ type EngineStreamEvent =
 │  // Iterate events as they happen                                            │
 │  for await (const event of handle.stream()) {                                │
 │    switch (event.type) {                                                     │
-│      case 'agent_start':                                                     │
-│        console.log('Agent started:', event.agent_name);                      │
+│      case 'execution_start':                                                 │
+│        console.log('Execution started:', event.executionId);                 │
 │        break;                                                                │
 │      case 'tick_start':                                                      │
 │        console.log('Tick', event.tick, 'started');                           │
 │        break;                                                                │
-│      case 'model_chunk':                                                     │
-│        // Stream chunk to client                                             │
-│        sendToClient(event.chunk);                                            │
+│      case 'content_delta':                                                   │
+│        // Stream text to client                                              │
+│        process.stdout.write(event.delta);                                    │
 │        break;                                                                │
 │      case 'tool_call':                                                       │
-│        console.log('Tool called:', event.call.name);                         │
+│        console.log('Tool called:', event.name);                              │
 │        break;                                                                │
 │      case 'tool_result':                                                     │
-│        console.log('Tool result:', event.result.name);                       │
+│        console.log('Tool result:', event.name);                              │
 │        break;                                                                │
 │      case 'tick_end':                                                        │
 │        console.log('Tick', event.tick, 'ended');                             │
 │        break;                                                                │
-│      case 'agent_end':                                                       │
-│        console.log('Agent completed');                                       │
+│      case 'execution_end':                                                   │
+│        console.log('Execution completed');                                   │
 │        break;                                                                │
-│      case 'error':                                                           │
-│        console.error('Error:', event.error);                                 │
+│      case 'engine_error':                                                    │
+│        console.error('Error:', event.error.message);                         │
 │        break;                                                                │
 │    }                                                                         │
 │  }                                                                           │
@@ -989,7 +986,7 @@ const engine = createEngine({
       tick: state.currentTick,
       previous: state.previous,
       input: state.input,
-      agent: serialize(state.agent),
+      component: serialize(state.component),
       error: state.error,
     });
   },
@@ -1004,7 +1001,7 @@ const engine = createEngine({
       currentTick: record.tick,
       previous: record.previous,
       input: record.input,
-      agent: deserialize(record.agent),
+      component: deserialize(record.component),
     };
   },
 });
@@ -1285,8 +1282,8 @@ const { handle, result } = engine.stream.withHandle().call(
 
 // Stream events to client
 for await (const event of handle.stream()) {
-  if (event.type === 'model_chunk') {
-    res.write(`data: ${JSON.stringify(event.chunk)}\n\n`);
+  if (event.type === 'content_delta') {
+    res.write(`data: ${JSON.stringify({ delta: event.delta })}\n\n`);
   }
 }
 

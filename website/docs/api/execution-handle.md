@@ -128,8 +128,8 @@ Get an async iterator of stream events.
 
 ```tsx
 for await (const event of handle.stream()) {
-  if (event.type === 'model_chunk') {
-    process.stdout.write(event.chunk.delta);
+  if (event.type === 'content_delta') {
+    process.stdout.write(event.delta);
   }
 }
 ```
@@ -310,7 +310,7 @@ Create a serializable state object for persistence:
 const state = handle.toState(agent, input, currentTick, previous);
 // {
 //   pid, parentPid, rootPid, type, status,
-//   input, agent, currentTick, previous,
+//   input, component, currentTick, previous,
 //   startedAt, completedAt, error?
 // }
 ```
@@ -367,13 +367,13 @@ for await (const event of handle.stream()) {
     case 'tick_start':
       updateProgress(`Starting tick ${event.tick}`);
       break;
-    case 'model_chunk':
-      appendOutput(event.chunk.delta);
+    case 'content_delta':
+      appendOutput(event.delta);
       break;
     case 'tool_call':
-      showToolCall(event.call);
+      showToolCall(event.name, event.input);
       break;
-    case 'agent_end':
+    case 'execution_end':
       showFinalResult(event.output);
       break;
   }

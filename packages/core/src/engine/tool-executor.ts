@@ -372,7 +372,7 @@ export class ToolExecutor {
         content,
       };
 
-      call.toolResult = toolResult;
+      call.result = toolResult;
 
       return toolResult;
     } catch (error: any) {
@@ -418,7 +418,7 @@ export class ToolExecutor {
       error: message,
     };
 
-    call.toolResult = toolResult;
+    call.result = toolResult;
 
     return toolResult;
   }

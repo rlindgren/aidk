@@ -693,4 +693,3 @@ describe('OrderSummary', () => {
 ---
 
 **Next:** [Creating Tools](/docs/guides/tools)
-

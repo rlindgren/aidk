@@ -139,7 +139,7 @@ export interface ExecutionState {
   type: ExecutionType;
   status: ExecutionStatus;
   input: EngineInput;
-  agent: ComponentDefinition; // Serialized component definition
+  component: ComponentDefinition; // Serialized component definition
   currentTick: number;
   previous?: COMInput;
   startedAt: Date;

@@ -66,20 +66,24 @@ export {
   type Execution,
   type ExecutionMetrics,
 } from "./engine-client";
-// Note: EngineStreamEvent and EngineInput are exported from './types'
 
-// Legacy types re-export
-export * from "./types";
+// Types from ./types (not using export * to avoid conflicts)
+export type {
+  EngineInput,
+  ExecutionResult as ExecutionResultType,
+  ChannelTarget,
+  ChannelEvent as ChannelEventType,
+  Execution as ExecutionType,
+  ExecutionMetrics as ExecutionMetricsType,
+  EngineStreamEvent,
+} from "./types";
 
 // Execution handler (framework-agnostic)
 export {
   ExecutionHandler,
   StreamProcessor,
   createMessage,
-  normalizeMessageInput,
   generateMessageId,
-  type MessageInput,
-  type StreamEvent,
   type StreamEventContext,
   type StreamProcessorCallbacks,
   type ExecutionHandlerCallbacks,
@@ -96,4 +100,111 @@ export type { ChannelEvent } from "./core";
 // Core primitives (for custom implementations)
 export * from "./core";
 
-export * from "aidk-shared";
+// Re-export from aidk-shared
+// Note: Using explicit exports to avoid conflicts with local types
+export {
+  // Block types (enums)
+  BlockType,
+  MediaSourceType,
+  ImageMimeType,
+  DocumentMimeType,
+  AudioMimeType,
+  VideoMimeType,
+  CodeLanguage,
+  // Streaming (enums and functions)
+  StopReason,
+  StreamChunkType,
+  isStreamEvent,
+  isEngineEvent,
+  isDeltaEvent,
+  isFinalEvent,
+  // Tool types (enums)
+  ToolExecutionType,
+  ToolIntent,
+  // Input normalization (functions)
+  normalizeMessageInput,
+  normalizeContentInput,
+  normalizeContentArray,
+  isMessage,
+  isContentBlock,
+  // Error types (classes)
+  AbortError,
+  ValidationError,
+  NotFoundError,
+  TransportError,
+} from "aidk-shared";
+
+// Type-only re-exports from aidk-shared
+export type {
+  // Block types (type aliases)
+  BlockTypes,
+  // Blocks
+  ContentBlock,
+  TextBlock,
+  ImageBlock,
+  GeneratedImageBlock,
+  AudioBlock,
+  VideoBlock,
+  DocumentBlock,
+  ToolUseBlock,
+  ToolResultBlock,
+  ReasoningBlock,
+  JsonBlock,
+  XmlBlock,
+  CsvBlock,
+  HtmlBlock,
+  CodeBlock,
+  // Messages
+  Message,
+  MessageRole,
+  // Models
+  ModelInput,
+  ModelOutput,
+  ModelConfig,
+  TokenUsage,
+  // Tools
+  ToolDefinition,
+  ToolCall,
+  ToolResult,
+  ToolExecutor,
+  ClientToolDefinition,
+  ToolConfirmationResponse,
+  ToolConfirmationResult,
+  // Timeline
+  TimelineEntry,
+  // Input
+  MessageInput,
+  ContentInput,
+  ContentInputArray,
+  // Streaming - NEW event types
+  StreamEventBase,
+  StreamEvent,
+  EngineEvent,
+  EngineStreamEvent as NewEngineStreamEvent,
+  ContentStartEvent,
+  ContentDeltaEvent,
+  ContentEndEvent,
+  ContentEvent,
+  ReasoningStartEvent,
+  ReasoningDeltaEvent,
+  ReasoningEndEvent,
+  ReasoningEvent,
+  MessageStartEvent,
+  MessageEndEvent,
+  MessageEvent,
+  ToolCallStartEvent,
+  ToolCallDeltaEvent,
+  ToolCallEndEvent,
+  ToolCallEvent,
+  ToolResultEvent,
+  ExecutionStartEvent,
+  ExecutionEndEvent,
+  ExecutionEvent,
+  TickStartEvent,
+  TickEndEvent,
+  TickEvent,
+  ToolConfirmationRequiredEvent,
+  ToolConfirmationResultEvent,
+  StreamErrorEvent,
+  EngineErrorEvent,
+} from "aidk-shared";

@@ -282,12 +282,13 @@ Framework-agnostic execution management with stream processing:
 │   │   messages: Message[]           toolUseIndex: Map<id, location>     │  │
 │   │                                                                      │  │
 │   │   processEvent():                                                    │  │
-│   │   - execution_start ──▶ extract threadId                          │  │
-│   │   - model_chunk ──────▶ accumulate text deltas                      │  │
-│   │   - tool_call ────────▶ add tool_use block, index by id            │  │
-│   │   - tool_result ──────▶ O(1) lookup, patch tool_use block          │  │
-│   │   - agent_end ────────▶ onComplete callback                         │  │
-│   │   - error ────────────▶ onError callback                            │  │
+│   │   - execution_start ───▶ extract threadId                           │  │
+│   │   - content_delta ─────▶ accumulate text deltas                     │  │
+│   │   - reasoning_delta ───▶ accumulate reasoning                       │  │
+│   │   - tool_call ─────────▶ add tool_use block, index by id            │  │
+│   │   - tool_result ───────▶ O(1) lookup, patch tool_use block          │  │
+│   │   - execution_end ─────▶ onComplete callback                        │  │
+│   │   - engine_error ──────▶ onError callback                           │  │
 │   │                                                                      │  │
 │   └─────────────────────────────────────────────────────────────────────┘  │
 │                                                                             │
@@ -630,7 +631,7 @@ sequenceDiagram
     EC->>Server: POST /api/agents/{id}/stream
 
     loop SSE Stream
-        Server-->>EC: data: { type: 'model_chunk', chunk: {...} }
+        Server-->>EC: data: { type: 'content_delta', delta: '...' }
         EC-->>EH: yield event
         EH->>EH: processEvent()
         EH-->>App: onMessagesChange([...])
@@ -798,10 +799,8 @@ const result = await client.execute('assistant', {
 // Streaming execution
 for await (const event of client.stream('assistant', { messages: [...] })) {
   switch (event.type) {
-    case 'model_chunk':
-      if (event.chunk.delta) {
-        process.stdout.write(event.chunk.delta);
-      }
+    case 'content_delta':
+      process.stdout.write(event.delta);
       break;
     case 'execution_end':
       console.log('\nDone!');

@@ -464,7 +464,7 @@ class Coordinator extends Component {
         <System>Progress: {this.sharedProgress()}%</System>
 
         <Fork
-          agent={
+          root={
             <Worker
               onProgress={(p) => this.sharedProgress.set(p)}
               onResult={(r) => this.sharedResults.set([...this.sharedResults(), r])}

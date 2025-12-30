@@ -10,8 +10,7 @@
 
 import type { Message } from "./messages";
 import type { StopReason } from "./streaming";
-import type { ModelToolCall } from "./tools";
-import type { ToolDefinition } from "./tools";
+import type { ToolCall, ToolDefinition } from "./tools";
 
 // ============================================================================
 // Model Tool Reference
@@ -71,6 +70,35 @@ export interface ModelInput {
 }
 
 // ============================================================================
+// Token Usage
+// ============================================================================
+
+/**
+ * Token usage information (normalized across providers).
+ *
+ * Used in ModelOutput, stream events, and execution metrics.
+ */
+export interface TokenUsage {
+  /** Input tokens consumed */
+  inputTokens: number;
+
+  /** Output tokens generated */
+  outputTokens: number;
+
+  /** Total tokens (input + output) */
+  totalTokens: number;
+
+  /** Reasoning/thinking tokens (Anthropic extended thinking, OpenAI o1) */
+  reasoningTokens?: number;
+
+  /** Tokens read from cache (Anthropic prompt caching) */
+  cachedInputTokens?: number;
+
+  /** Tokens used to create cache (Anthropic prompt caching) */
+  cacheCreationTokens?: number;
+}
+
+// ============================================================================
 // Model Output (Simplified)
 // ============================================================================
 
@@ -111,18 +139,12 @@ export interface ModelOutput {
   /**
    * Token usage
    */
-  usage: {
-    inputTokens: number;
-    outputTokens: number;
-    reasoningTokens?: number;
-    totalTokens: number;
-    cachedInputTokens?: number;
-  };
+  usage: TokenUsage;
 
   /**
    * Tool calls made by the model
    */
-  toolCalls?: ModelToolCall[];
+  toolCalls?: ToolCall[];
 }
 
 // ============================================================================

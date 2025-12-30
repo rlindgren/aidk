@@ -17,7 +17,17 @@ import type { AgentToolCall, AgentToolResult, StreamChunk } from "aidk-shared";
 import { ToolExecutor } from "./tool-executor";
 import { type JSX, createElement, Fragment, ensureElement } from "../jsx/jsx-runtime";
 import { MarkdownRenderer, XMLRenderer } from "../renderers";
-import { type EngineStreamEvent } from "./engine-events";
+import {
+  type EngineStreamEvent,
+  createEventBase,
+  createTickStartEvent,
+  createTickEndEvent,
+  createToolCallEvent,
+  createToolResultEvent,
+  createToolConfirmationRequiredEvent,
+  createToolConfirmationResultEvent,
+  createEngineErrorEvent,
+} from "./engine-events";
 import { type EngineResponse } from "./engine-response";
 import {
   ComponentHookRegistry,
@@ -357,11 +367,11 @@ export class Engine extends EventEmitter {
       let lastComInput: COMInput | undefined;
 
       for await (const event of iterator) {
-        if (event.type === "error") {
-          throw event.error;
+        if (event.type === "engine_error") {
+          throw new Error(event.error.message);
         }
-        if (event.type === "agent_end") {
-          lastComInput = event.output;
+        if (event.type === "execution_end") {
+          lastComInput = event.output as COMInput;
         }
       }
 
@@ -1486,11 +1496,15 @@ export class Engine extends EventEmitter {
         }
       }
 
+      // Emit execution_start (replaces legacy agent_start)
       yield {
-        type: "agent_start",
-        agent_name: this.config.name || "engine",
-        timestamp: new Date().toISOString(),
-      };
+        type: "execution_start",
+        ...createEventBase(1),
+        executionId: handle.pid,
+        threadId: input.threadId || handle.pid,
+        componentName: this.config.name || "engine",
+        sessionId: input.sessionId,
+      } as EngineStreamEvent;
 
       // Check abort flag immediately after setup (before entering tick loop)
       if (shouldAbort) {
@@ -1517,11 +1531,7 @@ export class Engine extends EventEmitter {
             throw new AbortError(session.com.abortReason || "Operation aborted");
           }
 
-          yield {
-            type: "tick_start",
-            tick: session.tick,
-            timestamp: new Date().toISOString(),
-          };
+          yield createTickStartEvent(session.tick);
 
           // 1. Pre-model compilation (Session handles internally)
           let compilationResult;
@@ -1624,11 +1634,15 @@ export class Engine extends EventEmitter {
                   );
                 }
 
-                yield {
-                  type: "model_chunk",
-                  chunk,
-                  tick: session.tick,
-                };
+                // Pass through model stream events directly
+                // Add base fields if not present (adapters may emit legacy StreamChunk)
+                const streamEvent = {
+                  ...(chunk as object),
+                  id: (chunk as any).id || createEventBase(session.tick).id,
+                  tick: (chunk as any).tick ?? session.tick,
+                  timestamp: (chunk as any).timestamp || new Date().toISOString(),
+                } as EngineStreamEvent;
+                yield streamEvent;
                 chunks.push(chunk);
               }
 
@@ -1701,11 +1715,15 @@ export class Engine extends EventEmitter {
 
           // Yield events for already-executed tools (from provider/adapter)
           for (const result of toolResults) {
-            yield {
-              type: "tool_result",
-              result,
+            yield createToolResultEvent({
+              callId: result.toolUseId,
+              name: result.name,
+              result: result.content,
+              isError: !result.success,
+              executedBy: result.executedBy || "adapter",
               tick: session.tick,
-            };
+              startedAt: new Date().toISOString(), // Not tracked for provider-executed
+            });
           }
 
           if (response.toolCalls && response.toolCalls.length > 0) {
@@ -1717,12 +1735,20 @@ export class Engine extends EventEmitter {
               const configTools = this.getTools();
 
               // Yield all tool_call events first (immediately, before any processing)
+              // Track start times for each call
+              const callStartTimes = new Map<string, string>();
+              let blockIndex = 0;
               for (const call of response.toolCalls) {
-                yield {
-                  type: "tool_call",
-                  call: { id: call.id, name: call.name, input: call.input },
+                const startedAt = new Date().toISOString();
+                callStartTimes.set(call.id, startedAt);
+                yield createToolCallEvent({
+                  callId: call.id,
+                  name: call.name,
+                  input: call.input as Record<string, unknown>,
+                  blockIndex: blockIndex++,
                   tick: session.tick,
-                };
+                  startedAt,
+                });
               }
 
               // Collect events that occur during parallel processing
@@ -1800,26 +1826,24 @@ export class Engine extends EventEmitter {
               // Yield all collected events and results in order
               // We yield events per-tool to maintain the logical flow:
               // confirmation_required -> confirmation_result -> tool_result
-              for (const { call: _call, result, events } of processingResults) {
+              for (const { call, result, events } of processingResults) {
                 // Yield confirmation events for this tool
                 for (const event of events) {
                   if (event.type === "tool_confirmation_required") {
-                    yield {
-                      type: "tool_confirmation_required",
-                      call: {
-                        id: event.call.id,
-                        name: event.call.name,
-                        input: event.call.input,
-                      },
+                    yield createToolConfirmationRequiredEvent({
+                      callId: event.call.id,
+                      name: event.call.name,
+                      input: event.call.input as Record<string, unknown>,
                       message: event.message,
                       tick: session.tick,
-                    };
+                    });
                   } else if (event.type === "tool_confirmation_result") {
-                    yield {
-                      type: "tool_confirmation_result",
-                      confirmation: event.confirmation,
+                    yield createToolConfirmationResultEvent({
+                      callId: event.call.id,
+                      confirmed: event.confirmation.confirmed,
+                      always: event.confirmation.always,
                       tick: session.tick,
-                    };
+                    });
                   }
                 }
 
@@ -1827,11 +1851,15 @@ export class Engine extends EventEmitter {
                 toolResults.push(result);
 
                 // Yield tool_result event
-                yield {
-                  type: "tool_result",
-                  result,
+                yield createToolResultEvent({
+                  callId: result.toolUseId,
+                  name: result.name,
+                  result: result.content,
+                  isError: !result.success,
+                  executedBy: result.executedBy || "engine",
                   tick: session.tick,
-                };
+                  startedAt: callStartTimes.get(call.id) || new Date().toISOString(),
+                });
               }
 
               if (shouldAbort) {
@@ -1887,12 +1915,8 @@ export class Engine extends EventEmitter {
             throw error;
           }
 
-          yield {
-            type: "tick_end",
-            tick: session.tick,
-            response,
-            timestamp: new Date().toISOString(),
-          };
+          // tick_end with usage stats (if available from model response)
+          yield createTickEndEvent(session.tick, response.usage);
 
           // Note: onTickEnd lifecycle hook is called by session.ingestTickResult()
           // for consistency with onTickStart being called by session.compileTick()
@@ -1940,11 +1964,15 @@ export class Engine extends EventEmitter {
           throw new AbortError();
         }
 
+        // Emit execution_end (replaces legacy agent_end)
         yield {
-          type: "agent_end",
+          type: "execution_end",
+          ...createEventBase(session.tick),
+          executionId: handle.pid,
+          threadId: input.threadId || handle.pid,
           output: finalOutput,
-          timestamp: new Date().toISOString(),
-        };
+          sessionId: input.sessionId,
+        } as EngineStreamEvent;
 
         await this.callLifecycleHooks("onExecutionEnd", [finalOutput, handle]);
       } catch (error: any) {
@@ -1965,12 +1993,7 @@ export class Engine extends EventEmitter {
           this.executionGraph.updateStatus(handle.pid, "cancelled", error);
         }
 
-        const errorEvent = {
-          type: "error" as const,
-          error: error instanceof Error ? error : new Error(String(error)),
-          timestamp: new Date().toISOString(),
-        };
-        yield errorEvent as EngineStreamEvent;
+        yield createEngineErrorEvent(error, session?.tick || 1);
 
         await this.callLifecycleHooks("onExecutionError", [
           error instanceof Error ? error : new Error(String(error)),
@@ -1986,12 +2009,7 @@ export class Engine extends EventEmitter {
         this.executionGraph.updateStatus(handle.pid, "cancelled", error);
       }
 
-      const errorEvent = {
-        type: "error" as const,
-        error: error instanceof Error ? error : new Error(String(error)),
-        timestamp: new Date().toISOString(),
-      };
-      yield errorEvent as EngineStreamEvent;
+      yield createEngineErrorEvent(error, 1);
 
       await this.callLifecycleHooks("onExecutionError", [
         error instanceof Error ? error : new Error(String(error)),
