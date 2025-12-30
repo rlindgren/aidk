@@ -68,4 +68,4 @@ await result;
 ## Documentation
 
 - [Architecture Documentation](./ARCHITECTURE.md) - Comprehensive technical details
-- [Full AIDK Documentation](https://your-org.github.io/aidk)
+- [Full AIDK Documentation](https://rlindgren.github.io/aidk)

@@ -50,4 +50,4 @@ Any provider supported by the [Vercel AI SDK](https://sdk.vercel.ai/providers):
 
 ## Documentation
 
-See the [full documentation](https://your-org.github.io/aidk).
+See the [full documentation](https://rlindgren.github.io/aidk).

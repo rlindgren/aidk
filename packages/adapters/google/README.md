@@ -46,4 +46,4 @@ import { GoogleModel } from 'aidk-google';
 
 ## Documentation
 
-See the [full documentation](https://your-org.github.io/aidk).
+See the [full documentation](https://rlindgren.github.io/aidk).
