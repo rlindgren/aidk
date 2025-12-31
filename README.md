@@ -14,18 +14,16 @@
 
 ---
 
-## Your code runs between model calls.
+## Not a template system. A runtime.
 
-Other frameworks: you configure an agent, call it, and hope for the best.
+AIDK is a **runtime execution engine**. It manages component lifecycle, shared state, and tick loops. Your code runs _between_ model calls—with full visibility into what happened and complete control over what comes next.
 
-AIDK: your component renders before _every_ model call. The model responds, you see what happened, your code runs again, you decide what's next.
+Each execution runs through discrete **ticks**: compile your JSX → call the model → execute tools → update state → repeat. Your components persist. State accumulates. You're not configuring an agent—you're **programming** one.
 
 ```tsx
 render(com, state) {
-  // This runs on EVERY tick. Not once. Every time.
+  // This runs on EVERY tick—not once, every time
   const lastResponse = getLastAssistantMessage(state);
-
-  // Swap models based on what just happened
   const needsUpgrade = lastResponse?.includes("I'm not sure");
 
   return (
@@ -33,7 +31,7 @@ render(com, state) {
       <Model model={needsUpgrade ? gpt4 : gpt4mini} />
 
       {needsUpgrade && (
-        <System>The user needs more help. Take your time. Be thorough.</System>
+        <System>The user needs more help. Take your time.</System>
       )}
 
       <Timeline>{this.timeline()}</Timeline>
@@ -42,7 +40,7 @@ render(com, state) {
 }
 ```
 
-No configuration for this. No "model fallback" setting. You just... do it.
+No configuration for this. No "model fallback" setting. You just write the logic.
 
 ---
 
