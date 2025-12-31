@@ -1,5 +1,11 @@
 # aidk
 
+## 0.1.4
+
+### Patch Changes
+
+- 90c59d0: Fix description
+
 ## 0.1.3
 
 ### Patch Changes
