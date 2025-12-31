@@ -105,13 +105,13 @@ describe("SSETransport", () => {
   let transport: SSETransport;
 
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     transport = new SSETransport({ debug: false });
   });
 
   afterEach(() => {
     transport.disconnect();
-    jest.useRealTimers();
+    vi.useRealTimers();
     resetSSETransport();
   });
 
@@ -157,7 +157,7 @@ describe("SSETransport", () => {
     });
 
     it("should handle missing response object", async () => {
-      const consoleSpy = jest.spyOn(console, "warn").mockImplementation();
+      const consoleSpy = vi.spyOn(console, "warn").mockImplementation();
 
       await transport.connect("conn-1", {});
 
@@ -267,13 +267,13 @@ describe("SSETransport", () => {
       await transport.connect("conn-1", { res: mockRes as Response });
 
       // Advance past heartbeat
-      jest.advanceTimersByTime(35000);
+      vi.advanceTimersByTime(35000);
       const writesBeforeDisconnect = mockRes._written.length;
 
       await transport.disconnect("conn-1");
 
       // More time passes but no more heartbeats
-      jest.advanceTimersByTime(35000);
+      vi.advanceTimersByTime(35000);
       expect(mockRes._written.length).toBe(writesBeforeDisconnect);
     });
 
@@ -345,7 +345,7 @@ describe("SSETransport", () => {
     });
 
     it("should warn when joining with unknown connection", async () => {
-      const consoleSpy = jest.spyOn(console, "warn").mockImplementation();
+      const consoleSpy = vi.spyOn(console, "warn").mockImplementation();
 
       await transport.join("unknown-conn", "room-1");
 
@@ -485,7 +485,7 @@ describe("SSETransport", () => {
         throw new Error("Write failed");
       };
 
-      const consoleSpy = jest.spyOn(console, "error").mockImplementation();
+      const consoleSpy = vi.spyOn(console, "error").mockImplementation();
 
       await transport.send({
         channel: "test",
@@ -510,7 +510,7 @@ describe("SSETransport", () => {
       await heartbeatTransport.connect("conn-1", { res: mockRes as Response });
       const _initialWrites = mockRes._written.length;
 
-      jest.advanceTimersByTime(10000);
+      vi.advanceTimersByTime(10000);
 
       const heartbeats = mockRes._written.filter((w) => w.includes("heartbeat"));
       expect(heartbeats.length).toBeGreaterThan(0);
@@ -524,7 +524,7 @@ describe("SSETransport", () => {
       await transport.connect("conn-1", { res: mockRes as Response });
 
       // Default is 30000ms
-      jest.advanceTimersByTime(30000);
+      vi.advanceTimersByTime(30000);
 
       const heartbeats = mockRes._written.filter((w) => w.includes("heartbeat"));
       expect(heartbeats.length).toBeGreaterThan(0);
@@ -533,7 +533,7 @@ describe("SSETransport", () => {
 
   describe("onReceive", () => {
     it("should register receive handler", () => {
-      const handler = jest.fn();
+      const handler = vi.fn();
       transport.onReceive(handler);
 
       const event: ChannelEvent = {
@@ -593,7 +593,7 @@ describe("SSETransport", () => {
 
     it("addConnection should be convenience for connect", async () => {
       // Use real timers for this test since addConnection is async
-      jest.useRealTimers();
+      vi.useRealTimers();
 
       const mockRes = createMockResponse();
 
@@ -608,7 +608,7 @@ describe("SSETransport", () => {
       expect(transport.isConnected("conn-1")).toBe(true);
 
       // Restore fake timers
-      jest.useFakeTimers();
+      vi.useFakeTimers();
     });
   });
 });

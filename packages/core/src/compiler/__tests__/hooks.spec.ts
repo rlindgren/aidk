@@ -22,7 +22,7 @@ describe("V2 Hooks", () => {
     com = new COM();
     tickState = {
       tick: 1,
-      stop: jest.fn(),
+      stop: vi.fn(),
       queuedMessages: [],
     } as TickState;
 
@@ -99,7 +99,7 @@ describe("V2 Hooks", () => {
     it("should run effect on mount", () => {
       setRenderContext(renderContext);
 
-      const effectFn = jest.fn();
+      const effectFn = vi.fn();
       useEffect(effectFn, []);
 
       const hook = fiber.memoizedState;
@@ -111,7 +111,7 @@ describe("V2 Hooks", () => {
     it("should support async effects", () => {
       setRenderContext(renderContext);
 
-      const asyncEffect = jest.fn(async () => {
+      const asyncEffect = vi.fn(async () => {
         await Promise.resolve();
       });
 
@@ -133,7 +133,7 @@ describe("V2 Hooks", () => {
     it("should support cleanup function", () => {
       setRenderContext(renderContext);
 
-      const cleanup = jest.fn();
+      const cleanup = vi.fn();
       useEffect(() => cleanup, []);
 
       const hook = fiber.memoizedState;
@@ -215,7 +215,7 @@ describe("V2 Hooks", () => {
     it("should run initialization callback once", async () => {
       setRenderContext(renderContext);
 
-      const callback = jest.fn();
+      const callback = vi.fn();
       await useInit(callback);
 
       expect(callback).toHaveBeenCalledTimes(1);
@@ -237,7 +237,7 @@ describe("V2 Hooks", () => {
       setRenderContext(renderContext);
 
       let resolved = false;
-      const callback = jest.fn(async () => {
+      const callback = vi.fn(async () => {
         await new Promise((resolve) => setTimeout(resolve, 10));
         resolved = true;
       });
@@ -253,7 +253,7 @@ describe("V2 Hooks", () => {
     it("should register mount callback", () => {
       setRenderContext(renderContext);
 
-      const callback = jest.fn();
+      const callback = vi.fn();
       useOnMount(callback);
 
       const hook = fiber.memoizedState;
@@ -266,7 +266,7 @@ describe("V2 Hooks", () => {
     it("should register tick start callback", () => {
       setRenderContext(renderContext);
 
-      const callback = jest.fn();
+      const callback = vi.fn();
       useTickStart(callback);
 
       const hook = fiber.memoizedState;
@@ -280,7 +280,7 @@ describe("V2 Hooks", () => {
     it("should register tick end callback", () => {
       setRenderContext(renderContext);
 
-      const callback = jest.fn();
+      const callback = vi.fn();
       useTickEnd(callback);
 
       const hook = fiber.memoizedState;
@@ -293,7 +293,7 @@ describe("V2 Hooks", () => {
     it("should register after compile callback", () => {
       setRenderContext(renderContext);
 
-      const callback = jest.fn();
+      const callback = vi.fn();
       useAfterCompile(callback);
 
       const hook = fiber.memoizedState;
@@ -306,7 +306,7 @@ describe("V2 Hooks", () => {
     it("should memoize value", () => {
       setRenderContext(renderContext);
 
-      const factory = jest.fn(() => 42);
+      const factory = vi.fn(() => 42);
       const value1 = useMemo(factory, []);
 
       expect(value1).toBe(42);
@@ -328,7 +328,7 @@ describe("V2 Hooks", () => {
     it("should recompute when deps change", () => {
       setRenderContext(renderContext);
 
-      const factory = jest.fn((x) => x * 2);
+      const factory = vi.fn((x) => x * 2);
       const value1 = useMemo(() => factory(1), [1]);
 
       expect(value1).toBe(2);
@@ -351,7 +351,7 @@ describe("V2 Hooks", () => {
     it("should create a computed signal that persists across renders", () => {
       setRenderContext(renderContext);
 
-      const computation = jest.fn(() => 42);
+      const computation = vi.fn(() => 42);
       const computed1 = useComputed(computation, []);
 
       expect(computed1()).toBe(42);
@@ -377,11 +377,11 @@ describe("V2 Hooks", () => {
     it("should dispose and recreate computed when deps change", () => {
       setRenderContext(renderContext);
 
-      const computation1 = jest.fn(() => 10);
+      const computation1 = vi.fn(() => 10);
       const computed1 = useComputed(computation1, [1]);
 
       expect(computed1()).toBe(10);
-      const disposeSpy = jest.spyOn(computed1, "dispose");
+      const disposeSpy = vi.spyOn(computed1, "dispose");
 
       // Re-render with different deps
       const prevHook = fiber.memoizedState;
@@ -390,7 +390,7 @@ describe("V2 Hooks", () => {
       fiber.memoizedState = null;
 
       setRenderContext(renderContext);
-      const computation2 = jest.fn(() => 20);
+      const computation2 = vi.fn(() => 20);
       const computed2 = useComputed(computation2, [2]);
 
       // Old computed should be disposed

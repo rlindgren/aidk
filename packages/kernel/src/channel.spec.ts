@@ -13,22 +13,25 @@ describe("Channel", () => {
   });
 
   describe("publish", () => {
-    it("should publish events to subscribers", (done) => {
+    it("should publish events to subscribers", () => {
       const event: ChannelEvent = {
         type: "test",
         channel: "test-channel",
         payload: { message: "hello" },
       };
 
-      channel.subscribe((receivedEvent) => {
-        expect(receivedEvent.channel).toBe("test-channel");
-        expect(receivedEvent.type).toBe("test");
-        expect(receivedEvent.payload).toEqual({ message: "hello" });
-        expect(receivedEvent.metadata?.timestamp).toBeDefined();
-        done();
+      let receivedEvent: ChannelEvent | undefined;
+      channel.subscribe((e) => {
+        receivedEvent = e;
       });
 
       channel.publish(event);
+
+      expect(receivedEvent).toBeDefined();
+      expect(receivedEvent!.channel).toBe("test-channel");
+      expect(receivedEvent!.type).toBe("test");
+      expect(receivedEvent!.payload).toEqual({ message: "hello" });
+      expect(receivedEvent!.metadata?.timestamp).toBeDefined();
     });
 
     it("should normalize channel name", () => {
@@ -45,7 +48,7 @@ describe("Channel", () => {
       channel.publish(event);
     });
 
-    it("should add timestamp to metadata", (done) => {
+    it("should add timestamp to metadata", () => {
       const before = Date.now();
       const event: ChannelEvent = {
         type: "test",
@@ -53,17 +56,20 @@ describe("Channel", () => {
         payload: {},
       };
 
-      channel.subscribe((receivedEvent) => {
-        const after = Date.now();
-        expect(receivedEvent.metadata?.timestamp).toBeGreaterThanOrEqual(before);
-        expect(receivedEvent.metadata?.timestamp).toBeLessThanOrEqual(after);
-        done();
+      let receivedEvent: ChannelEvent | undefined;
+      channel.subscribe((e) => {
+        receivedEvent = e;
       });
 
       channel.publish(event);
+      const after = Date.now();
+
+      expect(receivedEvent).toBeDefined();
+      expect(receivedEvent!.metadata?.timestamp).toBeGreaterThanOrEqual(before);
+      expect(receivedEvent!.metadata?.timestamp).toBeLessThanOrEqual(after);
     });
 
-    it("should merge existing metadata", (done) => {
+    it("should merge existing metadata", () => {
       const event: ChannelEvent = {
         type: "test",
         channel: "test-channel",
@@ -74,14 +80,17 @@ describe("Channel", () => {
         },
       };
 
-      channel.subscribe((receivedEvent) => {
-        expect(receivedEvent.metadata?.source).toBe("test-source");
-        expect(receivedEvent.metadata?.["customField"]).toBe("custom-value");
-        expect(receivedEvent.metadata?.timestamp).toBeDefined();
-        done();
+      let receivedEvent: ChannelEvent | undefined;
+      channel.subscribe((e) => {
+        receivedEvent = e;
       });
 
       channel.publish(event);
+
+      expect(receivedEvent).toBeDefined();
+      expect(receivedEvent!.metadata?.source).toBe("test-source");
+      expect(receivedEvent!.metadata?.["customField"]).toBe("custom-value");
+      expect(receivedEvent!.metadata?.timestamp).toBeDefined();
     });
 
     it("should handle multiple concurrent publishes", () => {

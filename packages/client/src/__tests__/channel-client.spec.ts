@@ -88,7 +88,7 @@ describe("ChannelClient", () => {
 
   describe("subscribe", () => {
     it("should subscribe to a single channel", () => {
-      const handler = jest.fn();
+      const handler = vi.fn();
       client.subscribe("test-channel", handler);
 
       transport._dispatch({
@@ -105,7 +105,7 @@ describe("ChannelClient", () => {
     });
 
     it("should subscribe to multiple channels", () => {
-      const handler = jest.fn();
+      const handler = vi.fn();
       client.subscribe(["channel-1", "channel-2"], handler);
 
       transport._dispatch({
@@ -124,7 +124,7 @@ describe("ChannelClient", () => {
     });
 
     it("should support wildcard subscription", () => {
-      const handler = jest.fn();
+      const handler = vi.fn();
       client.subscribe("*", handler);
 
       transport._dispatch({
@@ -137,7 +137,7 @@ describe("ChannelClient", () => {
     });
 
     it("should not call handler for unsubscribed channel", () => {
-      const handler = jest.fn();
+      const handler = vi.fn();
       client.subscribe("channel-1", handler);
 
       transport._dispatch({
@@ -150,7 +150,7 @@ describe("ChannelClient", () => {
     });
 
     it("should connect transport on first subscription", () => {
-      const connectSpy = jest.spyOn(transport, "connect");
+      const connectSpy = vi.spyOn(transport, "connect");
 
       client.subscribe("test", () => {});
 
@@ -159,7 +159,7 @@ describe("ChannelClient", () => {
 
     it("should not connect if already connected", () => {
       transport._setConnected();
-      const connectSpy = jest.spyOn(transport, "connect");
+      const connectSpy = vi.spyOn(transport, "connect");
 
       client.subscribe("test", () => {});
 
@@ -167,7 +167,7 @@ describe("ChannelClient", () => {
     });
 
     it("should return unsubscribe function", () => {
-      const handler = jest.fn();
+      const handler = vi.fn();
       const unsub = client.subscribe("test", handler);
 
       unsub();
@@ -182,7 +182,7 @@ describe("ChannelClient", () => {
     });
 
     it("should disconnect when all handlers unsubscribe", () => {
-      const disconnectSpy = jest.spyOn(transport, "disconnect");
+      const disconnectSpy = vi.spyOn(transport, "disconnect");
 
       const unsub1 = client.subscribe("channel-1", () => {});
       const unsub2 = client.subscribe("channel-2", () => {});
@@ -195,8 +195,8 @@ describe("ChannelClient", () => {
     });
 
     it("should support multiple handlers per channel", () => {
-      const handler1 = jest.fn();
-      const handler2 = jest.fn();
+      const handler1 = vi.fn();
+      const handler2 = vi.fn();
 
       client.subscribe("test", handler1);
       client.subscribe("test", handler2);
@@ -230,7 +230,7 @@ describe("ChannelClient", () => {
     });
 
     it("should use custom publish override if provided", async () => {
-      const customPublish = jest.fn().mockResolvedValue({ custom: true });
+      const customPublish = vi.fn().mockResolvedValue({ custom: true });
       const customClient = new ChannelClient({
         transport,
         publish: customPublish,
@@ -257,7 +257,7 @@ describe("ChannelClient", () => {
 
   describe("message filtering", () => {
     it("should ignore non-channel events", () => {
-      const handler = jest.fn();
+      const handler = vi.fn();
       client.subscribe("test", handler);
 
       // Dispatch non-channel event
@@ -280,7 +280,7 @@ describe("ChannelClient", () => {
         isChannelEvent: customFilter,
       });
 
-      const handler = jest.fn();
+      const handler = vi.fn();
       customClient.subscribe("*", handler);
 
       // This should NOT match (uses standard format)
@@ -291,7 +291,7 @@ describe("ChannelClient", () => {
     });
 
     it("should require both channel and type fields", () => {
-      const handler = jest.fn();
+      const handler = vi.fn();
       client.subscribe("test", handler);
 
       // Missing type
@@ -328,7 +328,7 @@ describe("ChannelClient", () => {
 
   describe("reconnect", () => {
     it("should reconnect if there are handlers", () => {
-      const reconnectSpy = jest.spyOn(transport, "reconnect");
+      const reconnectSpy = vi.spyOn(transport, "reconnect");
 
       client.subscribe("test", () => {});
       client.reconnect();
@@ -337,7 +337,7 @@ describe("ChannelClient", () => {
     });
 
     it("should not reconnect if no handlers", () => {
-      const reconnectSpy = jest.spyOn(transport, "reconnect");
+      const reconnectSpy = vi.spyOn(transport, "reconnect");
 
       client.reconnect();
 
@@ -347,10 +347,10 @@ describe("ChannelClient", () => {
 
   describe("disconnect", () => {
     it("should clear all handlers and disconnect", () => {
-      const handler = jest.fn();
+      const handler = vi.fn();
       client.subscribe("test", handler);
 
-      const disconnectSpy = jest.spyOn(transport, "disconnect");
+      const disconnectSpy = vi.spyOn(transport, "disconnect");
       client.disconnect();
 
       expect(disconnectSpy).toHaveBeenCalled();
@@ -363,10 +363,10 @@ describe("ChannelClient", () => {
 
   describe("dispose", () => {
     it("should cleanup all resources", () => {
-      const handler = jest.fn();
+      const handler = vi.fn();
       client.subscribe("test", handler);
 
-      const disposeSpy = jest.spyOn(transport, "dispose");
+      const disposeSpy = vi.spyOn(transport, "dispose");
       client.dispose();
 
       expect(disposeSpy).toHaveBeenCalled();

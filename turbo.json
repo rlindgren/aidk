@@ -7,11 +7,7 @@
       "outputs": ["dist/**"],
       "inputs": ["src/**", "tsconfig.json", "package.json"]
     },
-    "test": {
-      "dependsOn": ["build"],
-      "outputs": [],
-      "inputs": ["src/**", "jest.config.*"]
-    },
+
     "lint": {
       "outputs": [],
       "inputs": ["src/**", "../../.oxlintrc.json"]

@@ -889,22 +889,22 @@ describe("Engine v2", () => {
       // Create global adapter instance (simulating Redis adapter)
       globalAdapter = {
         name: "test-adapter",
-        publish: jest.fn().mockImplementation(async (event: ChannelEvent) => {
+        publish: vi.fn().mockImplementation(async (event: ChannelEvent) => {
           adapterPublishCalls.push(event);
         }),
-        subscribe: jest.fn().mockResolvedValue(() => {}),
+        subscribe: vi.fn().mockResolvedValue(() => {}),
       };
 
       // Create global transport instance
       globalTransport = {
         name: "test-transport",
-        connect: jest.fn().mockResolvedValue(undefined),
-        disconnect: jest.fn().mockResolvedValue(undefined),
-        send: jest.fn().mockImplementation(async (event: ChannelEvent) => {
+        connect: vi.fn().mockResolvedValue(undefined),
+        disconnect: vi.fn().mockResolvedValue(undefined),
+        send: vi.fn().mockImplementation(async (event: ChannelEvent) => {
           transportSendCalls.push(event);
         }),
-        onReceive: jest.fn(),
-        closeAll: jest.fn().mockResolvedValue(undefined),
+        onReceive: vi.fn(),
+        closeAll: vi.fn().mockResolvedValue(undefined),
       };
     });
 

@@ -9,11 +9,7 @@
     "jsx": "react-jsx",
     "jsxImportSource": "react"
   },
-  "references": [
-    { "path": "../client" },
-    { "path": "./tsconfig.build.json" },
-    { "path": "./tsconfig.spec.json" }
-  ],
+  "references": [{ "path": "../client" }, { "path": "./tsconfig.build.json" }],
   "include": ["src"],
   "exclude": ["src/**/*.spec.ts", "src/**/*.spec.tsx"]
 }

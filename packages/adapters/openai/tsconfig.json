@@ -15,8 +15,7 @@
     { "path": "../../shared" },
     { "path": "../../kernel" },
     { "path": "../../core" },
-    { "path": "./tsconfig.build.json" },
-    { "path": "./tsconfig.spec.json" }
+    { "path": "./tsconfig.build.json" }
   ],
   "include": [],
   "exclude": []

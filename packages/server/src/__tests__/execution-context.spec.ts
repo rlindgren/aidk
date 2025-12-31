@@ -394,8 +394,8 @@ describe("Input Transformers", () => {
       });
 
       expect(input.timeline).toHaveLength(2);
-      expect(input.timeline[0].message.role).toBe("user");
-      expect(input.timeline[1].message.role).toBe("assistant");
+      expect(input.timeline?.[0].message.role).toBe("user");
+      expect(input.timeline?.[1].message.role).toBe("assistant");
     });
   });
 });

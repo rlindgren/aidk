@@ -220,7 +220,7 @@ describe("Logger", () => {
 
     it("should not include default fields when custom extractor replaces them", () => {
       // This test verifies the custom extractor completely replaces defaults
-      const customExtractor = jest.fn((_ctx) => ({
+      const customExtractor = vi.fn((_ctx) => ({
         only_this_field: "value",
       }));
 

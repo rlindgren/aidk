@@ -11,8 +11,7 @@
   "references": [
     { "path": "../server" },
     { "path": "../core" },
-    { "path": "./tsconfig.build.json" },
-    { "path": "./tsconfig.spec.json" }
+    { "path": "./tsconfig.build.json" }
   ],
   "include": ["src"],
   "exclude": ["src/**/*.spec.ts", "src/**/*.spec.tsx"]

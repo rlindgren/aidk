@@ -203,8 +203,8 @@ describe("Fork Component", () => {
 
   describe("Event Handlers", () => {
     it("should call onComplete when fork completes", async () => {
-      const onCompleteSpy = jest.fn();
-      const onErrorSpy = jest.fn();
+      const onCompleteSpy = vi.fn();
+      const onErrorSpy = vi.fn();
       let forkHandle: ExecutionHandle | undefined;
 
       class ForkWithHandler extends Component {
@@ -243,8 +243,8 @@ describe("Fork Component", () => {
     });
 
     it("should call onError when fork fails", async () => {
-      const onCompleteSpy = jest.fn();
-      const onErrorSpy = jest.fn();
+      const onCompleteSpy = vi.fn();
+      const onErrorSpy = vi.fn();
 
       // Create a model that throws an error
       const errorModel = createLanguageModel({

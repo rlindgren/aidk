@@ -1,3 +1,4 @@
+import type { Mock } from "vitest";
 import { ChannelService, type ChannelTransport, type ChannelAdapter } from "./service";
 import { Context } from "../context";
 import type { EngineContext } from "../types";
@@ -74,45 +75,54 @@ describe("ChannelService", () => {
   });
 
   describe("publish", () => {
-    it("should publish to local channel", (done) => {
+    it("should publish to local channel", () => {
       const channel = service.getChannel(mockCtx, "test-channel");
+      let receivedEvent: any;
       channel.subscribe((event) => {
-        expect(event.type).toBe("test");
-        expect(event.payload).toEqual({ message: "hello" });
-        done();
+        receivedEvent = event;
       });
 
       service.publish(mockCtx, "test-channel", {
         type: "test",
         payload: { message: "hello" },
       });
+
+      expect(receivedEvent).toBeDefined();
+      expect(receivedEvent.type).toBe("test");
+      expect(receivedEvent.payload).toEqual({ message: "hello" });
     });
 
-    it("should add executionId to metadata", (done) => {
+    it("should add executionId to metadata", () => {
       const channel = service.getChannel(mockCtx, "test-channel");
+      let receivedEvent: any;
       channel.subscribe((event) => {
-        expect(event.metadata?.executionId).toBe(mockCtx.traceId);
-        done();
+        receivedEvent = event;
       });
 
       service.publish(mockCtx, "test-channel", {
         type: "test",
         payload: {},
       });
+
+      expect(receivedEvent).toBeDefined();
+      expect(receivedEvent.metadata?.executionId).toBe(mockCtx.traceId);
     });
   });
 
   describe("subscribe", () => {
-    it("should subscribe to channel events", (done) => {
+    it("should subscribe to channel events", () => {
+      let receivedEvent: any;
       const unsubscribe = service.subscribe(mockCtx, "test-channel", (event) => {
-        expect(event.type).toBe("test");
-        done();
+        receivedEvent = event;
       });
 
       service.publish(mockCtx, "test-channel", {
         type: "test",
         payload: {},
       });
+
+      expect(receivedEvent).toBeDefined();
+      expect(receivedEvent.type).toBe("test");
 
       unsubscribe();
     });
@@ -141,11 +151,11 @@ describe("ChannelService", () => {
     it("should connect transport on session creation", async () => {
       const mockTransport: ChannelTransport = {
         name: "test-transport",
-        connect: jest.fn().mockResolvedValue(undefined),
-        disconnect: jest.fn().mockResolvedValue(undefined),
-        send: jest.fn().mockResolvedValue(undefined),
-        onReceive: jest.fn(),
-        closeAll: jest.fn(),
+        connect: vi.fn().mockResolvedValue(undefined),
+        disconnect: vi.fn().mockResolvedValue(undefined),
+        send: vi.fn().mockResolvedValue(undefined),
+        onReceive: vi.fn(),
+        closeAll: vi.fn(),
       };
 
       const serviceWithTransport = new ChannelService({
@@ -163,11 +173,11 @@ describe("ChannelService", () => {
     it("should forward published events to transport", async () => {
       const mockTransport: ChannelTransport = {
         name: "test-transport",
-        connect: jest.fn().mockResolvedValue(undefined),
-        disconnect: jest.fn().mockResolvedValue(undefined),
-        send: jest.fn().mockResolvedValue(undefined),
-        onReceive: jest.fn(),
-        closeAll: jest.fn(),
+        connect: vi.fn().mockResolvedValue(undefined),
+        disconnect: vi.fn().mockResolvedValue(undefined),
+        send: vi.fn().mockResolvedValue(undefined),
+        onReceive: vi.fn(),
+        closeAll: vi.fn(),
       };
 
       const serviceWithTransport = new ChannelService({
@@ -182,7 +192,7 @@ describe("ChannelService", () => {
       await new Promise((resolve) => setTimeout(resolve, 10));
 
       expect(mockTransport.send).toHaveBeenCalled();
-      const sentEvent = (mockTransport.send as jest.Mock).mock.calls[0][0];
+      const sentEvent = (mockTransport.send as Mock).mock.calls[0][0];
       expect(sentEvent.channel).toBe("test-channel");
       expect(sentEvent.type).toBe("test");
     });
@@ -192,8 +202,8 @@ describe("ChannelService", () => {
     it("should forward published events to adapter", async () => {
       const mockAdapter: ChannelAdapter = {
         name: "test-adapter",
-        publish: jest.fn().mockResolvedValue(undefined),
-        subscribe: jest.fn().mockResolvedValue(() => {}),
+        publish: vi.fn().mockResolvedValue(undefined),
+        subscribe: vi.fn().mockResolvedValue(() => {}),
       };
 
       const serviceWithAdapter = new ChannelService({
@@ -208,18 +218,18 @@ describe("ChannelService", () => {
       await new Promise((resolve) => setTimeout(resolve, 10));
 
       expect(mockAdapter.publish).toHaveBeenCalled();
-      const publishedEvent = (mockAdapter.publish as jest.Mock).mock.calls[0][0];
+      const publishedEvent = (mockAdapter.publish as Mock).mock.calls[0][0];
       expect(publishedEvent.channel).toBe("test-channel");
     });
 
     it("should handle adapter publish errors gracefully", async () => {
       const mockAdapter: ChannelAdapter = {
         name: "test-adapter",
-        publish: jest.fn().mockRejectedValue(new Error("Adapter error")),
-        subscribe: jest.fn().mockResolvedValue(() => {}),
+        publish: vi.fn().mockRejectedValue(new Error("Adapter error")),
+        subscribe: vi.fn().mockResolvedValue(() => {}),
       };
 
-      const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
+      const consoleErrorSpy = vi.spyOn(console, "error");
 
       const serviceWithAdapter = new ChannelService({
         adapter: mockAdapter,
@@ -239,14 +249,14 @@ describe("ChannelService", () => {
     it("should handle transport send errors gracefully", async () => {
       const mockTransport: ChannelTransport = {
         name: "test-transport",
-        connect: jest.fn().mockResolvedValue(undefined),
-        disconnect: jest.fn().mockResolvedValue(undefined),
-        send: jest.fn().mockRejectedValue(new Error("Transport error")),
-        onReceive: jest.fn(),
-        closeAll: jest.fn(),
+        connect: vi.fn().mockResolvedValue(undefined),
+        disconnect: vi.fn().mockResolvedValue(undefined),
+        send: vi.fn().mockRejectedValue(new Error("Transport error")),
+        onReceive: vi.fn(),
+        closeAll: vi.fn(),
       };
 
-      const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
+      const consoleErrorSpy = vi.spyOn(console, "error");
 
       const serviceWithTransport = new ChannelService({
         transport: mockTransport,
@@ -302,11 +312,11 @@ describe("ChannelService", () => {
     it("should disconnect transport", async () => {
       const mockTransport: ChannelTransport = {
         name: "test-transport",
-        connect: jest.fn().mockResolvedValue(undefined),
-        disconnect: jest.fn().mockResolvedValue(undefined),
-        send: jest.fn().mockResolvedValue(undefined),
-        onReceive: jest.fn(),
-        closeAll: jest.fn(),
+        connect: vi.fn().mockResolvedValue(undefined),
+        disconnect: vi.fn().mockResolvedValue(undefined),
+        send: vi.fn().mockResolvedValue(undefined),
+        onReceive: vi.fn(),
+        closeAll: vi.fn(),
       };
 
       const serviceWithTransport = new ChannelService({

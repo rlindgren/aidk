@@ -21,7 +21,7 @@ describe("ComponentHookRegistry", () => {
     it("should register middleware for specific hook and specific component", () => {
       class TimelineManager extends Component {}
 
-      const middleware = jest.fn(async (input, ctx, next) => {
+      const middleware = vi.fn(async (input, ctx, next) => {
         return next();
       });
 
@@ -38,7 +38,7 @@ describe("ComponentHookRegistry", () => {
     });
 
     it("should register middleware for specific hook and all components", () => {
-      const middleware = jest.fn(async (input, ctx, next) => {
+      const middleware = vi.fn(async (input, ctx, next) => {
         return next();
       });
 
@@ -58,7 +58,7 @@ describe("ComponentHookRegistry", () => {
     it("should register middleware for all hooks and specific component", () => {
       class TimelineManager extends Component {}
 
-      const middleware = jest.fn(async (input, ctx, next) => {
+      const middleware = vi.fn(async (input, ctx, next) => {
         return next();
       });
 
@@ -88,7 +88,7 @@ describe("ComponentHookRegistry", () => {
     });
 
     it("should register middleware for all hooks and all components", () => {
-      const middleware = jest.fn(async (input, ctx, next) => {
+      const middleware = vi.fn(async (input, ctx, next) => {
         return next();
       });
 
@@ -112,9 +112,9 @@ describe("ComponentHookRegistry", () => {
       class TimelineManager extends Component {}
       class OtherComponent extends Component {}
 
-      const globalMw = jest.fn(async (input, ctx, next) => next());
-      const componentMw = jest.fn(async (input, ctx, next) => next());
-      const hookMw = jest.fn(async (input, ctx, next) => next());
+      const globalMw = vi.fn(async (input, ctx, next) => next());
+      const componentMw = vi.fn(async (input, ctx, next) => next());
+      const hookMw = vi.fn(async (input, ctx, next) => next());
 
       // Register global middleware for all hooks
       registry.register(globalMw);
@@ -153,7 +153,7 @@ describe("ComponentHookRegistry", () => {
     });
 
     it("should handle string selector (component name)", () => {
-      const middleware = jest.fn(async (input, ctx, next) => next());
+      const middleware = vi.fn(async (input, ctx, next) => next());
 
       registry.register("onTickStart", "TimelineManager", middleware);
 
@@ -169,7 +169,7 @@ describe("ComponentHookRegistry", () => {
     });
 
     it("should handle tag selector", () => {
-      const middleware = jest.fn(async (input, ctx, next) => next());
+      const middleware = vi.fn(async (input, ctx, next) => next());
 
       registry.register("onTickStart", { tags: ["timeline"] }, middleware);
 
@@ -188,7 +188,7 @@ describe("ComponentHookRegistry", () => {
 
   describe("getMiddleware ordering", () => {
     it("should return middleware in correct order: component-defined -> class-based -> tag-based -> name-based -> global", () => {
-      const componentDefinedHook = jest.fn(async (input, ctx, next) => next());
+      const componentDefinedHook = vi.fn(async (input, ctx, next) => next());
 
       class TimelineManager extends Component {
         static hooks = {
@@ -196,10 +196,10 @@ describe("ComponentHookRegistry", () => {
         };
       }
 
-      const classMw = jest.fn(async (input, ctx, next) => next());
-      const tagMw = jest.fn(async (input, ctx, next) => next());
-      const nameMw = jest.fn(async (input, ctx, next) => next());
-      const globalMw = jest.fn(async (input, ctx, next) => next());
+      const classMw = vi.fn(async (input, ctx, next) => next());
+      const tagMw = vi.fn(async (input, ctx, next) => next());
+      const nameMw = vi.fn(async (input, ctx, next) => next());
+      const globalMw = vi.fn(async (input, ctx, next) => next());
 
       registry.register("onTickStart", TimelineManager, classMw);
       registry.register("onTickStart", { tags: ["timeline"] }, tagMw);

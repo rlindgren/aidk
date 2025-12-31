@@ -130,7 +130,7 @@ describe("Model Component", () => {
     it("should call onMount callback if provided", async () => {
       const com = new COM();
 
-      const onMountSpy = jest.fn();
+      const onMountSpy = vi.fn();
       const component = new ModelComponent({
         model: mockModel1,
         onMount: onMountSpy,
@@ -145,7 +145,7 @@ describe("Model Component", () => {
     it("should call onUnmount callback if provided", async () => {
       const com = new COM();
 
-      const onUnmountSpy = jest.fn();
+      const onUnmountSpy = vi.fn();
       const component = new ModelComponent({
         model: mockModel1,
         onUnmount: onUnmountSpy,
@@ -365,7 +365,7 @@ describe("Model Component", () => {
     it("should allow Model component to notify Engine when model is set", async () => {
       const com = new COM();
 
-      const setModelSpy = jest.spyOn(com, "setModel");
+      const setModelSpy = vi.spyOn(com, "setModel");
 
       // Model component calls engine.setModel directly
       const component = new ModelComponent({ model: mockModel1 });

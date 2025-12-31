@@ -22,7 +22,7 @@ describe("FiberCompiler", () => {
     compiler = new FiberCompiler(com);
     tickState = {
       tick: 1,
-      stop: jest.fn(),
+      stop: vi.fn(),
       queuedMessages: [],
     } as unknown as TickState;
   });
@@ -125,7 +125,7 @@ describe("FiberCompiler", () => {
 
   describe("Class Components", () => {
     it("should call onMount lifecycle", async () => {
-      const onMountSpy = jest.fn();
+      const onMountSpy = vi.fn();
 
       class LifecycleComponent extends Component {
         onMount = onMountSpy;
@@ -142,7 +142,7 @@ describe("FiberCompiler", () => {
     });
 
     it("should call onTickStart lifecycle", async () => {
-      const onTickStartSpy = jest.fn();
+      const onTickStartSpy = vi.fn();
 
       class TickComponent extends Component {
         onTickStart = onTickStartSpy;
@@ -209,7 +209,7 @@ describe("FiberCompiler", () => {
 
   describe("Effect Phases", () => {
     it("should run tick start effects", async () => {
-      const tickStartSpy = jest.fn();
+      const tickStartSpy = vi.fn();
 
       function EffectComponent() {
         useTickStart(tickStartSpy);
@@ -225,7 +225,7 @@ describe("FiberCompiler", () => {
     });
 
     it("should run tick end effects", async () => {
-      const tickEndSpy = jest.fn();
+      const tickEndSpy = vi.fn();
 
       function EffectComponent() {
         useTickEnd(tickEndSpy);
@@ -241,7 +241,7 @@ describe("FiberCompiler", () => {
     });
 
     it("should run mount effects", async () => {
-      const mountSpy = jest.fn();
+      const mountSpy = vi.fn();
 
       function EffectComponent() {
         useEffect(() => {
@@ -298,7 +298,7 @@ describe("FiberCompiler", () => {
 
   describe("Unmounting", () => {
     it("should call onUnmount for class components", async () => {
-      const unmountSpy = jest.fn();
+      const unmountSpy = vi.fn();
 
       class UnmountComponent extends Component {
         onUnmount = unmountSpy;
@@ -317,7 +317,7 @@ describe("FiberCompiler", () => {
     });
 
     it("should run cleanup for function component effects", async () => {
-      const cleanupSpy = jest.fn();
+      const cleanupSpy = vi.fn();
 
       function CleanupComponent() {
         useEffect(() => {
@@ -339,7 +339,7 @@ describe("FiberCompiler", () => {
     it("should collect tools from Tool components", async () => {
       const toolDef = {
         metadata: { name: "test-tool", description: "Test" },
-        run: jest.fn(),
+        run: vi.fn(),
       };
 
       const element = createElement(Tool, { definition: toolDef });

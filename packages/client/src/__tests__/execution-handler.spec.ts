@@ -2,6 +2,7 @@
  * Tests for ExecutionHandler and StreamProcessor
  */
 
+import type { Mock } from "vitest";
 import {
   ExecutionHandler,
   StreamProcessor,
@@ -13,9 +14,9 @@ import type { Message, ContentBlock } from "../types";
 
 // Mock EngineClient
 const createMockClient = () => ({
-  stream: jest.fn(),
-  execute: jest.fn(),
-  sendToolResult: jest.fn(),
+  stream: vi.fn(),
+  execute: vi.fn(),
+  sendToolResult: vi.fn(),
   config: {
     baseUrl: "http://localhost:3000",
     agentId: "test-agent",
@@ -127,16 +128,16 @@ describe("Message Helpers", () => {
 
 describe("StreamProcessor", () => {
   let processor: StreamProcessor;
-  let onMessagesChange: jest.Mock;
-  let onThreadIdChange: jest.Mock;
-  let onComplete: jest.Mock;
-  let onError: jest.Mock;
+  let onMessagesChange: Mock;
+  let onThreadIdChange: Mock;
+  let onComplete: Mock;
+  let onError: Mock;
 
   beforeEach(() => {
-    onMessagesChange = jest.fn();
-    onThreadIdChange = jest.fn();
-    onComplete = jest.fn();
-    onError = jest.fn();
+    onMessagesChange = vi.fn();
+    onThreadIdChange = vi.fn();
+    onComplete = vi.fn();
+    onError = vi.fn();
 
     processor = new StreamProcessor({
       onMessagesChange,
@@ -331,17 +332,17 @@ describe("StreamProcessor", () => {
 describe("ExecutionHandler", () => {
   let mockClient: ReturnType<typeof createMockClient>;
   let handler: ExecutionHandler;
-  let onMessagesChange: jest.Mock;
-  let onStreamingChange: jest.Mock;
-  let onThreadIdChange: jest.Mock;
-  let onErrorChange: jest.Mock;
+  let onMessagesChange: Mock;
+  let onStreamingChange: Mock;
+  let onThreadIdChange: Mock;
+  let onErrorChange: Mock;
 
   beforeEach(() => {
     mockClient = createMockClient();
-    onMessagesChange = jest.fn();
-    onStreamingChange = jest.fn();
-    onThreadIdChange = jest.fn();
-    onErrorChange = jest.fn();
+    onMessagesChange = vi.fn();
+    onStreamingChange = vi.fn();
+    onThreadIdChange = vi.fn();
+    onErrorChange = vi.fn();
 
     handler = new ExecutionHandler({
       client: mockClient as any,

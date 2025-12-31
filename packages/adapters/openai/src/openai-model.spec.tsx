@@ -29,8 +29,8 @@ describe("OpenAIModel Component", () => {
     });
 
     it("should pass through onMount and onUnmount callbacks", () => {
-      const onMount = jest.fn();
-      const onUnmount = jest.fn();
+      const onMount = vi.fn();
+      const onUnmount = vi.fn();
 
       const element = OpenAIModel({
         apiKey: "test-key",

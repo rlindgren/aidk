@@ -195,7 +195,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "prepublishOnly": "pnpm build",
-    "test": "jest",
+    "test": "echo \"Tests run from workspace root\"",
     "typecheck": "tsc -p tsconfig.build.json --noEmit",
     "lint": "oxlint src/",
     "format:check": "oxfmt --check src/",

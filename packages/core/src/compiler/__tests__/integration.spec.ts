@@ -30,7 +30,7 @@ describe("Compiler Integration", () => {
     compiler = new FiberCompiler(com);
     tickState = {
       tick: 1,
-      stop: jest.fn(),
+      stop: vi.fn(),
       queuedMessages: [],
       current: {
         timeline: [],
@@ -242,7 +242,7 @@ describe("Compiler Integration", () => {
 
   describe("Unmounting", () => {
     it("should cleanup all resources on unmount", async () => {
-      const cleanupSpy = jest.fn();
+      const cleanupSpy = vi.fn();
 
       function CleanupComponent() {
         useEffect(() => {
@@ -261,7 +261,7 @@ describe("Compiler Integration", () => {
     });
 
     it("should unmount class components", async () => {
-      const unmountSpy = jest.fn();
+      const unmountSpy = vi.fn();
 
       class UnmountComponent extends Component {
         onUnmount = unmountSpy;

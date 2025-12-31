@@ -21,11 +21,12 @@
     "type": "git",
     "url": "git+https://github.com/rlindgren/aidk.git"
   },
-
   "scripts": {
     "prepare": "simple-git-hooks",
     "build": "turbo build",
-    "test": "turbo test",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "typecheck": "turbo typecheck",
     "clean": "turbo clean",
     "dev": "turbo dev",
@@ -41,20 +42,18 @@
     "@changesets/cli": "^2.0.0",
     "@commitlint/cli": "^20.2.0",
     "@commitlint/config-conventional": "^20.2.0",
-    "@jest/test-sequencer": "^30.2.0",
-    "@types/jest": "^30.0.0",
     "@types/node": "^25.0.0",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.51.0",
+    "@vitest/coverage-v8": "^4.0.16",
     "eslint": "^9.39.2",
     "eslint-plugin-oxlint": "^1.36.0",
-    "jest": "^30.0.0",
     "oxfmt": "^0.21.0",
     "oxlint": "^1.36.0",
     "simple-git-hooks": "^2.13.1",
-    "ts-jest": "^29.0.0",
     "turbo": "^2.7.2",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.16"
   },
   "peerDependencies": {
     "zod": "^4.1.13"

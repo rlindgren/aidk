@@ -36,3 +36,5 @@ website/api/
 
 .env
 *.env
+
+coverage/

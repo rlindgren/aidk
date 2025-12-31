@@ -1,6 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/oxc-project/oxc/main/npm/oxlint/configuration_schema.json",
-  "plugins": ["typescript", "react", "jest", "import"],
+  "plugins": ["typescript", "react", "vitest", "import"],
   "categories": {
     "correctness": "error",
     "suspicious": "warn",
@@ -20,13 +20,13 @@
     "react/react-in-jsx-scope": "off",
     "react/no-string-refs": "off",
     "react/no-children-prop": "off",
-    "jest/no-conditional-expect": "off",
-    "jest/expect-expect": "off",
+    "vitest/no-conditional-expect": "off",
+    "vitest/expect-expect": "off",
     "@typescript-eslint/no-this-alias": "off",
     "@typescript-eslint/consistent-type-imports": "off",
     "react-hooks/exhaustive-deps": "off",
     "no-constant-condition": "off",
-    "jest/no-disabled-tests": "off",
+    "vitest/no-disabled-tests": "off",
     "no-unsafe-finally": "off",
     "@typescript-eslint/no-extraneous-class": "off",
     "import/no-unassigned-import": "off"

@@ -336,7 +336,7 @@ describe("Fork and Spawn", () => {
       }
 
       // Register a hook on parent engine
-      const componentHook = jest.fn(async (input, ctx, next) => {
+      const componentHook = vi.fn(async (input, ctx, next) => {
         return next(input);
       });
       engine.componentHooks.register("onTickStart", componentHook);
@@ -369,7 +369,7 @@ describe("Fork and Spawn", () => {
       }
 
       // Register a model hook on parent engine
-      const modelHook = jest.fn(async (input, ctx, next) => {
+      const modelHook = vi.fn(async (input, ctx, next) => {
         return next(input);
       });
       engine.modelHooks.register("generate", modelHook);
@@ -402,7 +402,7 @@ describe("Fork and Spawn", () => {
       }
 
       // Register a tool hook on parent engine
-      const toolHook = jest.fn(async (input, ctx, next) => {
+      const toolHook = vi.fn(async (input, ctx, next) => {
         return next(input);
       });
       engine.toolHooks.register("run", toolHook);
@@ -441,7 +441,7 @@ describe("Fork and Spawn", () => {
       }
 
       // Register a hook on parent engine
-      const componentHook = jest.fn(async (input, ctx, next) => {
+      const componentHook = vi.fn(async (input, ctx, next) => {
         return next(input);
       });
       engine.componentHooks.register("onTickStart", componentHook);
@@ -492,10 +492,10 @@ describe("Fork and Spawn", () => {
       }
 
       // Register hooks of all types on parent engine
-      const componentHook = jest.fn(async (input, ctx, next) => next(input));
-      const modelHook = jest.fn(async (input, ctx, next) => next(input));
-      const toolHook = jest.fn(async (input, ctx, next) => next(input));
-      const engineHook = jest.fn(async (input, ctx, next) => next(input));
+      const componentHook = vi.fn(async (input, ctx, next) => next(input));
+      const modelHook = vi.fn(async (input, ctx, next) => next(input));
+      const toolHook = vi.fn(async (input, ctx, next) => next(input));
+      const engineHook = vi.fn(async (input, ctx, next) => next(input));
 
       engine.componentHooks.register("onTickStart", componentHook);
       engine.modelHooks.register("generate", modelHook);
@@ -535,13 +535,13 @@ describe("Fork and Spawn", () => {
       }
 
       // Register a hook on parent engine
-      const parentHook = jest.fn(async (input, ctx, next) => {
+      const parentHook = vi.fn(async (input, ctx, next) => {
         return next(input);
       });
       engine.componentHooks.register("onTickStart", parentHook);
 
       // Fork-specific hook
-      const forkHook = jest.fn(async (input, ctx, next) => {
+      const forkHook = vi.fn(async (input, ctx, next) => {
         return next(input);
       });
 
@@ -579,13 +579,13 @@ describe("Fork and Spawn", () => {
       }
 
       // Register a hook on parent engine
-      const parentHook = jest.fn(async (input, ctx, next) => {
+      const parentHook = vi.fn(async (input, ctx, next) => {
         return next(input);
       });
       engine.componentHooks.register("onTickStart", parentHook);
 
       // Fork-specific hook
-      const forkHook = jest.fn(async (input, ctx, next) => {
+      const forkHook = vi.fn(async (input, ctx, next) => {
         return next(input);
       });
 
@@ -624,10 +624,10 @@ describe("Fork and Spawn", () => {
         }
       }
 
-      const componentHook = jest.fn(async (input, ctx, next) => next(input));
-      const modelHook = jest.fn(async (input, ctx, next) => next(input));
-      const toolHook = jest.fn(async (input, ctx, next) => next(input));
-      const engineHook = jest.fn(async (input, ctx, next) => next(input));
+      const componentHook = vi.fn(async (input, ctx, next) => next(input));
+      const modelHook = vi.fn(async (input, ctx, next) => next(input));
+      const toolHook = vi.fn(async (input, ctx, next) => next(input));
+      const engineHook = vi.fn(async (input, ctx, next) => next(input));
 
       const parentHandle = engine.spawn(createElement(SimpleAgent, {}), { timeline: [] });
 
@@ -676,12 +676,12 @@ describe("Fork and Spawn", () => {
       // Track hook execution order
       const executionOrder: string[] = [];
 
-      const parentHook = jest.fn(async (input, ctx, next) => {
+      const parentHook = vi.fn(async (input, ctx, next) => {
         executionOrder.push("parent");
         return next(input);
       });
 
-      const forkHook = jest.fn(async (input, ctx, next) => {
+      const forkHook = vi.fn(async (input, ctx, next) => {
         executionOrder.push("fork");
         return next(input);
       });
@@ -725,9 +725,9 @@ describe("Fork and Spawn", () => {
         }
       }
 
-      const hook1 = jest.fn(async (input, ctx, next) => next(input));
-      const hook2 = jest.fn(async (input, ctx, next) => next(input));
-      const hook3 = jest.fn(async (input, ctx, next) => next(input));
+      const hook1 = vi.fn(async (input, ctx, next) => next(input));
+      const hook2 = vi.fn(async (input, ctx, next) => next(input));
+      const hook3 = vi.fn(async (input, ctx, next) => next(input));
 
       const parentHandle = engine.spawn(createElement(SimpleAgent, {}), { timeline: [] });
 

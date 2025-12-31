@@ -119,7 +119,7 @@ describe("Fork/Spawn Helper Functions", () => {
     });
 
     it("should call onComplete handler when fork completes", async () => {
-      const onCompleteSpy = jest.fn();
+      const onCompleteSpy = vi.fn();
 
       class ForkCreator extends Component {
         render(com: COM, state: TickState) {
@@ -145,7 +145,7 @@ describe("Fork/Spawn Helper Functions", () => {
     });
 
     it("should call onError handler when spawn fails", async () => {
-      const onErrorSpy = jest.fn();
+      const onErrorSpy = vi.fn();
       let spawnHandle: ExecutionHandle | undefined;
 
       // Create a model that throws an error
@@ -330,7 +330,7 @@ describe("Fork/Spawn Helper Functions", () => {
     });
 
     it("should call onComplete handler when spawn completes", async () => {
-      const onCompleteSpy = jest.fn();
+      const onCompleteSpy = vi.fn();
 
       class SpawnCreator extends Component {
         render(com: COM, state: TickState) {

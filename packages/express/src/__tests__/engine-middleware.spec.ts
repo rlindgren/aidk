@@ -4,6 +4,7 @@
  * Tests the withEngine and withTransport middleware.
  */
 
+import type { Mock } from "vitest";
 import {
   withEngine,
   withTransport,
@@ -23,7 +24,7 @@ import type { Engine } from "aidk";
 function createMockEngine(): Engine {
   return {
     execute: {
-      withContext: jest.fn(() => async () => ({ timeline: [] })),
+      withContext: vi.fn(() => async () => ({ timeline: [] })),
     },
   } as unknown as Engine;
 }
@@ -81,7 +82,7 @@ describe("withEngine middleware", () => {
 
   beforeEach(() => {
     mockEngine = createMockEngine();
-    next = jest.fn();
+    next = vi.fn();
   });
 
   it("should attach engineContext to request", async () => {
@@ -107,7 +108,7 @@ describe("withEngine middleware", () => {
   });
 
   it("should support engine factory function", () => {
-    const engineFactory = jest.fn(() => mockEngine);
+    const engineFactory = vi.fn(() => mockEngine);
     const middleware = withEngine({ engine: engineFactory });
     const req = createMockRequest({ messages: [], userId: "user-1" });
     const res = createMockResponse();
@@ -241,7 +242,7 @@ describe("withTransport middleware", () => {
 
   beforeEach(() => {
     transport = new SSETransport();
-    next = jest.fn();
+    next = vi.fn();
   });
 
   afterEach(() => {
@@ -256,7 +257,7 @@ describe("withTransport middleware", () => {
     await middleware(req as Request, res as Response, next);
 
     expect(next).toHaveBeenCalledWith(expect.any(Error));
-    expect((next as jest.Mock).mock.calls[0][0].message).toContain("withEngine middleware first");
+    expect((next as Mock).mock.calls[0][0].message).toContain("withEngine middleware first");
   });
 
   it("should attach transport to context", async () => {
@@ -275,7 +276,7 @@ describe("withTransport middleware", () => {
       sessionId: "session-1",
       userId: "user-1",
       input: { messages: [] },
-      withContext: jest.fn(),
+      withContext: {} as any,
     };
 
     const res = createMockResponse();
@@ -287,12 +288,12 @@ describe("withTransport middleware", () => {
   });
 
   it("should use custom room pattern", async () => {
-    const joinSpy = jest.spyOn(transport, "join");
+    const joinSpy = vi.spyOn(transport, "join");
     const mockRes = {
-      setHeader: jest.fn(),
-      flushHeaders: jest.fn(),
-      write: jest.fn(() => true),
-      on: jest.fn(),
+      setHeader: vi.fn(),
+      flushHeaders: vi.fn(),
+      write: vi.fn(() => true),
+      on: vi.fn(),
     };
 
     // Connect the session first
@@ -314,7 +315,7 @@ describe("withTransport middleware", () => {
       userId: "user-1",
       tenantId: "tenant-1",
       input: { messages: [] },
-      withContext: jest.fn(),
+      withContext: {} as any,
     };
 
     const res = createMockResponse();
@@ -325,7 +326,7 @@ describe("withTransport middleware", () => {
   });
 
   it("should not join room if session not connected", async () => {
-    const joinSpy = jest.spyOn(transport, "join");
+    const joinSpy = vi.spyOn(transport, "join");
     const middleware = withTransport({ transport });
 
     const req = createMockRequest({}) as unknown as EngineRequest;
@@ -336,7 +337,7 @@ describe("withTransport middleware", () => {
       sessionId: "not-connected-session",
       userId: "user-1",
       input: { messages: [] },
-      withContext: jest.fn(),
+      withContext: {} as any,
     };
 
     const res = createMockResponse();

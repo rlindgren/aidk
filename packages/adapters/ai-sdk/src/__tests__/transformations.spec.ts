@@ -16,7 +16,7 @@ import {
   mapContentBlocksToToolResultOutput,
   convertToolsToToolSet,
 } from "../adapter";
-import { StopReason } from "aidk/content";
+import { ImageMimeType, StopReason } from "aidk/content";
 import type {
   Message,
   ContentBlock,
@@ -252,7 +252,7 @@ describe("mapContentBlockToAiSdkPart", () => {
     const block: ImageBlock = {
       type: "image",
       source: { type: "url", url: "https://example.com/image.png" },
-      mimeType: "image/png",
+      mimeType: ImageMimeType.PNG,
     };
     const result = mapContentBlockToAiSdkPart(block);
 
@@ -269,9 +269,8 @@ describe("mapContentBlockToAiSdkPart", () => {
       source: {
         type: "base64",
         data: "iVBORw0KGgoAAAANS...",
-        media_type: "image/png",
       },
-      mimeType: "image/png",
+      mimeType: ImageMimeType.PNG,
     };
     const result = mapContentBlockToAiSdkPart(block);
 
@@ -316,7 +315,7 @@ describe("mapContentBlockToAiSdkPart", () => {
     const block: ImageBlock = {
       type: "image",
       source: { type: "s3", bucket: "test", key: "image.png" } as any,
-      mimeType: "image/png",
+      mimeType: ImageMimeType.PNG,
     };
     const result = mapContentBlockToAiSdkPart(block);
 
@@ -344,7 +343,7 @@ describe("mapContentBlocksToAiSdkContent", () => {
       {
         type: "image",
         source: { type: "gcs", bucket: "test", object: "test.png" } as any,
-        mimeType: "image/png",
+        mimeType: ImageMimeType.PNG,
       },
     ];
 
@@ -438,7 +437,7 @@ describe("mapAiSdkContentToContentBlocks", () => {
 
   it("should filter undefined blocks", () => {
     const content = [{ type: "text" as const, text: "Keep" }, { type: "unknown-type" as any }];
-    const result = mapAiSdkContentToContentBlocks(content);
+    const result = mapAiSdkContentToContentBlocks(content as any);
 
     // The unknown type might be converted or undefined depending on implementation
     expect(result.length).toBeGreaterThanOrEqual(1);

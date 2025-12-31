@@ -203,8 +203,7 @@ test: add integration tests for hooks
    ├── package.json
    ├── tsconfig.json
    ├── tsconfig.build.json
-   ├── tsconfig.spec.json
-   └── jest.config.js
+   └── tsconfig.spec.json
    ```
 3. Add to `pnpm-workspace.yaml` if needed
 4. Add package README

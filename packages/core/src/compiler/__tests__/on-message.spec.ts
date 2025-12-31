@@ -25,7 +25,7 @@ describe("onMessage Hook", () => {
     com = new COM();
     tickState = {
       tick: 1,
-      stop: jest.fn(),
+      stop: vi.fn(),
       queuedMessages: [],
     } as unknown as TickState;
 
@@ -47,7 +47,7 @@ describe("onMessage Hook", () => {
     it("should register onMessage callback", () => {
       setRenderContext(renderContext);
 
-      const callback = jest.fn();
+      const callback = vi.fn();
       useOnMessage(callback);
 
       const hook = fiber.memoizedState;
@@ -59,7 +59,7 @@ describe("onMessage Hook", () => {
     it("should persist callback across renders", () => {
       setRenderContext(renderContext);
 
-      const callback = jest.fn();
+      const callback = vi.fn();
       useOnMessage(callback);
 
       // Simulate re-render
@@ -69,7 +69,7 @@ describe("onMessage Hook", () => {
       fiber.memoizedState = null;
 
       setRenderContext(renderContext);
-      const newCallback = jest.fn();
+      const newCallback = vi.fn();
       useOnMessage(newCallback);
 
       const hook = fiber.memoizedState as any;
@@ -135,7 +135,7 @@ describe("onMessage Hook", () => {
     });
 
     it("should emit execution:message event when message queued", () => {
-      const listener = jest.fn();
+      const listener = vi.fn();
       com.on("execution:message", listener);
 
       const message: ExecutionMessage = {
@@ -185,7 +185,7 @@ describe("TickState.queuedMessages", () => {
   it("should include queuedMessages in TickState", () => {
     const tickState: TickState = {
       tick: 1,
-      stop: jest.fn(),
+      stop: vi.fn(),
       queuedMessages: [{ id: "msg_1", timestamp: Date.now(), type: "test", content: {} }],
     } as unknown as TickState;
 

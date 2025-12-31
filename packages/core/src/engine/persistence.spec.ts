@@ -61,7 +61,7 @@ describe("Execution Persistence", () => {
 
   describe("persistExecutionState hook", () => {
     it("should call persistExecutionState before each tick", async () => {
-      const persistFn = jest.fn(async (state: ExecutionState) => {
+      const persistFn = vi.fn(async (state: ExecutionState) => {
         persistedStates.push(state);
       });
 
@@ -97,7 +97,7 @@ describe("Execution Persistence", () => {
     });
 
     it("should not fail execution if persistence fails", async () => {
-      const persistFn = jest.fn(async (_state: ExecutionState) => {
+      const persistFn = vi.fn(async (_state: ExecutionState) => {
         throw new Error("Persistence failed");
       });
 
@@ -123,7 +123,7 @@ describe("Execution Persistence", () => {
     });
 
     it("should persist state with correct tick number", async () => {
-      const persistFn = jest.fn(async (state: ExecutionState) => {
+      const persistFn = vi.fn(async (state: ExecutionState) => {
         persistedStates.push(state);
       });
 
@@ -154,7 +154,7 @@ describe("Execution Persistence", () => {
     });
 
     it("should persist state with previous when available", async () => {
-      const persistFn = jest.fn(async (state: ExecutionState) => {
+      const persistFn = vi.fn(async (state: ExecutionState) => {
         persistedStates.push(state);
       });
 
@@ -193,7 +193,7 @@ describe("Execution Persistence", () => {
         startedAt: new Date(),
       };
 
-      const loadFn = jest.fn(async (pid: string) => {
+      const loadFn = vi.fn(async (pid: string) => {
         if (pid === "test-pid") {
           return savedState;
         }
@@ -215,7 +215,7 @@ describe("Execution Persistence", () => {
     });
 
     it("should get recoverable executions", async () => {
-      const loadFn = jest.fn(async (_pid: string) => {
+      const loadFn = vi.fn(async (_pid: string) => {
         return undefined;
       });
 
@@ -287,11 +287,11 @@ describe("Execution Persistence", () => {
     it("should persist and potentially recover execution", async () => {
       const persistedStatesMap = new Map<string, ExecutionState>();
 
-      const persistFn = jest.fn(async (state: ExecutionState) => {
+      const persistFn = vi.fn(async (state: ExecutionState) => {
         persistedStatesMap.set(state.pid, state);
       });
 
-      const loadFn = jest.fn(async (pid: string) => {
+      const loadFn = vi.fn(async (pid: string) => {
         return persistedStatesMap.get(pid);
       });
 

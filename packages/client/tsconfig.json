@@ -7,10 +7,6 @@
     "composite": true,
     "lib": ["ES2022", "DOM"]
   },
-  "references": [
-    { "path": "../shared" },
-    { "path": "./tsconfig.build.json" },
-    { "path": "./tsconfig.spec.json" }
-  ],
+  "references": [{ "path": "../shared" }, { "path": "./tsconfig.build.json" }],
   "include": []
 }

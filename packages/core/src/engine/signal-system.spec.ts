@@ -364,8 +364,8 @@ describe("Signal System", () => {
 
   describe("Engine Shutdown Hooks", () => {
     it("should call shutdown hooks when shutdown() is called", async () => {
-      const shutdownHook1 = jest.fn(async (_engine: any, _reason?: string) => {});
-      const shutdownHook2 = jest.fn(async (_engine: any, _reason?: string) => {});
+      const shutdownHook1 = vi.fn(async (_engine: any, _reason?: string) => {});
+      const shutdownHook2 = vi.fn(async (_engine: any, _reason?: string) => {});
 
       engine.onShutdown(shutdownHook1);
       engine.onShutdown(shutdownHook2);
@@ -396,7 +396,7 @@ describe("Signal System", () => {
     });
 
     it("should return unsubscribe function from onShutdown", async () => {
-      const shutdownHook = jest.fn(async (_engine: any, _reason?: string) => {});
+      const shutdownHook = vi.fn(async (_engine: any, _reason?: string) => {});
 
       const unsubscribe = engine.onShutdown(shutdownHook);
 

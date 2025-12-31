@@ -1,20 +1,21 @@
+import type { Mock } from "vitest";
 import { Context, type KernelContext } from "./context";
 import { ExecutionTracker } from "./execution-tracker";
 import { Telemetry } from "./telemetry";
 
 // Mock Telemetry
-jest.mock("./telemetry", () => ({
+vi.mock("./telemetry", () => ({
   Telemetry: {
-    startSpan: jest.fn(() => ({
-      setAttribute: jest.fn(),
-      recordError: jest.fn(),
-      end: jest.fn(),
+    startSpan: vi.fn(() => ({
+      setAttribute: vi.fn(),
+      recordError: vi.fn(),
+      end: vi.fn(),
     })),
-    getHistogram: jest.fn(() => ({
-      record: jest.fn(),
+    getHistogram: vi.fn(() => ({
+      record: vi.fn(),
     })),
-    getCounter: jest.fn(() => ({
-      add: jest.fn(),
+    getCounter: vi.fn(() => ({
+      add: vi.fn(),
     })),
   },
 }));
@@ -24,19 +25,19 @@ describe("ExecutionTracker", () => {
 
   beforeEach(() => {
     ctx = Context.create();
-    jest.clearAllMocks();
+    vi.clearAllMocks();
 
     // Restore mock implementations after clearing
-    (Telemetry.startSpan as jest.Mock).mockImplementation(() => ({
-      setAttribute: jest.fn(),
-      recordError: jest.fn(),
-      end: jest.fn(),
+    (Telemetry.startSpan as Mock).mockImplementation(() => ({
+      setAttribute: vi.fn(),
+      recordError: vi.fn(),
+      end: vi.fn(),
     }));
-    (Telemetry.getHistogram as jest.Mock).mockImplementation(() => ({
-      record: jest.fn(),
+    (Telemetry.getHistogram as Mock).mockImplementation(() => ({
+      record: vi.fn(),
     }));
-    (Telemetry.getCounter as jest.Mock).mockImplementation(() => ({
-      add: jest.fn(),
+    (Telemetry.getCounter as Mock).mockImplementation(() => ({
+      add: vi.fn(),
     }));
   });
 

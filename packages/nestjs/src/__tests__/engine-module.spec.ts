@@ -13,8 +13,8 @@ import type { Engine } from "aidk";
 // Mock Engine
 function createMockEngine(): Engine {
   return {
-    execute: jest.fn(),
-    stream: jest.fn(),
+    execute: vi.fn(),
+    stream: vi.fn(),
   } as unknown as Engine;
 }
 

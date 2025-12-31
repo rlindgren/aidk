@@ -1,9 +1,0 @@
-{
-  "compilerOptions": {
-    "types": ["node", "jest"],
-    "tsBuildInfoFile": "dist/.tsbuildinfo.spec"
-  },
-  "extends": "./tsconfig.json",
-  "include": ["src/**/*"],
-  "exclude": []
-}

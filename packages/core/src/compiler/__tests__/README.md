@@ -101,7 +101,7 @@ describe('Feature Name', () => {
     compiler = new FiberCompilerV2(com);
     tickState = {
       tick: 1,
-      stop: jest.fn(),
+      stop: vi.fn(),
     } as TickState;
   });
 
@@ -131,7 +131,7 @@ expect(value).toBe(0);
 ### Testing Effects
 
 ```typescript
-const spy = jest.fn();
+const spy = vi.fn();
 useEffect(spy, []);
 // Effects run during commit phase
 await compiler.compile(element, tickState);

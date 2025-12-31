@@ -4,6 +4,7 @@
  * Tests the high-level client that wraps transport and channel primitives.
  */
 
+import type { Mock } from "vitest";
 import { EngineClient, createEngineClient } from "../engine-client";
 import type { ChannelTransport, TransportState, TransportInfo } from "../core/transport";
 import { ChannelClient } from "../core/channel-client";
@@ -70,7 +71,7 @@ function createMockTransport(): ChannelTransport & {
 const originalFetch = global.fetch;
 
 function mockFetch(responses: Map<string, () => Response | Promise<Response>>) {
-  global.fetch = jest.fn(async (url: string | URL | Request, _options?: RequestInit) => {
+  global.fetch = vi.fn(async (url: string | URL | Request, _options?: RequestInit) => {
     const urlStr = typeof url === "string" ? url : url.toString();
 
     for (const [pattern, responseFn] of responses) {
@@ -82,7 +83,7 @@ function mockFetch(responses: Map<string, () => Response | Promise<Response>>) {
     return new Response(JSON.stringify({ error: "Not found" }), {
       status: 404,
     });
-  }) as jest.Mock;
+  }) as Mock;
 }
 
 function restoreFetch() {
@@ -148,7 +149,7 @@ describe("EngineClient", () => {
       // First connect
       transport.connect();
 
-      jest.spyOn(transport, "reconnect");
+      vi.spyOn(transport, "reconnect");
       client.updateConfig({ userId: "new-user" });
 
       // The client wraps transport in ChannelClient, so reconnect is called on that
@@ -157,7 +158,7 @@ describe("EngineClient", () => {
     });
 
     it("should NOT trigger reconnect when userId stays same", () => {
-      const reconnectSpy = jest.spyOn(transport, "reconnect");
+      const reconnectSpy = vi.spyOn(transport, "reconnect");
       client.updateConfig({ userId: "user-123" }); // Same as initial
 
       // No reconnect since value didn't change
@@ -165,8 +166,8 @@ describe("EngineClient", () => {
     });
 
     it("should merge callbacks", () => {
-      const onConnect = jest.fn();
-      const onDisconnect = jest.fn();
+      const onConnect = vi.fn();
+      const onDisconnect = vi.fn();
 
       client.updateConfig({ callbacks: { onConnect } });
       client.updateConfig({ callbacks: { onDisconnect } });
@@ -207,7 +208,7 @@ describe("EngineClient", () => {
     it("should enrich input with session/user context", async () => {
       await client.execute("test-agent", { messages: [] });
 
-      const [, options] = (global.fetch as jest.Mock).mock.calls[0];
+      const [, options] = (global.fetch as Mock).mock.calls[0];
       const body = JSON.parse(options.body);
 
       expect(body.sessionId).toBeDefined();
@@ -317,7 +318,7 @@ describe("EngineClient", () => {
 
   describe("subscribe", () => {
     it("should subscribe to channel events", () => {
-      const handler = jest.fn();
+      const handler = vi.fn();
       const unsub = client.subscribe("test-channel", handler);
 
       // Simulate event
@@ -337,7 +338,7 @@ describe("EngineClient", () => {
     });
 
     it("should support wildcard subscriptions", () => {
-      const handler = jest.fn();
+      const handler = vi.fn();
       client.subscribe("*", handler);
 
       transport._dispatch({
@@ -350,7 +351,7 @@ describe("EngineClient", () => {
     });
 
     it("should support multiple channel subscriptions", () => {
-      const handler = jest.fn();
+      const handler = vi.fn();
       client.subscribe(["channel-1", "channel-2"], handler);
 
       transport._dispatch({
@@ -430,7 +431,7 @@ describe("EngineClient", () => {
         error: "Invalid input",
       });
 
-      const [, options] = (global.fetch as jest.Mock).mock.calls[0];
+      const [, options] = (global.fetch as Mock).mock.calls[0];
       const body = JSON.parse(options.body);
 
       expect(body.isError).toBe(true);
@@ -555,13 +556,13 @@ describe("EngineClient", () => {
 
       await client.getExecutions({ status: "completed", limit: 10 });
 
-      const [url] = (global.fetch as jest.Mock).mock.calls[0];
+      const [url] = (global.fetch as Mock).mock.calls[0];
       expect(url).toContain("status=completed");
       expect(url).toContain("limit=10");
     });
 
     it("should use custom API implementation if provided", async () => {
-      const customGetExecutions = jest.fn().mockResolvedValue([{ id: "custom" }]);
+      const customGetExecutions = vi.fn().mockResolvedValue([{ id: "custom" }]);
       const customClient = new EngineClient({
         transport,
         api: { getExecutions: customGetExecutions },
@@ -594,7 +595,7 @@ describe("EngineClient", () => {
     });
 
     it("should use custom API implementation if provided", async () => {
-      const customGetExecution = jest.fn().mockResolvedValue({ id: "custom" });
+      const customGetExecution = vi.fn().mockResolvedValue({ id: "custom" });
       const customClient = new EngineClient({
         transport,
         api: { getExecution: customGetExecution },
@@ -628,7 +629,7 @@ describe("EngineClient", () => {
     });
 
     it("should use custom API implementation if provided", async () => {
-      const customGetMetrics = jest.fn().mockResolvedValue([{ custom: true }]);
+      const customGetMetrics = vi.fn().mockResolvedValue([{ custom: true }]);
       const customClient = new EngineClient({
         transport,
         api: { getMetrics: customGetMetrics },
@@ -652,11 +653,11 @@ describe("EngineClient", () => {
 
       // Mock fetch that checks for abort signal
       let receivedSignal: AbortSignal | null | undefined;
-      global.fetch = jest.fn(async (_url: string, options?: RequestInit) => {
+      global.fetch = vi.fn(async (_url: string, options?: RequestInit) => {
         receivedSignal = options?.signal;
         // Return immediately for this test
         return new Response(JSON.stringify({ timeline: [] }), { status: 200 });
-      }) as jest.Mock;
+      }) as Mock;
 
       await timeoutClient.execute("test-agent", { messages: [] });
 
@@ -673,10 +674,10 @@ describe("EngineClient", () => {
       });
 
       let receivedSignal: AbortSignal | null | undefined;
-      global.fetch = jest.fn(async (_url: string, options?: RequestInit) => {
+      global.fetch = vi.fn(async (_url: string, options?: RequestInit) => {
         receivedSignal = options?.signal;
         return new Response(JSON.stringify({ timeline: [] }), { status: 200 });
-      }) as jest.Mock;
+      }) as Mock;
 
       await noTimeoutClient.execute("test-agent", { messages: [] });
 
@@ -729,11 +730,11 @@ describe("EngineClient", () => {
       );
 
       await customClient.execute("test", { messages: [] });
-      const [executeUrl] = (global.fetch as jest.Mock).mock.calls[0];
+      const [executeUrl] = (global.fetch as Mock).mock.calls[0];
       expect(executeUrl).toContain("/v2/run/test/execute");
 
       await customClient.getExecutions();
-      const [historyUrl] = (global.fetch as jest.Mock).mock.calls[1];
+      const [historyUrl] = (global.fetch as Mock).mock.calls[1];
       expect(historyUrl).toContain("/v2/history");
 
       customClient.dispose();
@@ -769,7 +770,7 @@ describe("Factory Functions", () => {
   afterEach(() => {
     // Reset default client between tests
     // @ts-ignore - accessing private for testing
-    jest.resetModules();
+    vi.resetModules();
   });
 
   describe("createEngineClient", () => {

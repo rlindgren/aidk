@@ -11,22 +11,23 @@ import { type StreamChunk } from "aidk-shared";
 import type { COMInput } from "../com/types";
 import { fromEngineState, toEngineState } from "../model/utils/language-model";
 import { signal } from "../state/signal";
+import { modelRegistry } from "../utils/registry";
 
 // Mock models
-jest.mock("../utils/registry", () => ({
+vi.mock("../utils/registry", () => ({
   modelRegistry: {
-    get: jest.fn(),
+    get: vi.fn(),
   },
   toolRegistry: {
-    get: jest.fn(),
+    get: vi.fn(),
   },
 }));
 
 // Mock Model Adapter Implementation
-const executeMock = jest.fn();
-const prepareInputMock = jest.fn((input) => ({ messages: [], tools: [], ...input }));
-const processOutputMock = jest.fn((output) => output);
-const toEngineStateMock = jest.fn(async (output: any) => ({
+const executeMock = vi.fn();
+const prepareInputMock = vi.fn((input) => ({ messages: [], tools: [], ...input }));
+const processOutputMock = vi.fn((output) => output);
+const toEngineStateMock = vi.fn(async (output: any) => ({
   newTimelineEntries: output.message
     ? [
         {
@@ -43,7 +44,7 @@ const toEngineStateMock = jest.fn(async (output: any) => ({
   usage: output.usage,
 }));
 
-const processStreamMock = jest.fn(async (_chunks: any[]) => {
+const processStreamMock = vi.fn(async (_chunks: any[]) => {
   // Default aggregation for tests
   return {
     model: "mock-model",
@@ -73,7 +74,7 @@ describe("Engine React Architecture", () => {
   let engine: ReturnType<typeof createEngine>;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
 
     // Restore default behaviors
     prepareInputMock.mockImplementation((input) => ({ messages: [], tools: [], ...input }));
@@ -411,8 +412,8 @@ describe("Engine React Architecture", () => {
   });
 
   it("should call lifecycle methods correctly during reconciliation", async () => {
-    const mountSpy = jest.fn();
-    const unmountSpy = jest.fn();
+    const mountSpy = vi.fn();
+    const unmountSpy = vi.fn();
 
     class LifecycleComp {
       show = signal(false);
@@ -776,8 +777,7 @@ describe("Engine React Architecture", () => {
     });
 
     it("should support Model component with model identifier string", async () => {
-      const { modelRegistry } = require("../utils/registry");
-      modelRegistry.get.mockReturnValue(fastModel);
+      vi.mocked(modelRegistry.get).mockReturnValue(fastModel);
 
       engine = createEngine({});
 

@@ -17,7 +17,7 @@ describe("Procedure Telemetry Naming Convention", () => {
 
     // Mock Telemetry provider to capture spans
     mockTelemetryProvider = {
-      startSpan: jest.fn((name: string) => {
+      startSpan: vi.fn((name: string) => {
         const spanAttributes: Record<string, any> = {};
         const capturedSpan = { name, attributes: spanAttributes };
         capturedSpans.push(capturedSpan);
@@ -25,21 +25,21 @@ describe("Procedure Telemetry Naming Convention", () => {
         const span = {
           name,
           attributes: spanAttributes,
-          setAttribute: jest.fn((key: string, value: any) => {
+          setAttribute: vi.fn((key: string, value: any) => {
             spanAttributes[key] = value;
             // Also update the captured span
             capturedSpan.attributes[key] = value;
           }),
-          end: jest.fn(),
-          recordError: jest.fn(),
+          end: vi.fn(),
+          recordError: vi.fn(),
         };
         return span;
       }),
-      startTrace: jest.fn(() => "trace-id"),
-      endTrace: jest.fn(),
-      recordError: jest.fn(),
-      getCounter: jest.fn(() => ({ add: jest.fn() })),
-      getHistogram: jest.fn(() => ({ record: jest.fn() })),
+      startTrace: vi.fn(() => "trace-id"),
+      endTrace: vi.fn(),
+      recordError: vi.fn(),
+      getCounter: vi.fn(() => ({ add: vi.fn() })),
+      getHistogram: vi.fn(() => ({ record: vi.fn() })),
     };
 
     Telemetry.setProvider(mockTelemetryProvider);

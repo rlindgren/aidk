@@ -18,13 +18,13 @@ describe("COM EventEmitter", () => {
     });
 
     it("should have type-safe on method", () => {
-      const handler = jest.fn();
+      const handler = vi.fn();
       com.on("message:added", handler);
       expect(typeof com.on).toBe("function");
     });
 
     it("should have type-safe once method", () => {
-      const handler = jest.fn();
+      const handler = vi.fn();
       com.once("message:added", handler);
       expect(typeof com.once).toBe("function");
     });
@@ -36,7 +36,7 @@ describe("COM EventEmitter", () => {
 
   describe("message:added event", () => {
     it("should emit message:added when addMessage is called", () => {
-      const handler = jest.fn();
+      const handler = vi.fn();
       com.on("message:added", handler);
 
       const message: Message = {
@@ -51,7 +51,7 @@ describe("COM EventEmitter", () => {
     });
 
     it("should emit message:added with options", () => {
-      const handler = jest.fn();
+      const handler = vi.fn();
       com.on("message:added", handler);
 
       const message: Message = {
@@ -70,7 +70,7 @@ describe("COM EventEmitter", () => {
     });
 
     it("should emit message:added for system message consolidation", () => {
-      const handler = jest.fn();
+      const handler = vi.fn();
       com.on("message:added", handler);
 
       const message1: Message = {
@@ -92,7 +92,7 @@ describe("COM EventEmitter", () => {
 
   describe("timeline:modified event", () => {
     it("should emit timeline:modified when addTimelineEntry is called", () => {
-      const handler = jest.fn();
+      const handler = vi.fn();
       com.on("timeline:modified", handler);
 
       const entry: COMTimelineEntry = {
@@ -110,7 +110,7 @@ describe("COM EventEmitter", () => {
     });
 
     it("should emit timeline:modified when addMessage calls addTimelineEntry", () => {
-      const handler = jest.fn();
+      const handler = vi.fn();
       com.on("timeline:modified", handler);
 
       const message: Message = {
@@ -127,7 +127,7 @@ describe("COM EventEmitter", () => {
 
   describe("tool:registered event", () => {
     it("should emit tool:registered when addTool is called", () => {
-      const handler = jest.fn();
+      const handler = vi.fn();
       com.on("tool:registered", handler);
 
       const mockTool = createTool({
@@ -144,7 +144,7 @@ describe("COM EventEmitter", () => {
     });
 
     it("should not emit tool:registered if tool has no name", () => {
-      const handler = jest.fn();
+      const handler = vi.fn();
       com.on("tool:registered", handler);
 
       // Create a tool with empty name by directly manipulating metadata
@@ -166,7 +166,7 @@ describe("COM EventEmitter", () => {
 
   describe("tool:removed event", () => {
     it("should emit tool:removed when removeTool is called", () => {
-      const handler = jest.fn();
+      const handler = vi.fn();
       com.on("tool:removed", handler);
 
       const mockTool = createTool({
@@ -184,7 +184,7 @@ describe("COM EventEmitter", () => {
     });
 
     it("should not emit tool:removed if tool does not exist", () => {
-      const handler = jest.fn();
+      const handler = vi.fn();
       com.on("tool:removed", handler);
 
       com.removeTool("non-existent-tool");
@@ -195,7 +195,7 @@ describe("COM EventEmitter", () => {
 
   describe("state:changed event", () => {
     it("should emit state:changed when setState is called", () => {
-      const handler = jest.fn();
+      const handler = vi.fn();
       com.on("state:changed", handler);
 
       com.setState("testKey", "testValue");
@@ -205,7 +205,7 @@ describe("COM EventEmitter", () => {
     });
 
     it("should emit state:changed with previous value", () => {
-      const handler = jest.fn();
+      const handler = vi.fn();
       com.on("state:changed", handler);
 
       com.setState("testKey", "firstValue");
@@ -217,7 +217,7 @@ describe("COM EventEmitter", () => {
     });
 
     it("should emit state:changed for each key in setStatePartial", () => {
-      const handler = jest.fn();
+      const handler = vi.fn();
       com.on("state:changed", handler);
 
       com.setStatePartial({
@@ -235,7 +235,7 @@ describe("COM EventEmitter", () => {
 
   describe("state:cleared event", () => {
     it("should emit state:cleared when clear is called", () => {
-      const handler = jest.fn();
+      const handler = vi.fn();
       com.on("state:cleared", handler);
 
       com.clear();
@@ -245,7 +245,7 @@ describe("COM EventEmitter", () => {
     });
 
     it("should not remove event listeners when clear is called", () => {
-      const handler = jest.fn();
+      const handler = vi.fn();
       com.on("state:cleared", handler);
 
       com.clear();
@@ -258,7 +258,7 @@ describe("COM EventEmitter", () => {
 
   describe("model:changed event", () => {
     it("should emit model:changed when setModel is called", () => {
-      const handler = jest.fn();
+      const handler = vi.fn();
       com.on("model:changed", handler);
 
       const mockModel = { id: "test-model" } as any;
@@ -269,7 +269,7 @@ describe("COM EventEmitter", () => {
     });
 
     it("should emit model:changed with undefined when clearing model", () => {
-      const handler = jest.fn();
+      const handler = vi.fn();
       com.on("model:changed", handler);
 
       com.setModel("test-model");
@@ -282,7 +282,7 @@ describe("COM EventEmitter", () => {
 
   describe("model:unset event", () => {
     it("should emit model:unset when unsetModel is called", () => {
-      const handler = jest.fn();
+      const handler = vi.fn();
       com.on("model:unset", handler);
 
       com.unsetModel();
@@ -294,7 +294,7 @@ describe("COM EventEmitter", () => {
 
   describe("section:updated event", () => {
     it('should emit section:updated with action "add" when new section is added', () => {
-      const handler = jest.fn();
+      const handler = vi.fn();
       com.on("section:updated", handler);
 
       const section: COMSection = {
@@ -309,7 +309,7 @@ describe("COM EventEmitter", () => {
     });
 
     it('should emit section:updated with action "update" when existing section is updated', () => {
-      const handler = jest.fn();
+      const handler = vi.fn();
       com.on("section:updated", handler);
 
       const section1: COMSection = {
@@ -336,7 +336,7 @@ describe("COM EventEmitter", () => {
 
   describe("metadata:changed event", () => {
     it("should emit metadata:changed when addMetadata is called", () => {
-      const handler = jest.fn();
+      const handler = vi.fn();
       com.on("metadata:changed", handler);
 
       com.addMetadata("testKey", "testValue");
@@ -346,7 +346,7 @@ describe("COM EventEmitter", () => {
     });
 
     it("should emit metadata:changed with previous value", () => {
-      const handler = jest.fn();
+      const handler = vi.fn();
       com.on("metadata:changed", handler);
 
       com.addMetadata("testKey", "firstValue");
@@ -375,7 +375,7 @@ describe("COM EventEmitter", () => {
 
   describe("Event listener cleanup", () => {
     it("should allow removing listeners", () => {
-      const handler = jest.fn();
+      const handler = vi.fn();
       com.on("state:changed", handler);
 
       com.setState("test", "value");
@@ -388,7 +388,7 @@ describe("COM EventEmitter", () => {
     });
 
     it("should allow using once for one-time listeners", () => {
-      const handler = jest.fn();
+      const handler = vi.fn();
       com.once("state:changed", handler);
 
       com.setState("test", "value1");
@@ -401,8 +401,8 @@ describe("COM EventEmitter", () => {
   describe("Component pattern example", () => {
     it("should support component-scoped listener management", () => {
       const cleanup: Array<() => void> = [];
-      const messageHandler = jest.fn();
-      const stateHandler = jest.fn();
+      const messageHandler = vi.fn();
+      const stateHandler = vi.fn();
 
       // Simulate component onMount
       com.on("message:added", messageHandler);
@@ -459,9 +459,9 @@ describe("COM EventEmitter", () => {
 
   describe("Multiple listeners", () => {
     it("should support multiple listeners for the same event", () => {
-      const handler1 = jest.fn();
-      const handler2 = jest.fn();
-      const handler3 = jest.fn();
+      const handler1 = vi.fn();
+      const handler2 = vi.fn();
+      const handler3 = vi.fn();
 
       com.on("state:changed", handler1);
       com.on("state:changed", handler2);

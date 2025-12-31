@@ -12,19 +12,19 @@ import { fromEngineState } from "../model/utils/language-model";
 import { signal } from "../state/signal";
 
 // Mock models
-jest.mock("../utils/registry", () => ({
+vi.mock("../utils/registry", () => ({
   modelRegistry: {
-    get: jest.fn(),
+    get: vi.fn(),
   },
   toolRegistry: {
-    get: jest.fn(),
+    get: vi.fn(),
   },
 }));
 
-const executeMock = jest.fn();
-const prepareInputMock = jest.fn((input) => ({ messages: [], tools: [], ...input }));
-const processOutputMock = jest.fn((output) => output);
-const processStreamMock = jest.fn(async (chunks: StreamChunk[]) => {
+const executeMock = vi.fn();
+const prepareInputMock = vi.fn((input) => ({ messages: [], tools: [], ...input }));
+const processOutputMock = vi.fn((output) => output);
+const processStreamMock = vi.fn(async (chunks: StreamChunk[]) => {
   // Extract text from chunks
   const text = chunks
     .filter((c) => c.delta)
@@ -40,7 +40,7 @@ const processStreamMock = jest.fn(async (chunks: StreamChunk[]) => {
   } as ModelOutput;
 });
 
-const toEngineStateMock = jest.fn(async (output: any) => {
+const toEngineStateMock = vi.fn(async (output: any) => {
   const hasToolCalls = output.toolCalls && output.toolCalls.length > 0;
   // Stop if: stopReason is 'stop' AND no tool calls
   // Continue if: tool calls exist OR no stopReason
@@ -79,12 +79,12 @@ describe("COMInput Validation", () => {
   let engine: ReturnType<typeof createEngine>;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
 
     // Reset executeMock - each test provides mockResolvedValueOnce
     executeMock.mockReset();
 
-    // Restore mock implementations (resetMocks: true in jest.preset.js clears them between tests)
+    // Restore mock implementations (resetMocks: true in vitest config clears them between tests)
     prepareInputMock.mockImplementation((input) => ({ messages: [], tools: [], ...input }));
     processOutputMock.mockImplementation((output) => output);
     processStreamMock.mockImplementation(async (chunks: StreamChunk[]) => {
