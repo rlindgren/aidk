@@ -1,5 +1,11 @@
 # aidk-shared
 
+## 0.1.4
+
+### Patch Changes
+
+- f227330: BREAKING: tool parameters -> input, add optional output, update docs
+
 ## 0.1.3
 
 ### Patch Changes

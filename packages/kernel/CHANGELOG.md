@@ -1,5 +1,12 @@
 # aidk-kernel
 
+## 0.1.4
+
+### Patch Changes
+
+- Updated dependencies [f227330]
+  - aidk-shared@0.1.4
+
 ## 0.1.3
 
 ### Patch Changes

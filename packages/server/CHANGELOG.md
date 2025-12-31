@@ -1,5 +1,12 @@
 # aidk-server
 
+## 0.1.5
+
+### Patch Changes
+
+- Updated dependencies [f227330]
+  - aidk@0.1.5
+
 ## 0.1.4
 
 ### Patch Changes

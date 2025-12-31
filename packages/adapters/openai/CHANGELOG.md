@@ -1,5 +1,14 @@
 # aidk-openai
 
+## 0.1.5
+
+### Patch Changes
+
+- f227330: BREAKING: tool parameters -> input, add optional output, update docs
+- Updated dependencies [f227330]
+  - aidk-shared@0.1.4
+  - aidk@0.1.5
+
 ## 0.1.4
 
 ### Patch Changes
