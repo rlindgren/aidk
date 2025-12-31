@@ -137,7 +137,7 @@ export class MCPTool<
     this.metadata = {
       name: mcpToolDefinition.name,
       description: mcpToolDefinition.description,
-      parameters: zodSchema,
+      input: zodSchema,
       type: ToolExecutionType.MCP,
       mcpConfig: mcpConfig,
     };

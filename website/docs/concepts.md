@@ -221,7 +221,7 @@ Tools give agents capabilities to interact with the world. **Tools are component
 const myTool = createTool({
   name: 'tool_name',
   description: 'What the tool does',
-  parameters: z.object({
+  input: z.object({
     param1: z.string(),
     param2: z.number().optional(),
   }),

@@ -263,12 +263,12 @@ export function createToolDefinition(
   return {
     name,
     description: overrides.description ?? `A test tool called ${name}`,
-    parameters: overrides.parameters ?? {
+    input: overrides.input ?? {
       type: "object",
       properties: {
-        input: { type: "string", description: "Input value" },
+        value: { type: "string", description: "Input value" },
       },
-      required: ["input"],
+      required: ["value"],
     },
     ...overrides,
   };

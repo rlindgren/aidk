@@ -136,7 +136,7 @@ import { defineTool } from 'aidk';
 const searchTool = defineTool({
   name: 'web_search',
   description: 'Search the web',
-  parameters: z.object({
+  input: z.object({
     query: z.string(),
   }),
   execute: async ({ query }) => {

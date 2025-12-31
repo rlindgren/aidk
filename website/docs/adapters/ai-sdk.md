@@ -265,7 +265,7 @@ Tools work automatically with the AI SDK adapter:
 const Calculator = createTool({
   name: 'calculator',
   description: 'Perform arithmetic',
-  parameters: z.object({
+  input: z.object({
     expression: z.string(),
   }),
   handler: async ({ expression }) => {
@@ -342,7 +342,7 @@ import { z } from 'zod';
 const Weather = createTool({
   name: 'weather',
   description: 'Get current weather',
-  parameters: z.object({
+  input: z.object({
     city: z.string(),
   }),
   handler: async ({ city }) => {

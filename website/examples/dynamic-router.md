@@ -376,7 +376,7 @@ class RouterAgent extends Component<{ query: string }> {
 // Tool to capture routing decision
 const RoutingTool = createTool({
   name: "route_query",
-  parameters: z.object({
+  input: z.object({
     model: z.enum(["gpt-4o-mini", "gpt-4o", "claude-3-5-sonnet", "o1-preview"]),
     systemPrompt: z.string(),
     temperature: z.number().min(0).max(1),

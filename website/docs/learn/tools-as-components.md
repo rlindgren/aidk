@@ -22,7 +22,7 @@ In AIDK, tools have the full component lifecycle:
 const SearchTool = createTool({
   name: "search",
   description: "Search for information",
-  parameters: z.object({
+  input: z.object({
     query: z.string(),
   }),
 
@@ -169,7 +169,7 @@ Tools update state in lifecycle hooks, and the handler returns content blocks:
 ```tsx
 const InventoryTool = createTool({
   name: "inventory",
-  parameters: z.object({
+  input: z.object({
     action: z.enum(["add", "remove", "check"]),
     item: z.string(),
     quantity: z.number().optional(),
@@ -224,7 +224,7 @@ Tools encapsulate their domain completely:
 // Note: Connection is managed via a singleton service, not COM state
 const DatabaseTool = createTool({
   name: "database",
-  parameters: z.object({
+  input: z.object({
     query: z.string(),
   }),
 
@@ -296,7 +296,7 @@ Here's a complete example of a tool that manages file operations with full state
 const FileManagerTool = createTool({
   name: "file_manager",
   description: "Read, write, and manage files",
-  parameters: z.object({
+  input: z.object({
     action: z.enum(["read", "write", "list", "delete"]),
     path: z.string(),
     content: z.string().optional(),

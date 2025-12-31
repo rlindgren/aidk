@@ -22,11 +22,11 @@
  * const searchTool = createTool({
  *   name: 'search',
  *   description: 'Search the database',
- *   parameters: z.object({
+ *   input: z.object({
  *     query: z.string(),
  *     limit: z.number().optional().default(10),
  *   }),
- *   execute: async ({ query, limit }) => {
+ *   handler: async ({ query, limit }) => {
  *     return await db.search(query, limit);
  *   },
  * });
@@ -35,8 +35,8 @@
  * const confirmTool = createTool({
  *   name: 'confirm',
  *   description: 'Ask user for confirmation',
- *   executionType: ToolExecutionType.CLIENT,
- *   parameters: z.object({ message: z.string() }),
+ *   type: ToolExecutionType.CLIENT,
+ *   input: z.object({ message: z.string() }),
  *   // Handler runs on client, result sent back to server
  * });
  * ```

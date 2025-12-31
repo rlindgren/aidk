@@ -150,7 +150,7 @@ describe("Channels Integration", () => {
     const ChannelTool = createTool({
       name: "channel_tool",
       description: "Tool that uses channels",
-      parameters: z.object({ message: z.string() }),
+      input: z.object({ message: z.string() }),
       handler: async (input: { message: string }): Promise<ContentBlock[]> => {
         const ctx = Context.get();
 

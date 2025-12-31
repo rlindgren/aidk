@@ -37,7 +37,7 @@ Create tools with typed parameters:
 ```tsx
 const Calculator = createTool({
   name: 'calculate',
-  parameters: z.object({ expression: z.string() }),
+  input: z.object({ expression: z.string() }),
   handler: async ({ expression }) => eval(expression)
 });
 ```

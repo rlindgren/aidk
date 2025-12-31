@@ -361,7 +361,7 @@ Tools can handle their own errors:
 ```tsx
 const ResilientTool = createTool({
   name: "resilient_api",
-  parameters: z.object({ query: z.string() }),
+  input: z.object({ query: z.string() }),
 
   handler: async ({ query }) => {
     try {
@@ -385,7 +385,7 @@ import { ToolError } from "aidk";
 
 const ValidatingTool = createTool({
   name: "validated_action",
-  parameters: z.object({ value: z.number() }),
+  input: z.object({ value: z.number() }),
 
   handler: async ({ value }) => {
     if (value < 0) {

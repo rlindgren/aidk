@@ -232,7 +232,7 @@ export function mapToolDefinition(tool: any): ChatCompletionFunctionTool {
       function: {
         name: toolDef.name,
         description: toolDef.description || "",
-        parameters: toolDef.parameters || {},
+        parameters: toolDef.input || {}, // Map AIDK 'input' to OpenAI 'parameters'
       },
     };
 

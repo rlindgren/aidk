@@ -158,8 +158,10 @@ export interface ToolDefinition {
   name: string;
   /** Tool description for the model */
   description: string;
-  /** JSON Schema for tool parameters */
-  parameters: Record<string, unknown>;
+  /** JSON Schema for tool input */
+  input: Record<string, unknown>;
+  /** Optional JSON Schema for tool output (for validation/documentation) */
+  output?: Record<string, unknown>;
   /**
    * Tool execution type. Determines how the tool is executed.
    * Default: SERVER (engine executes tool.run on server).
@@ -205,8 +207,10 @@ export interface ClientToolDefinition {
   name: string;
   /** Tool description for the model */
   description: string;
-  /** JSON Schema for tool parameters */
-  parameters: Record<string, unknown>;
+  /** JSON Schema for tool input */
+  input: Record<string, unknown>;
+  /** Optional JSON Schema for tool output (for validation/documentation) */
+  output?: Record<string, unknown>;
   /**
    * Tool intent (render, action, compute).
    * Default: RENDER (most client tools render UI)

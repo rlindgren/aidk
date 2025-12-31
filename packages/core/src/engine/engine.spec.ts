@@ -94,7 +94,7 @@ describe("Engine v2", () => {
   const mockTool = createTool({
     name: "mock-tool",
     description: "A mock tool",
-    parameters: z.object({ value: z.string() }),
+    input: z.object({ value: z.string() }),
     handler: async ({ value }) => [
       {
         type: "text",

@@ -479,7 +479,7 @@ import { z } from "zod";
 const calculator = defineTool({
   name: "calculator",
   description: "Perform calculations",
-  parameters: z.object({
+  input: z.object({
     expression: z.string().describe("Math expression"),
   }),
   handler: async ({ expression }) => {

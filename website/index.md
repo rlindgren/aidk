@@ -140,7 +140,7 @@ render() {
 const InventoryTool = createTool({
   name: "check_inventory",
   description: "Check stock levels for a product",
-  parameters: z.object({
+  input: z.object({
     sku: z.string().describe("Product SKU to check"),
   }),
 
@@ -389,7 +389,7 @@ Tools aren't just execution. They contribute to what the model sees.
 const TodoTool = createTool({
   name: "todo",
   description: "Manage tasks",
-  parameters: z.object({
+  input: z.object({
     action: z.enum(["add", "complete", "list"]),
     task: z.string().optional(),
   }),

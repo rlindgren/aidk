@@ -33,7 +33,7 @@ def calculator(expression: str) -> str:
 export const CalculatorTool = createTool({
   name: 'calculator',
   description: 'Performs calculations',
-  parameters: z.object({ expression: z.string() }),
+  input: z.object({ expression: z.string() }),
   handler: async (input) => {
     const result = eval(input.expression);
     return [{ type: 'text', text: `${result}` }];
@@ -72,7 +72,7 @@ import { z } from 'zod';
 export const CalculatorTool = createTool({
   name: 'calculator',
   description: 'Performs mathematical calculations',
-  parameters: z.object({
+  input: z.object({
     expression: z.string().describe('Math expression to evaluate'),
   }),
   handler: async (input) => {
@@ -124,7 +124,7 @@ import { z } from 'zod';
 export const ScratchpadTool = createTool({
   name: 'scratchpad',
   description: 'Take notes during the conversation',
-  parameters: z.object({
+  input: z.object({
     action: z.enum(['add', 'remove', 'clear', 'list']),
     note_id: z.string().optional(),
     text: z.string().optional(),
@@ -263,7 +263,7 @@ Tools support the same lifecycle hooks as components:
 export const MyTool = createTool({
   name: 'my_tool',
   description: 'Example tool',
-  parameters: z.object({ /* ... */ }),
+  input: z.object({ /* ... */ }),
   handler: async (input) => { /* ... */ },
 
   // Called when tool is added to agent
@@ -335,7 +335,7 @@ interface Todo {
 export const TodoListTool = createTool({
   name: 'todo_list',
   description: 'Manage a todo list during the conversation',
-  parameters: z.object({
+  input: z.object({
     action: z.enum(['add', 'complete', 'remove', 'list']),
     todo_id: z.string().optional(),
     text: z.string().optional(),
@@ -569,7 +569,7 @@ Tools manage state via lifecycle hooks, not in the handler:
 ```tsx
 export const StatefulTool = createTool({
   name: 'stateful',
-  parameters: z.object({ action: z.string() }),
+  input: z.object({ action: z.string() }),
 
   // Initialize state on mount
   async onMount(com) {
@@ -620,7 +620,7 @@ import { Context } from 'aidk';
 
 export const ContextAwareTool = createTool({
   name: 'context_aware',
-  parameters: z.object({ /* ... */ }),
+  input: z.object({ /* ... */ }),
 
   handler: async (input) => {
     // Access execution context
@@ -661,7 +661,7 @@ Tools can use other tools:
 ```tsx
 export const CompositeTool = createTool({
   name: 'composite',
-  parameters: z.object({ /* ... */ }),
+  input: z.object({ /* ... */ }),
 
   async onMount(com) {
     // Ensure dependencies are mounted

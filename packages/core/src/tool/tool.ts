@@ -52,7 +52,9 @@ export type { BaseToolDefinition, ClientToolDefinition };
  * Tool handler function signature.
  * Takes typed input and returns ContentBlock[].
  */
-export type ToolHandler<TInput = any> = (input: TInput) => ContentBlock[] | Promise<ContentBlock[]>;
+export type ToolHandler<TInput = any, TOutput extends ContentBlock[] = ContentBlock[]> = (
+  input: TInput,
+) => TOutput | Promise<TOutput>;
 
 /**
  * Options for createTool().
@@ -60,7 +62,7 @@ export type ToolHandler<TInput = any> = (input: TInput) => ContentBlock[] | Prom
  * Mirrors ToolMetadata but with additional creation-time options
  * (handler, middleware, component lifecycle hooks).
  */
-export interface CreateToolOptions<TInput = any> {
+export interface CreateToolOptions<TInput = any, TOutput extends ContentBlock[] = ContentBlock[]> {
   // === Core Metadata ===
 
   /** Tool name (used by model to call the tool) */
@@ -70,7 +72,14 @@ export interface CreateToolOptions<TInput = any> {
   description: string;
 
   /** Zod schema for input validation */
-  parameters: z.ZodSchema<TInput>;
+  input: z.ZodSchema<TInput>;
+
+  /**
+   * Optional Zod schema for output validation.
+   * Used for type-safe tool composition, workflow orchestration,
+   * and runtime validation of handler return values.
+   */
+  output?: z.ZodSchema<TOutput>;
 
   // === Execution Configuration ===
 
@@ -78,7 +87,7 @@ export interface CreateToolOptions<TInput = any> {
    * Handler function that executes the tool.
    * Optional for CLIENT and PROVIDER tools (no server-side execution).
    */
-  handler?: ToolHandler<TInput>;
+  handler?: ToolHandler<TInput, TOutput>;
 
   /**
    * Execution type (SERVER, CLIENT, MCP, PROVIDER).
@@ -243,7 +252,7 @@ export interface RunnableToolClass<TInput = any> extends ToolClass<TInput> {
  * const Calculator = createTool({
  *   name: 'calculator',
  *   description: 'Performs mathematical calculations',
- *   parameters: z.object({
+ *   input: z.object({
  *     expression: z.string().describe('Math expression to evaluate')
  *   }),
  *   handler: async ({ expression }) => {
@@ -277,7 +286,7 @@ export interface RunnableToolClass<TInput = any> extends ToolClass<TInput> {
  * const RenderChart = createTool({
  *   name: 'render_chart',
  *   description: 'Renders a chart in the UI',
- *   parameters: z.object({
+ *   input: z.object({
  *     type: z.enum(['line', 'bar', 'pie']),
  *     data: z.array(z.object({ label: z.string(), value: z.number() })),
  *   }),
@@ -289,22 +298,25 @@ export interface RunnableToolClass<TInput = any> extends ToolClass<TInput> {
  * ```
  */
 // Overload: handler provided → run is defined
-export function createTool<TInput = any>(
-  options: CreateToolOptions<TInput> & { handler: ToolHandler<TInput> },
+export function createTool<TInput = any, TOutput extends ContentBlock[] = ContentBlock[]>(
+  options: CreateToolOptions<TInput, TOutput> & { handler: ToolHandler<TInput> },
 ): RunnableToolClass<TInput>;
 
 // Overload: handler not provided → run is undefined
-export function createTool<TInput = any>(
-  options: CreateToolOptions<TInput> & { handler?: undefined },
+export function createTool<TInput = any, TOutput extends ContentBlock[] = ContentBlock[]>(
+  options: CreateToolOptions<TInput, TOutput> & { handler?: undefined },
 ): ToolClass<TInput>;
 
 // Implementation
-export function createTool<TInput = any>(options: CreateToolOptions<TInput>): ToolClass<TInput> {
+export function createTool<TInput = any, TOutput extends ContentBlock[] = ContentBlock[]>(
+  options: CreateToolOptions<TInput, TOutput>,
+): ToolClass<TInput> {
   // Build metadata from options
-  const metadata: ToolMetadata<TInput> = {
+  const metadata: ToolMetadata<TInput, TOutput> = {
     name: options.name,
     description: options.description,
-    parameters: options.parameters,
+    input: options.input,
+    output: options.output,
     type: options.type,
     intent: options.intent,
     requiresResponse: options.requiresResponse,
@@ -335,7 +347,7 @@ export function createTool<TInput = any>(options: CreateToolOptions<TInput>): To
     : undefined;
 
   // Create component class with static tool properties
-  class ToolComponentClass extends Component<ComponentBaseProps> {
+  class ToolComponent extends Component<ComponentBaseProps> {
     // Static properties make the CLASS itself an ExecutableTool
     static metadata = metadata;
     static run = run;
@@ -387,7 +399,7 @@ export function createTool<TInput = any>(options: CreateToolOptions<TInput>): To
     }
   }
 
-  return ToolComponentClass as unknown as ToolClass<TInput>;
+  return ToolComponent as unknown as ToolClass<TInput>;
 }
 
 /**
@@ -423,10 +435,15 @@ export interface ToolDefinition extends BaseToolDefinition {
   };
 }
 
-export interface ToolMetadata<TInput = any> {
+export interface ToolMetadata<TInput = any, TOutput = any> {
   name: string;
   description: string;
-  parameters: z.ZodSchema<TInput>;
+  input: z.ZodSchema<TInput>;
+  /**
+   * Optional Zod schema for output validation.
+   * Used for type-safe tool composition and workflow orchestration.
+   */
+  output?: z.ZodSchema<TOutput>;
   /**
    * Tool execution type. Determines how the tool is executed.
    * Default: SERVER (engine executes tool.run on server).
@@ -520,7 +537,8 @@ export function clientToolToDefinition(clientTool: ClientToolDefinition): ToolDe
   return {
     name: clientTool.name,
     description: clientTool.description,
-    parameters: clientTool.parameters,
+    input: clientTool.input,
+    output: clientTool.output,
     type: ToolExecutionType.CLIENT,
     intent: clientTool.intent ?? ToolIntent.RENDER,
     requiresResponse: clientTool.requiresResponse ?? false,
@@ -563,6 +581,6 @@ export function isExecutableTool(value: any): value is ExecutableTool {
     "metadata" in value &&
     value.metadata?.name &&
     value.metadata?.description &&
-    value.metadata?.parameters
+    value.metadata?.input
   );
 }

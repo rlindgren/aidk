@@ -222,7 +222,7 @@ export function mapToolDefinition(tool: any): any {
         {
           name: toolDef.name,
           description: toolDef.description || "",
-          parameters: toolDef.parameters || {},
+          parameters: toolDef.input || {}, // Map AIDK 'input' to Google 'parameters'
         },
       ],
     };

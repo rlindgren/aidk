@@ -215,7 +215,7 @@ describe("COMInput Validation", () => {
       const testTool = createTool({
         name: "test-tool",
         description: "Test tool",
-        parameters: z.undefined(),
+        input: z.undefined(),
         handler: async () => [],
       });
 
@@ -484,14 +484,14 @@ describe("COMInput Validation", () => {
       const toolA = createTool({
         name: "tool-a",
         description: "Tool A",
-        parameters: z.undefined(),
+        input: z.undefined(),
         handler: async () => [],
       });
 
       const toolB = createTool({
         name: "tool-b",
         description: "Tool B",
-        parameters: z.undefined(),
+        input: z.undefined(),
         handler: async () => [],
       });
 
@@ -805,7 +805,7 @@ describe("COMInput Validation", () => {
       const noopTool = createTool({
         name: "noop",
         description: "No-op tool",
-        parameters: z.undefined(),
+        input: z.undefined(),
         handler: async () => [],
       });
 
@@ -1045,7 +1045,7 @@ describe("COMInput Validation", () => {
       const testTool = createTool({
         name: "duplicate-tool",
         description: "Duplicate tool",
-        parameters: z.undefined(),
+        input: z.undefined(),
         handler: async () => [],
       });
 
@@ -1117,7 +1117,7 @@ describe("COMInput Validation", () => {
       const noopTool = createTool({
         name: "noop",
         description: "No-op tool",
-        parameters: z.undefined(),
+        input: z.undefined(),
         handler: async () => [],
       });
 
@@ -1173,7 +1173,7 @@ describe("COMInput Validation", () => {
       const noopTool = createTool({
         name: "noop",
         description: "No-op tool",
-        parameters: z.undefined(),
+        input: z.undefined(),
         handler: async () => [],
       });
 
@@ -1252,7 +1252,7 @@ describe("COMInput Validation", () => {
       const testTool = createTool({
         name: "test-tool",
         description: "Test tool",
-        parameters: z.undefined(),
+        input: z.undefined(),
         handler: async () => [],
       });
 

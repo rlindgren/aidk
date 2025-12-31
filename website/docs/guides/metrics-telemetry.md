@@ -95,7 +95,7 @@ class MyAgent extends Component {
 const MyTool = createTool({
   name: 'my_tool',
   description: 'A tool that tracks metrics',
-  parameters: z.object({ query: z.string() }),
+  input: z.object({ query: z.string() }),
 
   handler: async (input) => {
     const ctx = context();

@@ -316,7 +316,7 @@ Define tools that execute on the client and wait for the response. True human-in
 const confirmTool = createTool({
   name: "confirm_action",
   description: "Ask the user to confirm",
-  parameters: z.object({ message: z.string() }),
+  input: z.object({ message: z.string() }),
   executionType: ToolExecutionType.CLIENT,
   requiresResponse: true,
   timeout: 60000,
@@ -1077,10 +1077,10 @@ Other frameworks: "TypeScript support" means the library has `.d.ts` files.
 AIDK: types flow through your entire agent.
 
 ```tsx
-// Tool parameters are Zod schemas
+// Tool input schemas are Zod schemas
 const searchTool = createTool({
   name: "search",
-  parameters: z.object({
+  input: z.object({
     query: z.string(),
     limit: z.number().optional().default(10),
   }),

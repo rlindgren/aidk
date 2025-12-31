@@ -371,7 +371,7 @@ describe("Engine React Architecture", () => {
     const mockTool = createTool({
       name: "test-tool",
       description: "test",
-      parameters: z.undefined(),
+      input: z.undefined(),
       handler: async () => [
         {
           type: "text" as const,

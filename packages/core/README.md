@@ -27,7 +27,7 @@ import { z } from 'zod';
 const greetTool = createTool({
   name: 'greet',
   description: 'Greet someone',
-  parameters: z.object({ name: z.string() }),
+  input: z.object({ name: z.string() }),
   execute: async ({ name }) => ({ greeting: `Hello, ${name}!` }),
 });
 

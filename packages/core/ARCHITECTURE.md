@@ -574,7 +574,7 @@ import { z } from "zod";
 const Calculator = createTool({
   name: "calculator",
   description: "Performs arithmetic calculations",
-  parameters: z.object({
+  input: z.object({
     expression: z.string().describe("Math expression"),
   }),
   handler: async ({ expression }) => {

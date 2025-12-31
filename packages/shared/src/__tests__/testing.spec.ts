@@ -138,7 +138,7 @@ describe("Fixtures", () => {
 
       expect(tool.name).toBe("search");
       expect(tool.description).toContain("search");
-      expect(tool.parameters).toBeDefined();
+      expect(tool.input).toBeDefined();
     });
   });
 

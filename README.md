@@ -96,7 +96,7 @@ render() {
 const InventoryTool = createTool({
   name: "check_inventory",
   description: "Check stock levels for a product",
-  parameters: z.object({
+  input: z.object({
     sku: z.string().describe("Product SKU to check"),
   }),
 

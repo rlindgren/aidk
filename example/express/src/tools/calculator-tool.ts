@@ -13,7 +13,7 @@ type CalculatorInput = z.infer<typeof CalculatorInputSchema>;
 export const CalculatorTool = createTool({
   name: "calculator",
   description: "Performs mathematical calculations",
-  parameters: CalculatorInputSchema,
+  input: CalculatorInputSchema,
   handler: async (input: CalculatorInput): Promise<ContentBlock[]> => {
     log.debug({ expression: input.expression }, "Evaluating expression");
     try {

@@ -1131,7 +1131,7 @@ export class FiberCompiler {
         metadata: {
           name: toolDef.name,
           description: toolDef.description,
-          parameters: toolDef.parameters,
+          input: toolDef.input, // Both ToolDefinition and metadata now use 'input'
         },
         run: toolDef.run,
       };

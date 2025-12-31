@@ -352,7 +352,7 @@ import { z } from 'zod';
 const Echo = createTool({
   name: 'echo',
   description: 'Echo back a message',
-  parameters: z.object({ message: z.string() }),
+  input: z.object({ message: z.string() }),
   handler: async ({ message }) => [{ type: 'text', text: message }],
 });
 

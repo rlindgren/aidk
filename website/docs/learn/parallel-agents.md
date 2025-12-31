@@ -435,7 +435,7 @@ class ProjectManager extends Component {
 const DelegateTool = createTool({
   name: "delegate",
   description: "Delegate a task to a specialized team",
-  parameters: z.object({
+  input: z.object({
     team: z.enum(["frontend", "backend", "qa"]),
     task: z.string(),
   }),

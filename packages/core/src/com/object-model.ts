@@ -566,11 +566,15 @@ export class ContextObjectModel extends EventEmitter {
       this.tools.set(name, tool);
 
       // Convert to ToolDefinition (provider-compatible format with JSON Schema)
-      const jsonSchema = this.convertParametersToJSONSchema(tool.metadata.parameters);
+      const inputJsonSchema = this.convertInputToJSONSchema(tool.metadata.input);
+      const outputJsonSchema = tool.metadata.output
+        ? this.convertInputToJSONSchema(tool.metadata.output)
+        : undefined;
       this.toolDefinitions.set(name, {
         name: tool.metadata.name,
         description: tool.metadata.description,
-        parameters: jsonSchema as Record<string, unknown>,
+        input: inputJsonSchema as Record<string, unknown>,
+        output: outputJsonSchema as Record<string, unknown> | undefined,
         type: tool.metadata.type, // Preserve execution type
         providerOptions: tool.metadata.providerOptions, // Preserve provider-specific options
         mcpConfig: tool.metadata.mcpConfig, // Preserve MCP configuration
@@ -584,18 +588,18 @@ export class ContextObjectModel extends EventEmitter {
    * Converts Zod schema or JSON Schema to JSON Schema format.
    * Handles ZodUndefined as empty object.
    */
-  private convertParametersToJSONSchema(parameters: unknown): Record<string, unknown> {
-    if (parameters instanceof ZodObject) {
-      if (parameters instanceof z.ZodUndefined) {
+  private convertInputToJSONSchema(input: unknown): Record<string, unknown> {
+    if (input instanceof ZodObject) {
+      if (input instanceof z.ZodUndefined) {
         return {};
       }
-      const schema = z.toJSONSchema(parameters);
+      const schema = z.toJSONSchema(input);
       delete schema["$schema"];
       delete schema["additionalProperties"];
       return schema as Record<string, unknown>;
     }
     // Already JSON Schema or other format
-    return (parameters as Record<string, unknown>) || {};
+    return (input as Record<string, unknown>) || {};
   }
 
   /**

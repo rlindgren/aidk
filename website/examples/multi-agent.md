@@ -339,7 +339,7 @@ import { z } from "zod";
 export const FindingsTool = createTool({
   name: "submit_findings",
   description: "Submit research findings to the coordinator",
-  parameters: z.object({
+  input: z.object({
     findings: z.array(z.string()).describe("List of key findings"),
     confidence: z.number().min(0).max(1).describe("Confidence in findings"),
     sources: z.array(z.string()).optional().describe("Source URLs"),
@@ -361,7 +361,7 @@ export const FindingsTool = createTool({
 export const SynthesisTool = createTool({
   name: "submit_synthesis",
   description: "Submit the final synthesized research summary",
-  parameters: z.object({
+  input: z.object({
     summary: z.string().describe("Comprehensive summary"),
     agreements: z.array(z.string()).describe("Points where sources agree"),
     disagreements: z.array(z.string()).describe("Points of contention"),

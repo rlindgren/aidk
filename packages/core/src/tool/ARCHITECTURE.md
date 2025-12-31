@@ -138,7 +138,7 @@ Tools use Zod schemas for type-safe input validation:
 const Calculator = createTool({
   name: "calculator",
   description: "Performs arithmetic calculations",
-  parameters: z.object({
+  input: z.object({
     expression: z.string().describe("Math expression to evaluate"),
   }),
   handler: async ({ expression }) => {
@@ -183,7 +183,7 @@ Client tools enable UI interactions without server-side execution:
 const RenderChart = createTool({
   name: "render_chart",
   description: "Renders a chart in the UI",
-  parameters: z.object({ type: z.string(), data: z.array(z.any()) }),
+  input: z.object({ type: z.string(), data: z.array(z.any()) }),
   type: ToolExecutionType.CLIENT,
   intent: ToolIntent.RENDER,
   requiresResponse: false, // Server continues immediately
@@ -197,7 +197,7 @@ const RenderChart = createTool({
 const UserForm = createTool({
   name: "user_form",
   description: "Collects user information",
-  parameters: z.object({ fields: z.array(z.any()) }),
+  input: z.object({ fields: z.array(z.any()) }),
   type: ToolExecutionType.CLIENT,
   intent: ToolIntent.RENDER,
   requiresResponse: true, // Server waits for client response
@@ -249,7 +249,7 @@ Tools can require user confirmation before execution. This is useful for dangero
 const DeleteFile = createTool({
   name: "delete_file",
   description: "Permanently deletes a file",
-  parameters: z.object({ path: z.string() }),
+  input: z.object({ path: z.string() }),
   requiresConfirmation: true, // Always requires confirmation
   confirmationMessage: "Are you sure you want to delete this file?",
   handler: async ({ path }) => {
@@ -265,7 +265,7 @@ const DeleteFile = createTool({
 const RunCommand = createTool({
   name: "run_command",
   description: "Executes a shell command",
-  parameters: z.object({ command: z.string() }),
+  input: z.object({ command: z.string() }),
   // Only require confirmation for dangerous commands
   requiresConfirmation: (input) => {
     const dangerous = ["rm", "delete", "drop", "truncate"];
@@ -285,7 +285,7 @@ const RunCommand = createTool({
 const TransferFunds = createTool({
   name: "transfer_funds",
   description: "Transfer money between accounts",
-  parameters: z.object({ amount: z.number(), to: z.string() }),
+  input: z.object({ amount: z.number(), to: z.string() }),
   // Check user permissions asynchronously
   requiresConfirmation: async (input) => {
     const ctx = Context.get();
@@ -559,7 +559,7 @@ import { z } from 'zod';
 const Calculator = createTool({
   name: 'calculator',
   description: 'Performs arithmetic calculations',
-  parameters: z.object({
+  input: z.object({
     expression: z.string().describe('Math expression to evaluate'),
   }),
   handler: async ({ expression }) => {
@@ -594,7 +594,7 @@ import { z } from "zod";
 const RenderChart = createTool({
   name: "render_chart",
   description: "Renders a chart visualization in the UI",
-  parameters: z.object({
+  input: z.object({
     type: z.enum(["line", "bar", "pie"]).describe("Chart type"),
     data: z.array(
       z.object({
@@ -620,7 +620,7 @@ import { z } from "zod";
 const UserInfoForm = createTool({
   name: "user_info_form",
   description: "Collects user information via a form",
-  parameters: z.object({
+  input: z.object({
     fields: z.array(
       z.object({
         name: z.string(),
@@ -646,7 +646,7 @@ import { z } from "zod";
 const DatabaseQuery = createTool({
   name: "database_query",
   description: "Executes a database query",
-  parameters: z.object({
+  input: z.object({
     query: z.string(),
     params: z.array(z.any()).optional(),
   }),
@@ -683,7 +683,7 @@ import { z } from "zod";
 const WeatherTool = createTool({
   name: "get_weather",
   description: "Gets current weather for a location",
-  parameters: z.object({
+  input: z.object({
     location: z.string(),
   }),
 
@@ -721,7 +721,7 @@ import { z } from "zod";
 const CodeInterpreter = createTool({
   name: "code_interpreter",
   description: "Executes Python code in a sandboxed environment",
-  parameters: z.object({
+  input: z.object({
     code: z.string(),
   }),
   type: ToolExecutionType.PROVIDER,
@@ -746,7 +746,7 @@ import { z } from "zod";
 const GitHubSearch = createTool({
   name: "github_search",
   description: "Searches GitHub repositories",
-  parameters: z.object({
+  input: z.object({
     query: z.string(),
     language: z.string().optional(),
   }),
@@ -776,7 +776,7 @@ import { Context } from "aidk";
 const DeployApplication = createTool({
   name: "deploy_application",
   description: "Deploys the application to a specified environment",
-  parameters: z.object({
+  input: z.object({
     environment: z.enum(["staging", "production"]),
     version: z.string(),
   }),

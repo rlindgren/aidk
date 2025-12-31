@@ -154,7 +154,7 @@ describe("Tool Confirmation", () => {
       const tool = createTool({
         name: "no_confirm_tool",
         description: "A tool without confirmation",
-        parameters: z.object({ value: z.string() }),
+        input: z.object({ value: z.string() }),
         handler: () => [{ type: "text", text: "done" }],
       });
 
@@ -176,7 +176,7 @@ describe("Tool Confirmation", () => {
       const tool = createTool({
         name: "confirm_tool",
         description: "A tool requiring confirmation",
-        parameters: z.object({ value: z.string() }),
+        input: z.object({ value: z.string() }),
         requiresConfirmation: true,
         handler: () => [{ type: "text", text: "done" }],
       });
@@ -199,7 +199,7 @@ describe("Tool Confirmation", () => {
       const tool = createTool({
         name: "confirm_tool",
         description: "A tool requiring confirmation",
-        parameters: z.object({ value: z.string() }),
+        input: z.object({ value: z.string() }),
         requiresConfirmation: true,
         handler: () => [{ type: "text", text: "done" }],
       });
@@ -221,7 +221,7 @@ describe("Tool Confirmation", () => {
       const tool = createTool({
         name: "confirm_tool",
         description: "A tool requiring confirmation",
-        parameters: z.object({ value: z.string() }),
+        input: z.object({ value: z.string() }),
         requiresConfirmation: true,
         confirmationMessage: "Are you sure you want to proceed?",
         handler: () => [{ type: "text", text: "done" }],
@@ -244,7 +244,7 @@ describe("Tool Confirmation", () => {
       const tool = createTool({
         name: "delete_file",
         description: "Delete a file",
-        parameters: z.object({ path: z.string() }),
+        input: z.object({ path: z.string() }),
         requiresConfirmation: true,
         confirmationMessage: (input) => `Delete file "${input.path}"?`,
         handler: () => [{ type: "text", text: "deleted" }],
@@ -268,7 +268,7 @@ describe("Tool Confirmation", () => {
       const tool = createTool({
         name: "conditional_confirm",
         description: "Conditionally requires confirmation",
-        parameters: z.object({ dangerous: z.boolean() }),
+        input: z.object({ dangerous: z.boolean() }),
         requiresConfirmation: (input) => {
           callCount++;
           return input.dangerous;
@@ -303,7 +303,7 @@ describe("Tool Confirmation", () => {
       const tool = createTool({
         name: "async_confirm",
         description: "Async confirmation check",
-        parameters: z.object({ userId: z.string() }),
+        input: z.object({ userId: z.string() }),
         requiresConfirmation: async (input) => {
           // Simulate async check (e.g., database lookup)
           await new Promise((resolve) => setTimeout(resolve, 5));
@@ -349,7 +349,7 @@ describe("Tool Confirmation", () => {
       const tool = createTool({
         name: "config_tool",
         description: "Tool from config",
-        parameters: z.object({}),
+        input: z.object({}),
         requiresConfirmation: true,
         handler: () => [{ type: "text", text: "done" }],
       });
@@ -408,7 +408,7 @@ describe("Tool Confirmation", () => {
       const tool = createTool({
         name: "confirm_execute",
         description: "Tool that executes after confirmation",
-        parameters: z.object({ value: z.string() }),
+        input: z.object({ value: z.string() }),
         requiresConfirmation: true,
         handler: (input) => {
           executed = true;
@@ -453,7 +453,7 @@ describe("Tool Confirmation", () => {
       const tool = createTool({
         name: "confirm_deny",
         description: "Tool that should not execute when denied",
-        parameters: z.object({}),
+        input: z.object({}),
         requiresConfirmation: true,
         handler: () => {
           executed = true;
@@ -505,7 +505,7 @@ describe("Tool Confirmation", () => {
       const tool = createTool({
         name: "server_confirm",
         description: "Server tool with confirmation",
-        parameters: z.object({}),
+        input: z.object({}),
         type: ToolExecutionType.SERVER,
         requiresConfirmation: true,
         handler: () => [{ type: "text", text: "server result" }],
@@ -527,7 +527,7 @@ describe("Tool Confirmation", () => {
       const tool = createTool({
         name: "client_confirm",
         description: "Client tool with confirmation",
-        parameters: z.object({}),
+        input: z.object({}),
         type: ToolExecutionType.CLIENT,
         requiresConfirmation: true,
         // No handler for client tools
@@ -549,7 +549,7 @@ describe("Tool Confirmation", () => {
       const tool = createTool({
         name: "mcp_confirm",
         description: "MCP tool with confirmation",
-        parameters: z.object({}),
+        input: z.object({}),
         type: ToolExecutionType.MCP,
         requiresConfirmation: true,
         mcpConfig: { serverName: "test-server" },
@@ -582,7 +582,7 @@ describe("Tool Confirmation", () => {
       const tool = createTool({
         name: "no_confirm",
         description: "Tool without confirmation",
-        parameters: z.object({}),
+        input: z.object({}),
         handler: () => [{ type: "text", text: "done" }],
       });
 
@@ -610,7 +610,7 @@ describe("Tool Confirmation", () => {
       const tool = createTool({
         name: "confirm_tool",
         description: "Tool with confirmation",
-        parameters: z.object({}),
+        input: z.object({}),
         requiresConfirmation: true,
         handler: () => [{ type: "text", text: "executed" }],
       });
@@ -656,7 +656,7 @@ describe("Tool Confirmation", () => {
       const tool = createTool({
         name: "deny_tool",
         description: "Tool to be denied",
-        parameters: z.object({}),
+        input: z.object({}),
         requiresConfirmation: true,
         handler: () => [{ type: "text", text: "should not see" }],
       });
@@ -702,7 +702,7 @@ describe("Tool Confirmation", () => {
       const tool1 = createTool({
         name: "fast_tool",
         description: "Fast tool without confirmation",
-        parameters: z.object({}),
+        input: z.object({}),
         handler: () => [{ type: "text", text: "fast" }],
       });
 
@@ -710,7 +710,7 @@ describe("Tool Confirmation", () => {
       const tool2 = createTool({
         name: "confirm_tool",
         description: "Tool requiring confirmation",
-        parameters: z.object({}),
+        input: z.object({}),
         requiresConfirmation: true,
         handler: () => [{ type: "text", text: "confirmed" }],
       });
@@ -719,7 +719,7 @@ describe("Tool Confirmation", () => {
       const tool3 = createTool({
         name: "deny_tool",
         description: "Tool to be denied",
-        parameters: z.object({}),
+        input: z.object({}),
         requiresConfirmation: true,
         handler: () => [{ type: "text", text: "should not see" }],
       });
@@ -804,7 +804,7 @@ describe("Tool Confirmation", () => {
       const tool1 = createTool({
         name: "slow_confirm",
         description: "Gets confirmed slowly",
-        parameters: z.object({}),
+        input: z.object({}),
         requiresConfirmation: true,
         handler: () => [{ type: "text", text: "slow confirmed" }],
       });
@@ -812,7 +812,7 @@ describe("Tool Confirmation", () => {
       const tool2 = createTool({
         name: "fast_confirm",
         description: "Gets confirmed quickly",
-        parameters: z.object({}),
+        input: z.object({}),
         requiresConfirmation: true,
         handler: () => [{ type: "text", text: "fast confirmed" }],
       });

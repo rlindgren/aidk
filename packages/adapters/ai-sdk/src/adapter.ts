@@ -175,7 +175,7 @@ export function convertToolsToToolSet(tools?: ModelToolReference[]): ToolSet {
       // ExecutableTool - engine will execute these
       toolSet[toolDef.metadata.name] = {
         description: toolDef.metadata.description || "",
-        inputSchema: toolDef.metadata.parameters, // zod schema already
+        inputSchema: toolDef.metadata.input, // zod schema already
         ...libraryOptions,
         providerOptions,
         // No execute - engine handles execution
@@ -193,7 +193,7 @@ export function convertToolsToToolSet(tools?: ModelToolReference[]): ToolSet {
 
       toolSet[toolDef.name] = {
         description: toolDef.description || "",
-        inputSchema: jsonSchema(toolDef.parameters || {}),
+        inputSchema: jsonSchema(toolDef.input || {}),
         ...libraryOptions,
         providerOptions,
         // No execute - engine handles execution
@@ -1225,7 +1225,7 @@ export function toAiSdkCompiledInput(
           if ("metadata" in tool) {
             acc[tool.metadata.name] = {
               description: tool.metadata.description,
-              parameters: tool.metadata.parameters,
+              parameters: tool.metadata.input, // AI SDK expects 'parameters'
             } as any;
           }
           return acc;

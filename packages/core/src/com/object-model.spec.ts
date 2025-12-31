@@ -133,8 +133,8 @@ describe("COM EventEmitter", () => {
       const mockTool = createTool({
         name: "test-tool",
         description: "Test tool",
-        parameters: z.object({ input: z.string().optional() }),
-        handler: async (_input: { input?: string }) => [],
+        input: z.object({ value: z.string().optional() }),
+        handler: async (_input: { value?: string }) => [],
       });
 
       com.addTool(mockTool);
@@ -151,8 +151,8 @@ describe("COM EventEmitter", () => {
       const mockTool = createTool({
         name: "valid-tool",
         description: "Test tool",
-        parameters: z.object({ input: z.string().optional() }),
-        handler: async (_input: { input?: string }) => [],
+        input: z.object({ value: z.string().optional() }),
+        handler: async (_input: { value?: string }) => [],
       });
 
       // Override name to empty string (this shouldn't happen in practice)
@@ -172,8 +172,8 @@ describe("COM EventEmitter", () => {
       const mockTool = createTool({
         name: "test-tool",
         description: "Test tool",
-        parameters: z.object({ input: z.string().optional() }),
-        handler: async (_input: { input?: string }) => [],
+        input: z.object({ value: z.string().optional() }),
+        handler: async (_input: { value?: string }) => [],
       });
 
       com.addTool(mockTool);

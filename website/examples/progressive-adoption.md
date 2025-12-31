@@ -136,7 +136,7 @@ import { z } from 'zod';
 export const calculatorTool = createTool({
   name: 'calculate',
   description: 'Perform mathematical calculations',
-  parameters: z.object({
+  input: z.object({
     expression: z.string(),
   }),
   execute: async ({ expression }) => {

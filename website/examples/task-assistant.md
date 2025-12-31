@@ -102,7 +102,7 @@ import { todoChannel } from "../channels/todo.channel";
 export const TodoTool = createTool({
   name: "todo",
   description: "Manage the todo list. Actions: add, complete, list",
-  parameters: z.object({
+  input: z.object({
     action: z.enum(["add", "complete", "list"]),
     task: z.string().optional().describe("Task text for add"),
     taskId: z.string().optional().describe("Task ID for complete"),

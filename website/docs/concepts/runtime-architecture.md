@@ -98,7 +98,7 @@ If the model calls tools:
 ```tsx
 const CalculatorTool = createTool({
   name: 'calculator',
-  parameters: z.object({ expression: z.string() }),
+  input: z.object({ expression: z.string() }),
   handler: async ({ expression }) => {
     return [{ type: 'text', text: String(eval(expression)) }];
   },

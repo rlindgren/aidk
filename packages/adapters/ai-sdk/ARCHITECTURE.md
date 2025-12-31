@@ -759,7 +759,7 @@ import { z } from "zod";
 const weatherTool = defineTool({
   name: "get_weather",
   description: "Get weather for a location",
-  parameters: z.object({
+  input: z.object({
     location: z.string(),
   }),
   run: async ({ location }) => {

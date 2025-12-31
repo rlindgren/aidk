@@ -228,7 +228,7 @@ import { z } from 'zod';
 const weatherTool = createTool({
   name: 'get_weather',
   description: 'Get current weather',
-  parameters: z.object({
+  input: z.object({
     location: z.string(),
   }),
   execute: async ({ location }) => {

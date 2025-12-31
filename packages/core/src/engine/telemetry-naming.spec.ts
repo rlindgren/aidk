@@ -150,14 +150,14 @@ describe("Procedure Telemetry Naming Convention", () => {
       const tool1 = createTool({
         name: "tool-one",
         description: "Tool one",
-        parameters: z.object({}) as any,
+        input: z.object({}) as any,
         handler: async (_input: {}) => [{ type: "text", text: "result1" }],
       });
 
       const tool2 = createTool({
         name: "tool-two",
         description: "Tool two",
-        parameters: z.object({}) as any,
+        input: z.object({}) as any,
         handler: async (_input: {}) => [{ type: "text", text: "result2" }],
       });
 
@@ -287,14 +287,14 @@ describe("Procedure Telemetry Naming Convention", () => {
       const tool1 = createTool({
         name: "tool-1",
         description: "Tool 1",
-        parameters: z.object({}) as any,
+        input: z.object({}) as any,
         handler: async (_input: {}) => [{ type: "text", text: "result" }],
       });
 
       const tool2 = createTool({
         name: "tool-2",
         description: "Tool 2",
-        parameters: z.object({}) as any,
+        input: z.object({}) as any,
         handler: async (_input: {}) => [{ type: "text", text: "result" }],
       });
 
