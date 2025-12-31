@@ -203,9 +203,9 @@
     "dev": "tsc --watch"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.24.0",
+    "@modelcontextprotocol/sdk": "^1.25.1",
     "aidk-kernel": "workspace:*",
     "aidk-shared": "workspace:*",
-    "zod": "^4.1.13"
+    "zod": "^4.2.1"
   }
 }

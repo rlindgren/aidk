@@ -5,27 +5,25 @@ updates:
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 10
+      interval: "monthly"
+    open-pull-requests-limit: 5
     groups:
-      development:
+      # Group all non-major updates into one PR
+      all-minor-patch:
         patterns:
-          - "@types/*"
-          - "typescript"
-          - "jest"
-          - "eslint*"
+          - "*"
         update-types:
           - "minor"
           - "patch"
-      ai-providers:
-        patterns:
-          - "@ai-sdk/*"
-          - "ai"
-          - "openai"
-          - "@google/*"
+    # Only open PRs for major version bumps individually
+    # Minor/patch are grouped above
 
-  # GitHub Actions
+  # GitHub Actions - group all together
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
+    groups:
+      actions:
+        patterns:
+          - "*"
