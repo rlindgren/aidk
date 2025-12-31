@@ -48,15 +48,15 @@
     "aidk-client": "workspace:*"
   },
   "devDependencies": {
-    "@types/react": "^18.0.0",
+    "@types/react": "^19.2.7",
     "@types/react-dom": "^18.0.0",
     "aidk-client": "workspace:*",
-    "react": "^18.0.0",
+    "react": "^19.2.3",
     "react-dom": "^18.0.0"
   },
   "peerDependencies": {
     "aidk-client": "workspace:*",
     "marked": "^17.0.1",
-    "react": "^18.0.0"
+    "react": "^19.2.3"
   }
 }
