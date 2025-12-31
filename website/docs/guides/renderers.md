@@ -197,7 +197,7 @@ const modelPreferences = {
 You can also configure this dynamically:
 
 ```tsx
-import { createAiSdkModel } from '@aidk/ai-sdk';
+import { createAiSdkModel } from 'aidk-ai-sdk';
 
 const model = createAiSdkModel({
   model: customProvider('custom-model'),

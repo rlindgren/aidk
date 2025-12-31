@@ -1,6 +1,6 @@
 # AIDK - AI Agent Development Kit
 
-> A React-inspired JSX framework for building AI agents
+> A JSX framework for building AI agents
 
 ## Overview
 

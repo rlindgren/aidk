@@ -5,7 +5,7 @@ Core framework for building AI agents with JSX.
 ## Installation
 
 ```bash
-pnpm add aidk aidk-kernel
+pnpm add aidk
 ```
 
 ## Usage

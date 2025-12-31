@@ -18,7 +18,7 @@
  *
  * @example
  * ```typescript
- * import { compile } from '@aidk/ai-sdk';
+ * import { compile } from 'aidk-ai-sdk';
  * import { generateText } from 'ai';
  * import { openai } from '@ai-sdk/openai';
  *
@@ -37,7 +37,7 @@
  *
  * @example
  * ```typescript
- * import { createCompiler } from '@aidk/ai-sdk';
+ * import { createCompiler } from 'aidk-ai-sdk';
  * import { generateText } from 'ai';
  * import { openai } from '@ai-sdk/openai';
  *
@@ -56,7 +56,7 @@
  *
  * @example
  * ```typescript
- * import { createCompiler } from '@aidk/ai-sdk';
+ * import { createCompiler } from 'aidk-ai-sdk';
  * import { openai } from '@ai-sdk/openai';
  *
  * const compiler = createCompiler({ model: openai('gpt-4o') });
@@ -74,7 +74,7 @@
  *
  * @example
  * ```typescript
- * import { generateText, streamText } from '@aidk/ai-sdk';
+ * import { generateText, streamText } from 'aidk-ai-sdk';
  * import { openai } from '@ai-sdk/openai';
  *
  * // createCompiler run internally
@@ -362,7 +362,7 @@ class ProcessHandle {
  *
  * @example
  * ```typescript
- * import { compile } from '@aidk/ai-sdk';
+ * import { compile } from 'aidk-ai-sdk';
  * import { generateText } from 'ai';
  * import { openai } from '@ai-sdk/openai';
  *

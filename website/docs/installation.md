@@ -20,7 +20,7 @@ Choose your integration path:
 Start with minimal changes to existing code.
 
 ```bash
-pnpm add @aidk/ai-sdk
+pnpm add aidk-ai-sdk
 ```
 
 [Progressive Adoption →](/docs/progressive-adoption)
@@ -34,8 +34,8 @@ pnpm add @aidk/ai-sdk
 Complete framework with all features.
 
 ```bash
-pnpm add aidk aidk-kernel
-pnpm add @aidk/ai-sdk ai @ai-sdk/openai
+pnpm add aidk
+pnpm add aidk-ai-sdk ai @ai-sdk/openai
 ```
 
 [Getting Started →](/docs/getting-started)
@@ -50,14 +50,14 @@ pnpm add @aidk/ai-sdk ai @ai-sdk/openai
 
 ```bash
 # Core framework
-pnpm add aidk aidk-kernel
+pnpm add aidk
 
 # Choose an AI provider adapter
-pnpm add @aidk/ai-sdk ai @ai-sdk/openai    # Vercel AI SDK
+pnpm add aidk-ai-sdk ai @ai-sdk/openai    # Vercel AI SDK
 # OR
-pnpm add @aidk/openai                      # Direct OpenAI
+pnpm add aidk-openai                       # Direct OpenAI
 # OR
-pnpm add @aidk/google                      # Google AI
+pnpm add aidk-google                       # Google AI
 ```
 
 ### Server Integration
@@ -191,7 +191,7 @@ If you're using a monorepo (Turborepo, Nx, etc.), install AIDK in individual pac
 ```bash
 # In your agent package
 cd packages/agents
-pnpm add aidk aidk-kernel @aidk/ai-sdk
+pnpm add aidk aidk-ai-sdk
 
 # In your server package
 cd packages/server

@@ -17,7 +17,7 @@
     "NODE_ENV": "development"
   },
   "companyAnnouncements": [
-    "📚 AIDK - React-inspired JSX framework for building AI agents",
+    "📚 AIDK - JSX framework for building AI agents",
     "📖 Start with: CLAUDE.md, ARCHITECTURE.md, CONTRIBUTING.md",
     "🏗️ Architecture: React patterns, Signal-based state, kernel/core separation",
     "✅ Before committing: pnpm test (all tests must pass)",

@@ -15,7 +15,7 @@ mkdir my-agent && cd my-agent
 pnpm init
 
 # Install core packages
-pnpm add aidk aidk-kernel aidk-express express
+pnpm add aidk aidk-express express
 
 # Install an AI adapter (choose one)
 pnpm add aidk-ai-sdk ai @ai-sdk/openai

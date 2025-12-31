@@ -16,7 +16,7 @@ A basic chat agent with streaming responses. Perfect starting point.
 ```tsx [agent.tsx]
 import { Component, comState, ContextObjectModel, TickState } from 'aidk';
 import { Timeline, Message, Section, H2, Paragraph } from 'aidk';
-import { AiSdkModel } from '@aidk/ai-sdk';
+import { AiSdkModel } from 'aidk-ai-sdk';
 import { openai } from '@ai-sdk/openai';
 
 export class ChatAgent extends Component {

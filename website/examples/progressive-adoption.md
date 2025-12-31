@@ -9,7 +9,7 @@ The minimal starting point. Use JSX for context, keep your existing code.
 ::: code-group
 
 ```tsx [agent.tsx]
-import { System, User, Assistant, Section } from '@aidk/ai-sdk';
+import { System, User, Assistant, Section } from 'aidk-ai-sdk';
 
 export function SimpleAgent() {
   return (
@@ -27,7 +27,7 @@ export function SimpleAgent() {
 ```
 
 ```tsx [main.ts]
-import { compile } from '@aidk/ai-sdk';
+import { compile } from 'aidk-ai-sdk';
 import { generateText } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { SimpleAgent } from './agent';
@@ -68,7 +68,7 @@ Add multi-tick execution while keeping control of model calls.
 
 ```tsx [agent.tsx]
 import { Component, comState, Timeline, Message } from 'aidk';
-import { Model, Tool } from '@aidk/ai-sdk';
+import { Model, Tool } from 'aidk-ai-sdk';
 import { openai } from '@ai-sdk/openai';
 import { calculatorTool } from './tools';
 
@@ -100,7 +100,7 @@ export class MathAgent extends Component {
 ```
 
 ```tsx [main.ts]
-import { createCompiler } from '@aidk/ai-sdk';
+import { createCompiler } from 'aidk-ai-sdk';
 import { generateText } from 'ai';
 import { MathAgent } from './agent';
 
@@ -165,7 +165,7 @@ Let AIDK handle everything.
 
 ```tsx [agent.tsx]
 import { Component, comState, Timeline, Message, Section } from 'aidk';
-import { Model, Tool } from '@aidk/ai-sdk';
+import { Model, Tool } from 'aidk-ai-sdk';
 import { openai } from '@ai-sdk/openai';
 
 export class TaskAgent extends Component {
@@ -203,7 +203,7 @@ export class TaskAgent extends Component {
 ```
 
 ```tsx [main.ts]
-import { createCompiler } from '@aidk/ai-sdk';
+import { createCompiler } from 'aidk-ai-sdk';
 import { openai } from '@ai-sdk/openai';
 import { TaskAgent } from './agent';
 
@@ -241,7 +241,7 @@ main();
 Simplest API - mirrors AI SDK exactly.
 
 ```tsx
-import { generateText, streamText } from '@aidk/ai-sdk';
+import { generateText, streamText } from 'aidk-ai-sdk';
 import { openai } from '@ai-sdk/openai';
 
 // Just like ai.generateText(), but with JSX
@@ -288,7 +288,7 @@ Production-ready backend with full features.
 
 ```tsx [agent.tsx]
 import { Component, comState, Context } from 'aidk';
-import { Model, Tool } from '@aidk/ai-sdk';
+import { Model, Tool } from 'aidk-ai-sdk';
 import { openai } from '@ai-sdk/openai';
 
 export class CustomerAgent extends Component {

@@ -28,7 +28,7 @@ You can stop at any level. Each provides value independently.
 ### Example
 
 ```tsx
-import { compile } from '@aidk/ai-sdk';
+import { compile } from 'aidk-ai-sdk';
 import { generateText } from 'ai';
 import { openai } from '@ai-sdk/openai';
 
@@ -80,7 +80,7 @@ console.log(result.text);
 ### Example
 
 ```tsx
-import { createCompiler } from '@aidk/ai-sdk';
+import { createCompiler } from 'aidk-ai-sdk';
 import { generateText } from 'ai';
 import { openai } from '@ai-sdk/openai';
 
@@ -191,7 +191,7 @@ const result = await compiler.run(<SearchAgent />, async (input) => {
 ### Example
 
 ```tsx
-import { createCompiler } from '@aidk/ai-sdk';
+import { createCompiler } from 'aidk-ai-sdk';
 import { openai } from '@ai-sdk/openai';
 
 // Configure default model
@@ -222,7 +222,7 @@ for await (const event of compiler.stream(<MyAgent />)) {
 You can still override the model per agent using the `<Model>` component:
 
 ```tsx
-import { Model } from '@aidk/ai-sdk';
+import { Model } from 'aidk-ai-sdk';
 
 class AdaptiveAgent extends Component {
   render(com, state) {
@@ -266,7 +266,7 @@ class AdaptiveAgent extends Component {
 ### Example
 
 ```tsx
-import { generateText, streamText } from '@aidk/ai-sdk';
+import { generateText, streamText } from 'aidk-ai-sdk';
 import { openai } from '@ai-sdk/openai';
 
 // Drop-in replacement for ai.generateText()
@@ -317,7 +317,7 @@ const finalText = await text;
 
 ```tsx
 import { createEngine } from 'aidk';
-import { createAiSdkModel } from '@aidk/ai-sdk';
+import { createAiSdkModel } from 'aidk-ai-sdk';
 import { openai } from '@ai-sdk/openai';
 
 const engine = createEngine({
