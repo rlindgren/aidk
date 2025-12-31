@@ -1,6 +1,6 @@
 {
   "name": "aidk-ai-sdk",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Vercel AI SDK adapter for AIDK",
   "keywords": [
     "adapter",
