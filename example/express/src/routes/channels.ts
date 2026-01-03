@@ -21,6 +21,9 @@ router.get("/sse", (req: Request, res: Response) => {
   const sessionId = req.query.sessionId as string;
   const userId = req.query.userId as string;
   const channelFilter = req.query.channels as string | undefined;
+  const threadId = req.query.threadId as string;
+
+  console.log(`📡 SSE params: sessionId=${sessionId}, userId=${userId}, threadId=${threadId}`);
 
   if (!sessionId) {
     console.log("📡 SSE rejected: missing sessionId");
@@ -37,14 +40,11 @@ router.get("/sse", (req: Request, res: Response) => {
   }
 
   console.log(
-    `📡 SSE connecting: connectionId=${sessionId}, userId=${userId || "anonymous"}, channels=${channelFilter || "all"}`,
+    `📡 SSE connecting: connectionId=${sessionId}, userId=${userId || "anonymous"}, threadId=${threadId || "none"}, channels=${channelFilter || "all"}`,
   );
 
   // Parse channel filter
   const channels = channelFilter ? channelFilter.split(",") : undefined;
-
-  // Get threadId for thread-scoped rooms
-  const threadId = req.query.threadId as string;
 
   // Add this SSE connection to the transport with metadata for auto-join
   // If userId is provided, the transport will auto-join `user:{userId}` room
@@ -74,11 +74,11 @@ router.get("/sse", (req: Request, res: Response) => {
  */
 router.post("/events", async (req: Request, res: Response) => {
   // TODO: Standardize on snake_case (userId) for API contract
-  const { sessionId, userId, channel, type, payload, threadId, ...rest } = req.body;
+  const { sessionId, userId, channel, type, payload, threadId: bodyThreadId, ...rest } = req.body;
   const effectiveUserId = userId;
-  console.log(
-    `📮 /events: channel=${channel}, type=${type}, userId=${userId}, effectiveUserId=${effectiveUserId}`,
-  );
+  console.log(`📮 /events: channel=${channel}, type=${type}`);
+  console.log(`📮 /events: req.body keys:`, Object.keys(req.body));
+  console.log(`📮 /events: bodyThreadId=${bodyThreadId}, payload=`, JSON.stringify(payload));
 
   if (!channel || !type) {
     return res.status(400).json({ error: "channel and type are required" });
@@ -100,17 +100,20 @@ router.post("/events", async (req: Request, res: Response) => {
     // 3. Connection metadata (SSE connection stores threadId from initial connection)
     // 4. Fall back to session ID
     let threadId = eventPayload?.threadId || req.body.threadId;
+    console.log(`📮 /events: eventPayload?.threadId=${eventPayload?.threadId}, req.body.threadId=${req.body.threadId}`);
 
     if (!threadId && sessionId) {
       // Try to get threadId from SSE connection metadata
       const transport = channelService.getTransport();
       if (transport && "getConnectionMetadata" in transport) {
         const metadata = (transport as any).getConnectionMetadata(sessionId);
+        console.log(`📮 /events: SSE connection metadata for ${sessionId}:`, metadata);
         threadId = metadata?.threadId;
       }
     }
 
     threadId = threadId || "00000000-0000-0000-0000-000000000000";
+    console.log(`📮 /events: FINAL threadId=${threadId}`);
 
     try {
       // Build context based on channel scope
@@ -122,6 +125,7 @@ router.post("/events", async (req: Request, res: Response) => {
         threadId,
         createEvent: true,
       };
+      console.log(`📮 /events: context=`, JSON.stringify(context));
 
       // Handle event and get result
       const result = await channelService.handleEvent(

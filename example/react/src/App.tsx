@@ -1,5 +1,6 @@
+import { useEffect } from "react";
 import { useEngineClient, useExecution, useTodoList, useScratchpad } from "./hooks";
-import { ChatInterface, TodoListUI, ScratchpadUI } from "./components";
+import { ChatInterface, TodoListUI, ScratchpadUI, VerifiedAnswerUI } from "./components";
 import "./App.css";
 
 const API_URL = import.meta.env.VITE_API_URL || "";
@@ -9,6 +10,11 @@ function App() {
   const { client } = useEngineClient({
     baseUrl: API_URL,
     userId: "demo-user", // Default for demo; in real app, would come from auth
+    routes: {
+      // Match the express server's agent routes
+      stream: (id) => `/api/agents/${id}/stream`,
+      execute: (id) => `/api/agents/${id}/execute`,
+    },
     callbacks: {
       onConnect: () => console.log("Connected!"),
       onDisconnect: (reason) => console.log("Disconnected:", reason),
@@ -27,6 +33,13 @@ function App() {
     client,
     agentId: "task-assistant",
   });
+
+  // Update client config when threadId changes so SSE reconnects to the right room
+  useEffect(() => {
+    if (threadId && client) {
+      client.updateConfig({ threadId });
+    }
+  }, [threadId, client]);
 
   // App-specific todo list hook (tasks are user-scoped, not thread-scoped)
   const {
@@ -83,6 +96,7 @@ function App() {
             onToggleComplete={toggleComplete}
             onDeleteTask={deleteTask}
           />
+          <VerifiedAnswerUI client={client} />
         </div>
       </main>
 

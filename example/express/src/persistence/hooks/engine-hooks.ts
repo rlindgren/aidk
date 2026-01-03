@@ -232,9 +232,14 @@ export function createStreamHook(config: EngineHooksConfig): EngineHookMiddlewar
             }
           }
 
-          // Collect tool results as they stream
-          if (event.type === "tool_result" && event.result) {
-            toolResultsForTick.push(event.result);
+          // Collect tool results as they stream (keep full event for callId/name)
+          if (event.type === "tool_result") {
+            toolResultsForTick.push({
+              callId: event.callId,
+              name: event.name,
+              result: event.result,
+              isError: event.isError,
+            });
           }
 
           // Persist model output at every tick_end
@@ -271,11 +276,12 @@ export function createStreamHook(config: EngineHooksConfig): EngineHookMiddlewar
                 role: "tool",
                 content: toolResultsForTick.map((r) => ({
                   type: "tool_result" as const,
-                  toolUseId: r.toolUseId,
-                  id: r.id,
+                  toolUseId: r.callId,
                   name: r.name,
-                  content: r.content || [],
-                  isError: !r.success,
+                  content: Array.isArray(r.result)
+                    ? r.result
+                    : [{ type: "text" as const, text: String(r.result ?? "") }],
+                  isError: r.isError ?? false,
                 })),
               };
 

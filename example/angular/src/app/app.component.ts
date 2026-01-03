@@ -2,12 +2,13 @@ import { Component, NgZone } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { ChatComponent } from "./components/chat.component";
 import { TodoListComponent } from "./components/todo-list.component";
+import { VerifiedAnswerComponent } from "./components/verified-answer.component";
 import { EngineService } from "aidk-angular";
 
 @Component({
   selector: "app-root",
   standalone: true,
-  imports: [CommonModule, ChatComponent, TodoListComponent],
+  imports: [CommonModule, ChatComponent, TodoListComponent, VerifiedAnswerComponent],
   template: `
     <div class="app">
       <header class="app-header">
@@ -22,6 +23,7 @@ import { EngineService } from "aidk-angular";
 
         <div class="panel todo-panel">
           <app-todo-list />
+          <app-verified-answer />
         </div>
       </main>
 

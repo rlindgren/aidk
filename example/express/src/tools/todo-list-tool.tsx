@@ -33,7 +33,7 @@ type TodoListInput = z.infer<typeof TodoListInputSchema>;
 export const TodoListTool = createTool({
   name: "todo_list",
   description: "Manage a todo list. Create, update, complete, and delete tasks.",
-  parameters: TodoListInputSchema,
+  input: TodoListInputSchema,
   handler: async (input: TodoListInput): Promise<ContentBlock[]> => {
     // Get context during execution
     const ctx = Context.get();

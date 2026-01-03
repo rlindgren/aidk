@@ -39,7 +39,7 @@ export const ScratchpadTool = createTool({
   name: "scratchpad",
   description:
     "A scratchpad for quick notes during this conversation. Use it to jot down important points, track context, or organize your thoughts. Notes are visible to both you and the user.",
-  parameters: ScratchpadInputSchema,
+  input: ScratchpadInputSchema,
   handler: async (input: ScratchpadInput): Promise<ContentBlock[]> => {
     // Get context during execution
     const ctx = Context.get();

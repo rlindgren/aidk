@@ -81,20 +81,25 @@ export class ScratchpadService {
     notes: ScratchpadNote[],
     options: { excludeSender?: boolean },
   ): void {
+    console.log(`📝 ScratchpadService.broadcast: threadId=${threadId}, notes=${notes.length}, excludeSender=${options.excludeSender}`);
     const event = { type: "state_changed", payload: { notes, threadId: threadId } };
     const target = ScratchpadService.channel?.publisher().to(threadId);
 
     if (!target) {
+      console.log(`📝 ScratchpadService.broadcast: NO TARGET (channel not configured?)`);
       return;
     }
 
+    console.log(`📝 ScratchpadService.broadcast: targeting room thread:${threadId}`);
     if (options.excludeSender) {
       target
         .broadcast(event)
+        .then(() => console.log(`📝 ScratchpadService.broadcast: sent to thread:${threadId}`))
         .catch((err: unknown) => console.error("Failed to broadcast scratchpad update:", err));
     } else {
       target
         .send(event)
+        .then(() => console.log(`📝 ScratchpadService.broadcast: sent to thread:${threadId}`))
         .catch((err: unknown) => console.error("Failed to send scratchpad update:", err));
     }
   }

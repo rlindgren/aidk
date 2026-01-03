@@ -61,16 +61,16 @@ importers:
     dependencies:
       '@ai-sdk/google':
         specifier: ^2.0.0
-        version: 2.0.46(zod@4.1.13)
+        version: 2.0.46(zod@4.3.4)
       '@ai-sdk/google-vertex':
         specifier: ^3.0.0
-        version: 3.0.89(zod@4.1.13)
+        version: 3.0.89(zod@4.3.4)
       '@ai-sdk/openai':
         specifier: ^2.0.0
-        version: 2.0.80(zod@4.1.13)
+        version: 2.0.80(zod@4.3.4)
       ai:
         specifier: ^5.0.0
-        version: 5.0.110(zod@4.1.13)
+        version: 5.0.110(zod@4.3.4)
       aidk:
         specifier: link:../../packages/core
         version: link:../../packages/core
@@ -96,8 +96,8 @@ importers:
         specifier: ^5.0.0
         version: 5.2.1
       zod:
-        specifier: ^4.1.13
-        version: 4.1.13
+        specifier: ^4.3.4
+        version: 4.3.4
     devDependencies:
       '@types/cors':
         specifier: ^2.8.17
@@ -4843,60 +4843,63 @@ packages:
   zod@4.1.13:
     resolution: {integrity: sha512-AvvthqfqrAhNH9dnfmrfKzX5upOdjUVJYFqNSlkmGf64gRaTzlPwz99IHYnVs28qYAybvAlBV+H7pn0saFY4Ig==}
 
+  zod@4.3.4:
+    resolution: {integrity: sha512-Zw/uYiiyF6pUT1qmKbZziChgNPRu+ZRneAsMUDU6IwmXdWt5JwcUfy2bvLOCUtz5UniaN/Zx5aFttZYbYc7O/A==}
+
   zone.js@0.15.1:
     resolution: {integrity: sha512-XE96n56IQpJM7NAoXswY3XRLcWFW83xe0BiAOeMD7K5k5xecOeul3Qcpx6GqEeeHNkW5DWL5zOyTbEfB4eti8w==}
 
 snapshots:
 
-  '@ai-sdk/anthropic@2.0.55(zod@4.1.13)':
+  '@ai-sdk/anthropic@2.0.55(zod@4.3.4)':
     dependencies:
       '@ai-sdk/provider': 2.0.0
-      '@ai-sdk/provider-utils': 3.0.19(zod@4.1.13)
-      zod: 4.1.13
+      '@ai-sdk/provider-utils': 3.0.19(zod@4.3.4)
+      zod: 4.3.4
 
-  '@ai-sdk/gateway@2.0.19(zod@4.1.13)':
+  '@ai-sdk/gateway@2.0.19(zod@4.3.4)':
     dependencies:
       '@ai-sdk/provider': 2.0.0
-      '@ai-sdk/provider-utils': 3.0.18(zod@4.1.13)
+      '@ai-sdk/provider-utils': 3.0.18(zod@4.3.4)
       '@vercel/oidc': 3.0.5
-      zod: 4.1.13
+      zod: 4.3.4
 
-  '@ai-sdk/google-vertex@3.0.89(zod@4.1.13)':
+  '@ai-sdk/google-vertex@3.0.89(zod@4.3.4)':
     dependencies:
-      '@ai-sdk/anthropic': 2.0.55(zod@4.1.13)
-      '@ai-sdk/google': 2.0.46(zod@4.1.13)
+      '@ai-sdk/anthropic': 2.0.55(zod@4.3.4)
+      '@ai-sdk/google': 2.0.46(zod@4.3.4)
       '@ai-sdk/provider': 2.0.0
-      '@ai-sdk/provider-utils': 3.0.19(zod@4.1.13)
+      '@ai-sdk/provider-utils': 3.0.19(zod@4.3.4)
       google-auth-library: 10.5.0
-      zod: 4.1.13
+      zod: 4.3.4
     transitivePeerDependencies:
       - supports-color
 
-  '@ai-sdk/google@2.0.46(zod@4.1.13)':
+  '@ai-sdk/google@2.0.46(zod@4.3.4)':
     dependencies:
       '@ai-sdk/provider': 2.0.0
-      '@ai-sdk/provider-utils': 3.0.19(zod@4.1.13)
-      zod: 4.1.13
+      '@ai-sdk/provider-utils': 3.0.19(zod@4.3.4)
+      zod: 4.3.4
 
-  '@ai-sdk/openai@2.0.80(zod@4.1.13)':
+  '@ai-sdk/openai@2.0.80(zod@4.3.4)':
     dependencies:
       '@ai-sdk/provider': 2.0.0
-      '@ai-sdk/provider-utils': 3.0.18(zod@4.1.13)
-      zod: 4.1.13
+      '@ai-sdk/provider-utils': 3.0.18(zod@4.3.4)
+      zod: 4.3.4
 
-  '@ai-sdk/provider-utils@3.0.18(zod@4.1.13)':
+  '@ai-sdk/provider-utils@3.0.18(zod@4.3.4)':
     dependencies:
       '@ai-sdk/provider': 2.0.0
       '@standard-schema/spec': 1.0.0
       eventsource-parser: 3.0.6
-      zod: 4.1.13
+      zod: 4.3.4
 
-  '@ai-sdk/provider-utils@3.0.19(zod@4.1.13)':
+  '@ai-sdk/provider-utils@3.0.19(zod@4.3.4)':
     dependencies:
       '@ai-sdk/provider': 2.0.0
       '@standard-schema/spec': 1.0.0
       eventsource-parser: 3.0.6
-      zod: 4.1.13
+      zod: 4.3.4
 
   '@ai-sdk/provider@2.0.0':
     dependencies:
@@ -7068,13 +7071,13 @@ snapshots:
 
   agent-base@7.1.4: {}
 
-  ai@5.0.110(zod@4.1.13):
+  ai@5.0.110(zod@4.3.4):
     dependencies:
-      '@ai-sdk/gateway': 2.0.19(zod@4.1.13)
+      '@ai-sdk/gateway': 2.0.19(zod@4.3.4)
       '@ai-sdk/provider': 2.0.0
-      '@ai-sdk/provider-utils': 3.0.18(zod@4.1.13)
+      '@ai-sdk/provider-utils': 3.0.18(zod@4.3.4)
       '@opentelemetry/api': 1.9.0
-      zod: 4.1.13
+      zod: 4.3.4
 
   ajv-formats@2.1.1(ajv@8.17.1):
     optionalDependencies:
@@ -9823,5 +9826,7 @@ snapshots:
       zod: 4.1.13
 
   zod@4.1.13: {}
+
+  zod@4.3.4: {}
 
   zone.js@0.15.1: {}

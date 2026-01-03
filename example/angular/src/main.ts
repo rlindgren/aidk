@@ -9,8 +9,11 @@ bootstrapApplication(AppComponent, {
     provideRouter([]),
     provideEngine({
       baseUrl: "", // Proxied via proxy.conf.json
-      // transport: new SSETransport({ ... }), // Optional: provide custom transport
-      // channels: myChannelClient, // Optional: provide pre-configured ChannelClient
+      routes: {
+        // Match the express server's agent routes
+        stream: (id) => `/api/agents/${id}/stream`,
+        execute: (id) => `/api/agents/${id}/execute`,
+      },
     }),
   ],
 }).catch((err) => console.error(err));
