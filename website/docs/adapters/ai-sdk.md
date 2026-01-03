@@ -44,7 +44,7 @@ const { messages, tools, system } = await compile(
 
 // Call the model yourself
 const result = await generateText({
-  model: openai('gpt-4o'),
+  model: openai('gpt-5.2'),
   messages,
   tools,
   system,
@@ -68,7 +68,7 @@ const result = await compiler.run(
   <ChatAgent userMessage="Hello!" />,
   async (input) => {
     return generateText({
-      model: openai('gpt-4o'),
+      model: openai('gpt-5.2'),
       ...input,
     });
   }
@@ -86,7 +86,7 @@ import { createCompiler } from 'aidk-ai-sdk';
 import { openai } from '@ai-sdk/openai';
 
 const compiler = createCompiler({
-  model: openai('gpt-4o'),
+  model: openai('gpt-5.2'),
 });
 
 // Simple execution
@@ -112,14 +112,14 @@ import { openai } from "@ai-sdk/openai";
 import { anthropic } from "@ai-sdk/anthropic";
 
 // OpenAI
-const gpt4 = aisdk({ model: openai("gpt-4o") });
+const gpt5 = aisdk({ model: openai("gpt-5.2") });
 
 // Anthropic
 const claude = aisdk({ model: anthropic("claude-3-5-sonnet-20241022") });
 
 // With options
-const gpt4Turbo = aisdk({
-  model: openai("gpt-4-turbo"),
+const gpt5 = aisdk({
+  model: openai("gpt-5.2"),
   temperature: 0.7,
   maxTokens: 4096,
 });
@@ -137,7 +137,7 @@ class MyAgent extends Component {
   render() {
     return (
       <>
-        <Model model={aisdk({ model: openai("gpt-4o") })} />
+        <Model model={aisdk({ model: openai("gpt-5.2") })} />
         <System>You are a helpful assistant.</System>
         <Timeline messages={state.timeline} />
       </>
@@ -156,8 +156,8 @@ class AdaptiveAgent extends Component {
     const needsPower = this.shouldUpgrade(state);
 
     const model = needsPower
-      ? aisdk({ model: openai("gpt-4o") })
-      : aisdk({ model: openai("gpt-4o-mini") });
+      ? aisdk({ model: openai("gpt-5.2") })
+      : aisdk({ model: openai("gpt-5.2-mini") });
 
     return (
       <>
@@ -183,7 +183,7 @@ class AdaptiveAgent extends Component {
 import { openai } from "@ai-sdk/openai";
 
 const model = aisdk({
-  model: openai("gpt-4o"),
+  model: openai("gpt-5.2"),
   temperature: 0.7,
   maxTokens: 4096,
   topP: 0.9,
@@ -212,7 +212,7 @@ Claude models automatically receive XML-formatted context.
 import { google } from "@ai-sdk/google";
 
 const model = aisdk({
-  model: google("gemini-1.5-pro"),
+  model: google("gemini-3-pro"),
   temperature: 0.7,
 });
 ```
@@ -222,7 +222,7 @@ const model = aisdk({
 ### With Compiler
 
 ```tsx
-const compiler = createCompiler({ model: openai('gpt-4o') });
+const compiler = createCompiler({ model: openai('gpt-5.2') });
 
 for await (const event of compiler.stream(<MyAgent />)) {
   switch (event.type) {
@@ -249,7 +249,7 @@ import { createEngine } from 'aidk';
 import { aisdk } from 'aidk-ai-sdk';
 
 const engine = createEngine({
-  model: aisdk({ model: openai('gpt-4o') }),
+  model: aisdk({ model: openai('gpt-5.2') }),
 });
 
 for await (const event of engine.stream(input, <MyAgent />)) {
@@ -277,7 +277,7 @@ const Calculator = createTool({
 function MathAgent() {
   return (
     <>
-      <Model model={aisdk({ model: openai('gpt-4o') })} />
+      <Model model={aisdk({ model: openai('gpt-5.2') })} />
       <Calculator />
       <User>What is 2 + 2?</User>
     </>
@@ -294,7 +294,7 @@ For models with extended thinking (o1, o3, etc.):
 
 ```tsx
 const reasoningModel = aisdk({
-  model: openai('o1-preview'),
+  model: openai('o3'),
   // Reasoning models have specific constraints
   temperature: 1, // Required for o1
 });
@@ -325,7 +325,7 @@ You can override this:
 
 ```tsx
 const model = aisdk({
-  model: openai("gpt-4o"),
+  model: openai("gpt-5.2"),
   renderer: "xml", // Force XML format
 });
 ```
@@ -358,7 +358,7 @@ class WeatherAgent extends Component {
   render(com, state) {
     return (
       <>
-        <Model model={aisdk({ model: openai('gpt-4o') })} />
+        <Model model={aisdk({ model: openai('gpt-5.2') })} />
         <System>
           You help users check the weather.
           Use the weather tool to get current conditions.

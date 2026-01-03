@@ -210,9 +210,9 @@ export class SmartRouter extends Component {
 
   private getModel(tier: ModelTier) {
     const models = {
-      fast: aisdk({ model: openai("gpt-4o-mini") }),
-      balanced: aisdk({ model: openai("gpt-4o") }),
-      powerful: aisdk({ model: openai("gpt-4o"), temperature: 0.7 }),
+      fast: aisdk({ model: openai("gpt-5.2-mini") }),
+      balanced: aisdk({ model: openai("gpt-5.2") }),
+      powerful: aisdk({ model: openai("gpt-5.2"), temperature: 0.7 }),
       specialized: aisdk({ model: anthropic("claude-3-5-sonnet-20241022") }),
     };
     return models[tier];
@@ -220,9 +220,9 @@ export class SmartRouter extends Component {
 
   private getModelName(tier: ModelTier): string {
     const names = {
-      fast: "gpt-4o-mini",
-      balanced: "gpt-4o",
-      powerful: "gpt-4o",
+      fast: "gpt-5.2-mini",
+      balanced: "gpt-5.2",
+      powerful: "gpt-5.2",
       specialized: "claude-3-5-sonnet",
     };
     return names[tier];
@@ -325,7 +325,7 @@ export class TwoStageRouter extends Component {
     // Waiting for query
     return (
       <>
-        <Model model={aisdk({ model: openai("gpt-4o-mini") })} />
+        <Model model={aisdk({ model: openai("gpt-5.2-mini") })} />
         <System>You are a helpful assistant.</System>
       </>
     );
@@ -334,12 +334,12 @@ export class TwoStageRouter extends Component {
   private getModelFromDecision(decision: RoutingDecision) {
     // Map decision to actual model
     const models: Record<string, any> = {
-      "gpt-4o-mini": openai("gpt-4o-mini"),
-      "gpt-4o": openai("gpt-4o"),
+      "gpt-5.2-mini": openai("gpt-5.2-mini"),
+      "gpt-5.2": openai("gpt-5.2"),
       "claude-3-5-sonnet": anthropic("claude-3-5-sonnet-20241022"),
-      "o1-preview": openai("o1-preview"),
+      "o3": openai("o3"),
     };
-    return aisdk({ model: models[decision.model] || models["gpt-4o-mini"] });
+    return aisdk({ model: models[decision.model] || models["gpt-5.2-mini"] });
   }
 }
 
@@ -350,19 +350,19 @@ class RouterAgent extends Component<{ query: string }> {
 
     return (
       <>
-        <Model model={aisdk({ model: openai("gpt-4o-mini") })} />
+        <Model model={aisdk({ model: openai("gpt-5.2-mini") })} />
 
         <System>
           You are a routing assistant. Analyze the user query and decide:
-          1. Which model is best suited (gpt-4o-mini, gpt-4o, claude-3-5-sonnet, o1-preview)
+          1. Which model is best suited (gpt-5.2-mini, gpt-5.2, claude-3-5-sonnet, o3)
           2. What system prompt would help
           3. What temperature setting (0-1)
 
           Consider:
-          - gpt-4o-mini: Simple questions, quick responses
-          - gpt-4o: General tasks, balanced performance
+          - gpt-5.2-mini: Simple questions, quick responses
+          - gpt-5.2: General tasks, balanced performance
           - claude-3-5-sonnet: Code, technical writing, analysis
-          - o1-preview: Complex reasoning, math, logic puzzles
+          - o3: Complex reasoning, math, logic puzzles
         </System>
 
         <Grounding title="Query to Route">{query}</Grounding>
@@ -377,7 +377,7 @@ class RouterAgent extends Component<{ query: string }> {
 const RoutingTool = createTool({
   name: "route_query",
   input: z.object({
-    model: z.enum(["gpt-4o-mini", "gpt-4o", "claude-3-5-sonnet", "o1-preview"]),
+    model: z.enum(["gpt-5.2-mini", "gpt-5.2", "claude-3-5-sonnet", "o3"]),
     systemPrompt: z.string(),
     temperature: z.number().min(0).max(1),
     reasoning: z.string(),
@@ -401,16 +401,16 @@ export class PreferenceRouter extends Component {
     let systemNote = "";
 
     if (prefs.preferSpeed) {
-      model = aisdk({ model: openai("gpt-4o-mini") });
+      model = aisdk({ model: openai("gpt-5.2-mini") });
       systemNote = "Respond quickly and concisely.";
     } else if (prefs.preferQuality) {
       model = aisdk({ model: anthropic("claude-3-5-sonnet-20241022") });
       systemNote = "Take your time to provide thorough responses.";
     } else if (prefs.preferCost) {
-      model = aisdk({ model: openai("gpt-3.5-turbo") });
+      model = aisdk({ model: openai("gpt-5.2-mini") });
       systemNote = "Be efficient with your responses.";
     } else {
-      model = aisdk({ model: openai("gpt-4o") });
+      model = aisdk({ model: openai("gpt-5.2") });
     }
 
     return (
@@ -465,7 +465,7 @@ export class ABTestRouter extends Component {
     const variant = this.variant();
 
     const model = variant === "A"
-      ? aisdk({ model: openai("gpt-4o") })
+      ? aisdk({ model: openai("gpt-5.2") })
       : aisdk({ model: anthropic("claude-3-5-sonnet-20241022") });
 
     return (

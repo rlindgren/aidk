@@ -60,7 +60,7 @@ render(com, state) {
 
   return (
     <>
-      <Model model={needsUpgrade ? gpt4 : gpt4mini} />
+      <Model model={needsUpgrade ? gpt5 : gpt5mini} />
 
       {needsUpgrade && (
         <System>The user needs more help. Take your time. Be thorough.</System>
@@ -98,25 +98,23 @@ render() {
   const cutoff = messages.length - 10;
 
   return (
-    <Section title="Research Assistant">
-      <System>{this.systemPrompt()}</System>
+    <System>{this.systemPrompt()}</System>
 
-      <Grounding title="Knowledge Base">
-        <Document src={this.activeDoc()} />
-        <List title="Related">{this.relatedDocs().map(d => d.title)}</List>
-      </Grounding>
+    <Grounding title="Knowledge Base">
+      <Document src={this.activeDoc()} />
+      <List title="Related">{this.relatedDocs().map(d => d.title)}</List>
+    </Grounding>
 
-      <SearchTool onResult={(r) => this.results.set(r)} />
+    <SearchTool onResult={(r) => this.results.set(r)} />
 
-      <Timeline>
-        {messages.map((msg, i) => (
-          <Message key={msg.id} role={msg.role}>
-            {i < cutoff && msg.role === 'user' && <Meta>({formatRelative(msg.timestamp)})</Meta>}
-            {msg.content}
-          </Message>
-        ))}
-      </Timeline>
-    </Section>
+    <Timeline>
+      {messages.map((msg, i) => (
+        <Message key={msg.id} role={msg.role}>
+          {i < cutoff && msg.role === 'user' && <Meta>({formatRelative(msg.timestamp)})</Meta>}
+          {msg.content}
+        </Message>
+      ))}
+    </Timeline>
   );
 }
 ```
@@ -220,7 +218,7 @@ import { generateText } from "ai";
 const { messages, tools, system } = await compile(<MyAgent />);
 
 const result = await generateText({
-  model: openai("gpt-4o"),
+  model: openai("gpt-5.2"),
   messages,
   tools,
   system,
@@ -240,11 +238,13 @@ The compiler manages the tick loop. You still control model selection.
 
 ```tsx
 import { createCompiler } from "aidk-ai-sdk";
+import { streamText } from 'ai';
+import { openai } from '@ai-sdk/openai';
 
 const compiler = createCompiler();
 
 for await (const event of compiler.stream(<MyAgent />, async (input) => {
-  return streamText({ model: openai("gpt-4o"), ...input });
+  return streamText({ model: openai("gpt-5.2"), ...input });
 })) {
   console.log(event);
 }
@@ -406,11 +406,9 @@ const TodoTool = createTool({
     const tasks = com.getState("tasks") || [];
     return (
       <Grounding title="Current Tasks">
-        <List>
+        <List task>
           {tasks.map((t) => (
-            <ListItem key={t.id}>
-              {t.done ? "✓" : "○"} {t.text}
-            </ListItem>
+            <ListItem key={t.id} checked={t.done}>{t.text}</ListItem>
           ))}
         </List>
       </Grounding>

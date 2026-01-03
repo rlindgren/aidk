@@ -35,7 +35,7 @@ class MyAgent extends Component {
   render(com: COM, state: TickState) {
     return (
       <>
-        <AiSdkModel model={openai('gpt-4o')} />
+        <AiSdkModel model={openai('gpt-5.2')} />
         <Timeline>
           {this.timeline().map((entry, i) => (
             <Message key={i} {...entry.message} />
@@ -175,7 +175,7 @@ class ChatAgent extends Component {
   render(com: COM, state: TickState) {
     return (
       <>
-        <AiSdkModel model={openai('gpt-4o')} />
+        <AiSdkModel model={openai('gpt-5.2')} />
 
         <Timeline>
           {this.timeline().map((entry, index) => (
@@ -210,7 +210,7 @@ class MainAgent extends Component {
   render(com: COM, state: TickState) {
     return (
       <>
-        <AiSdkModel model={openai('gpt-4o')} />
+        <AiSdkModel model={openai('gpt-5.2')} />
 
         {/* Nested class component */}
         <UserContext />
@@ -262,10 +262,21 @@ function SlidingWindow({ messages }: { messages: Message[] }) {
 class ChatAgent extends Component {
   private timeline = comState<Message[]>('timeline', []);
 
+  async onMout(com: COM) {
+    const ctx = context();
+    const userInput = com.getUserInput();
+    const messages = await loadThreadMessages(ctx.user.id, ctx.metadata.threadId);
+    this.timeline.set(message);
+  }
+
+  onTickStart(com: COM, state: TickState) {
+    this.timeline.update((timeline) => [...timeline, ...state.current.timeline.map(e => e.message)]);
+  }
+
   render() {
     return (
       <>
-        <AiSdkModel model={openai('gpt-4o')} />
+        <AiSdkModel model={openai('gpt-5.2')} />
         <SlidingWindow messages={this.timeline()} />
       </>
     );
@@ -425,7 +436,7 @@ interface AgentProps {
 
 class ConfigurableAgent extends Component<AgentProps> {
   render(com: COM, state: TickState) {
-    const { model = 'gpt-4o', temperature = 0.7 } = this.props;
+    const { model = 'gpt-5.2', temperature = 0.7 } = this.props;
 
     return (
       <>
@@ -440,7 +451,7 @@ class ConfigurableAgent extends Component<AgentProps> {
 }
 
 // Usage
-<ConfigurableAgent model="gpt-4o-mini" temperature={0.9} />
+<ConfigurableAgent model="gpt-5.2-mini" temperature={0.9} />
 ```
 
 ## Component Composition Patterns
@@ -472,7 +483,7 @@ class ChatContainer extends Component {
   render() {
     return (
       <>
-        <AiSdkModel model={openai('gpt-4o')} />
+        <AiSdkModel model={openai('gpt-5.2')} />
         <MessageList messages={this.messages()} />
       </>
     );

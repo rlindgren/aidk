@@ -1,8 +1,19 @@
 # Creating Tools
 
-**Tools are components.**
+## The Two-Way Relationship
 
-This is the key insight. In AIDK, tools aren't just functions that execute when called—they're **full components** with lifecycle hooks, state management, and the ability to render context for the model.
+In AIDK, tools and components are deeply intertwined:
+
+| Direction              | What It Means                                             | Learn More                                             |
+| ---------------------- | --------------------------------------------------------- | ------------------------------------------------------ |
+| **Tools → Components** | Tools ARE components with lifecycle, state, and rendering | This page                                              |
+| **Components → Tools** | Components CAN BE tools via `createComponentTool`         | [Components as Tools](/docs/learn/components-as-tools) |
+
+This bidirectional relationship is central to AIDK's design. This page covers the first direction—tools as full components.
+
+## Tools are Components
+
+This is the first key insight. In AIDK, tools aren't just functions that execute when called—they're **full components** with lifecycle hooks, state management, and the ability to render context for the model.
 
 A tool can:
 
@@ -95,7 +106,7 @@ class MyAgent extends Component {
   render() {
     return (
       <>
-        <AiSdkModel model={openai('gpt-4o')} />
+        <AiSdkModel model={openai('gpt-5.2')} />
         <Tool definition={CalculatorTool} />
       </>
     );
@@ -228,7 +239,7 @@ class MathAgent extends Component {
   render(com: COM, state: TickState) {
     return (
       <>
-        <AiSdkModel model={openai('gpt-4o')} />
+        <AiSdkModel model={openai('gpt-5.2')} />
         <Timeline>{/* ... */}</Timeline>
 
         {/* Tool is automatically available - no need to declare it */}
@@ -465,7 +476,7 @@ class TaskAssistant extends Component {
   render() {
     return (
       <>
-        <AiSdkModel model={openai('gpt-4o')} />
+        <AiSdkModel model={openai('gpt-5.2')} />
         <Timeline>{/* ... */}</Timeline>
 
         {/* Use tools as JSX components */}
@@ -496,7 +507,7 @@ class MyAgent extends Component {
   render() {
     return (
       <>
-        <AiSdkModel model={openai('gpt-4o')} />
+        <AiSdkModel model={openai('gpt-5.2')} />
         {/* Tool automatically registered */}
       </>
     );
@@ -529,7 +540,7 @@ class MyAgent extends Component {
   render() {
     return (
       <>
-        <AiSdkModel model={openai('gpt-4o')} />
+        <AiSdkModel model={openai('gpt-5.2')} />
         <Tool definition={CalculatorTool} />
       </>
     );
@@ -546,7 +557,7 @@ class MyAgent extends Component {
 
     return (
       <>
-        <AiSdkModel model={openai('gpt-4o')} />
+        <AiSdkModel model={openai('gpt-5.2')} />
 
         {/* Always available */}
         <CalculatorTool />
@@ -776,11 +787,13 @@ render(com) {
 
 ## Related
 
+- [Components as Tools](/docs/learn/components-as-tools) - The other direction: wrap components as tools
 - [Semantic Primitives](/docs/semantic-primitives) - Components for context
 - [State Management](/docs/state-management) - Managing tool state
 - [Channels](/docs/guides/channels) - Real-time tool updates
-- [Context](/docs/concepts#context) - Accessing execution context
+- [Fork & Spawn](/docs/guides/fork-spawn) - Code-controlled parallelism
+- [Multi-Agent Example](/examples/multi-agent) - Complete orchestration patterns
 
 ---
 
-**Next:** [Real-time Channels](/docs/guides/channels)
+**Next:** [Components as Tools](/docs/learn/components-as-tools)

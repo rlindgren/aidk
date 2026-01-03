@@ -47,7 +47,7 @@ const { messages, tools, system, model } = await compile(<MyAgent />);
 
 // YOU control the execution - use your existing code
 const result = await generateText({
-  model: model ?? openai('gpt-4o'),
+  model: model ?? openai('gpt-5.2'),
   messages,
   tools,
   system,
@@ -91,7 +91,7 @@ const result = await compiler.run(<MyAgent />, async (input) => {
   // input = { messages, tools, system, tick }
   // You control the model call
   return await generateText({
-    model: openai('gpt-4o'),
+    model: openai('gpt-5.2'),
     messages: input.messages,
     tools: input.tools,
     system: input.system,
@@ -107,7 +107,7 @@ for await (const event of compiler.stream(
   <MyAgent />,
   async (input) => {
     return aiSdkStreamText({
-      model: openai('gpt-4o'),
+      model: openai('gpt-5.2'),
       ...input,
     });
   }
@@ -161,7 +161,7 @@ class SearchAgent extends Component {
 // Use with your executor
 const result = await compiler.run(<SearchAgent />, async (input) => {
   return await generateText({
-    model: openai('gpt-4o'),
+    model: openai('gpt-5.2'),
     ...input,
   });
 });
@@ -196,7 +196,7 @@ import { openai } from '@ai-sdk/openai';
 
 // Configure default model
 const compiler = createCompiler({
-  model: openai('gpt-4o'),
+  model: openai('gpt-5.2'),
   temperature: 0.7,
   maxTokens: 4096,
 });
@@ -231,9 +231,9 @@ class AdaptiveAgent extends Component {
     return (
       <>
         {needsPower ? (
-          <Model model={openai('gpt-4o')} />
+          <Model model={openai('gpt-5.2')} />
         ) : (
-          <Model model={openai('gpt-4o-mini')} />
+          <Model model={openai('gpt-5.2-mini')} />
         )}
 
         <Timeline>{/* ... */}</Timeline>
@@ -271,7 +271,7 @@ import { openai } from '@ai-sdk/openai';
 
 // Drop-in replacement for ai.generateText()
 const result = await generateText(<MyAgent />, {
-  model: openai('gpt-4o'),
+  model: openai('gpt-5.2'),
   temperature: 0.8,
 });
 
@@ -279,7 +279,7 @@ console.log(result.text);
 
 // Drop-in replacement for ai.streamText()
 const { fullStream, text } = streamText(<MyAgent />, {
-  model: openai('gpt-4o'),
+  model: openai('gpt-5.2'),
 });
 
 for await (const chunk of fullStream) {
@@ -357,7 +357,7 @@ class CoordinatorAgent extends Component {
   render(com, state) {
     return (
       <>
-        <Model model={openai('gpt-4o')} />
+        <Model model={openai('gpt-5.2')} />
 
         {/* Parallel execution */}
         <Fork
@@ -414,13 +414,13 @@ You can migrate one agent at a time:
 ```tsx
 // Old code - keep running
 const legacyResult = await generateText({
-  model: openai('gpt-4o'),
+  model: openai('gpt-5.2'),
   messages: buildMessages(),
 });
 
 // New code - side by side
 const newResult = await generateText(<NewAgent />, {
-  model: openai('gpt-4o'),
+  model: openai('gpt-5.2'),
 });
 ```
 

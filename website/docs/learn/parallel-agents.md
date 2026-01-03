@@ -26,7 +26,7 @@ class ResearchAgent extends Component {
   render() {
     return (
       <>
-        <Model model={openai("gpt-4o")} />
+        <Model model={openai("gpt-5.2")} />
         <System>You are a research coordinator.</System>
 
         {/* Fork researchers in parallel */}
@@ -66,7 +66,7 @@ Instead of the `root` prop, you can use children:
 
 ```tsx
 <Fork waitUntilComplete={true} onComplete={handleResult}>
-  <Model model={openai("gpt-4o")} />
+  <Model model={openai("gpt-5.2")} />
   <System>Analyze this document for key themes.</System>
   <Grounding title="Document">{document}</Grounding>
   <AnalysisTool />
@@ -119,7 +119,7 @@ class ChatAgent extends Component {
   render(com, state) {
     return (
       <>
-        <Model model={openai("gpt-4o")} />
+        <Model model={openai("gpt-5.2")} />
         <System>You are a helpful assistant.</System>
 
         {/* Log every interaction in background */}
@@ -145,7 +145,7 @@ class ChatAgent extends Component {
 
 ```tsx
 <Spawn>
-  <Model model={openai("gpt-4o-mini")} />
+  <Model model={openai("gpt-5.2-mini")} />
   <System>Summarize this conversation and store it.</System>
   <Grounding title="Conversation">{conversationText}</Grounding>
   <StorageTool />
@@ -196,7 +196,7 @@ class ResearchCoordinator extends Component {
       // Research phase: fork researchers for each source
       return (
         <>
-          <Model model={openai("gpt-4o")} />
+          <Model model={openai("gpt-5.2")} />
           <System>Coordinating research across {sources.length} sources.</System>
 
           {sources.map(source => (
@@ -213,7 +213,7 @@ class ResearchCoordinator extends Component {
                 }
               }}
             >
-              <Model model={openai("gpt-4o-mini")} />
+              <Model model={openai("gpt-5.2-mini")} />
               <System>Search {source} for relevant papers.</System>
               <SearchTool source={source} />
             </Fork>
@@ -255,7 +255,7 @@ class VerifiedGenerator extends Component {
       // Generation phase
       return (
         <>
-          <Model model={openai("gpt-4o")} />
+          <Model model={openai("gpt-5.2")} />
           <System>Generate a detailed response.</System>
           <GenerateTool onGenerate={(d) => this.draft.set(d)} />
         </>
@@ -282,7 +282,7 @@ class VerifiedGenerator extends Component {
             waitUntilComplete={true}
             onComplete={(v) => this.verifications.set([...this.verifications(), v])}
           >
-            <Model model={openai("gpt-4o")} />
+            <Model model={openai("gpt-5.2")} />
             <System>Check for logical consistency.</System>
             <Grounding title="Content">{draft}</Grounding>
             <VerifyTool aspect="logic" />
@@ -292,7 +292,7 @@ class VerifiedGenerator extends Component {
             waitUntilComplete={true}
             onComplete={(v) => this.verifications.set([...this.verifications(), v])}
           >
-            <Model model={openai("gpt-4o-mini")} />
+            <Model model={openai("gpt-5.2-mini")} />
             <System>Check for clarity and readability.</System>
             <Grounding title="Content">{draft}</Grounding>
             <VerifyTool aspect="clarity" />
@@ -338,7 +338,7 @@ class DocumentProcessor extends Component {
 
     return (
       <>
-        <Model model={openai("gpt-4o")} />
+        <Model model={openai("gpt-5.2")} />
         <System>
           You are a document processor.
           {pendingJobs.length > 0 && ` ${pendingJobs.length} jobs processing in background.`}
@@ -414,7 +414,7 @@ class ProjectManager extends Component {
 
     return (
       <>
-        <Model model={openai("gpt-4o")} />
+        <Model model={openai("gpt-5.2")} />
         <System>You manage a software project with specialized teams.</System>
 
         <DelegateTool

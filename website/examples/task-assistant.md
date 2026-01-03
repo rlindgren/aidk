@@ -68,7 +68,7 @@ export class TaskAssistant extends Component {
 
     return (
       <>
-        <Model model={aisdk({ model: openai("gpt-4o") })} />
+        <Model model={aisdk({ model: openai("gpt-5.2") })} />
 
         <System>
           You are a task assistant for {ctx.user.name}. Help them manage their
@@ -170,11 +170,9 @@ export const TodoTool = createTool({
 
     return (
       <Grounding title="Current Tasks">
-        <List>
-          {tasks.map((task) => (
-            <ListItem key={task.id}>
-              [{task.done ? "x" : " "}] {task.text} (id: {task.id})
-            </ListItem>
+        <List task>
+          {tasks.map((t) => (
+            <ListItem key={t.id} checked={t.done}>{t.text}</ListItem>
           ))}
         </List>
       </Grounding>

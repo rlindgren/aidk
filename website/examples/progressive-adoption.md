@@ -38,7 +38,7 @@ async function main() {
 
   // Use your existing generateText code
   const result = await generateText({
-    model: compiled.model ?? openai('gpt-4o'),
+    model: compiled.model ?? openai('gpt-5.2'),
     messages: compiled.messages,
     tools: compiled.tools,
     system: compiled.system,
@@ -84,7 +84,7 @@ export class MathAgent extends Component {
   render() {
     return (
       <>
-        <Model model={openai('gpt-4o-mini')} />
+        <Model model={openai('gpt-5.2-mini')} />
 
         <Timeline>
           {this.timeline().map((entry, i) => (
@@ -101,21 +101,21 @@ export class MathAgent extends Component {
 
 ```tsx [main.ts]
 import { createCompiler } from 'aidk-ai-sdk';
-import { generateText } from 'ai';
+import { streamText } from 'ai';
 import { MathAgent } from './agent';
 
 async function main() {
   const compiler = createCompiler();
 
   // You provide the executor
-  const result = await compiler.run(
+  const result = await compiler.stream(
     <MathAgent />,
     [{ role: 'user', content: 'What is 15 * 23?' }],
     async (input) => {
       console.log(`Tick ${input.tick}: Calling model...`);
 
-      return await generateText({
-        model: input.model ?? openai('gpt-4o'),
+      return await streamText({
+        model: input.model ?? openai('gpt-5.2'),
         messages: input.messages,
         tools: input.tools,
         system: input.system,
@@ -123,7 +123,9 @@ async function main() {
     }
   );
 
-  console.log(result.text);
+  for await (const chunk of result.fullStream) {
+    process.stdout.write(chunk.textDelta ?? '');
+  }
 }
 
 main();
@@ -139,7 +141,7 @@ export const calculatorTool = createTool({
   input: z.object({
     expression: z.string(),
   }),
-  execute: async ({ expression }) => {
+  handler: async ({ expression }) => {
     const result = Function(`"use strict"; return (${expression})`)();
     return { result };
   },
@@ -182,7 +184,7 @@ export class TaskAgent extends Component {
     return (
       <>
         <Model
-          model={openai('gpt-4o-mini')}
+          model={openai('gpt-5.2-mini')}
           temperature={0.7}
         />
 
@@ -209,7 +211,7 @@ import { TaskAgent } from './agent';
 
 async function main() {
   const compiler = createCompiler({
-    model: openai('gpt-4o-mini'),
+    model: openai('gpt-5.2-mini'),
     temperature: 0.7,
   });
 
@@ -249,7 +251,7 @@ const result = await generateText(
   <>
     <System>You are helpful.</System>
     <User>Hello!</User>
-    <Model model={openai('gpt-4o')} temperature={0.8} />
+    <Model model={openai('gpt-5.2')} temperature={0.8} />
   </>
 );
 
@@ -262,7 +264,7 @@ const { fullStream } = streamText(
     <User>Tell me a story.</User>
   </>,
   {
-    model: openai('gpt-4o'), // override or explicit options
+    model: openai('gpt-5.2'), // override or explicit options
   }
 );
 
@@ -313,7 +315,7 @@ export class CustomerAgent extends Component {
 
     return (
       <>
-        <Model model={openai('gpt-4o')} />
+        <Model model={openai('gpt-5.2')} />
 
         <Section audience="model">
           <H2>Customer Context</H2>

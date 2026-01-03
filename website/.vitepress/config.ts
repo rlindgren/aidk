@@ -3,11 +3,21 @@ import { withMermaid } from "vitepress-plugin-mermaid";
 import fs from "fs";
 
 // Load typedoc sidebar if it exists (API docs may not be generated yet)
-let typedocSidebar: Array<{ text: string; link: string }> = [];
+// Strip .md extensions from links for VitePress clean URLs
+function stripMdExtensions(items: any[]): any[] {
+  return items.map((item) => ({
+    ...item,
+    link: item.link?.replace(/\.md$/, ""),
+    items: item.items ? stripMdExtensions(item.items) : undefined,
+  }));
+}
+
+let typedocSidebar: Array<{ text: string; link?: string; items?: any[] }> = [];
 try {
   const sidebarPath = new URL("../api/typedoc-sidebar.json", import.meta.url);
   if (fs.existsSync(sidebarPath)) {
-    typedocSidebar = JSON.parse(fs.readFileSync(sidebarPath, "utf-8"));
+    const rawSidebar = JSON.parse(fs.readFileSync(sidebarPath, "utf-8"));
+    typedocSidebar = stripMdExtensions(rawSidebar);
   }
 } catch {
   // API docs not generated yet, use empty sidebar
@@ -99,6 +109,7 @@ export default withMermaid(
               { text: "Overview", link: "/docs/learn/" },
               { text: "Understanding Ticks", link: "/docs/learn/understanding-ticks" },
               { text: "Tools as Components", link: "/docs/learn/tools-as-components" },
+              { text: "Components as Tools", link: "/docs/learn/components-as-tools" },
               { text: "Reactive State", link: "/docs/learn/reactive-state" },
               { text: "Dynamic Models", link: "/docs/learn/dynamic-models" },
               { text: "Parallel Agents", link: "/docs/learn/parallel-agents" },
@@ -161,19 +172,16 @@ export default withMermaid(
               { text: "Task Assistant", link: "/examples/task-assistant" },
               { text: "Multi-Agent", link: "/examples/multi-agent" },
               { text: "Dynamic Router", link: "/examples/dynamic-router" },
+              { text: "User Memory", link: "/examples/user-memory" },
+              { text: "Voting Consensus", link: "/examples/voting-consensus" },
+              { text: "Progressive Adoption", link: "/examples/progressive-adoption" },
             ],
           },
         ],
         "/api/": [
           {
             text: "API Reference",
-            items: [
-              { text: "Overview", link: "/api/" },
-              { text: "Engine", link: "/api/engine" },
-              { text: "ExecutionHandle", link: "/api/execution-handle" },
-              { text: "COM", link: "/api/com" },
-              ...typedocSidebar,
-            ],
+            items: [{ text: "Overview", link: "/api/" }, ...typedocSidebar],
           },
         ],
       },

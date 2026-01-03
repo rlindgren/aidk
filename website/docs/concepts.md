@@ -247,17 +247,17 @@ Adapters connect AIDK to AI providers:
 import { AiSdkModel } from 'aidk-ai-sdk';
 import { openai } from '@ai-sdk/openai';
 
-<AiSdkModel model={openai('gpt-4o')} />
+<AiSdkModel model={openai('gpt-5.2')} />
 
 // Direct OpenAI
 import { OpenAIModel } from 'aidk-openai';
 
-<OpenAIModel apiKey="..." model="gpt-4o" />
+<OpenAIModel apiKey="..." model="gpt-5.2" />
 
 // Google AI
 import { GoogleModel } from 'aidk-google';
 
-<GoogleModel model="gemini-2.0-flash" />
+<GoogleModel model="gemini-3-flash" />
 ```
 
 ### Automatic Renderer Selection
@@ -270,7 +270,7 @@ Each model adapter can broadcast its preferred renderer format. AIDK automatical
 // Your JSX → XML automatically
 
 // GPT prefers Markdown
-<AiSdkModel model={openai('gpt-4o')} />
+<AiSdkModel model={openai('gpt-5.2')} />
 // Your JSX → Markdown automatically
 ```
 

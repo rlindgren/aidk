@@ -393,7 +393,7 @@ function MyAgent(props, com: COM, state: TickState) {
   // render is the return value
   return (
     <>
-      <AiSdkModel model={openai('gpt-4o')} />
+      <AiSdkModel model={openai('gpt-5.2')} />
       <Timeline>{timeline()}</Timeline>
     </>
   );

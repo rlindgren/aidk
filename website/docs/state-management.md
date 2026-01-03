@@ -298,7 +298,7 @@ class ConfigurableAgent extends Component<AgentProps> {
 }
 
 // Usage
-<ConfigurableAgent model="gpt-4o" title="My Agent" />
+<ConfigurableAgent model="gpt-5.2" title="My Agent" />
 ```
 
 ## State in Function Components

@@ -100,7 +100,7 @@ export class AssistantAgent extends Component {
       <>
         {/* Configure the AI model */}
         <AiSdkModel
-          model={openai('gpt-4o-mini')}
+          model={openai('gpt-5.2-mini')}
           providerOptions={{
             apiKey: process.env.OPENAI_API_KEY,
           }}
@@ -218,7 +218,7 @@ import { calculatorTool } from '../tools/calculator';
 
 // In your render method:
 <>
-  <AiSdkModel model={openai('gpt-4o-mini')} />
+  <AiSdkModel model={openai('gpt-5.2-mini')} />
   <Timeline>{/* ... */}</Timeline>
   <Section id="instructions" audience="model">
     You are a helpful assistant with access to a calculator.

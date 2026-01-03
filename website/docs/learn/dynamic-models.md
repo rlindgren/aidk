@@ -20,8 +20,8 @@ class AdaptiveAgent extends Component {
   render(com, state) {
     // Different model based on tick count
     const model = state.tick > 5
-      ? openai("gpt-4o")      // Switch to powerful model
-      : openai("gpt-4o-mini"); // Start with fast model
+      ? openai("gpt-5.2")      // Switch to powerful model
+      : openai("gpt-5.2-mini"); // Start with fast model
 
     return (
       <>
@@ -67,8 +67,8 @@ class SmartRouterAgent extends Component {
     const complexity = this.complexity();
 
     const model = {
-      low: openai("gpt-4o-mini"),
-      medium: openai("gpt-4o"),
+      low: openai("gpt-5.2-mini"),
+      medium: openai("gpt-5.2"),
       high: anthropic("claude-3-5-sonnet"),
     }[complexity];
 
@@ -108,9 +108,9 @@ class TaskRouterAgent extends Component {
 
     // Best model for each task
     const model = {
-      chat: openai("gpt-4o-mini"),       // Fast for simple chat
+      chat: openai("gpt-5.2-mini"),       // Fast for simple chat
       code: anthropic("claude-3-5-sonnet"), // Great for code
-      analysis: openai("gpt-4o"),         // Good for analysis
+      analysis: openai("gpt-5.2"),         // Good for analysis
     }[task];
 
     return (
@@ -152,11 +152,11 @@ class BudgetAgent extends Component {
     // Downgrade as budget depletes
     let model;
     if (percentUsed < 50) {
-      model = openai("gpt-4o");
+      model = openai("gpt-5.2");
     } else if (percentUsed < 80) {
-      model = openai("gpt-4o-mini");
+      model = openai("gpt-5.2-mini");
     } else {
-      model = openai("gpt-3.5-turbo");
+      model = openai("gpt-5.2-mini");
     }
 
     return (
@@ -203,7 +203,7 @@ class ResilientAgent extends Component {
 
     const model = useFallback
       ? anthropic("claude-3-haiku")  // Fallback
-      : openai("gpt-4o");             // Primary
+      : openai("gpt-5.2");             // Primary
 
     return (
       <>
@@ -230,9 +230,9 @@ class TieredAgent extends Component {
     const tier = ctx.user?.tier || "free";
 
     const model = {
-      free: openai("gpt-3.5-turbo"),
-      pro: openai("gpt-4o-mini"),
-      enterprise: openai("gpt-4o"),
+      free: openai("gpt-5.2-mini"),
+      pro: openai("gpt-5.2-mini"),
+      enterprise: openai("gpt-5.2"),
     }[tier];
 
     const maxTokens = {
@@ -261,7 +261,7 @@ The `<Model>` component accepts various configuration options:
 
 ```tsx
 <Model
-  model={openai("gpt-4o")}
+  model={openai("gpt-5.2")}
   temperature={0.7}
   maxTokens={4096}
   topP={0.9}
@@ -280,7 +280,7 @@ render(com, state) {
 
   return (
     <>
-      <Model model={openai("gpt-4o")} temperature={temperature} />
+      <Model model={openai("gpt-5.2")} temperature={temperature} />
       {/* ... */}
     </>
   );
@@ -306,7 +306,7 @@ class OrchestratorAgent extends Component {
       // Planning phase: use a reasoning model
       return (
         <>
-          <Model model={openai("o1-preview")} />
+          <Model model={openai("o3")} />
           <System>
             Create a step-by-step plan for the user's request.
             Output as JSON: ["step1", "step2", ...]
@@ -320,7 +320,7 @@ class OrchestratorAgent extends Component {
     // Execution phase: use a fast model
     return (
       <>
-        <Model model={openai("gpt-4o-mini")} />
+        <Model model={openai("gpt-5.2-mini")} />
         <System>
           Execute step {step + 1}: {plan[step]}
         </System>
@@ -349,7 +349,7 @@ class VerifiedAgent extends Component {
       // Generation phase
       return (
         <>
-          <Model model={openai("gpt-4o")} />
+          <Model model={openai("gpt-5.2")} />
           <System>Generate a response to the user's question.</System>
           <DraftTool onDraft={(d) => this.draft.set(d)} />
           {/* ... */}

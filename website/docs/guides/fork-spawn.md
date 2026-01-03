@@ -28,7 +28,7 @@ class ResearchAgent extends Component {
   render(com, state) {
     return (
       <>
-        <Model model={openai("gpt-4o")} />
+        <Model model={openai("gpt-5.2")} />
 
         {/*
          * Fork components are class-based and track their own started state.
@@ -101,7 +101,43 @@ interface ForkInheritanceOptions {
 
   // Hooks inheritance (default: true)
   hooks?: boolean;       // Inherit component, model, tool, engine hooks
+
+  // Model inheritance (default: true)
+  model?: boolean;       // Inherit model from parent execution
 }
+```
+
+**Model Inheritance (default: true)**
+
+By default, forked executions inherit the model from their parent. This means you don't need to specify `<Model>` in every forked component:
+
+```tsx
+// Parent agent sets model once
+<>
+  <Model model={openai("gpt-5.2")} />
+
+  {/* These forks inherit the model automatically */}
+  <Fork root={<ResearchAgent />} waitUntilComplete={true} />
+  <Fork root={<AnalysisAgent />} waitUntilComplete={true} />
+
+  {/* Override for specific fork */}
+  <Fork
+    root={<CostSensitiveAgent />}
+    inherit={{ model: false }}  // Don't inherit - use own model
+    waitUntilComplete={true}
+  >
+    <Model model={openai("gpt-5.2-mini")} />
+  </Fork>
+</>
+```
+
+To disable model inheritance:
+
+```tsx
+<Fork
+  root={<SubAgent />}
+  inherit={{ model: false }}  // SubAgent must define its own <Model>
+/>
 ```
 
 **Copy vs Reference:**
@@ -130,7 +166,7 @@ You can also use children instead of the `root` prop:
 
 ```tsx
 <Fork waitUntilComplete={true} onComplete={(result) => {}}>
-  <Model model={openai("gpt-4o")} />
+  <Model model={openai("gpt-5.2")} />
   <System>You are a research assistant.</System>
   <Timeline>{/* ... */}</Timeline>
 </Fork>
@@ -181,7 +217,7 @@ class MainAgent extends Component {
   render(com, state) {
     return (
       <>
-        <Model model={openai("gpt-4o")} />
+        <Model model={openai("gpt-5.2")} />
 
         {/* Log this interaction in the background */}
         <Spawn root={<AuditLogger interaction={state.timeline} />} />
@@ -254,7 +290,7 @@ class ParallelWorkflow extends Component {
 
     return (
       <>
-        <Model model={openai("gpt-4o")} />
+        <Model model={openai("gpt-5.2")} />
 
         {/* Launch pending tasks */}
         {pending.map((task) => (
@@ -427,7 +463,7 @@ class ResearchCoordinator extends Component {
 
     return (
       <>
-        <Model model={openai("gpt-4o")} />
+        <Model model={openai("gpt-5.2")} />
 
         <System>
           You coordinate research across multiple sources. Synthesize findings

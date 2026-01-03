@@ -1,6 +1,188 @@
 # Multi-Agent Example
 
-A research coordinator that uses Fork and Spawn to orchestrate multiple specialized agents working in parallel.
+Two approaches to multi-agent orchestration:
+
+1. **Component Tools (Model-Driven)** - The model decides when to delegate
+2. **Fork/Spawn (Compiler-Driven)** - Your code controls parallel execution
+
+Both are valid patterns. Choose based on your use case.
+
+## Approach 1: Component Tools (Recommended for Dynamic Delegation)
+
+When the **model** should decide what work to delegate and when.
+
+### Architecture
+
+```mermaid
+flowchart TB
+    User[User Query] --> Orchestrator
+    Orchestrator --> |"Model decides"| ResearchTool[research tool]
+    Orchestrator --> |"Model decides"| CodeTool[code_review tool]
+    Orchestrator --> |"Model decides"| AnalysisTool[analysis tool]
+
+    subgraph ResearchTool [Research Tool]
+        RA[Research Agent] --> WebSearch[Web Search]
+        RA --> ArxivSearch[ArXiv Search]
+    end
+
+    subgraph CodeTool [Code Review Tool]
+        CA[Code Agent] --> Linter[Linter]
+        CA --> SecurityScan[Security Scan]
+    end
+
+    ResearchTool --> Orchestrator
+    CodeTool --> Orchestrator
+    AnalysisTool --> Orchestrator
+    Orchestrator --> Response[Final Response]
+```
+
+### Specialist Agents
+
+```tsx
+// agents/research-agent.tsx
+import { Model, System } from 'aidk';
+import { aisdk } from 'aidk-ai-sdk';
+import { openai } from '@ai-sdk/openai';
+
+export const ResearchAgent = () => (
+  <>
+    <Model model={aisdk({ model: openai('gpt-5.2-mini') })} />
+    <System>
+      You are a research specialist. Given a topic, search for relevant
+      information and provide comprehensive findings with:
+      - Key facts and data
+      - Source quality assessment
+      - Confidence level (0-1)
+
+      Be thorough but concise.
+    </System>
+    <WebSearchTool />
+    <ArxivSearchTool />
+  </>
+);
+
+// agents/code-review-agent.tsx
+export const CodeReviewAgent = () => (
+  <>
+    <Model model={aisdk({ model: openai('gpt-5.2') })} />
+    <System>
+      You are a code review specialist. Analyze the provided code for:
+      - Security vulnerabilities
+      - Performance issues
+      - Style and best practices
+
+      Provide actionable feedback.
+    </System>
+    <LinterTool />
+    <SecurityScanTool />
+  </>
+);
+
+// agents/analysis-agent.tsx
+export const AnalysisAgent = () => (
+  <>
+    <Model model={aisdk({ model: openai('gpt-5.2') })} />
+    <System>
+      You are a data analysis specialist. Given data or findings,
+      synthesize insights, identify patterns, and draw conclusions.
+    </System>
+  </>
+);
+```
+
+### Component Tools
+
+```tsx
+// tools/component-tools.tsx
+import { createComponentTool } from 'aidk';
+import { z } from 'zod';
+
+export const ResearchTool = createComponentTool({
+  name: 'research',
+  description: 'Delegate research tasks to a specialist. Use for topics requiring web or academic search.',
+  component: ResearchAgent,
+});
+
+export const CodeReviewTool = createComponentTool({
+  name: 'code_review',
+  description: 'Delegate code review to a specialist. Analyzes security, performance, and style.',
+  input: z.object({
+    code: z.string().describe('The code to review'),
+    language: z.string().describe('Programming language'),
+    focus: z.enum(['security', 'performance', 'style', 'all']).default('all'),
+  }),
+  component: CodeReviewAgent,
+});
+
+export const AnalysisTool = createComponentTool({
+  name: 'analyze',
+  description: 'Delegate analysis to a specialist. Synthesizes data and draws conclusions.',
+  component: AnalysisAgent,
+});
+```
+
+### Orchestrator Agent
+
+```tsx
+// agents/orchestrator.tsx
+import { Component, Model, System, Tool, Timeline, User, Assistant } from 'aidk';
+import { aisdk } from 'aidk-ai-sdk';
+import { openai } from '@ai-sdk/openai';
+import { ResearchTool, CodeReviewTool, AnalysisTool } from '../tools/component-tools';
+
+export class OrchestratorAgent extends Component {
+  render(com, state) {
+    return (
+      <>
+        <Model model={aisdk({ model: openai('gpt-5.2') })} />
+
+        <System>
+          You are an intelligent assistant with access to specialist agents.
+
+          **Available specialists:**
+          - `research`: For topics requiring web or academic search
+          - `code_review`: For analyzing code quality and security
+          - `analyze`: For synthesizing data and drawing conclusions
+
+          **Guidelines:**
+          - Delegate to specialists when their expertise is needed
+          - You can call multiple specialists for complex queries
+          - Synthesize their findings into a coherent response
+          - If a task is simple, handle it yourself
+
+          Always explain your reasoning when delegating.
+        </System>
+
+        <Timeline>
+          {state.timeline.messages.map((msg, i) => (
+            msg.role === 'user' ? <User key={i}>{msg.content}</User>
+                                : <Assistant key={i}>{msg.content}</Assistant>
+          ))}
+        </Timeline>
+
+        {/* Specialist tools - model decides when to use them */}
+        <ResearchTool />
+        <CodeReviewTool />
+        <AnalysisTool />
+      </>
+    );
+  }
+}
+```
+
+### Benefits of Component Tools
+
+1. **Dynamic delegation** - Model decides based on the query
+2. **Clean isolation** - Each specialist has its own engine instance
+3. **Independent tools** - Specialists can have their own tool sets
+4. **Simple composition** - Easy to add new specialists
+5. **Nestable** - Specialists can delegate to other specialists
+
+---
+
+## Approach 2: Fork/Spawn (For Known Parallel Workflows)
+
+When **your code** controls the parallel structure upfront.
 
 ## What You'll Build
 
@@ -78,7 +260,7 @@ export class ResearchCoordinator extends Component {
     if (phase === "research" && query) {
       return (
         <>
-          <Model model={aisdk({ model: openai("gpt-4o") })} />
+          <Model model={aisdk({ model: openai("gpt-5.2") })} />
 
           <System>
             You are a research coordinator. A query has been received and
@@ -156,7 +338,7 @@ export class ResearchCoordinator extends Component {
     // Phase 3: Complete
     return (
       <>
-        <Model model={aisdk({ model: openai("gpt-4o") })} />
+        <Model model={aisdk({ model: openai("gpt-5.2") })} />
         <System>Research complete. Answer any follow-up questions.</System>
       </>
     );
@@ -198,7 +380,7 @@ export class ArxivResearcher extends Component<ArxivResearcherProps> {
 
     return (
       <>
-        <Model model={aisdk({ model: openai("gpt-4o-mini") })} />
+        <Model model={aisdk({ model: openai("gpt-5.2-mini") })} />
 
         <System>
           You are an academic research specialist. Search arXiv for papers
@@ -226,7 +408,7 @@ export class WebResearcher extends Component<{ query: string }> {
 
     return (
       <>
-        <Model model={aisdk({ model: openai("gpt-4o-mini") })} />
+        <Model model={aisdk({ model: openai("gpt-5.2-mini") })} />
 
         <System>
           You are a web research specialist. Search the web for authoritative
@@ -254,7 +436,7 @@ export class CodeResearcher extends Component<{ query: string }> {
 
     return (
       <>
-        <Model model={aisdk({ model: openai("gpt-4o-mini") })} />
+        <Model model={aisdk({ model: openai("gpt-5.2-mini") })} />
 
         <System>
           You are a code research specialist. Search GitHub for implementations
@@ -321,7 +503,7 @@ export class ProgressLogger extends Component<ProgressLoggerProps> {
     // Minimal render - this agent just logs
     return (
       <>
-        <Model model={aisdk({ model: openai("gpt-4o-mini") })} maxTokens={10} />
+        <Model model={aisdk({ model: openai("gpt-5.2-mini") })} maxTokens={10} />
         <System>Acknowledge and complete.</System>
       </>
     );
@@ -524,8 +706,8 @@ Results accumulate as forks complete. When all sources report in, move to synthe
 
 ### Model Selection by Task
 
-- **Researchers**: Use fast, cheap models (`gpt-4o-mini`)
-- **Coordinator**: Use capable model for orchestration (`gpt-4o`)
+- **Researchers**: Use fast, cheap models (`gpt-5.2-mini`)
+- **Coordinator**: Use capable model for orchestration (`gpt-5.2`)
 - **Synthesizer**: Use best model for analysis (`claude-3-5-sonnet`)
 
 ## Patterns You Can Apply
@@ -542,5 +724,133 @@ Results accumulate as forks complete. When all sources report in, move to synthe
 - Implement retry logic for failed researchers
 - Add user feedback to improve results
 - Store research history for future reference
+
+---
+
+## Choosing Your Approach
+
+| Aspect                | Component Tools                   | Fork/Spawn                   |
+| --------------------- | --------------------------------- | ---------------------------- |
+| **Control**           | Model decides                     | Your code decides            |
+| **Execution**         | Sequential (one tool at a time)   | True parallel                |
+| **Isolation**         | Separate engine per call          | Same engine, separate fibers |
+| **State sharing**     | None (isolated)                   | Can share via signals/COM    |
+| **Progress tracking** | Via tool results                  | Via channels + state         |
+| **Best for**          | Dynamic routing, specialist teams | Known workflows, pipelines   |
+
+### When to Use Component Tools
+
+- Model should decide what expertise is needed
+- Tasks vary significantly in complexity
+- Specialists have distinct tool sets
+- Clean isolation is important
+- Building a "team of specialists"
+
+### When to Use Fork/Spawn
+
+- Workflow structure is known upfront
+- Need true concurrent execution
+- Agents must share state during execution
+- Building data pipelines
+- Need fine-grained progress tracking
+
+### Combining Both
+
+You can use both patterns together. Here's a realistic example—a research assistant that:
+
+- Uses **component tools** for model-driven delegation (general tasks)
+- Uses **Fork** for known parallel workflows (comprehensive research)
+
+```tsx
+class ResearchAssistant extends Component {
+  // Track parallel research results
+  private arxivResults = signal<string[]>([]);
+  private webResults = signal<string[]>([]);
+  private isResearching = signal(false);
+
+  // Detect when user wants comprehensive research
+  onMessage(message) {
+    if (message.role === 'user') {
+      const text = message.content.toLowerCase();
+      // Trigger parallel research for comprehensive requests
+      if (text.includes('comprehensive') || text.includes('deep dive')) {
+        this.isResearching.set(true);
+      }
+    }
+  }
+
+  render(com, state) {
+    return (
+      <>
+        <Model model={aisdk({ model: openai('gpt-5.2') })} />
+
+        <System>
+          You are a research assistant. For general questions, use your tools.
+          For comprehensive research, parallel searches are running automatically.
+        </System>
+
+        {/* Model-driven delegation - model decides when to use these */}
+        <Section title="Available Tools">
+          <QuickSearchTool />     {/* Simple searches */}
+          <SummarizeTool />       {/* Summarize content */}
+          <FactCheckTool />       {/* Verify claims */}
+        </Section>
+
+        {/* Code-driven parallel research - triggered by user intent */}
+        {this.isResearching() && (
+          <>
+            <Fork
+              waitUntilComplete={true}
+              onComplete={(r) => {
+                this.arxivResults.set(r.findings);
+                this.checkComplete();
+              }}
+            >
+              <ArxivResearcher query={state.lastUserMessage} />
+            </Fork>
+
+            <Fork
+              waitUntilComplete={true}
+              onComplete={(r) => {
+                this.webResults.set(r.findings);
+                this.checkComplete();
+              }}
+            >
+              <WebResearcher query={state.lastUserMessage} />
+            </Fork>
+          </>
+        )}
+
+        {/* Show aggregated results when parallel research completes */}
+        {this.arxivResults().length > 0 && this.webResults().length > 0 && (
+          <Grounding title="Research Findings">
+            <Section title="Academic Sources">
+              {this.arxivResults().map((f, i) => <Paragraph key={i}>{f}</Paragraph>)}
+            </Section>
+            <Section title="Web Sources">
+              {this.webResults().map((f, i) => <Paragraph key={i}>{f}</Paragraph>)}
+            </Section>
+          </Grounding>
+        )}
+
+        <Timeline>{/* ... */}</Timeline>
+      </>
+    );
+  }
+
+  private checkComplete() {
+    if (this.arxivResults().length > 0 && this.webResults().length > 0) {
+      this.isResearching.set(false);
+    }
+  }
+}
+```
+
+**What's happening:**
+
+- `QuickSearchTool`, `SummarizeTool`, `FactCheckTool` are component tools—the model decides when to use them
+- When the user asks for "comprehensive" research, `isResearching` triggers parallel Forks
+- Forks run ArxivResearcher and WebResearcher concurrently
+- Results aggregate via signals, then appear in `<Grounding>` for the model to synthesize
 
 See the full source in the [example directory](https://github.com/rlindgren/aidk/tree/master/example).

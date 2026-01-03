@@ -62,7 +62,7 @@ render(com: COM, state: TickState) {
 
   return (
     <>
-      <AiSdkModel model={openai('gpt-4o')} />
+      <AiSdkModel model={openai('gpt-5.2')} />
       <Timeline>{this.timeline()}</Timeline>
       <Section audience="model">
         You are helping {ctx.user.name}.

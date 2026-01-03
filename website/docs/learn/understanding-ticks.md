@@ -49,7 +49,7 @@ class MyAgent extends Component {
 
     return (
       <>
-        <Model model={openai("gpt-4o")} />
+        <Model model={openai("gpt-5.2")} />
         <System>You are a helpful assistant.</System>
         <Timeline>
           {this.timeline().map(entry => (
@@ -161,7 +161,7 @@ render(com, state) {
 
   return (
     <>
-      <Model model={openai("gpt-4o")} />
+      <Model model={openai("gpt-5.2")} />
       {/* ... */}
     </>
   );
@@ -203,7 +203,7 @@ class AdaptiveAgent extends Component {
     return (
       <>
         {/* Switch models based on conversation complexity */}
-        <Model model={complexity > 2 ? openai("gpt-4o") : openai("gpt-4o-mini")} />
+        <Model model={complexity > 2 ? openai("gpt-5.2") : openai("gpt-5.2-mini")} />
 
         <System>
           You are a helpful assistant.

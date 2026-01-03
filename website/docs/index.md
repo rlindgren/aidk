@@ -101,7 +101,7 @@ class AdaptiveAgent extends Component {
     if (responseQuality === "confused") {
       return (
         <>
-          <AiSdkModel model={openai("gpt-4o")} /> {/* Upgrade */}
+          <AiSdkModel model={openai("gpt-5.2")} /> {/* Upgrade */}
           <Section audience="model">
             Let's slow down. Break this into smaller steps.
           </Section>
@@ -112,7 +112,7 @@ class AdaptiveAgent extends Component {
 
     return (
       <>
-        <AiSdkModel model={openai("gpt-4o-mini")} />
+        <AiSdkModel model={openai("gpt-5.2-mini")} />
         <Timeline>{this.timeline()}</Timeline>
         <Section audience="model">Be concise.</Section>
       </>
@@ -254,7 +254,7 @@ render(com: COM, state: TickState) {
 
   return (
     <>
-      <AiSdkModel model={openai('gpt-4o')} />
+      <AiSdkModel model={openai('gpt-5.2')} />
       <Timeline>{this.timeline()}</Timeline>
 
       <Section id="instructions" audience="model">
@@ -373,7 +373,7 @@ onTickStart(com, state) {
 render(com: COM, state: TickState) {
   return (
     <>
-      <AiSdkModel model={openai('gpt-4o')} />
+      <AiSdkModel model={openai('gpt-5.2')} />
       <Timeline>{this.timeline()}</Timeline>
 
       {/* Parallel research, wait for both */}
@@ -556,7 +556,7 @@ class CustomerServiceAgent extends Component {
   render(com, state) {
     return (
       <>
-        <AiSdkModel model={openai("gpt-4o")} />
+        <AiSdkModel model={openai("gpt-5.2")} />
         <Timeline>{this.timeline()}</Timeline>
 
         {/* Tools are components */}
@@ -793,7 +793,7 @@ Models and tools are Procedures. They have the same fluent API:
 import { createAiSdkModel } from "aidk-ai-sdk";
 import { openai } from "@ai-sdk/openai";
 
-const model = createAiSdkModel({ model: openai("gpt-4o") });
+const model = createAiSdkModel({ model: openai("gpt-5.2") });
 
 // Direct model call with handle
 const { handle, result } = model.generate
@@ -830,16 +830,16 @@ import { createAiSdkModel } from 'aidk-ai-sdk';
 import { openai } from '@ai-sdk/openai';
 
 // Create a reusable model instance
-const gpt4 = createAiSdkModel({ model: openai('gpt-4o') });
+const gpt5 = createAiSdkModel({ model: openai('gpt-5.2') });
 
 // Direct call
-const response = await gpt4.generate({
+const response = await gpt5.generate({
   messages: [{ role: 'user', content: [{ type: 'text', text: 'Summarize this' }] }],
   tools: [summarizeTool],
 });
 
 // With handle (subscribe to events AND get result)
-const { handle, result } = gpt4.generate
+const { handle, result } = gpt5.generate
   .withHandle()
   .run({ messages });
 
@@ -847,18 +847,18 @@ handle.events.on('chunk', (chunk) => process.stdout.write(chunk.delta));
 const output = await result;
 
 // With context
-const response = await gpt4.generate
+const response = await gpt5.generate
   .withContext({ userId: 'user-123' })
   .run({ messages });
 
 // Stream directly
-const stream = await gpt4.stream({ messages });
+const stream = await gpt5.stream({ messages });
 for await (const chunk of stream) {
   process.stdout.write(chunk.delta);
 }
 
 // Use it in JSX
-<Model model={gpt4} />
+<Model model={gpt5} />
 ```
 
 ### Global middleware
@@ -978,7 +978,7 @@ class InteractiveAgent extends Component {
   render(com, state) {
     return (
       <>
-        <Model model={openai('gpt-4o')} />
+        <Model model={openai('gpt-5.2')} />
         <System>You are a helpful assistant.</System>
 
         {this.userFeedback() && (
@@ -1062,12 +1062,12 @@ Spans include:
 ```
 [execution:start] OrchestratorAgent
   └─[tick:1]
-      ├─[model:call] gpt-4o (tokens: 1234, latency: 850ms)
+      ├─[model:call] gpt-5.2 (tokens: 1234, latency: 850ms)
       └─[tool:call] search_orders (duration: 120ms)
   └─[tick:2]
       └─[fork:start] ResearchAgent
           └─[tick:1]
-              └─[model:call] gpt-4o-mini (tokens: 567, latency: 320ms)
+              └─[model:call] gpt-5.2-mini (tokens: 567, latency: 320ms)
 ```
 
 ### Type safety, not type hints
@@ -1108,7 +1108,7 @@ Other frameworks:
 ```yaml
 # agent_config.yaml
 name: customer_service_agent
-model: gpt-4
+model: gpt-5.2
 temperature: 0.7
 tools:
   - name: search_orders
@@ -1127,7 +1127,7 @@ class CustomerServiceAgent extends Component {
 
     return (
       <>
-        <AiSdkModel model={openai("gpt-4")} temperature={0.7} />
+        <AiSdkModel model={openai("gpt-5.2")} temperature={0.7} />
         <SearchOrdersTool />
         {ctx.user.canRefund && <RefundTool />}
         {state.tick > 10 && state.stop("Max iterations reached")}
@@ -1210,13 +1210,13 @@ The Vercel AI SDK is excellent. OpenAI's client is solid. Anthropic's too. We do
 
 ```tsx
 // Vercel AI SDK adapter — use any AI SDK provider
-<AiSdkModel model={openai('gpt-4o')} />
+<AiSdkModel model={openai('gpt-5.2')} />
 <AiSdkModel model={anthropic('claude-4-sonnet')} />
-<AiSdkModel model={google('gemini-2.0-flash')} />
+<AiSdkModel model={google('gemini-3-flash')} />
 
 // Or use provider-specific adapters when you need raw access
-<OpenAIModel client={openaiClient} model="gpt-4o" />
-<GoogleModel client={googleClient} model="gemini-2.0-flash" />
+<OpenAIModel client={openaiClient} model="gpt-5.2" />
+<GoogleModel client={googleClient} model="gemini-3-flash" />
 ```
 
 The model adapter is just a component. Swap it. Condition it. The rest of your agent doesn't care.

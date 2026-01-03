@@ -21,7 +21,7 @@ class ResilientAgent extends Component {
   render() {
     return (
       <>
-        <Model model={openai("gpt-4o")} />
+        <Model model={openai("gpt-5.2")} />
         <System>You are a helpful assistant.</System>
       </>
     );
@@ -92,7 +92,7 @@ class RetryingAgent extends Component {
 
     return (
       <>
-        <Model model={openai("gpt-4o")} />
+        <Model model={openai("gpt-5.2")} />
         {lastError && (
           <System>Note: A previous error occurred: {lastError}</System>
         )}
@@ -130,7 +130,7 @@ class FallbackAgent extends Component {
   render() {
     const model = this.useFallback()
       ? anthropic("claude-3-haiku")  // Fallback
-      : openai("gpt-4o");             // Primary
+      : openai("gpt-5.2");             // Primary
 
     return (
       <>
@@ -182,7 +182,7 @@ class DegradingAgent extends Component {
 
     return (
       <>
-        <Model model={openai("gpt-4o")} />
+        <Model model={openai("gpt-5.2")} />
 
         {degraded && (
           <System priority="high">
@@ -283,7 +283,7 @@ class UserFriendlyAgent extends Component {
 
     return (
       <>
-        <Model model={openai("gpt-4o")} />
+        <Model model={openai("gpt-5.2")} />
 
         {error && (
           <AssistantMessage>{error}</AssistantMessage>
@@ -346,7 +346,7 @@ class CircuitBreakerAgent extends Component {
 
     return (
       <>
-        <Model model={openai("gpt-4o")} />
+        <Model model={openai("gpt-5.2")} />
         <System>You are a helpful assistant.</System>
       </>
     );

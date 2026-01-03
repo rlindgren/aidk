@@ -6,8 +6,11 @@ Complete, runnable examples demonstrating AIDK features.
 
 - [Simple Chat](/examples/simple-chat) - Basic chat agent with streaming
 - [Task Assistant](/examples/task-assistant) - Full-stack app with tools and channels
-- [Multi-Agent](/examples/multi-agent) - Research coordinator with Fork/Spawn
+- [Multi-Agent](/examples/multi-agent) - Research coordinator with Component Tools and Fork/Spawn
 - [Dynamic Router](/examples/dynamic-router) - Model switching based on context
+- [User Memory](/examples/user-memory) - Tools that remember and personalize
+- [Voting Consensus](/examples/voting-consensus) - Multi-agent voting for reliable outputs
+- [Progressive Adoption](/examples/progressive-adoption) - Start simple, add features incrementally
 
 ## Running Examples
 
@@ -34,13 +37,13 @@ pnpm dev:frontend
 
 ```
 example/
-├── backend/          # Express + AIDK server
+├── backend/         # Express + AIDK server
 │   ├── agents/      # Agent definitions
 │   ├── tools/       # Tool implementations
 │   ├── channels/    # Channel definitions
 │   └── server.ts    # Express setup
 │
-├── frontend-react/   # React client
+├── frontend-react/  # React client
 │   └── src/
 │       ├── App.tsx
 │       └── components/
@@ -117,7 +120,7 @@ Full-stack app with tools, channels, and React.
 
 ### [Multi-Agent](/examples/multi-agent)
 
-Research coordinator with Fork/Spawn for parallel execution.
+Model-driven orchestration with Component Tools and Fork/Spawn.
 
 </div>
 
@@ -126,6 +129,30 @@ Research coordinator with Fork/Spawn for parallel execution.
 ### [Dynamic Router](/examples/dynamic-router)
 
 Smart model selection based on task and cost.
+
+</div>
+
+<div class="feature-card">
+
+### [User Memory](/examples/user-memory)
+
+Tools that remember user context and personalize responses.
+
+</div>
+
+<div class="feature-card">
+
+### [Voting Consensus](/examples/voting-consensus)
+
+Multi-agent voting for near-zero error rates. Inspired by MAKER.
+
+</div>
+
+<div class="feature-card">
+
+### [Progressive Adoption](/examples/progressive-adoption)
+
+Start simple, add features incrementally as needs grow.
 
 </div>
 

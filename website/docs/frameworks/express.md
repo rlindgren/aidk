@@ -22,7 +22,7 @@ app.use(express.json());
 
 // Create the engine
 const engine = createEngine({
-  model: aisdk({ model: openai("gpt-4o") }),
+  model: aisdk({ model: openai("gpt-5.2") }),
 });
 
 // Mount the middleware
@@ -363,7 +363,7 @@ class EchoAgent extends Component {
 
     return (
       <>
-        <Model model={aisdk({ model: openai('gpt-4o') })} />
+        <Model model={aisdk({ model: openai('gpt-5.2') })} />
         <System>
           You are a helpful assistant for {ctx.user?.name || 'anonymous'}.
           You can use the echo tool to repeat messages.

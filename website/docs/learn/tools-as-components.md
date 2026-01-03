@@ -94,11 +94,9 @@ render(com, state) {
 
   return (
     <Grounding title="Current Tasks">
-      <List>
-        {tasks.map(task => (
-          <ListItem key={task.id}>
-            [{task.done ? "x" : " "}] {task.text}
-          </ListItem>
+      <List task>
+        {tasks.map((t) => (
+          <ListItem key={t.id} checked={t.done}>{t.text}</ListItem>
         ))}
       </List>
     </Grounding>
@@ -354,6 +352,7 @@ const FileManagerTool = createTool({
 
 ## Next Steps
 
+- [Components as Tools](./components-as-tools) - The other direction: wrap components as callable tools
 - [Reactive State](./reactive-state) - Signals and COM state patterns
 - [Creating Tools](/docs/guides/tools) - Complete tool API reference
 - [Dynamic Models](./dynamic-models) - Model switching based on context

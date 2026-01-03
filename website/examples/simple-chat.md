@@ -33,7 +33,7 @@ export class ChatAgent extends Component {
     return (
       <>
         <AiSdkModel
-          model={openai('gpt-4o-mini')}
+          model={openai('gpt-5.2-mini')}
           temperature={0.7}
         />
 

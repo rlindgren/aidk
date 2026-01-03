@@ -65,7 +65,7 @@ import { Markdown } from 'aidk';
 
 // Used automatically for GPT models
 <AiSdkModel
-  model={openai('gpt-4o')}
+  model={openai('gpt-5.2')}
   // preferredRenderer: 'markdown' (automatic)
 />
 
@@ -135,7 +135,7 @@ class AdaptiveAgent extends Component {
           <AiSdkModel model={anthropic('claude-3-5-sonnet-20241022')} />
           // Renderer automatically switches to XML
         ) : (
-          <AiSdkModel model={openai('gpt-4o-mini')} />
+          <AiSdkModel model={openai('gpt-5.2-mini')} />
           // Renderer automatically uses Markdown
         )}
 
@@ -184,13 +184,13 @@ const modelPreferences = {
   'claude-3-sonnet-20240229': 'xml',
 
   // OpenAI models prefer Markdown
-  'gpt-4o': 'markdown',
-  'gpt-4o-mini': 'markdown',
-  'gpt-4-turbo': 'markdown',
+  'gpt-5.2': 'markdown',
+  'gpt-5.2-mini': 'markdown',
+  'gpt-5.2': 'markdown',
 
   // Google models prefer Markdown
-  'gemini-2.0-flash': 'markdown',
-  'gemini-1.5-pro': 'markdown',
+  'gemini-3-flash': 'markdown',
+  'gemini-3-pro': 'markdown',
 };
 ```
 
@@ -220,7 +220,7 @@ Set the preferred renderer for a model:
 
 ```tsx
 <AiSdkModel
-  model={openai('gpt-4o')}
+  model={openai('gpt-5.2')}
   preferredRenderer="xml"  // Override the default
 />
 ```

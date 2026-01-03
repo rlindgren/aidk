@@ -264,7 +264,7 @@ Set the model for this execution.
 ```tsx
 com.setModel(myModelInstance);
 // or by registry key
-com.setModel('gpt-4');
+com.setModel('gpt-5.2');
 ```
 
 ### getModel()
