@@ -1,6 +1,6 @@
 {
   "name": "aidk-nestjs",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "NestJS module for AIDK",
   "keywords": [
     "agent",
