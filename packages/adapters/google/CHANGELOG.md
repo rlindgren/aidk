@@ -1,5 +1,12 @@
 # aidk-google
 
+## 0.1.7
+
+### Patch Changes
+
+- Updated dependencies [e5604a0]
+  - aidk@0.1.7
+
 ## 0.1.6
 
 ### Patch Changes
