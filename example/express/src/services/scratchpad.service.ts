@@ -81,7 +81,9 @@ export class ScratchpadService {
     notes: ScratchpadNote[],
     options: { excludeSender?: boolean },
   ): void {
-    console.log(`📝 ScratchpadService.broadcast: threadId=${threadId}, notes=${notes.length}, excludeSender=${options.excludeSender}`);
+    console.log(
+      `📝 ScratchpadService.broadcast: threadId=${threadId}, notes=${notes.length}, excludeSender=${options.excludeSender}`,
+    );
     const event = { type: "state_changed", payload: { notes, threadId: threadId } };
     const target = ScratchpadService.channel?.publisher().to(threadId);
 

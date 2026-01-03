@@ -34,10 +34,14 @@ class TaskSolver extends Component<{ task: string; solverId: number; modelName?:
 
     return (
       <>
-        <Model model={aisdk({ model: openai.chat(this.modelName()) })} temperature={temperature} maxTokens={50} />
+        <Model
+          model={aisdk({ model: openai.chat(this.modelName()) })}
+          temperature={temperature}
+          maxTokens={50}
+        />
         <Section id="instructions" audience="model" title="Instructions">
-          Answer in 1-5 words ONLY. Be as succinct as possible. No explanation. Examples: "Canberra" or "206" or "Neil Armstrong"
-          or "No".
+          Answer in 1-5 words ONLY. Be as succinct as possible. No explanation. Examples: "Canberra"
+          or "206" or "Neil Armstrong" or "No".
         </Section>
         {/* or render directly as a system message */}
         {/* <System>
@@ -124,19 +128,48 @@ export class VotingAgent extends Component<VotingAgentProps> {
     if (/\b(yes|correct|true|affirmative)\b/.test(trimmed) && !/\bno\b/.test(trimmed)) {
       return "yes";
     }
-    if (/\b(no|incorrect|false|not visible|cannot|isn'?t|wasn'?t|aren'?t|weren'?t)\b/.test(trimmed)) {
+    if (
+      /\b(no|incorrect|false|not visible|cannot|isn'?t|wasn'?t|aren'?t|weren'?t)\b/.test(trimmed)
+    ) {
       return "no";
     }
 
     // 2. Extract proper nouns FIRST (prioritize names/places over numbers)
     // Pattern: Look for capitalized multi-word names (e.g., "Neil Armstrong", "Canberra")
-    const properNounMatch = originalTrimmed.match(
-      /\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\b/g,
-    );
+    const properNounMatch = originalTrimmed.match(/\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\b/g);
     if (properNounMatch) {
       // Filter out common sentence starters and pick the most likely answer
       const filtered = properNounMatch.filter(
-        (noun) => !["The", "It", "This", "That", "Yes", "No", "I", "A", "An", "He", "She", "They", "We", "As", "On", "In", "At", "By", "For", "His", "Her", "Who", "What", "When", "Where", "How", "Why"].includes(noun),
+        (noun) =>
+          ![
+            "The",
+            "It",
+            "This",
+            "That",
+            "Yes",
+            "No",
+            "I",
+            "A",
+            "An",
+            "He",
+            "She",
+            "They",
+            "We",
+            "As",
+            "On",
+            "In",
+            "At",
+            "By",
+            "For",
+            "His",
+            "Her",
+            "Who",
+            "What",
+            "When",
+            "Where",
+            "How",
+            "Why",
+          ].includes(noun),
       );
       if (filtered.length > 0) {
         // Return the first proper noun (most likely the answer)
@@ -215,9 +248,7 @@ export class VotingAgent extends Component<VotingAgentProps> {
     // If result has timeline, get last assistant message
     const timeline = result.timeline || result;
     if (Array.isArray(timeline)) {
-      const lastAssistant = timeline
-        .filter((e) => isAssistantMessage(e.message))
-        .at(-1);
+      const lastAssistant = timeline.filter((e) => isAssistantMessage(e.message)).at(-1);
 
       if (lastAssistant) {
         const content = lastAssistant.message?.content || lastAssistant.content;
@@ -256,7 +287,14 @@ export class VotingAgent extends Component<VotingAgentProps> {
         <Complete reason="Consensus reached">
           <Assistant>
             <Text>Final answer: {displayAnswer}</Text>
-            <Json data={{ answer: displayAnswer, voteCount, totalVotes, confidence: voteCount / totalVotes }} />
+            <Json
+              data={{
+                answer: displayAnswer,
+                voteCount,
+                totalVotes,
+                confidence: voteCount / totalVotes,
+              }}
+            />
           </Assistant>
         </Complete>
       );
@@ -294,9 +332,7 @@ export class VerifiedAnswerAgent {
     // Debug: Log the input structure
     console.log("[VerifiedAnswerAgent] userInput:", JSON.stringify(userInput, null, 2));
 
-    const lastUserMessage = userInput?.timeline
-      ?.filter((e) => isUserMessage(e.message))
-      .at(-1);
+    const lastUserMessage = userInput?.timeline?.filter((e) => isUserMessage(e.message)).at(-1);
 
     console.log("[VerifiedAnswerAgent] lastUserMessage:", JSON.stringify(lastUserMessage, null, 2));
 
@@ -310,9 +346,11 @@ export class VerifiedAnswerAgent {
 
     if (!question) {
       // No question yet - emit assistant message asking for question
-      return <Complete reason="No question">
-        <Assistant>Please ask a question to get a verified answer.</Assistant>
-      </Complete>;
+      return (
+        <Complete reason="No question">
+          <Assistant>Please ask a question to get a verified answer.</Assistant>
+        </Complete>
+      );
     }
 
     // Delegate to VotingAgent - NO MODEL HERE

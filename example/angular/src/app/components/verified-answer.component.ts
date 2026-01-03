@@ -278,7 +278,7 @@ export class VerifiedAnswerComponent implements OnInit {
         if (lastAssistant?.content) {
           // First, try to find JSON block with structured data
           const jsonBlock = lastAssistant.content.find(
-            (b: any) => b.type === "json" && b.data?.answer
+            (b: any) => b.type === "json" && b.data?.answer,
           );
 
           if (jsonBlock && (jsonBlock as any).data) {

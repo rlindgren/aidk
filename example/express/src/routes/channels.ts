@@ -100,7 +100,9 @@ router.post("/events", async (req: Request, res: Response) => {
     // 3. Connection metadata (SSE connection stores threadId from initial connection)
     // 4. Fall back to session ID
     let threadId = eventPayload?.threadId || req.body.threadId;
-    console.log(`📮 /events: eventPayload?.threadId=${eventPayload?.threadId}, req.body.threadId=${req.body.threadId}`);
+    console.log(
+      `📮 /events: eventPayload?.threadId=${eventPayload?.threadId}, req.body.threadId=${req.body.threadId}`,
+    );
 
     if (!threadId && sessionId) {
       // Try to get threadId from SSE connection metadata

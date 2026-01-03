@@ -31,13 +31,19 @@ export function VerifiedAnswerUI({ client }: VerifiedAnswerUIProps) {
       const lastMessage = messages[messages.length - 1];
       if (lastMessage?.role === "assistant") {
         // First, try to find JSON block with structured data
-        const jsonBlock = lastMessage.content?.find(
-          (b) => b.type === "json"
-        ) as { type: "json"; text: string; data?: { answer: string; voteCount: number; totalVotes: number; confidence: number } } | undefined;
+        const jsonBlock = lastMessage.content?.find((b) => b.type === "json") as
+          | {
+              type: "json";
+              text: string;
+              data?: { answer: string; voteCount: number; totalVotes: number; confidence: number };
+            }
+          | undefined;
 
         if (jsonBlock?.data) {
           setAnswer(jsonBlock.data.answer);
-          setConfidence(`${jsonBlock.data.voteCount}/${jsonBlock.data.totalVotes} votes (${Math.round(jsonBlock.data.confidence * 100)}%)`);
+          setConfidence(
+            `${jsonBlock.data.voteCount}/${jsonBlock.data.totalVotes} votes (${Math.round(jsonBlock.data.confidence * 100)}%)`,
+          );
         } else {
           // Fallback: parse text content (for backward compatibility)
           const text = lastMessage.content
@@ -78,7 +84,9 @@ export function VerifiedAnswerUI({ client }: VerifiedAnswerUIProps) {
     <div className="verified-answer">
       <div className="verified-answer-header">
         <h2>Verified Answer</h2>
-        <p className="verified-answer-desc">Get consensus-verified answers using multiple AI agents</p>
+        <p className="verified-answer-desc">
+          Get consensus-verified answers using multiple AI agents
+        </p>
       </div>
 
       <form onSubmit={handleSubmit} className="verified-answer-form">
@@ -98,11 +106,7 @@ export function VerifiedAnswerUI({ client }: VerifiedAnswerUIProps) {
         <div className="sample-questions">
           <span className="sample-label">Try:</span>
           {SAMPLE_QUESTIONS.map((q) => (
-            <button
-              key={q}
-              className="sample-question"
-              onClick={() => setQuestion(q)}
-            >
+            <button key={q} className="sample-question" onClick={() => setQuestion(q)}>
               {q}
             </button>
           ))}
