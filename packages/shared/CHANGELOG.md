@@ -1,5 +1,11 @@
 # aidk-shared
 
+## 0.1.5
+
+### Patch Changes
+
+- fd23113: Breaking changes: Stream events, threadId handling moved to metadata
+
 ## 0.1.4
 
 ### Patch Changes
