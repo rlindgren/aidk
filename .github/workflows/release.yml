@@ -52,6 +52,7 @@ jobs:
           publish: pnpm -r publish --access public
           title: "chore: version packages"
           commit: "chore: version packages"
+          createGithubReleases: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # No NPM_TOKEN needed - uses OIDC trusted publishing
