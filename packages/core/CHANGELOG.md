@@ -1,5 +1,11 @@
 # aidk
 
+## 0.1.7
+
+### Patch Changes
+
+- e5604a0: chore: sync core package versions
+
 ## 0.1.6
 
 ### Patch Changes

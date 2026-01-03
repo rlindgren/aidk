@@ -1,6 +1,6 @@
 {
   "name": "aidk",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "JSX framework for building AI applications",
   "keywords": [
     "agent",
