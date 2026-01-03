@@ -1,5 +1,14 @@
 # aidk-express
 
+## 0.1.6
+
+### Patch Changes
+
+- fd23113: Breaking changes: Stream events, threadId handling moved to metadata
+- Updated dependencies [fd23113]
+  - aidk-server@0.1.6
+  - aidk@0.1.6
+
 ## 0.1.5
 
 ### Patch Changes

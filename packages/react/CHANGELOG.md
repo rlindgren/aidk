@@ -1,5 +1,13 @@
 # aidk-react
 
+## 0.1.5
+
+### Patch Changes
+
+- fd23113: Breaking changes: Stream events, threadId handling moved to metadata
+- Updated dependencies [fd23113]
+  - aidk-client@0.1.5
+
 ## 0.1.4
 
 ### Patch Changes
