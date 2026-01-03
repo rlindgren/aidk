@@ -748,7 +748,7 @@ export function useMemo<T>(factory: () => T, deps: unknown[]): T {
  * const messages = recentMessages();  // or recentMessages.value
  * ```
  */
-export function useComputed<T>(computation: () => T, deps: unknown[]): ComputedSignal<T> {
+export function useComputed<T>(computation: () => T, deps: unknown[] = []): ComputedSignal<T> {
   const hook = mountOrUpdateHook(HookTag.Memo);
 
   const memoState = hook.memoizedState as [ComputedSignal<T>, unknown[]] | undefined;

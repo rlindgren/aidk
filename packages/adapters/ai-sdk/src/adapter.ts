@@ -278,8 +278,11 @@ export function createAiSdkModel(config: AiSdkAdapterConfig): AiSdkAdapter {
         {
           // Dynamic function that inspects the underlying model
           messageTransformation: (modelId: string, provider?: string) => {
-            // Determine renderer based on model ID
-            const preferredRenderer = "markdown"; // Most AI SDK models work best with markdown
+            // Determine renderer based on provider/model
+            // Anthropic/Claude models work best with XML structure
+            const isAnthropic =
+              provider === "anthropic" || modelId.toLowerCase().includes("claude");
+            const preferredRenderer = isAnthropic ? "xml" : "markdown";
 
             // Determine role mapping based on provider/model
             const supportsDeveloper =

@@ -736,10 +736,11 @@ export class CompileSession {
       });
     }
 
-    // 6. Update tickState with current and stopReason
+    // 6. Update tickState with current, stopReason, and usage
     if (this._tickState) {
       this._tickState.current = current;
       this._tickState.stopReason = response.stopReason;
+      this._tickState.usage = response.usage;
     }
 
     // 7. Call component lifecycle hooks (notifyTickEnd)
@@ -1474,6 +1475,7 @@ export class CompileJSXService {
       previous,
       current: current as COMInput,
       stopReason: undefined,
+      usage: { inputTokens: 0, outputTokens: 0, totalTokens: 0 },
       stop: (reason: string) => {
         throw new StateError("stopped", "running", `Compilation stopped: ${reason}`);
       },

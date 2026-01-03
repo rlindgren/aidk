@@ -113,6 +113,7 @@ export default withMermaid(
               { text: "Reactive State", link: "/docs/learn/reactive-state" },
               { text: "Dynamic Models", link: "/docs/learn/dynamic-models" },
               { text: "Parallel Agents", link: "/docs/learn/parallel-agents" },
+              { text: "Autonomous Loops", link: "/docs/learn/autonomous-loops" },
             ],
           },
           {

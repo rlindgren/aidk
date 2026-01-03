@@ -1,7 +1,7 @@
 import type { COMInput, COMOutput } from "../com/types";
 import { COM } from "../com/object-model";
 import type { JSX } from "../jsx/jsx-runtime";
-import type { StopReason } from "aidk-shared";
+import type { StopReason, TokenUsage } from "aidk-shared";
 import type { ExecutableTool } from "../tool/tool";
 import {
   type ComponentHookMiddleware,
@@ -115,6 +115,12 @@ export interface TickState {
    * Components can use this to handle graceful recovery, retries, etc.
    */
   stopReason?: StopReasonInfo;
+
+  /**
+   * Token usage from the last model execution.
+   * Contains inputTokens, outputTokens, totalTokens, and optional reasoning/cache tokens.
+   */
+  usage?: TokenUsage;
 
   /**
    * Error information if an error occurred during execution.

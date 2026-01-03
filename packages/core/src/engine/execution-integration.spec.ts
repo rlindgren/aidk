@@ -3,10 +3,11 @@ import type { EngineConfig } from "./engine";
 import { Component, type TickState } from "../component/component";
 import { COM } from "../com/object-model";
 import { createModel, type ModelInput, type ModelOutput } from "../model/model";
-import { StopReason, type StreamChunk } from "aidk-shared";
+import { StopReason, type StreamChunk, type TokenUsage } from "aidk-shared";
 import { fromEngineState, toEngineState } from "../model/utils/language-model";
 import { createElement, Fragment, type JSX } from "../jsx/jsx-runtime";
 import type { ExecutionState } from "./execution-types";
+import { useTickEnd } from "../state/hooks";
 
 /**
  * Comprehensive integration tests for execution graph, fork/spawn, and metrics.
@@ -551,6 +552,191 @@ describe("Execution System Integration", () => {
       const tree = engine.getExecutionTree(rootHandle.pid);
       expect(tree).toBeDefined();
       expect(tree?.children.length).toBeGreaterThanOrEqual(10);
+    });
+  });
+
+  describe("TickState.usage", () => {
+    it("should provide usage in useTickEnd callback", async () => {
+      const capturedUsage: (TokenUsage | undefined)[] = [];
+      const expectedUsage: TokenUsage = {
+        inputTokens: 100,
+        outputTokens: 50,
+        totalTokens: 150,
+      };
+
+      // Create model that returns specific usage
+      const usageModel = createModel<ModelInput, ModelOutput, ModelInput, ModelOutput, StreamChunk>(
+        {
+          metadata: {
+            id: "usage-test-model",
+            provider: "test",
+            capabilities: [],
+          },
+          executors: {
+            execute: async (_input: ModelInput): Promise<ModelOutput> => {
+              return {
+                model: "usage-test-model",
+                createdAt: new Date().toISOString(),
+                message: {
+                  role: "assistant",
+                  content: [{ type: "text", text: "Response with usage" }],
+                },
+                stopReason: StopReason.STOP_SEQUENCE,
+                usage: expectedUsage,
+                raw: {} as any,
+              };
+            },
+          },
+          fromEngineState,
+          toEngineState,
+        },
+      );
+
+      const usageEngine = createEngine({
+        model: usageModel,
+        maxTicks: 1,
+      });
+
+      // Function component that captures usage in useTickEnd
+      const UsageCapturingAgent = () => {
+        useTickEnd((_com, state) => {
+          capturedUsage.push(state.usage);
+        });
+        return createElement(Fragment, {});
+      };
+
+      const handle = usageEngine.spawn(createElement(UsageCapturingAgent, {}), { timeline: [] });
+      await handle.waitForCompletion({ timeout: 2000 });
+
+      expect(capturedUsage.length).toBe(1);
+      expect(capturedUsage[0]).toEqual(expectedUsage);
+
+      usageEngine.destroy();
+    });
+
+    it("should provide usage in class component onTickEnd", async () => {
+      let capturedUsage: TokenUsage | undefined;
+      const expectedUsage: TokenUsage = {
+        inputTokens: 200,
+        outputTokens: 100,
+        totalTokens: 300,
+        reasoningTokens: 50,
+      };
+
+      // Create model that returns usage with reasoning tokens
+      const usageModel = createModel<ModelInput, ModelOutput, ModelInput, ModelOutput, StreamChunk>(
+        {
+          metadata: {
+            id: "usage-test-model",
+            provider: "test",
+            capabilities: [],
+          },
+          executors: {
+            execute: async (_input: ModelInput): Promise<ModelOutput> => {
+              return {
+                model: "usage-test-model",
+                createdAt: new Date().toISOString(),
+                message: {
+                  role: "assistant",
+                  content: [{ type: "text", text: "Response with reasoning" }],
+                },
+                stopReason: StopReason.STOP_SEQUENCE,
+                usage: expectedUsage,
+                raw: {} as any,
+              };
+            },
+          },
+          fromEngineState,
+          toEngineState,
+        },
+      );
+
+      const usageEngine = createEngine({
+        model: usageModel,
+        maxTicks: 1,
+      });
+
+      class UsageCapturingAgent extends Component {
+        render(_com: COM, _state: TickState) {
+          return createElement(Fragment, {});
+        }
+
+        onTickEnd(_com: COM, state: TickState) {
+          capturedUsage = state.usage;
+        }
+      }
+
+      const handle = usageEngine.spawn(createElement(UsageCapturingAgent, {}), { timeline: [] });
+      await handle.waitForCompletion({ timeout: 2000 });
+
+      expect(capturedUsage).toEqual(expectedUsage);
+
+      usageEngine.destroy();
+    });
+
+    it("should accumulate usage across multiple ticks", async () => {
+      const capturedUsages: TokenUsage[] = [];
+      let tickCount = 0;
+
+      const usageModel = createModel<ModelInput, ModelOutput, ModelInput, ModelOutput, StreamChunk>(
+        {
+          metadata: {
+            id: "usage-test-model",
+            provider: "test",
+            capabilities: [],
+          },
+          executors: {
+            execute: async (_input: ModelInput): Promise<ModelOutput> => {
+              tickCount++;
+              return {
+                model: "usage-test-model",
+                createdAt: new Date().toISOString(),
+                message: {
+                  role: "assistant",
+                  content: [{ type: "text", text: `Response ${tickCount}` }],
+                },
+                stopReason: StopReason.STOP_SEQUENCE,
+                usage: {
+                  inputTokens: tickCount * 10,
+                  outputTokens: tickCount * 5,
+                  totalTokens: tickCount * 15,
+                },
+                raw: {} as any,
+              };
+            },
+          },
+          fromEngineState,
+          toEngineState,
+        },
+      );
+
+      const usageEngine = createEngine({
+        model: usageModel,
+        maxTicks: 3,
+      });
+
+      class MultiTickAgent extends Component {
+        render(_com: COM, _state: TickState) {
+          return createElement(Fragment, {});
+        }
+
+        onTickEnd(_com: COM, state: TickState) {
+          if (state.usage) {
+            capturedUsages.push({ ...state.usage });
+          }
+        }
+      }
+
+      const handle = usageEngine.spawn(createElement(MultiTickAgent, {}), { timeline: [] });
+      await handle.waitForCompletion({ timeout: 5000 });
+
+      // Should have captured usage from each tick
+      expect(capturedUsages.length).toBe(3);
+      expect(capturedUsages[0]).toEqual({ inputTokens: 10, outputTokens: 5, totalTokens: 15 });
+      expect(capturedUsages[1]).toEqual({ inputTokens: 20, outputTokens: 10, totalTokens: 30 });
+      expect(capturedUsages[2]).toEqual({ inputTokens: 30, outputTokens: 15, totalTokens: 45 });
+
+      usageEngine.destroy();
     });
   });
 });

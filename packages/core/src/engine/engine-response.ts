@@ -1,6 +1,7 @@
 import { type AgentToolCall, type AgentToolResult } from "../tool/tool";
 import type { COMSection, COMTimelineEntry } from "../com/types";
 import type { StopReasonInfo } from "../component/component";
+import type { TokenUsage } from "aidk-shared";
 
 export type { COMSection, COMTimelineEntry }; // Re-export for convenience
 
@@ -47,7 +48,8 @@ export interface EngineResponse {
   stopReason?: StopReasonInfo;
 
   /**
-   * Usage statistics (tokens, cost, etc.).
+   * Token usage from this model execution.
+   * Contains inputTokens, outputTokens, totalTokens, and optional reasoning/cache tokens.
    */
-  usage?: any;
+  usage?: TokenUsage;
 }
