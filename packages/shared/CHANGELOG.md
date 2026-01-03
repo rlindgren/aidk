@@ -1,5 +1,11 @@
 # aidk-shared
 
+## 0.1.8
+
+### Patch Changes
+
+- 1fe6118: Add usage to TickState, set XML as default renderer for claude (ai-sdk)
+
 ## 0.1.5
 
 ### Patch Changes

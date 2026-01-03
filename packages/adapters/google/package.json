@@ -1,6 +1,6 @@
 {
   "name": "aidk-google",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "Google AI adapter for AIDK",
   "keywords": [
     "adapter",

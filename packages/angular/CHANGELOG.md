@@ -1,5 +1,13 @@
 # aidk-angular
 
+## 0.1.8
+
+### Patch Changes
+
+- 1fe6118: Add usage to TickState, set XML as default renderer for claude (ai-sdk)
+- Updated dependencies [1fe6118]
+  - aidk-client@0.1.8
+
 ## 0.1.5
 
 ### Patch Changes

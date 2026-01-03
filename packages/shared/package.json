@@ -1,6 +1,6 @@
 {
   "name": "aidk-shared",
-  "version": "0.1.5",
+  "version": "0.1.8",
   "description": "Shared types and utilities for AIDK",
   "keywords": [
     "agent",
