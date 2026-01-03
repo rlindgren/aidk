@@ -369,6 +369,7 @@ export class StructureRenderer {
       ephemeral: comInput.ephemeral, // Pass through ephemeral (already formatted)
       system: comInput.system,
       metadata: comInput.metadata,
+      modelOptions: comInput.modelOptions, // Pass through model options (temperature, maxTokens, etc.)
     };
   }
 }

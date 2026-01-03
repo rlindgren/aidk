@@ -60,28 +60,37 @@ AIDK agents are defined declaratively using JSX, but AI models consume structure
 
 ```
 compiler/
-├── fiber-compiler.ts        # Main FiberCompiler class (V2)
+├── fiber-compiler.ts        # Main FiberCompiler class
 ├── fiber.ts                 # Fiber node creation and tree utilities
 ├── types.ts                 # Type definitions for fibers, hooks, effects
-├── hooks.ts                 # React-style hooks implementation
 ├── content-block-registry.ts # JSX-to-ContentBlock mappers
 ├── extractors.ts            # Semantic node extraction from JSX
-├── compiler_v1.ts           # Legacy V1 compiler (simpler, no hooks)
-├── index.ts                 # Public exports
-└── DESIGN.md               # Design philosophy document
+├── structure-renderer.ts    # Transforms CompiledStructure to formatted output
+├── index.ts                 # Public exports (re-exports hooks from ../state)
+├── DESIGN.md                # Design philosophy document
+└── ARCHITECTURE.md          # This file
+
+state/
+├── hooks.ts                 # React-style hooks implementation
+├── signal.ts                # Signal/reactive state primitives
+├── use-state.ts             # State hook utilities
+└── index.ts                 # Public exports
 ```
+
+> **Note:** Hooks are implemented in `state/hooks.ts` but re-exported from `compiler/index.ts` for convenience. This separation keeps reactive primitives together while maintaining the compiler's public API.
 
 ### File Overview
 
 | File                        | Lines | Purpose                                                       |
 | --------------------------- | ----- | ------------------------------------------------------------- |
-| `fiber-compiler.ts`         | ~1978 | Main compiler with fiber reconciliation, lifecycle management |
-| `fiber.ts`                  | ~315  | Fiber node creation, cloning, tree traversal utilities        |
-| `types.ts`                  | ~552  | FiberNode, HookState, Effect, ComponentInstance types         |
-| `hooks.ts`                  | ~950  | All hook implementations (useState, useEffect, etc.)          |
-| `content-block-registry.ts` | ~315  | Maps JSX components to SemanticContentBlock                   |
-| `extractors.ts`             | ~506  | Extracts semantic trees from JSX elements                     |
-| `compiler_v1.ts`            | ~1431 | Legacy simpler compiler without hooks support                 |
+| `fiber-compiler.ts`         | ~1800 | Main compiler with fiber reconciliation, lifecycle management |
+| `fiber.ts`                  | ~310  | Fiber node creation, cloning, tree traversal utilities        |
+| `types.ts`                  | ~520  | FiberNode, HookState, Effect, ComponentInstance types         |
+| `content-block-registry.ts` | ~320  | Maps JSX components to SemanticContentBlock                   |
+| `extractors.ts`             | ~500  | Extracts semantic trees from JSX elements                     |
+| `structure-renderer.ts`     | ~400  | Transforms CompiledStructure to model-ready format            |
+| `state/hooks.ts`            | ~800  | All hook implementations (useState, useEffect, etc.)          |
+| `state/signal.ts`           | ~700  | Signal, ComputedSignal, COMStateSignal implementations        |
 
 ---
 

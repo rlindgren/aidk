@@ -577,7 +577,7 @@ describe("convertToolsToToolSet", () => {
         metadata: {
           name: "calculator",
           description: "Performs calculations",
-          parameters: { type: "object" },
+          input: { type: "object" },
         },
         run: () => Promise.resolve("result"),
       } as any,
@@ -594,7 +594,7 @@ describe("convertToolsToToolSet", () => {
       {
         name: "search",
         description: "Search the web",
-        parameters: {
+        input: {
           type: "object",
           properties: { query: { type: "string" } },
         },

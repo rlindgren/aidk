@@ -24,7 +24,7 @@ The `aidk-google` package provides an adapter that integrates Google's Gemini mo
 
 The Google adapter provides:
 
-- **Gemini Model Integration** - Connect to Google's Gemini models (gemini-2.5-flash, gemini-pro, etc.)
+- **Gemini Model Integration** - Connect to Google's Gemini models (gemini-3-flash, gemini-pro, etc.)
 - **Vertex AI Support** - Use Google Cloud's Vertex AI platform for enterprise deployments
 - **Streaming Support** - Full streaming generation with delta chunks
 - **Tool Calling** - Native function calling support with Google's format
@@ -148,7 +148,7 @@ interface GoogleAdapterConfig {
   };
 
   // Model defaults
-  model?: string; // Default model (gemini-2.5-flash)
+  model?: string; // Default model (gemini-3-flash)
   client?: GoogleGenAI; // Pre-configured client
   providerOptions?: ProviderClientOptions;
 }
@@ -275,7 +275,7 @@ const google: (config?: GoogleAdapterConfig) => GoogleAdapter;
 | `buildClientOptions`         | Build GoogleGenAI constructor options            |
 | `prepareInput`               | Convert ModelInput to GenerateContentParameters  |
 | `processOutput`              | Convert GenerateContentResponse to ModelOutput   |
-| `processChunk`               | Convert streaming chunk to StreamChunk           |
+| `processChunk`               | Convert streaming chunk to StreamEvent           |
 | `processStreamChunks`        | Aggregate chunks into final ModelOutput          |
 | `convertBlocksToGoogleParts` | Convert ContentBlocks to Google parts            |
 | `mapToolDefinition`          | Convert AIDK tool to Google function declaration |
@@ -375,8 +375,8 @@ sequenceDiagram
     loop For each chunk
         Client-->>Adapter: GenerateContentResponse (chunk)
         Adapter->>Chunk: processChunk(chunk)
-        Chunk-->>Adapter: StreamChunk
-        Adapter-->>Engine: yield StreamChunk
+        Chunk-->>Adapter: StreamEvent
+        Adapter-->>Engine: yield StreamEvent
     end
 
     deactivate Client
@@ -406,7 +406,7 @@ sequenceDiagram
 │                          ↓                                      │
 │                                                                 │
 │  GenerateContentParameters                                      │
-│  ├── model: 'gemini-2.5-flash'                                  │
+│  ├── model: 'gemini-3-flash'                                  │
 │  ├── contents: [{ role, parts }]                                │
 │  └── config: { systemInstruction, tools, temperature, ... }    │
 │                                                                 │
@@ -449,7 +449,7 @@ import { createEngine } from "aidk";
 // Create adapter with API key
 const model = google({
   apiKey: process.env.GOOGLE_API_KEY,
-  model: "gemini-2.5-flash",
+  model: "gemini-3-flash",
 });
 
 // Use with engine
@@ -488,7 +488,7 @@ const calculator = defineTool({
 });
 
 const model = google({
-  model: "gemini-2.5-flash",
+  model: "gemini-3-flash",
 });
 
 const engine = createEngine({
@@ -505,7 +505,7 @@ const result = await engine.run("What is 42 * 17?");
 import { google } from "aidk-google";
 import { createEngine } from "aidk";
 
-const model = google({ model: "gemini-2.5-flash" });
+const model = google({ model: "gemini-3-flash" });
 const engine = createEngine({ model });
 
 for await (const chunk of engine.stream("Write a poem about coding")) {
@@ -521,7 +521,7 @@ for await (const chunk of engine.stream("Write a poem about coding")) {
 import { google } from "aidk-google";
 
 const model = google({
-  model: "gemini-2.5-flash",
+  model: "gemini-3-flash",
   providerOptions: {
     google: {
       // Any GenerateContentConfig options
@@ -553,7 +553,7 @@ const client = new GoogleGenAI({
 
 const model = google({
   client,
-  model: "gemini-2.5-flash",
+  model: "gemini-3-flash",
 });
 ```
 
@@ -577,7 +577,7 @@ const model = google({
 │    │   └── Adapter transforms → Google API → transforms back    │
 │    │                                                            │
 │    └── Calls model.stream(ModelInput)                           │
-│        └── Adapter yields StreamChunk via async iterator        │
+│        └── Adapter yields StreamEvent via async iterator        │
 │                                                                 │
 │  Message Transformation                                         │
 │    │                                                            │

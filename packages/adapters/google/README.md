@@ -16,7 +16,7 @@ import { GoogleModel } from 'aidk-google';
 // Google AI Studio
 <GoogleModel
   apiKey={process.env.GOOGLE_API_KEY}
-  model="gemini-2.0-flash"
+  model="gemini-3-flash"
 />
 
 // Vertex AI
@@ -24,7 +24,7 @@ import { GoogleModel } from 'aidk-google';
   vertexai={true}
   project={process.env.GCP_PROJECT_ID}
   location="us-central1"
-  model="gemini-2.0-flash"
+  model="gemini-3-flash"
   googleAuthOptions={{
     credentials: JSON.parse(process.env.GCP_CREDENTIALS),
   }}

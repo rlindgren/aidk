@@ -247,36 +247,43 @@ export type StreamEvent =
 
 /**
  * Execution lifecycle events
+ *
+ * Note: threadId and other app-specific identifiers are in metadata.
+ * sessionId is kept top-level as it's universal for client connections.
  */
 export type ExecutionStartEvent = {
   type: "execution_start";
   executionId: string;
-  threadId: string;
+  sessionId?: string;
   parentExecutionId?: string;
   rootExecutionId?: string;
   componentName?: string;
-  sessionId?: string;
+  /** User-provided metadata (includes threadId, userId, etc.) */
+  metadata?: Record<string, unknown>;
 } & StreamEventBase;
 
 export type ExecutionEndEvent = {
   type: "execution_end";
   executionId: string;
-  threadId: string;
+  sessionId?: string;
   parentExecutionId?: string;
   rootExecutionId?: string;
   output: unknown;
-  sessionId?: string;
+  /** User-provided metadata (includes threadId, userId, etc.) */
+  metadata?: Record<string, unknown>;
 } & StreamEventBase;
 
 export type ExecutionEvent = {
   type: "execution";
   executionId: string;
-  threadId: string;
+  sessionId?: string;
   parentExecutionId?: string;
   rootExecutionId?: string;
   output: unknown;
   usage: TokenUsage;
   stopReason: StopReason;
+  /** User-provided metadata (includes threadId, userId, etc.) */
+  metadata?: Record<string, unknown>;
   ticks: number;
   startedAt: string;
   completedAt: string;
@@ -294,6 +301,10 @@ export type TickEndEvent = {
   type: "tick_end";
   tick: number;
   usage?: TokenUsage;
+  /** New timeline entries added during this tick (for persistence) */
+  response?: {
+    newTimelineEntries?: unknown[];
+  };
 } & StreamEventBase;
 
 export type TickEvent = {
@@ -349,6 +360,81 @@ export type EngineErrorEvent = {
 } & StreamEventBase;
 
 /**
+ * Fork lifecycle events
+ *
+ * Fork creates parallel execution branches that race or vote.
+ * Each branch runs as a separate execution - subscribe to those
+ * executions directly if you need branch-level observability.
+ */
+export type ForkStartEvent = {
+  type: "fork_start";
+  /** Unique identifier for this fork operation */
+  forkId: string;
+  /** Parent execution that initiated the fork */
+  parentExecutionId: string;
+  /** Strategy for handling branch results */
+  strategy: "race" | "vote" | "all";
+  /** Identifiers for each branch (variant names or indices) */
+  branches: string[];
+  /** Number of parallel branches */
+  branchCount: number;
+  /** Input passed to the fork (shared across branches or per-branch) */
+  input?: unknown;
+} & StreamEventBase;
+
+export type ForkEndEvent = {
+  type: "fork_end";
+  /** Unique identifier for this fork operation */
+  forkId: string;
+  /** Parent execution that initiated the fork */
+  parentExecutionId: string;
+  /** The winning/selected branch (for race/vote strategies) */
+  selectedBranch?: string;
+  /** Aggregated results from all branches */
+  results: Record<string, unknown>;
+  /** Token usage aggregated across all branches */
+  usage?: TokenUsage;
+} & StreamEventBase;
+
+/**
+ * Spawn lifecycle events
+ *
+ * Spawn creates a child execution that runs independently.
+ * Unlike Fork, Spawn doesn't race - it's for delegation.
+ */
+export type SpawnStartEvent = {
+  type: "spawn_start";
+  /** Unique identifier for this spawn operation */
+  spawnId: string;
+  /** Parent execution that initiated the spawn */
+  parentExecutionId: string;
+  /** Child execution ID */
+  childExecutionId: string;
+  /** Name of the spawned component/agent */
+  componentName?: string;
+  /** Optional label for this spawn */
+  label?: string;
+  /** Input passed to the spawned execution */
+  input?: unknown;
+} & StreamEventBase;
+
+export type SpawnEndEvent = {
+  type: "spawn_end";
+  /** Unique identifier for this spawn operation */
+  spawnId: string;
+  /** Parent execution that initiated the spawn */
+  parentExecutionId: string;
+  /** Child execution ID */
+  childExecutionId: string;
+  /** Output from the spawned execution */
+  output: unknown;
+  /** Whether the spawn errored */
+  isError?: boolean;
+  /** Token usage from the spawned execution */
+  usage?: TokenUsage;
+} & StreamEventBase;
+
+/**
  * EngineEvent - All orchestration events.
  *
  * Discriminated union of all events from engine orchestration.
@@ -366,6 +452,11 @@ export type EngineEvent =
   | ToolResultEvent
   | ToolConfirmationRequiredEvent
   | ToolConfirmationResultEvent
+  // Fork/Spawn orchestration
+  | ForkStartEvent
+  | ForkEndEvent
+  | SpawnStartEvent
+  | SpawnEndEvent
   // Errors
   | EngineErrorEvent;
 
@@ -423,8 +514,26 @@ export function isEngineEvent(event: EngineStreamEvent): event is EngineEvent {
     "tool_result",
     "tool_confirmation_required",
     "tool_confirmation_result",
+    "fork_start",
+    "fork_end",
+    "spawn_start",
+    "spawn_end",
     "engine_error",
   ].includes(event.type);
+}
+
+/**
+ * Check if event is a Fork event
+ */
+export function isForkEvent(event: EngineStreamEvent): event is ForkStartEvent | ForkEndEvent {
+  return ["fork_start", "fork_end"].includes(event.type);
+}
+
+/**
+ * Check if event is a Spawn event
+ */
+export function isSpawnEvent(event: EngineStreamEvent): event is SpawnStartEvent | SpawnEndEvent {
+  return ["spawn_start", "spawn_end"].includes(event.type);
 }
 
 /**
@@ -456,7 +565,15 @@ export function isFinalEvent(
 // ============================================================================
 
 /**
- * @deprecated Use StreamEvent types instead
+ * @deprecated Use StreamEvent types instead.
+ * StreamChunkType was replaced by discriminated union types like ContentDeltaEvent, MessageEndEvent, etc.
+ * The new StreamEvent union provides better type safety with proper discriminated unions.
+ *
+ * Migration guide:
+ * - StreamChunkType.CONTENT_DELTA -> event.type === "content_delta" (ContentDeltaEvent)
+ * - StreamChunkType.MESSAGE_END -> event.type === "message_end" (MessageEndEvent)
+ * - StreamChunkType.TOOL_CALL -> event.type === "tool_call" (ToolCallEvent)
+ * - etc.
  */
 export enum StreamChunkType {
   ERROR = "error",
@@ -481,6 +598,28 @@ export enum StreamChunkType {
 
 /**
  * @deprecated Use StreamEvent instead. This interface is kept for backward compatibility.
+ *
+ * StreamChunk was a flat, loosely-typed object for streaming chunks.
+ * StreamEvent is a discriminated union with strict types for each event kind.
+ *
+ * Migration example:
+ * ```typescript
+ * // Old StreamChunk usage:
+ * if (chunk.type === "content_delta") {
+ *   console.log(chunk.delta); // Might be undefined, no type narrowing
+ * }
+ *
+ * // New StreamEvent usage:
+ * if (event.type === "content_delta") {
+ *   console.log(event.delta); // Guaranteed to exist, type-safe
+ * }
+ * ```
+ *
+ * Key differences:
+ * - StreamEvent.id is required (auto-generated if needed)
+ * - StreamEvent.tick is required (default: 1)
+ * - StreamEvent.timestamp is required (ISO 8601)
+ * - Each event type has specific required fields
  */
 export interface StreamChunk {
   type: string;

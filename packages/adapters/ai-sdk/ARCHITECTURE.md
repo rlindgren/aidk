@@ -256,7 +256,7 @@ Full streaming with chunk transformation:
 │  └─────────────────────┘          └─────────────────────┘       │
 │                                                                 │
 │  processChunk() maps each AI SDK chunk type to AIDK's          │
-│  unified StreamChunk interface                                  │
+│  typed StreamEvent interface                                    │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -529,7 +529,7 @@ sequenceDiagram
         Provider-->>SDK: response chunk
         SDK-->>Adapter: TextStreamPart
         Adapter->>Adapter: processChunk() - transform
-        Adapter-->>Engine: yield StreamChunk
+        Adapter-->>Engine: yield StreamEvent
     end
 
     Engine->>Adapter: processStream(chunks)
@@ -599,7 +599,7 @@ import { openai } from "@ai-sdk/openai";
 
 // Create adapter from AI SDK model
 const model = createAiSdkModel({
-  model: openai("gpt-4o"),
+  model: openai("gpt-5.2"),
   temperature: 0.7,
 });
 
@@ -637,7 +637,7 @@ const { messages, tools, system } = await compile(<MyAgent />);
 
 // Use with AI SDK directly
 const result = await generateText({
-  model: openai('gpt-4o'),
+  model: openai('gpt-5.2'),
   messages,
   tools,
   system,
@@ -659,7 +659,7 @@ const result = await compiler.run(<MyAgent />, async (input) => {
   console.log('Executing with', input.messages.length, 'messages');
 
   return await generateText({
-    model: openai('gpt-4o'),
+    model: openai('gpt-5.2'),
     ...input,
   });
 });
@@ -673,7 +673,7 @@ import { openai } from '@ai-sdk/openai';
 
 // Configure model once
 const compiler = createCompiler({
-  model: openai('gpt-4o'),
+  model: openai('gpt-5.2'),
   temperature: 0.7,
   maxTicks: 5,
 });
@@ -697,13 +697,13 @@ import { openai } from '@ai-sdk/openai';
 
 // Same API as AI SDK, but with JSX
 const result = await generateText(<MyAgent />, {
-  model: openai('gpt-4o'),
+  model: openai('gpt-5.2'),
   temperature: 0.8,
 });
 
 // Streaming - returns same type as AI SDK
 const stream = streamText(<MyAgent />, {
-  model: openai('gpt-4o'),
+  model: openai('gpt-5.2'),
 });
 
 for await (const chunk of stream.fullStream) {
@@ -720,7 +720,7 @@ import { openai } from "@ai-sdk/openai";
 function MyAgent() {
   return (
     <>
-      <AiSdkModel model={openai("gpt-4o")} temperature={0.7} maxTokens={1000} />
+      <AiSdkModel model={openai("gpt-5.2")} temperature={0.7} maxTokens={1000} />
       <System>You are a helpful coding assistant.</System>
       <User>Explain React hooks.</User>
     </>
@@ -737,13 +737,13 @@ import { anthropic } from "@ai-sdk/anthropic";
 import { google } from "@ai-sdk/google";
 
 // OpenAI
-const gpt4 = createAiSdkModel({ model: openai("gpt-4o") });
+const gpt5 = createAiSdkModel({ model: openai("gpt-5.2") });
 
 // Anthropic
 const claude = aiSdk({ model: anthropic("claude-3-5-sonnet-20241022") });
 
 // Google
-const gemini = aiSdk({ model: google("gemini-2.5-flash") });
+const gemini = aiSdk({ model: google("gemini-3-flash") });
 
 // Use any with AIDK engine
 const engine = createEngine({ model: claude });
@@ -768,7 +768,7 @@ const weatherTool = defineTool({
 });
 
 const model = createAiSdkModel({
-  model: openai("gpt-4o"),
+  model: openai("gpt-5.2"),
 });
 
 const engine = createEngine({
@@ -789,7 +789,7 @@ const engine = createEngine({
 | `Procedure`         | generate/stream wrapped as procedures   |
 | `fromEngineState`   | Transforms COMInput → ModelInput        |
 | `toEngineState`     | Transforms ModelOutput → EngineResponse |
-| `StreamChunk`       | Full streaming chunk type mapping       |
+| `StreamEvent`       | Full streaming event type mapping       |
 | `ModelHookRegistry` | Supports all model hooks                |
 
 ### With AI SDK

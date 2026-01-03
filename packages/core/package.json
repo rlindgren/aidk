@@ -30,6 +30,7 @@
   "types": "src/index.ts",
   "exports": {
     ".": "./src/index.ts",
+    "./jsx": "./src/jsx/index.ts",
     "./jsx-runtime": "./src/jsx/jsx-runtime.ts",
     "./jsx/components": "./src/jsx/components/index.ts",
     "./content": "./src/content/index.ts",
@@ -67,6 +68,10 @@
       ".": {
         "types": "./dist/index.d.ts",
         "import": "./dist/index.js"
+      },
+      "./jsx": {
+        "types": "./dist/jsx/index.d.ts",
+        "import": "./dist/jsx/index.js"
       },
       "./jsx-runtime": {
         "types": "./dist/jsx/jsx-runtime.d.ts",

@@ -196,7 +196,7 @@ Every execution gets an `ExecutionHandle` - the control interface for managing t
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                              │
 │  Identity:                                                                   │
-│  ├── pid: string           Unique process ID (e.g., "root_abc123")           │
+│  ├── pid: string           Unique process ID (UUID)           │
 │  ├── parentPid?: string    Parent PID (for fork/spawn)                       │
 │  ├── rootPid: string       Root execution PID                                │
 │  └── type: ExecutionType   'root' | 'fork' | 'spawn'                         │
@@ -238,17 +238,17 @@ The `ExecutionGraph` tracks parent-child relationships between executions:
 │                          Execution Graph                                     │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                              │
-│                     root_abc123 (status: completed)                          │
+│                     abc-123-... (status: completed)                          │
 │                            │                                                 │
 │              ┌─────────────┼─────────────┐                                   │
 │              │             │             │                                   │
 │              ▼             ▼             ▼                                   │
-│     fork_def456      fork_ghi789    spawn_jkl012                             │
-│     (completed)       (running)      (running)                               │
-│         │                                                                    │
-│         ▼                                                                    │
-│     fork_mno345                                                              │
-│     (cancelled)                                                              │
+│       def-456-...    ghi-789-...    jkl-012-...                              │
+│       (completed)     (running)      (running)                               │
+│            │                                                                 │
+│            ▼                                                                 │
+│       mno-345-...                                                            │
+│       (cancelled)                                                              │
 │                                                                              │
 │  Features:                                                                   │
 │  • register(handle, parentPid)  - Add execution to graph                     │
@@ -657,16 +657,16 @@ class OrchestratorAgent extends Component {
     );
 
     // Signal a running execution
-    com.process?.signal('fork_abc123', 'interrupt', 'Low priority task');
+    com.process?.signal('abc-123-def', 'interrupt', 'Low priority task');
 
     // Kill an execution
-    com.process?.kill('fork_abc123', 'No longer needed');
+    com.process?.kill('abc-123-def', 'No longer needed');
 
     // List outstanding forks
     const outstanding = com.process?.list();
 
     // Get specific handle
-    const handle = com.process?.get('fork_abc123');
+    const handle = com.process?.get('abc-123-def');
   }
 }
 ```
@@ -681,9 +681,9 @@ class OrchestratorAgent extends Component {
 // All events include base fields: id, tick, timestamp, raw?
 
 type EngineStreamEvent =
-  // Execution lifecycle
-  | { type: "execution_start"; executionId: string; threadId: string; ... }
-  | { type: "execution_end"; executionId: string; threadId: string; output: unknown; ... }
+  // Execution lifecycle (threadId and other app-specific ids go in metadata)
+  | { type: "execution_start"; executionId: string; sessionId?: string; metadata?: Record<string, unknown>; ... }
+  | { type: "execution_end"; executionId: string; sessionId?: string; metadata?: Record<string, unknown>; output: unknown; ... }
 
   // Tick lifecycle
   | { type: "tick_start"; tick: number; ... }
@@ -1007,7 +1007,7 @@ const engine = createEngine({
 });
 
 // Resume interrupted execution
-const state = await engine.config.loadExecutionState("root_abc123");
+const state = await engine.config.loadExecutionState("abc-123-def-456");
 if (state && state.status === "running") {
   const handle = await engine.resumeExecution(state);
 }
@@ -1256,7 +1256,7 @@ import { openai } from "@ai-sdk/openai";
 
 // Create engine
 const engine = createEngine({
-  model: createAiSdkModel({ model: openai("gpt-4o") }),
+  model: createAiSdkModel({ model: openai("gpt-5.2") }),
   maxTicks: 5,
 });
 

@@ -18,7 +18,7 @@ import { anthropic } from '@ai-sdk/anthropic';
 
 // OpenAI
 <AiSdkModel
-  model={openai('gpt-4o')}
+  model={openai('gpt-5.2')}
   providerOptions={{
     apiKey: process.env.OPENAI_API_KEY,
   }}
@@ -31,7 +31,7 @@ import { anthropic } from '@ai-sdk/anthropic';
 
 // With options
 <AiSdkModel
-  model={openai('gpt-4o')}
+  model={openai('gpt-5.2')}
   temperature={0.7}
   maxTokens={4096}
 />

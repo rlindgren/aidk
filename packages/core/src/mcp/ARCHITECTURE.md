@@ -734,7 +734,7 @@ import { Engine } from "aidk";
 import { OpenAIAdapter } from "aidk-openai";
 
 const engine = new Engine({
-  model: new OpenAIAdapter({ model: "gpt-4" }),
+  model: new OpenAIAdapter({ model: "gpt-5.2" }),
   mcpServers: {
     filesystem: {
       command: "npx",

@@ -1,8 +1,8 @@
 /**
- * Engine v2 Tests
+ * Engine Tests
  *
- * Mirrors engine.spec.ts but uses createEngine() (Engine v2) instead of new Engine() (Engine v1).
- * Tests Engine v2's Procedure-based API and ensures feature parity with Engine v1.
+ * Mirrors engine.spec.ts but uses createEngine() (Engine) instead of new Engine() (Engine v1).
+ * Tests Engine's Procedure-based API and ensures feature parity with Engine v1.
  */
 
 import { createEngine } from "./factory";
@@ -22,7 +22,7 @@ import { fromEngineState, toEngineState } from "../model/utils/language-model";
 import type { ChannelServiceConfig, ChannelAdapter, ChannelTransport } from "../channels/service";
 import type { ChannelEvent } from "aidk-kernel";
 
-describe("Engine v2", () => {
+describe("Engine", () => {
   const mockModel = createModel<ModelInput, ModelOutput, ModelInput, ModelOutput, StreamChunk>({
     metadata: {
       id: "mock-model",

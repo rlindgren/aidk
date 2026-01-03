@@ -367,6 +367,11 @@ export function Ephemeral(props: EphemeralProps): JSX.Element {
 
 export interface GroundingProps extends EphemeralProps {
   /**
+   * Optional title/heading for this grounding context.
+   * Rendered as a header before the content.
+   */
+  title?: string;
+  /**
    * Intended audience for this context.
    * @default 'model'
    */
@@ -383,15 +388,17 @@ export interface GroundingProps extends EphemeralProps {
  * `modelOptions.messageTransformation`, not in JSX props.
  *
  * @example
- * // Basic usage - positioned at end by default
- * <Grounding>Current todos: {JSON.stringify(todos)}</Grounding>
- *
- * // Positioned before user's message with type for model config targeting
- * <Grounding type="preferences" position="before-user">
- *   User preferences: {prefs}
+ * // Basic usage with title
+ * <Grounding title="Current State">
+ *   Active todos: {JSON.stringify(todos)}
  * </Grounding>
  *
- * // With audience specification
+ * // Positioned before user's message
+ * <Grounding title="User Preferences" position="before-user">
+ *   Theme: dark, Language: en
+ * </Grounding>
+ *
+ * // With type for semantic categorization
  * <Grounding type="system_state" audience="model">
  *   {stateJson}
  * </Grounding>
@@ -404,6 +411,7 @@ export function Grounding(props: GroundingProps): JSX.Element {
     position = "start",
     order,
     audience = "model",
+    title,
     id,
     tags,
     metadata,
@@ -421,6 +429,7 @@ export function Grounding(props: GroundingProps): JSX.Element {
       ...metadata,
       _grounding: {
         audience,
+        title,
       },
     },
   });

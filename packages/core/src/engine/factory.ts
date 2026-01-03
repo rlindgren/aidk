@@ -1,5 +1,5 @@
 /**
- * Factory function for creating Engine v2 instances
+ * Factory function for creating Engine instances
  *
  * Returns an Engine instance with Procedure-based execute() and stream() methods.
  * These methods support full type safety with .use(), .withHandle(), .withContext(), etc.
@@ -8,7 +8,7 @@
 import { Engine, type EngineConfig } from "./engine";
 
 /**
- * Create an Engine v2 instance with Procedure-based methods
+ * Create an Engine instance with Procedure-based methods
  *
  * @param config Engine configuration
  * @returns Engine instance with Procedure-based execute() and stream()

@@ -421,7 +421,7 @@ Global registries for tools, models, and engines:
 import { toolRegistry, modelRegistry, engineRegistry } from "aidk";
 
 toolRegistry.register("calculator", calculatorTool);
-modelRegistry.register("gpt-4", gpt4Model);
+modelRegistry.register("gpt-5.2", gpt5Model);
 ```
 
 ### procedure.ts
@@ -543,7 +543,7 @@ import { createAiSdkModel } from "aidk-ai-sdk";
 import { openai } from "@ai-sdk/openai";
 
 // Create model adapter
-const model = createAiSdkModel({ model: openai("gpt-4o") });
+const model = createAiSdkModel({ model: openai("gpt-5.2") });
 
 // Create engine
 const engine = createEngine({ model });

@@ -116,22 +116,22 @@ export function createEventBase(tick: number = 1): StreamEventBase {
  */
 export function createExecutionStartEvent(params: {
   executionId: string;
-  threadId: string;
   parentExecutionId?: string;
   rootExecutionId?: string;
   componentName?: string;
   sessionId?: string;
+  metadata?: Record<string, unknown>;
   tick?: number;
 }): ExecutionStartEvent {
   return {
     type: "execution_start",
     ...createEventBase(params.tick ?? 1),
     executionId: params.executionId,
-    threadId: params.threadId,
     parentExecutionId: params.parentExecutionId,
     rootExecutionId: params.rootExecutionId,
     componentName: params.componentName,
     sessionId: params.sessionId,
+    metadata: params.metadata,
   };
 }
 
@@ -140,22 +140,22 @@ export function createExecutionStartEvent(params: {
  */
 export function createExecutionEndEvent(params: {
   executionId: string;
-  threadId: string;
   parentExecutionId?: string;
   rootExecutionId?: string;
   output: unknown;
   sessionId?: string;
+  metadata?: Record<string, unknown>;
   tick?: number;
 }): ExecutionEndEvent {
   return {
     type: "execution_end",
     ...createEventBase(params.tick ?? 1),
     executionId: params.executionId,
-    threadId: params.threadId,
     parentExecutionId: params.parentExecutionId,
     rootExecutionId: params.rootExecutionId,
     output: params.output,
     sessionId: params.sessionId,
+    metadata: params.metadata,
   };
 }
 
@@ -173,12 +173,17 @@ export function createTickStartEvent(tick: number): TickStartEvent {
 /**
  * Create a tick_end event
  */
-export function createTickEndEvent(tick: number, usage?: TokenUsage): TickEndEvent {
+export function createTickEndEvent(
+  tick: number,
+  usage?: TokenUsage,
+  newTimelineEntries?: unknown[],
+): TickEndEvent {
   return {
     type: "tick_end",
     ...createEventBase(tick),
     tick,
     usage,
+    response: newTimelineEntries ? { newTimelineEntries } : undefined,
   };
 }
 

@@ -181,15 +181,43 @@ export class StreamProcessor {
       // Execution Lifecycle Events
       // =========================================================================
       case "execution_start":
-        // Execution started with thread context
-        if (event.threadId) {
-          this.callbacks.onThreadIdChange?.(event.threadId);
+        // Execution started with thread context (threadId now in metadata)
+        if (event.metadata?.["threadId"]) {
+          this.callbacks.onThreadIdChange?.(event.metadata["threadId"] as string);
         }
         break;
 
       case "execution_end":
         // Execution ended with output
         if (event.output) {
+          // Extract any messages from the output timeline that weren't streamed
+          // This handles agents that use state.stop() + <Assistant> without model streaming
+          const timeline = (event.output as any)?.timeline;
+          if (Array.isArray(timeline)) {
+            for (const entry of timeline) {
+              if (entry.kind === "message" && entry.message?.role === "assistant") {
+                // Check if we already have this message content (via streaming)
+                const existingMsg = this.messages.find((m) => m.role === "assistant");
+                const newContent = entry.message.content;
+
+                // If no existing assistant message or it's empty, add the new one
+                if (!existingMsg || existingMsg.content.length === 0) {
+                  const msg = createMessage("assistant", newContent, entry.message.metadata);
+                  this.addMessage(msg);
+                } else if (
+                  existingMsg.content.length === 1 &&
+                  existingMsg.content[0].type === "text" &&
+                  !(existingMsg.content[0] as any).text
+                ) {
+                  // Existing assistant message is empty placeholder, replace content
+                  this.updateMessage(existingMsg.id!, () => ({
+                    ...existingMsg,
+                    content: newContent,
+                  }));
+                }
+              }
+            }
+          }
           this.callbacks.onComplete?.(event.output);
         }
         break;

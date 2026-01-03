@@ -597,7 +597,7 @@ class ImperativeAgent extends Component {
 │  Component Tree (JSX)                                                        │
 │  ────────────────────                                                        │
 │  <ChatAgent>                                                                 │
-│    <Model model={gpt4} />                                                    │
+│    <Model model={gpt5} />                                                    │
 │    <System>You are helpful.</System>                                         │
 │    <User>{userInput}</User>                                                  │
 │  </ChatAgent>                                                                │

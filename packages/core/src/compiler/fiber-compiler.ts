@@ -1114,8 +1114,8 @@ export class FiberCompiler {
 
   /**
    * Register a static tool definition from a component class.
-   * Converts flat tool format { name, description, parameters, run }
-   * to ExecutableTool format { metadata: { name, description, parameters }, run }
+   * Converts flat tool format { name, description, input, run }
+   * to ExecutableTool format { metadata: { name, description, input }, run }
    */
   private registerStaticTool(toolDef: any): void {
     if (!toolDef || (!toolDef.name && !toolDef.metadata?.name)) {

@@ -31,7 +31,7 @@ const result = await compiler.run(
     // formatted.messages is ai-sdk format
     // You call generateText exactly as before
     return await generateText({
-      model: openai('gpt-4o'),
+      model: openai('gpt-5.2'),
       messages: formatted.messages,
       temperature: 0.7,
     });
@@ -60,7 +60,7 @@ for await (const event of compiler.stream(
   async function* (formatted) {
     // Stream exactly as you do now
     for await (const chunk of streamText({
-      model: openai('gpt-4o'),
+      model: openai('gpt-5.2'),
       messages: formatted.messages,
       tools: formatted.tools,
     }).fullStream) {
@@ -119,7 +119,7 @@ const result = await compiler.run(
   initialMessages,
   async (formatted) => {
     return await generateText({
-      model: openai('gpt-4o'),
+      model: openai('gpt-5.2'),
       messages: formatted.messages,
     });
   }
@@ -157,7 +157,7 @@ const result = await compiler.run(
   initialMessages,
   async (formatted) => {
     return await generateText({
-      model: openai('gpt-4o'),
+      model: openai('gpt-5.2'),
       messages: formatted.messages,
       tools: formatted.tools, // ai-sdk ToolSet format
     });
@@ -211,7 +211,7 @@ const result = await compiler.run(
   initialMessages,
   async (formatted) => {
     return await generateText({
-      model: openai('gpt-4o'),
+      model: openai('gpt-5.2'),
       messages: formatted.messages,
     });
   }
@@ -224,7 +224,7 @@ Let aidk handle model execution entirely.
 
 ```typescript
 const compiler = createAiSdkCompiler({
-  model: openai('gpt-4o'),
+  model: openai('gpt-5.2'),
   manageExecution: true,
   modelOptions: {
     temperature: 0.7,
@@ -250,7 +250,7 @@ import { Engine } from 'aidk';
 import { createAiSdkModel } from 'aidk-ai-sdk';
 
 const engine = new Engine({
-  model: createAiSdkModel({ model: openai('gpt-4o') }),
+  model: createAiSdkModel({ model: openai('gpt-5.2') }),
   tools: [searchTool],
   lifecycleHooks: {
     onTickStart: [(tick) => console.log(`Starting tick ${tick}`)],

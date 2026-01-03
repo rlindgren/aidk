@@ -282,7 +282,7 @@ Framework-agnostic execution management with stream processing:
 │   │   messages: Message[]           toolUseIndex: Map<id, location>     │  │
 │   │                                                                      │  │
 │   │   processEvent():                                                    │  │
-│   │   - execution_start ───▶ extract threadId                           │  │
+│   │   - execution_start ───▶ extract threadId from metadata             │  │
 │   │   - content_delta ─────▶ accumulate text deltas                     │  │
 │   │   - reasoning_delta ───▶ accumulate reasoning                       │  │
 │   │   - tool_call ─────────▶ add tool_use block, index by id            │  │

@@ -88,7 +88,8 @@ export {
 } from "aidk-kernel";
 export * from "aidk-kernel/execution-helpers";
 // Note: Components are exported individually to avoid conflicts
-export { Timeline, Section, Model, Markdown } from "./jsx/components/primitives";
+export { Timeline, Section, Model, ModelOptions, Markdown } from "./jsx/components/primitives";
+export type { ModelOptionsProps } from "./jsx/components/primitives";
 export {
   H1,
   H2,
@@ -105,6 +106,17 @@ export {
   InlineCode,
   Mark,
 } from "./jsx/components/semantic";
+// Content block components
+export { Text, Image, Code, Json, Document, Audio, Video } from "./jsx/components/content";
+export type {
+  TextProps,
+  ImageProps,
+  CodeProps,
+  JsonProps,
+  DocumentProps,
+  AudioProps,
+  VideoProps,
+} from "./jsx/components/content";
 // Message role components
 export { User, Assistant, System, ToolResult, Grounding, Message } from "./jsx/components/messages";
 export type {
@@ -117,8 +129,10 @@ export type {
 } from "./jsx/components/messages";
 export { Fork, ForkComponent } from "./jsx/components/fork";
 export { Spawn, SpawnComponent } from "./jsx/components/spawn";
+export { Complete, CompleteComponent } from "./jsx/components/complete";
 export type { ForkProps } from "./jsx/components/fork";
 export type { SpawnProps } from "./jsx/components/spawn";
+export type { CompleteProps } from "./jsx/components/complete";
 export {
   createForkHandle,
   createSpawnHandle,

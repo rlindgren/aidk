@@ -62,7 +62,7 @@ export {
   createToolDefinition,
   createAgentToolCall,
   createAgentToolResult,
-  // Stream chunks
+  // Legacy stream chunks (StreamChunk)
   createStreamChunk,
   createTextDeltaChunk,
   createMessageStartChunk,
@@ -71,6 +71,48 @@ export {
   createToolResultChunk,
   createTextStreamSequence,
   createToolCallStreamSequence,
+  // StreamEvent fixtures (new typed event system)
+  createEventBase,
+  createContentStartEvent,
+  createContentDeltaEvent,
+  createContentEndEvent,
+  createContentEvent,
+  createReasoningStartEvent,
+  createReasoningDeltaEvent,
+  createReasoningEndEvent,
+  createReasoningCompleteEvent,
+  createMessageStartEvent,
+  createMessageEndEvent,
+  createMessageCompleteEvent,
+  createToolCallStartEvent,
+  createToolCallDeltaEvent,
+  createToolCallEndEvent,
+  createToolCallCompleteEvent,
+  createStreamErrorEvent,
+  // EngineEvent fixtures (orchestration events)
+  createExecutionStartEvent,
+  createExecutionEndEvent,
+  createExecutionCompleteEvent,
+  createTickStartEvent,
+  createTickEndEvent,
+  createTickCompleteEvent,
+  createToolResultEvent,
+  createErrorToolResultEvent,
+  createToolConfirmationRequiredEvent,
+  createToolConfirmationResultEvent,
+  createEngineErrorEvent,
+  // Fork/Spawn event fixtures
+  createForkStartEvent,
+  createForkEndEvent,
+  createSpawnStartEvent,
+  createSpawnEndEvent,
+  // StreamEvent sequences
+  createTextStreamEventSequence,
+  createToolCallEventSequence,
+  createForkEventSequence,
+  createSpawnEventSequence,
+  // Utility fixtures
+  createTokenUsage,
 } from "./fixtures";
 
 // Helpers - async utilities and test helpers

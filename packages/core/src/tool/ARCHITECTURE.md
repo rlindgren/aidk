@@ -26,6 +26,7 @@ The tool module provides:
 
 - **Tool Definition** - Type-safe tool creation with Zod schema validation
 - **Execution Routing** - Route tool calls to server, client, provider, or MCP
+- **Component Tools** - Wrap components as tools for sub-agent delegation
 - **Hook System** - Middleware injection for cross-cutting concerns
 - **JSX Integration** - Tools as components that register on mount
 - **Client Coordination** - Async result collection from client-executed tools
@@ -65,6 +66,15 @@ LLMs become more powerful when they can take actions. The tool module:
 │   │  ToolDefinition │                                           │
 │   └────────┬────────┘                                           │
 │            │                                                    │
+│            │ extends                                            │
+│            ▼                                                    │
+│   ┌─────────────────────────────────────────────────────┐       │
+│   │          component-tool.ts                           │       │
+│   │  ─────────────────────────────────────────────────  │       │
+│   │  createComponentTool() - Wrap components as tools    │       │
+│   │  Sub-agent delegation via tool calls                 │       │
+│   └─────────────────────────────────────────────────────┘       │
+│            │                                                    │
 │            │ used by                                            │
 │            ▼                                                    │
 │   ┌─────────────────────────────────────────────────────┐       │
@@ -79,12 +89,13 @@ LLMs become more powerful when they can take actions. The tool module:
 
 ### File Overview
 
-| File                                   | Lines | Purpose                             |
-| -------------------------------------- | ----- | ----------------------------------- |
-| `tool.ts`                              | 487   | Tool creation, types, and utilities |
-| `tool-hooks.ts`                        | 86    | Hook registry for tool middleware   |
-| `../engine/tool-executor.ts`           | 342   | Tool execution and error handling   |
-| `../engine/client-tool-coordinator.ts` | 139   | Client tool result coordination     |
+| File                                   | Lines | Purpose                                    |
+| -------------------------------------- | ----- | ------------------------------------------ |
+| `tool.ts`                              | 487   | Tool creation, types, and utilities        |
+| `tool-hooks.ts`                        | 86    | Hook registry for tool middleware          |
+| `component-tool.ts`                    | 180   | Component-as-tool for sub-agent delegation |
+| `../engine/tool-executor.ts`           | 342   | Tool execution and error handling          |
+| `../engine/client-tool-coordinator.ts` | 139   | Client tool result coordination            |
 
 ---
 
@@ -766,6 +777,93 @@ const GitHubSearch = createTool({
 });
 ```
 
+### Component Tool (Sub-Agent Delegation)
+
+Component tools let the model decide when to delegate work to specialized sub-agents. This is a powerful pattern for orchestration - the LLM naturally chooses which specialist to invoke via tool calls.
+
+```typescript
+import { createComponentTool } from "aidk";
+
+// Define a specialist agent as a component
+const ResearchAgent = () => (
+  <>
+    <System>You are a research specialist. Provide thorough, cited research.</System>
+    <Model model={deepResearchModel} />
+  </>
+);
+
+// Wrap it as a tool the model can call
+const ResearchTool = createComponentTool({
+  name: "research",
+  description: "Research a topic in depth with citations",
+  component: ResearchAgent,
+});
+
+// Use in an orchestrator that can delegate
+const OrchestratorAgent = () => (
+  <>
+    <System>
+      You coordinate complex tasks. Use the research tool for topics
+      requiring in-depth analysis.
+    </System>
+    <Model model={orchestratorModel} />
+    <ResearchTool />
+  </>
+);
+```
+
+**With custom input schema:**
+
+```typescript
+const CodeReviewTool = createComponentTool({
+  name: "review_code",
+  description: "Get expert code review. Input: JSON with code and language.",
+  input: z.object({
+    code: z.string().describe("The code to review"),
+    language: z.string().describe("Programming language"),
+    focus: z.array(z.string()).optional().describe("Areas to focus on"),
+  }),
+  component: CodeReviewAgent,
+  model: codeReviewModel, // Optional - component can override
+});
+```
+
+**Key features:**
+
+- **Model-driven orchestration** - LLM decides when to call sub-agents
+- **Isolated execution** - Each component tool runs in its own engine instance
+- **Nestable** - Component tools can use other component tools
+- **Simple input** - Default `{ prompt }` schema, or custom for structured input
+- **Clean results** - Last assistant message becomes the tool result
+
+**How it works:**
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    Component Tool Execution                      │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  Orchestrator model ─▶ tool_use: research({ prompt: "..." })   │
+│            │                                                    │
+│            ▼                                                    │
+│  ┌─────────────────────────────┐                                │
+│  │  createComponentTool        │                                │
+│  │  ───────────────────        │                                │
+│  │  1. Create new Engine       │                                │
+│  │  2. Wrap input as message   │                                │
+│  │  3. Execute component       │                                │
+│  │  4. Extract assistant reply │                                │
+│  └──────────────┬──────────────┘                                │
+│                 │                                               │
+│                 ▼                                               │
+│  tool_result: [{ type: "text", text: "Research findings..." }] │
+│            │                                                    │
+│            ▼                                                    │
+│  Orchestrator continues with result                             │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
 ### Tool with Confirmation
 
 ```typescript
@@ -853,10 +951,11 @@ const DeployApplication = createTool({
 The tool module provides comprehensive tool support for AIDK:
 
 - **`createTool()`** - Type-safe tool creation with three usage patterns
+- **`createComponentTool()`** - Wrap components as tools for sub-agent delegation
 - **Execution Types** - SERVER, CLIENT, PROVIDER, MCP for flexible execution
 - **Intent Classification** - RENDER, ACTION, COMPUTE for client rendering
 - **Zod Integration** - Schema validation and JSON Schema generation
 - **Hook System** - Middleware injection for logging, auth, caching, etc.
 - **Client Coordination** - Async result collection for interactive tools
 
-Tools bridge the gap between LLM reasoning and real-world actions, enabling agents to fetch data, render UI, execute code, and perform actions across server and client boundaries.
+Tools bridge the gap between LLM reasoning and real-world actions, enabling agents to fetch data, render UI, execute code, delegate to sub-agents, and perform actions across server and client boundaries.

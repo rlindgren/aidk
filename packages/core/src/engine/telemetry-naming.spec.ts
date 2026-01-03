@@ -133,7 +133,7 @@ describe("Procedure Telemetry Naming Convention", () => {
       const tool = createTool({
         name: "test-tool",
         description: "Test tool",
-        parameters: {} as any,
+        input: {} as any,
         handler: async () => [{ type: "text", text: "result" }],
       });
 
@@ -390,7 +390,7 @@ describe("Procedure Telemetry Naming Convention", () => {
       const tool = createTool({
         name: "test-tool",
         description: "Test",
-        parameters: {} as any,
+        input: {} as any,
         handler: async () => [{ type: "text", text: "result" }],
       });
 

@@ -479,14 +479,17 @@ export class EngineClient {
 
   private enrichInput(input: EngineInput): EngineInput {
     const userId = input.userId || this.config.userId;
+    const threadId = input.threadId || this.config.threadId;
     return {
       ...input,
       sessionId: input.sessionId || this.config.sessionId,
       userId,
+      threadId, // Send at top level for server's defaultContextExtractor
       metadata: {
         ...this.config.metadata,
         ...input.metadata,
         userId: userId,
+        threadId, // Also include in metadata for backwards compatibility
         tenantId: this.config.tenantId,
       },
     };

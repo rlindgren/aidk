@@ -54,25 +54,23 @@ render() {
   const cutoff = messages.length - 10;
 
   return (
-    <Section title="Research Assistant">
-      <System>{this.systemPrompt()}</System>
+    <System>{this.systemPrompt()}</System>
 
-      <Grounding title="Knowledge Base">
-        <Document src={this.activeDoc()} />
-        <List title="Related">{this.relatedDocs().map(d => d.title)}</List>
-      </Grounding>
+    <Grounding title="Knowledge Base">
+      <Document src={this.activeDoc()} />
+      <List title="Related">{this.relatedDocs().map(d => d.title)}</List>
+    </Grounding>
 
-      <SearchTool onResult={(r) => this.results.set(r)} />
+    <SearchTool onResult={(r) => this.results.set(r)} />
 
-      <Timeline>
-        {messages.map((msg, i) => (
-          <Message key={msg.id} role={msg.role}>
-            {i < cutoff && msg.role === 'user' && <Meta>({formatRelative(msg.timestamp)})</Meta>}
-            {msg.content}
-          </Message>
-        ))}
-      </Timeline>
-    </Section>
+    <Timeline>
+      {messages.map((msg, i) => (
+        <Message key={msg.id} role={msg.role}>
+          {i < cutoff && msg.role === 'user' && <Meta>({formatRelative(msg.timestamp)})</Meta>}
+          {msg.content}
+        </Message>
+      ))}
+    </Timeline>
   );
 }
 ```

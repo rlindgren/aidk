@@ -259,7 +259,7 @@ describe("ExecutionHandleImpl", () => {
           tick: 1,
           timestamp: new Date().toISOString(),
           executionId: "test-exec",
-          threadId: "test-thread",
+          metadata: { threadId: "test-thread" },
         },
         { type: "tick_start", id: "evt_2", tick: 1, timestamp: new Date().toISOString() },
         {
@@ -267,7 +267,7 @@ describe("ExecutionHandleImpl", () => {
           id: "evt_3",
           tick: 1,
           executionId: "test-exec",
-          threadId: "test-thread",
+          metadata: { threadId: "test-thread" },
           output: {
             timeline: [],
             sections: {},

@@ -76,6 +76,8 @@ export class ExecutionHandleImpl
     executionGraph?: { getChildren: (pid: string) => ExecutionHandle[] },
   ) {
     super();
+    // Increase max listeners to handle fork/spawn scenarios with multiple abort listeners
+    this.setMaxListeners(20);
     this.pid = pid;
     this.rootPid = rootPid;
     this.type = type;

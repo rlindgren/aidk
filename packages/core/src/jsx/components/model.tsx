@@ -1,7 +1,7 @@
 import { createElement, type JSX } from "../jsx-runtime";
 import { Component } from "../../component/component";
 import { COM } from "../../com/object-model";
-import type { ModelInstance } from "../../model/model";
+import type { ModelConfig, ModelInstance } from "../../model/model";
 import type { ComponentBaseProps } from "../jsx-types";
 import type { ProviderGenerationOptions } from "../../types";
 import type { MessageTransformationConfig } from "../../model/model";
@@ -9,7 +9,7 @@ import type { MessageTransformationConfig } from "../../model/model";
 /**
  * Props for Model component.
  */
-export interface ModelComponentProps extends ComponentBaseProps {
+export interface ModelComponentProps extends ComponentBaseProps, Omit<ModelConfig, "model"> {
   /**
    * The model adapter instance or identifier.
    * If a string, will be resolved from the model registry.
@@ -71,6 +71,7 @@ export class ModelComponent extends Component<ModelComponentProps> {
   async onMount(com: COM): Promise<void> {
     // Set the model on COM and notify Engine
     com.setModel(this.props.model);
+    com.resetModelOptions();
 
     // Call user's onMount if provided
     if (this.props.onMount) {
@@ -88,8 +89,9 @@ export class ModelComponent extends Component<ModelComponentProps> {
     }
   }
 
-  render(_com: COM): JSX.Element | null {
+  render(com: COM): JSX.Element | null {
     // Model is configuration-only - doesn't render anything
+    com.setModelOptions(omit(this.props, ["model", "onMount", "onUnmount"]));
     return null;
   }
 }
@@ -165,18 +167,10 @@ export interface ModelOptionsProps extends ComponentBaseProps {
  * ```
  */
 export class ModelOptionsComponent extends Component<ModelOptionsProps> {
-  async onTickStart(com: COM): Promise<void> {
-    const { messageTransformation, temperature, maxTokens } = this.props;
-
-    com.setModelOptions({
-      messageTransformation,
-      temperature,
-      maxTokens,
-    });
-  }
-
-  render(): JSX.Element | null {
-    // Configuration-only - doesn't render anything
+  render(com: COM): JSX.Element | null {
+    // Set model options during render (not onTickStart) to ensure they're set
+    // before toInput() is called - onTickStart fires before the fiber tree exists on tick 1
+    com.setModelOptions(this.props);
     return null;
   }
 }
@@ -203,4 +197,12 @@ export class ModelOptionsComponent extends Component<ModelOptionsProps> {
  */
 export function ModelOptions(props: ModelOptionsProps): JSX.Element {
   return createElement(ModelOptionsComponent, props);
+}
+
+function omit<T, K extends keyof T>(obj: T, keys: K[]): Omit<T, K> {
+  const result: any = { ...obj };
+  for (const key of keys) {
+    delete result[key];
+  }
+  return result;
 }

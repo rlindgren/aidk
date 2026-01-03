@@ -18,9 +18,22 @@ import {
   type JsonBlock,
   type MediaBlock,
   type Message,
-  type StreamChunk,
+  type StreamEvent,
+  type StreamEventBase,
+  type ContentStartEvent,
+  type ContentDeltaEvent,
+  type ContentEndEvent,
+  type ReasoningStartEvent,
+  type ReasoningDeltaEvent,
+  type ReasoningEndEvent,
+  type ToolCallStartEvent,
+  type ToolCallDeltaEvent,
+  type ToolCallEndEvent,
+  type ToolCallEvent,
+  type MessageStartEvent,
+  type MessageEndEvent,
+  type StreamErrorEvent,
   StopReason,
-  StreamChunkType,
   BlockType,
   bufferToBase64Source,
   isUrlString,
@@ -82,6 +95,31 @@ export type ToolResultOutput =
         { type: "text"; text: string } | { type: "media"; data: string; mediaType: string }
       >;
     };
+
+// ============================================================================
+// Event Helpers
+// ============================================================================
+
+let adapterEventIdCounter = 0;
+
+/**
+ * Generate a unique event ID for adapter stream events
+ */
+function generateAdapterEventId(): string {
+  return `aievt_${Date.now()}_${++adapterEventIdCounter}`;
+}
+
+/**
+ * Create base event fields for StreamEvent
+ * Adapter layer always uses tick=1 since it doesn't have engine context
+ */
+function createAdapterEventBase(): StreamEventBase {
+  return {
+    id: generateAdapterEventId(),
+    tick: 1,
+    timestamp: new Date().toISOString(),
+  };
+}
 
 /**
  * Configuration options for the AI SDK adapter
@@ -180,7 +218,7 @@ export function convertToolsToToolSet(tools?: ModelToolReference[]): ToolSet {
         providerOptions,
         // No execute - engine handles execution
       } as any;
-    } else if ("name" in toolRef && "parameters" in toolRef) {
+    } else if ("name" in toolRef && "input" in toolRef) {
       const toolDef = toolRef as ToolDefinition;
       const libraryOptions = toolDef.libraryOptions || {};
       const libraryProviderOptions = libraryOptions["ai-sdk"]?.providerOptions || {};
@@ -270,7 +308,7 @@ export function createAiSdkModel(config: AiSdkAdapterConfig): AiSdkAdapter {
     },
 
     transformers: {
-      prepareInput: (input) => {
+      prepareInput: (input): Parameters<typeof generateText>[0] => {
         const { libraryOptions = {}, providerOptions = {}, ...params } = input;
         const sdkOptions = (libraryOptions as LibraryGenerationOptions["ai-sdk"]) || {};
         const { tools: adapterTools, system: adapterSystem, ...restOfLibraryOptions } = sdkOptions;
@@ -299,13 +337,13 @@ export function createAiSdkModel(config: AiSdkAdapterConfig): AiSdkAdapter {
           topP: params.topP ?? defaultParams.topP,
           frequencyPenalty: params.frequencyPenalty ?? defaultParams.frequencyPenalty,
           presencePenalty: params.presencePenalty ?? defaultParams.presencePenalty,
-          ...restOfLibraryOptions,
+          ...(restOfLibraryOptions as Omit<Parameters<typeof generateText>[0], "model" | "prompt">),
           providerOptions: {
             ...defaultParams.providerOptions,
             ...providerOptions,
             ...(sdkOptions.providerOptions || {}),
           },
-        } as unknown as Parameters<typeof generateText>[0];
+        };
       },
 
       processOutput: (output) => {
@@ -341,130 +379,185 @@ export function createAiSdkModel(config: AiSdkAdapterConfig): AiSdkAdapter {
         return result;
       },
 
-      processChunk: (chunk: any): StreamChunk => {
+      processChunk: (chunk: any): StreamEvent => {
+        const base = createAdapterEventBase();
+
         // AI SDK TextStreamPart types - see ai/dist/index.d.ts
         switch (chunk.type) {
           // Text content
           case "text-start":
-            return { type: "content_start", id: chunk.id };
+            return {
+              type: "content_start",
+              ...base,
+              blockType: BlockType.TEXT,
+              blockIndex: 0,
+            } as ContentStartEvent;
           case "text-delta":
             return {
               type: "content_delta",
-              id: chunk.id,
+              ...base,
+              blockType: BlockType.TEXT,
+              blockIndex: 0,
               delta: chunk.text || "",
-            };
+            } as ContentDeltaEvent;
           case "text-end":
-            return { type: "content_end", id: chunk.id };
+            return {
+              type: "content_end",
+              ...base,
+              blockType: BlockType.TEXT,
+              blockIndex: 0,
+            } as ContentEndEvent;
 
           // Reasoning/thinking
           case "reasoning-start":
-            return { type: "reasoning_start", reasoningId: chunk.id };
+            return {
+              type: "reasoning_start",
+              ...base,
+              blockIndex: 0,
+            } as ReasoningStartEvent;
           case "reasoning-delta":
             return {
               type: "reasoning_delta",
-              reasoningId: chunk.id,
-              reasoning: chunk.text || "",
-            };
+              ...base,
+              blockIndex: 0,
+              delta: chunk.text || "",
+            } as ReasoningDeltaEvent;
           case "reasoning-end":
-            return { type: "reasoning_end", reasoningId: chunk.id };
+            return {
+              type: "reasoning_end",
+              ...base,
+              blockIndex: 0,
+            } as ReasoningEndEvent;
 
           // Tool calls
           case "tool-input-start":
             return {
-              type: StreamChunkType.TOOL_INPUT_START,
-              id: chunk.id,
-              blockType: BlockType.TOOL_USE,
-              raw: {
-                toolName: chunk.toolName,
-                providerExecuted: chunk.providerExecuted,
-              },
-            };
+              type: "tool_call_start",
+              ...base,
+              callId: chunk.id || generateAdapterEventId(),
+              name: chunk.toolName || "",
+              blockIndex: 0,
+            } as ToolCallStartEvent;
           case "tool-input-delta":
-            // Tool input streaming - mark with blockType so handler knows it's not text
             return {
-              type: StreamChunkType.TOOL_INPUT_DELTA,
-              id: chunk.id,
-              delta: chunk.delta,
-              blockType: BlockType.TOOL_USE,
-            };
+              type: "tool_call_delta",
+              ...base,
+              callId: chunk.id || "",
+              blockIndex: 0,
+              delta: chunk.delta || "",
+            } as ToolCallDeltaEvent;
           case "tool-input-end":
             return {
-              type: StreamChunkType.TOOL_INPUT_END,
-              id: chunk.id,
-              blockType: BlockType.TOOL_USE,
-            };
+              type: "tool_call_end",
+              ...base,
+              callId: chunk.id || "",
+              blockIndex: 0,
+            } as ToolCallEndEvent;
           case "tool-call":
             return {
               type: "tool_call",
-              toolCalls: [
-                {
-                  id: chunk.toolCallId,
-                  name: chunk.toolName,
-                  input: (chunk as any).args || (chunk as any).input || {},
-                },
-              ],
-            };
+              ...base,
+              callId: chunk.toolCallId,
+              name: chunk.toolName,
+              input: (chunk as any).args || (chunk as any).input || {},
+              blockIndex: 0,
+              startedAt: base.timestamp,
+              completedAt: base.timestamp,
+            } as ToolCallEvent;
           case "tool-result":
-            // Provider-executed tool result (web search, code execution, etc.)
+            // Provider-executed tool result - emit as content_delta with raw data
+            // (tool_result is an EngineEvent, not StreamEvent)
             return {
-              type: StreamChunkType.TOOL_RESULT,
-              toolCallId: chunk.toolCallId,
-              toolName: chunk.toolName,
-              toolResult: chunk.result,
-              providerExecuted: true,
-            };
+              type: "content_delta",
+              ...base,
+              blockType: BlockType.TEXT,
+              blockIndex: 0,
+              delta: "",
+              raw: {
+                type: "tool_result",
+                toolCallId: chunk.toolCallId,
+                toolName: chunk.toolName,
+                result: chunk.result,
+                providerExecuted: true,
+              },
+            } as ContentDeltaEvent;
           case "tool-error":
             return {
               type: "error",
-              raw: {
-                type: "tool_error",
-                toolCallId: chunk.toolCallId,
-                error: chunk.error,
+              ...base,
+              error: {
+                message: chunk.error?.message || "Tool error",
+                code: "tool_error",
               },
-            };
+            } as StreamErrorEvent;
 
-          // Sources and files
+          // Sources and files - pass through as content_delta with raw
           case "source":
             return {
               type: "content_delta",
+              ...base,
+              blockType: BlockType.TEXT,
+              blockIndex: 0,
               delta: "",
               raw: { type: "source", ...chunk },
-            };
+            } as ContentDeltaEvent;
           case "file":
             return {
               type: "content_delta",
+              ...base,
+              blockType: BlockType.TEXT,
+              blockIndex: 0,
               delta: "",
               raw: { type: "file", file: chunk.file },
-            };
+            } as ContentDeltaEvent;
 
-          // Step lifecycle
+          // Step lifecycle - pass through as content_delta with raw
           case "start-step":
             return {
-              type: StreamChunkType.STEP_START,
-              stepRequest: chunk.request,
-              stepWarnings: chunk.warnings || [],
-            };
+              type: "content_delta",
+              ...base,
+              blockType: BlockType.TEXT,
+              blockIndex: 0,
+              delta: "",
+              raw: {
+                type: "step_start",
+                stepRequest: chunk.request,
+                stepWarnings: chunk.warnings || [],
+              },
+            } as ContentDeltaEvent;
           case "finish-step":
             return {
-              type: StreamChunkType.STEP_END,
-              stepResponse: chunk.response,
-              usage: chunk.usage
-                ? {
-                    inputTokens: chunk.usage.promptTokens ?? 0,
-                    outputTokens: chunk.usage.completionTokens ?? 0,
-                    totalTokens:
-                      (chunk.usage.promptTokens ?? 0) + (chunk.usage.completionTokens ?? 0),
-                  }
-                : undefined,
-              stopReason: toStopReason(chunk.finishReason),
-            };
+              type: "content_delta",
+              ...base,
+              blockType: BlockType.TEXT,
+              blockIndex: 0,
+              delta: "",
+              raw: {
+                type: "step_end",
+                stepResponse: chunk.response,
+                usage: chunk.usage
+                  ? {
+                      inputTokens: chunk.usage.promptTokens ?? 0,
+                      outputTokens: chunk.usage.completionTokens ?? 0,
+                      totalTokens:
+                        (chunk.usage.promptTokens ?? 0) + (chunk.usage.completionTokens ?? 0),
+                    }
+                  : undefined,
+                stopReason: toStopReason(chunk.finishReason),
+              },
+            } as ContentDeltaEvent;
 
           // Stream lifecycle
           case "start":
-            return { type: "message_start" };
+            return {
+              type: "message_start",
+              ...base,
+              role: "assistant",
+            } as MessageStartEvent;
           case "finish":
             return {
               type: "message_end",
+              ...base,
               stopReason: toStopReason(chunk.finishReason),
               usage: chunk.totalUsage
                 ? {
@@ -475,46 +568,70 @@ export function createAiSdkModel(config: AiSdkAdapterConfig): AiSdkAdapter {
                       (chunk.totalUsage.completionTokens ?? 0),
                   }
                 : undefined,
-            };
+            } as MessageEndEvent;
           case "abort":
-            return { type: "error", raw: { type: "abort" } };
+            return {
+              type: "error",
+              ...base,
+              error: { message: "Stream aborted", code: "abort" },
+            } as StreamErrorEvent;
           case "error":
             return {
               type: "error",
-              raw: { type: "error", error: chunk.error },
-            };
+              ...base,
+              error: {
+                message: chunk.error?.message || "Stream error",
+                code: "stream_error",
+              },
+            } as StreamErrorEvent;
           case "raw":
-            return { type: "content_delta", delta: "", raw: chunk.rawValue };
+            return {
+              type: "content_delta",
+              ...base,
+              blockType: BlockType.TEXT,
+              blockIndex: 0,
+              delta: "",
+              raw: chunk.rawValue,
+            } as ContentDeltaEvent;
 
           default:
-            // Unknown chunk type
-            return { type: "content_delta", delta: "", raw: chunk };
+            // Unknown chunk type - pass through as content_delta
+            return {
+              type: "content_delta",
+              ...base,
+              blockType: BlockType.TEXT,
+              blockIndex: 0,
+              delta: "",
+              raw: chunk,
+            } as ContentDeltaEvent;
         }
       },
 
-      processStream: async (chunks: StreamChunk[]) => {
-        // Aggregate stream chunks into ModelOutput
+      processStream: async (events: StreamEvent[]) => {
+        // Aggregate stream events into ModelOutput
         let text = "";
         let reasoning = "";
         const toolCalls: any[] = [];
         let stopReason: StopReason = StopReason.UNSPECIFIED;
         let usage = { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
 
-        for (const chunk of chunks) {
-          if (chunk.type === StreamChunkType.CONTENT_DELTA) {
-            text += chunk.delta;
+        for (const event of events) {
+          if (event.type === "content_delta") {
+            text += (event as ContentDeltaEvent).delta;
           }
-          if (chunk.reasoning) {
-            reasoning += chunk.reasoning;
+          if (event.type === "reasoning_delta") {
+            reasoning += (event as ReasoningDeltaEvent).delta;
           }
-          if (chunk.toolCalls) {
-            toolCalls.push(...chunk.toolCalls);
+          if (event.type === "tool_call") {
+            const tc = event as ToolCallEvent;
+            toolCalls.push({ id: tc.callId, name: tc.name, input: tc.input });
           }
-          if (chunk.stopReason) {
-            stopReason = chunk.stopReason;
-          }
-          if (chunk.usage) {
-            usage = chunk.usage;
+          if (event.type === "message_end") {
+            const endEvent = event as MessageEndEvent;
+            stopReason = endEvent.stopReason;
+            if (endEvent.usage) {
+              usage = endEvent.usage;
+            }
           }
         }
 
@@ -552,7 +669,7 @@ export function createAiSdkModel(config: AiSdkAdapterConfig): AiSdkAdapter {
           stopReason,
           model: (model as any).modelId || "unknown",
           createdAt: new Date().toISOString(),
-          raw: chunks,
+          raw: events,
         };
       },
     },

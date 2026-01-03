@@ -572,7 +572,7 @@ describe("mapToolDefinition", () => {
       const tool = {
         name: "calculator",
         description: "Performs calculations",
-        parameters: {
+        input: {
           type: "object",
           properties: {
             expression: { type: "string" },
@@ -600,17 +600,17 @@ describe("mapToolDefinition", () => {
     it("should handle ToolDefinition without description", () => {
       const tool = {
         name: "no_desc",
-        parameters: { type: "object" },
+        input: { type: "object" },
       };
       const result = mapToolDefinition(tool);
 
       expect(result.functionDeclarations[0].description).toBe("");
     });
 
-    it("should handle ToolDefinition without parameters", () => {
+    it("should handle ToolDefinition without input", () => {
       const tool = {
         name: "no_params",
-        parameters: undefined,
+        input: undefined,
       };
       const result = mapToolDefinition(tool);
 
@@ -621,7 +621,7 @@ describe("mapToolDefinition", () => {
       const tool = {
         name: "with_provider",
         description: "Tool with provider options",
-        parameters: { type: "object" },
+        input: { type: "object" },
         providerOptions: {
           google: {
             customGoogleOption: "value",
@@ -638,7 +638,7 @@ describe("mapToolDefinition", () => {
       const tool = {
         name: "override",
         description: "Original",
-        parameters: { type: "object" },
+        input: { type: "object" },
         providerOptions: {
           google: {
             functionDeclarations: [

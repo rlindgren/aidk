@@ -443,7 +443,7 @@ Configure model and execution options:
 ```tsx
 // Set the model adapter
 <Model model={myModel} />
-<Model model="gpt-4" />  // From registry
+<Model model="gpt-5.2" />  // From registry
 
 // Configure model options
 <ModelOptions
@@ -560,7 +560,7 @@ import { Fragment, Model, User, Assistant, System } from "aidk";
 
 const ChatAgent = () => (
   <Fragment>
-    <Model model={gpt4} />
+    <Model model={gpt5} />
     <System>You are a helpful assistant.</System>
     <User>{userInput}</User>
   </Fragment>

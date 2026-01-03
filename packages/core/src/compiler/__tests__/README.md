@@ -59,7 +59,7 @@ End-to-end integration tests:
 
 ```bash
 # Run all V2 compiler tests
-npm test -- compiler/v2
+npm test -- compiler
 
 # Run specific test file
 npm test -- hooks.spec.ts
@@ -68,7 +68,7 @@ npm test -- fiber.spec.ts
 npm test -- integration.spec.ts
 
 # Run with coverage
-npm test -- --coverage compiler/v2
+npm test -- --coverage compiler
 ```
 
 ## Test Coverage Goals

@@ -121,7 +121,7 @@ interface EngineModel<TModelInput = ModelInput, TModelOutput = ModelOutput> {
   generate: Procedure<(input: TModelInput) => Promise<TModelOutput>>;
 
   /** Generate a streaming response */
-  stream?: Procedure<(input: TModelInput) => AsyncIterable<StreamChunk>>;
+  stream?: Procedure<(input: TModelInput) => AsyncIterable<StreamEvent>>;
 
   /** Convert engine state (COMInput) to model input */
   fromEngineState?: (input: COMInput) => Promise<TModelInput>;
@@ -129,8 +129,8 @@ interface EngineModel<TModelInput = ModelInput, TModelOutput = ModelOutput> {
   /** Convert model output to engine response */
   toEngineState?: (output: TModelOutput) => Promise<EngineResponse>;
 
-  /** Aggregate stream chunks into final output */
-  processStream?: (chunks: StreamChunk[]) => Promise<TModelOutput>;
+  /** Aggregate stream events into final output */
+  processStream?: (events: StreamEvent[]) => Promise<TModelOutput>;
 }
 ```
 
@@ -155,8 +155,8 @@ Best for simple adapters and one-off integrations:
 │  │ transformers: {                                          │    │
 │  │   prepareInput:  ModelInput → ProviderInput              │    │
 │  │   processOutput: ProviderOutput → ModelOutput            │    │
-│  │   processChunk:  ProviderChunk → StreamChunk             │    │
-│  │   processStream: StreamChunk[] → ModelOutput             │    │
+│  │   processChunk:  ProviderChunk → StreamEvent             │    │
+│  │   processStream: StreamEvent[] → ModelOutput             │    │
 │  │ }                                                        │    │
 │  │ executors: {                                             │    │
 │  │   execute:       ProviderInput → ProviderOutput          │    │
@@ -182,7 +182,7 @@ Best for complex adapters with shared behavior:
 │  Abstract methods (must implement):                             │
 │  ├── prepareInput(input): ProviderInput                         │
 │  ├── processOutput(output): ModelOutput                         │
-│  ├── processChunk(chunk): StreamChunk                           │
+│  ├── processChunk(chunk): StreamEvent                           │
 │  ├── execute(input): ProviderOutput                             │
 │  └── executeStream(input): AsyncIterable<Chunk>                 │
 │                                                                 │
@@ -371,7 +371,7 @@ Base class for provider adapters:
 | `hooks`             | ModelHookRegistry for this instance         |
 | `prepareInput()`    | Abstract - convert ModelInput to provider   |
 | `processOutput()`   | Abstract - convert provider output to Model |
-| `processChunk()`    | Abstract - convert chunk to StreamChunk     |
+| `processChunk()`    | Abstract - convert chunk to StreamEvent     |
 | `execute()`         | Abstract - call provider generation         |
 | `executeStream()`   | Abstract - call provider streaming          |
 | `fromEngineState()` | Convert COMInput to ModelInput              |
@@ -510,8 +510,8 @@ sequenceDiagram
     loop For each chunk
         Provider-->>Model: ProviderChunk
         Model->>Transform: processChunk(chunk)
-        Transform-->>Model: StreamChunk
-        Model-->>Engine: yield StreamChunk
+        Transform-->>Model: StreamEvent
+        Model-->>Engine: yield StreamEvent
     end
 
     deactivate Provider
@@ -564,7 +564,7 @@ const model = createModel({
 
   transformers: {
     prepareInput: (input) => ({
-      model: input.model || "gpt-4",
+      model: input.model || "gpt-5.2",
       messages: input.messages.map((m) => ({
         role: m.role,
         content: m.content
@@ -601,7 +601,7 @@ import { createAiSdkModel } from "aidk/adapters/ai-sdk";
 import { openai } from "@ai-sdk/openai";
 
 const model = createAiSdkModel({
-  model: openai("gpt-4o"),
+  model: openai("gpt-5.2"),
   temperature: 0.7,
   maxTokens: 4096,
 });
@@ -633,9 +633,17 @@ class MyCustomAdapter extends ModelAdapter<ModelInput, ModelOutput, ProviderInpu
     return { ... };
   }
 
-  protected processChunk(chunk: ProviderChunk): StreamChunk {
-    // Transform streaming chunk
-    return { type: 'content_delta', delta: chunk.text };
+  protected processChunk(chunk: ProviderChunk): StreamEvent {
+    // Transform streaming chunk to typed StreamEvent
+    return {
+      type: 'content_delta',
+      blockType: 'text',
+      blockIndex: 0,
+      delta: chunk.text,
+      id: generateEventId(),
+      tick: 1,
+      timestamp: new Date().toISOString(),
+    };
   }
 
   protected async execute(input: ProviderInput): Promise<ProviderOutput> {
@@ -730,7 +738,7 @@ import { anthropic } from "@ai-sdk/anthropic";
 
 // OpenAI via AI SDK
 const openaiModel = createAiSdkModel({
-  model: openai("gpt-4o"),
+  model: openai("gpt-5.2"),
 });
 
 // Anthropic via AI SDK
@@ -745,7 +753,7 @@ Each adapter must handle:
 
 1. **Input transformation** - Convert ModelInput to provider format
 2. **Output transformation** - Convert provider response to ModelOutput
-3. **Stream handling** - Transform provider chunks to StreamChunk
+3. **Stream handling** - Transform provider chunks to StreamEvent
 4. **Tool conversion** - Convert tool definitions to provider format
 5. **Error mapping** - Map provider errors to AIDK errors
 6. **Stop reason mapping** - Normalize finish reasons

@@ -13,7 +13,7 @@ import type { COMInput, EngineInput } from "../com/types";
 import { COM } from "../com/object-model";
 import type { ToolExecutionOptions } from "../types";
 import { ToolExecutionType, type ExecutableTool, type ToolConfirmationResult } from "../tool/tool";
-import type { AgentToolCall, AgentToolResult, StreamChunk } from "aidk-shared";
+import type { AgentToolCall, AgentToolResult, StreamEvent } from "aidk-shared";
 import { ToolExecutor } from "./tool-executor";
 import { type JSX, createElement, Fragment, ensureElement } from "../jsx/jsx-runtime";
 import { MarkdownRenderer, XMLRenderer } from "../renderers";
@@ -1079,7 +1079,7 @@ export class Engine extends EventEmitter {
     if (streamMiddleware.length > 0) {
       // model.stream is a Procedure, use type-safe helper
       wrapped.stream = applyRegistryMiddleware(
-        model.stream as unknown as Procedure<(input: ModelInput) => AsyncIterable<StreamChunk>>,
+        model.stream as unknown as Procedure<(input: ModelInput) => AsyncIterable<StreamEvent>>,
         ...normalizeModelHookMiddleware(streamMiddleware),
       );
     } else {
@@ -1497,13 +1497,15 @@ export class Engine extends EventEmitter {
       }
 
       // Emit execution_start (replaces legacy agent_start)
+      // sessionId can come from top level OR metadata
+      const sessionId = (input.metadata?.sessionId as string | undefined) || input.sessionId;
       yield {
         type: "execution_start",
         ...createEventBase(1),
         executionId: handle.pid,
-        threadId: input.threadId || handle.pid,
         componentName: this.config.name || "engine",
-        sessionId: input.sessionId,
+        sessionId,
+        metadata: input.metadata,
       } as EngineStreamEvent;
 
       // Check abort flag immediately after setup (before entering tick loop)
@@ -1559,6 +1561,8 @@ export class Engine extends EventEmitter {
 
           // 2. Model Execution (Engine's responsibility)
           let response: EngineResponse;
+          // Track tool_call events emitted by the adapter to avoid duplicates
+          const emittedToolCallIds = new Set<string>();
           try {
             // Use model and modelInput from compilation if available
             let model: ModelInstance | undefined;
@@ -1642,6 +1646,12 @@ export class Engine extends EventEmitter {
                   tick: (chunk as any).tick ?? session.tick,
                   timestamp: (chunk as any).timestamp || new Date().toISOString(),
                 } as EngineStreamEvent;
+
+                // Track tool_call events from the adapter
+                if ((chunk as any).type === "tool_call" && (chunk as any).callId) {
+                  emittedToolCallIds.add((chunk as any).callId);
+                }
+
                 yield streamEvent;
                 chunks.push(chunk);
               }
@@ -1652,7 +1662,7 @@ export class Engine extends EventEmitter {
                   "Model does not implement processStream for streaming responses.",
                 );
               }
-              modelOutput = await model.processStream(chunks as StreamChunk[]);
+              modelOutput = await model.processStream(chunks as StreamEvent[]);
             } else {
               const result = await model.generate(modelInput);
               if (isAsyncIterable(result)) {
@@ -1734,21 +1744,24 @@ export class Engine extends EventEmitter {
             try {
               const configTools = this.getTools();
 
-              // Yield all tool_call events first (immediately, before any processing)
+              // Yield tool_call events for calls not already emitted by the adapter
               // Track start times for each call
               const callStartTimes = new Map<string, string>();
               let blockIndex = 0;
               for (const call of response.toolCalls) {
                 const startedAt = new Date().toISOString();
                 callStartTimes.set(call.id, startedAt);
-                yield createToolCallEvent({
-                  callId: call.id,
-                  name: call.name,
-                  input: call.input as Record<string, unknown>,
-                  blockIndex: blockIndex++,
-                  tick: session.tick,
-                  startedAt,
-                });
+                // Skip if already emitted by the adapter during streaming
+                if (!emittedToolCallIds.has(call.id)) {
+                  yield createToolCallEvent({
+                    callId: call.id,
+                    name: call.name,
+                    input: call.input as Record<string, unknown>,
+                    blockIndex: blockIndex++,
+                    tick: session.tick,
+                    startedAt,
+                  });
+                }
               }
 
               // Collect events that occur during parallel processing
@@ -1915,8 +1928,8 @@ export class Engine extends EventEmitter {
             throw error;
           }
 
-          // tick_end with usage stats (if available from model response)
-          yield createTickEndEvent(session.tick, response.usage);
+          // tick_end with usage stats and new timeline entries (for persistence)
+          yield createTickEndEvent(session.tick, response.usage, response.newTimelineEntries);
 
           // Note: onTickEnd lifecycle hook is called by session.ingestTickResult()
           // for consistency with onTickStart being called by session.compileTick()
@@ -1969,9 +1982,9 @@ export class Engine extends EventEmitter {
           type: "execution_end",
           ...createEventBase(session.tick),
           executionId: handle.pid,
-          threadId: input.threadId || handle.pid,
           output: finalOutput,
-          sessionId: input.sessionId,
+          sessionId: (input.metadata?.sessionId as string | undefined) || input.sessionId,
+          metadata: input.metadata,
         } as EngineStreamEvent;
 
         await this.callLifecycleHooks("onExecutionEnd", [finalOutput, handle]);
@@ -2213,11 +2226,23 @@ export class Engine extends EventEmitter {
 
     const EngineClass = options?.engineClass || (this.constructor as typeof Engine);
     const shouldInheritHooks = options?.inherit?.hooks !== false;
+    const shouldInheritModel = options?.inherit?.model !== false;
+
+    // Get parent's model if inheriting
+    let inheritedModel: EngineConfig["model"] | undefined;
+    if (shouldInheritModel) {
+      const parentCom = (parentHandle as ExecutionHandleImpl).getComInstance?.();
+      if (parentCom) {
+        inheritedModel = parentCom.getModel();
+      }
+    }
 
     // Build child engine config - exclude lifecycle hooks if not inheriting
     const childConfig: EngineConfig = {
       ...this.config,
       ...options?.engineConfig,
+      // Inherit model from parent if not explicitly set in engineConfig
+      ...(inheritedModel && !options?.engineConfig?.model ? { model: inheritedModel } : {}),
     };
 
     // If not inheriting hooks, exclude lifecycle hooks from parent config

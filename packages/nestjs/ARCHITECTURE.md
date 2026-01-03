@@ -620,7 +620,7 @@ import { createEngine } from "aidk";
 import { ChatController } from "./chat.controller";
 
 const engine = createEngine({
-  model: openai("gpt-4"),
+  model: openai("gpt-5.2"),
 });
 
 @Module({

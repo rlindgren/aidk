@@ -51,5 +51,9 @@ export {
 } from "./middleware/engine";
 export type { EngineRequest, ExpressEngineConfig, TransportConfig } from "./middleware/engine";
 
+// Middleware Factory
+export { createExpressMiddleware } from "./middleware/create-middleware";
+export type { AgentRegistry, CreateExpressMiddlewareConfig } from "./middleware/create-middleware";
+
 // Re-export from server
 export * from "aidk-server";

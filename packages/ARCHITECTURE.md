@@ -78,7 +78,7 @@ kernel ────────────────────────�
 | Package    | Purpose                    | Key Exports                                           |
 | ---------- | -------------------------- | ----------------------------------------------------- |
 | **kernel** | Execution primitives       | `createProcedure`, `Context`, `Channel`, `Telemetry`  |
-| **shared** | Platform-independent types | `ContentBlock`, `Message`, `StreamChunk`, `AIDKError` |
+| **shared** | Platform-independent types | `ContentBlock`, `Message`, `StreamEvent`, `AIDKError` |
 
 ### Core Layer
 
@@ -323,7 +323,7 @@ All packages import types from `shared`:
 
 ```typescript
 // In any package
-import type { Message, ContentBlock, StreamChunk } from "aidk-shared";
+import type { Message, ContentBlock, StreamEvent } from "aidk-shared";
 ```
 
 ### Procedure-Based Execution

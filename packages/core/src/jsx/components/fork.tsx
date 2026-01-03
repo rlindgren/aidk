@@ -125,6 +125,7 @@ export class ForkComponent extends Component<ForkProps> {
     // Start fork on first render (instance persists across ticks)
     if (!this.forkStarted) {
       try {
+        // Model inheritance is handled by engine.fork() based on inherit.model option
         this.forkHandle = com.process.fork(this.props.input || { timeline: [] }, rootDefinition, {
           parentPid: this.props.parentPid,
           inherit: this.props.inherit,

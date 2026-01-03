@@ -257,7 +257,7 @@ import { OpenAIAdapter } from 'aidk-openai';
 
 // Create engine with MCP servers configured
 const engine = new Engine({
-  model: new OpenAIAdapter({ model: 'gpt-4' }),
+  model: new OpenAIAdapter({ model: 'gpt-5.2' }),
   mcpServers: {
     postgres: {
       command: 'npx',
@@ -290,7 +290,7 @@ import { EngineComponent } from 'aidk';
 
 // Create engine WITHOUT mcpServers config
 const engine = new Engine({
-  model: new OpenAIAdapter({ model: 'gpt-4' }),
+  model: new OpenAIAdapter({ model: 'gpt-5.2' }),
   // No mcpServers here!
 });
 

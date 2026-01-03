@@ -15,9 +15,18 @@ import type {
   ModelConfig as BaseModelConfig,
   ModelToolReference as BaseModelToolReference,
 } from "aidk-shared/models";
-import type { StreamChunk } from "aidk-shared/streaming";
+import type {
+  StreamEvent,
+  MessageStartEvent,
+  MessageEndEvent,
+  MessageEvent,
+  ContentDeltaEvent,
+  ReasoningDeltaEvent,
+  ToolCallEvent,
+  StreamEventBase,
+} from "aidk-shared/streaming";
 import type { Message } from "aidk-shared/messages";
-import { StopReason } from "aidk-shared/streaming";
+import { StopReason } from "aidk-shared";
 import type { COMInput } from "../com/types";
 import type { EngineResponse } from "../engine/engine-response";
 import type { StopReasonInfo } from "../component/component";
@@ -26,6 +35,31 @@ import { ToolHookRegistry } from "../tool/tool-hooks";
 import type { EventBlock, TextBlock, ContentBlock } from "aidk-shared";
 
 export type { BaseModelToolReference, BaseModelConfig, BaseModelInput, BaseModelOutput };
+
+// ============================================================================
+// Event Helpers
+// ============================================================================
+
+let modelEventIdCounter = 0;
+
+/**
+ * Generate a unique event ID for model stream events
+ */
+function generateModelEventId(): string {
+  return `mevt_${Date.now()}_${++modelEventIdCounter}`;
+}
+
+/**
+ * Create base event fields for StreamEvent
+ * Model layer always uses tick=1 since it doesn't have engine context
+ */
+function createModelEventBase(): StreamEventBase {
+  return {
+    id: generateModelEventId(),
+    tick: 1,
+    timestamp: new Date().toISOString(),
+  };
+}
 
 // ============================================================================
 // Core Interface
@@ -43,7 +77,7 @@ export interface EngineModel<TModelInput = ModelInput, TModelOutput = ModelOutpu
   generate: Procedure<(input: TModelInput) => Promise<TModelOutput>>;
 
   /** Generate a streaming response */
-  stream?: Procedure<(input: TModelInput) => AsyncIterable<StreamChunk>>;
+  stream?: Procedure<(input: TModelInput) => AsyncIterable<StreamEvent>>;
 
   /** Convert engine state (COMInput) to model input */
   fromEngineState?: (input: COMInput) => Promise<TModelInput>;
@@ -51,8 +85,8 @@ export interface EngineModel<TModelInput = ModelInput, TModelOutput = ModelOutpu
   /** Convert model output to engine response */
   toEngineState?: (output: TModelOutput) => Promise<EngineResponse>;
 
-  /** Aggregate stream chunks into final output */
-  processStream?: (chunks: StreamChunk[]) => Promise<TModelOutput>;
+  /** Aggregate stream events into final output */
+  processStream?: (events: StreamEvent[]) => Promise<TModelOutput>;
 }
 
 // ============================================================================
@@ -75,10 +109,10 @@ export interface ModelTransformers<
   prepareInput?: (input: TModelInput) => MaybePromise<TProviderInput>;
   /** Convert provider output to model output */
   processOutput?: (output: TProviderOutput) => MaybePromise<TModelOutput>;
-  /** Convert provider chunk to standard StreamChunk */
-  processChunk?: (chunk: TChunk) => StreamChunk;
-  /** Aggregate chunks into final output */
-  processStream?: (chunks: TChunk[] | StreamChunk[]) => MaybePromise<TModelOutput>;
+  /** Convert provider chunk to StreamEvent */
+  processChunk?: (chunk: TChunk) => StreamEvent;
+  /** Aggregate events into final output */
+  processStream?: (events: TChunk[] | StreamEvent[]) => MaybePromise<TModelOutput>;
 }
 
 /**
@@ -167,7 +201,7 @@ export function createModel<
   const processOutput =
     transformers.processOutput ?? ((output: TProviderOutput) => output as unknown as TModelOutput);
   const processChunk =
-    transformers.processChunk ?? ((chunk: TChunk) => chunk as unknown as StreamChunk);
+    transformers.processChunk ?? ((chunk: TChunk) => chunk as unknown as StreamEvent);
   const processStream = transformers.processStream;
 
   // Create generate procedure with low-cardinality telemetry
@@ -190,9 +224,9 @@ export function createModel<
   );
 
   // Create stream procedure if streaming is supported
-  let stream: Procedure<(input: TModelInput) => AsyncIterable<StreamChunk>> | undefined;
+  let stream: Procedure<(input: TModelInput) => AsyncIterable<StreamEvent>> | undefined;
   if (executors.executeStream) {
-    stream = createEngineProcedure<(input: TModelInput) => AsyncIterable<StreamChunk>>(
+    stream = createEngineProcedure<(input: TModelInput) => AsyncIterable<StreamEvent>>(
       {
         name: "model:stream",
         metadata: {
@@ -206,8 +240,98 @@ export function createModel<
       async function* (input: TModelInput) {
         const providerInput = await prepareInput(input);
         const iterator = executors.executeStream!(providerInput);
+
+        // Accumulate content for final message event
+        let messageStartedAt: string | undefined;
+        let accumulatedText = "";
+        let accumulatedReasoning = "";
+        const accumulatedToolCalls: Array<{
+          id: string;
+          name: string;
+          input: Record<string, unknown>;
+        }> = [];
+        let lastUsage:
+          | { inputTokens: number; outputTokens: number; totalTokens: number }
+          | undefined;
+        let lastStopReason: StopReason = StopReason.UNSPECIFIED;
+        let modelId: string | undefined;
+
         for await (const chunk of iterator) {
-          yield processChunk(chunk);
+          const processed = processChunk(chunk);
+
+          // Track message lifecycle
+          if (processed.type === "message_start") {
+            messageStartedAt = new Date().toISOString();
+            modelId = (processed as MessageStartEvent).model || metadata.id;
+          }
+
+          // Accumulate content
+          if (processed.type === "content_delta") {
+            accumulatedText += (processed as ContentDeltaEvent).delta;
+          }
+          if (processed.type === "reasoning_delta") {
+            accumulatedReasoning += (processed as ReasoningDeltaEvent).delta;
+          }
+          if (processed.type === "tool_call") {
+            const tc = processed as ToolCallEvent;
+            accumulatedToolCalls.push({
+              id: tc.callId,
+              name: tc.name,
+              input: tc.input,
+            });
+          }
+          if (processed.type === "message_end") {
+            const endEvent = processed as MessageEndEvent;
+            if (endEvent.usage) lastUsage = endEvent.usage;
+            lastStopReason = endEvent.stopReason;
+          }
+
+          yield processed;
+
+          // After message_end, emit a complete message event
+          if (processed.type === "message_end") {
+            const content: ContentBlock[] = [];
+
+            // Add reasoning block first if present
+            if (accumulatedReasoning) {
+              content.push({ type: "reasoning", text: accumulatedReasoning } as ContentBlock);
+            }
+            // Add text content
+            if (accumulatedText) {
+              content.push({ type: "text", text: accumulatedText });
+            }
+            // Add tool use blocks
+            for (const tc of accumulatedToolCalls) {
+              content.push({
+                type: "tool_use",
+                toolUseId: tc.id,
+                name: tc.name,
+                input: tc.input,
+              } as ContentBlock);
+            }
+
+            const messageEvent: MessageEvent = {
+              type: "message",
+              ...createModelEventBase(),
+              message: {
+                role: "assistant" as const,
+                content,
+              },
+              stopReason: lastStopReason,
+              usage: lastUsage,
+              model: modelId || metadata.id,
+              startedAt: messageStartedAt || new Date().toISOString(),
+              completedAt: new Date().toISOString(),
+            };
+
+            yield messageEvent;
+
+            // Reset accumulators for potential multi-message streams
+            messageStartedAt = undefined;
+            accumulatedText = "";
+            accumulatedReasoning = "";
+            accumulatedToolCalls.length = 0;
+          }
         }
       },
     );
@@ -228,7 +352,7 @@ export function createModel<
       ? async (output: TModelOutput) => options.toEngineState!(output)
       : undefined,
     processStream: processStream
-      ? async (chunks: StreamChunk[]) => processStream(chunks)
+      ? async (events: StreamEvent[]) => processStream(events)
       : undefined,
   };
 }
@@ -308,7 +432,7 @@ export abstract class ModelAdapter<
   TModelOutput = ModelOutput,
   TProviderInput = any,
   TProviderOutput = any,
-  TChunk = StreamChunk,
+  TChunk = StreamEvent,
 > implements EngineModel<TModelInput, TModelOutput> {
   abstract metadata: ModelMetadata;
 
@@ -354,8 +478,8 @@ export abstract class ModelAdapter<
   /** Convert provider output to model output */
   protected abstract processOutput(output: TProviderOutput): TModelOutput | Promise<TModelOutput>;
 
-  /** Convert provider chunk to StreamChunk */
-  protected abstract processChunk?(chunk: TChunk): StreamChunk;
+  /** Convert provider chunk to StreamEvent */
+  protected abstract processChunk?(chunk: TChunk): StreamEvent;
 
   /** Execute generation (provider-specific) */
   protected abstract execute(input: TProviderInput): Promise<TProviderOutput>;
@@ -390,9 +514,9 @@ export abstract class ModelAdapter<
   }
 
   /** Stream procedure - initialized lazily to access metadata */
-  private _stream?: Procedure<(input: TModelInput) => AsyncIterable<StreamChunk>>;
+  private _stream?: Procedure<(input: TModelInput) => AsyncIterable<StreamEvent>>;
 
-  public get stream(): Procedure<(input: TModelInput) => AsyncIterable<StreamChunk>> {
+  public get stream(): Procedure<(input: TModelInput) => AsyncIterable<StreamEvent>> {
     if (!this._stream) {
       const self = this;
       this._stream = createEngineProcedure(
@@ -404,13 +528,105 @@ export abstract class ModelAdapter<
             operation: "stream",
           },
         },
-        async function* (input: TModelInput): AsyncIterable<StreamChunk> {
+        async function* (input: TModelInput): AsyncIterable<StreamEvent> {
           if (!self.executeStream) {
             throw new Error(`Model ${self.metadata.id} does not support streaming.`);
           }
           const providerInput = await self.prepareInput(input);
+
+          // Accumulate content for final message event
+          let messageStartedAt: string | undefined;
+          let accumulatedText = "";
+          let accumulatedReasoning = "";
+          const accumulatedToolCalls: Array<{
+            id: string;
+            name: string;
+            input: Record<string, unknown>;
+          }> = [];
+          let lastUsage:
+            | { inputTokens: number; outputTokens: number; totalTokens: number }
+            | undefined;
+          let lastStopReason: StopReason = StopReason.UNSPECIFIED;
+          let modelId: string | undefined;
+
           for await (const chunk of self.executeStream(providerInput)) {
-            yield self.processChunk ? self.processChunk(chunk) : (chunk as unknown as StreamChunk);
+            const processed = self.processChunk
+              ? self.processChunk(chunk)
+              : (chunk as unknown as StreamEvent);
+
+            // Track message lifecycle
+            if (processed.type === "message_start") {
+              messageStartedAt = new Date().toISOString();
+              modelId = (processed as MessageStartEvent).model || self.metadata.id;
+            }
+
+            // Accumulate content
+            if (processed.type === "content_delta") {
+              accumulatedText += (processed as ContentDeltaEvent).delta;
+            }
+            if (processed.type === "reasoning_delta") {
+              accumulatedReasoning += (processed as ReasoningDeltaEvent).delta;
+            }
+            if (processed.type === "tool_call") {
+              const tc = processed as ToolCallEvent;
+              accumulatedToolCalls.push({
+                id: tc.callId,
+                name: tc.name,
+                input: tc.input,
+              });
+            }
+            if (processed.type === "message_end") {
+              const endEvent = processed as MessageEndEvent;
+              if (endEvent.usage) lastUsage = endEvent.usage;
+              lastStopReason = endEvent.stopReason;
+            }
+
+            yield processed;
+
+            // After message_end, emit a complete message event
+            if (processed.type === "message_end") {
+              const content: ContentBlock[] = [];
+
+              // Add reasoning block first if present
+              if (accumulatedReasoning) {
+                content.push({ type: "reasoning", text: accumulatedReasoning } as ContentBlock);
+              }
+              // Add text content
+              if (accumulatedText) {
+                content.push({ type: "text", text: accumulatedText });
+              }
+              // Add tool use blocks
+              for (const tc of accumulatedToolCalls) {
+                content.push({
+                  type: "tool_use",
+                  toolUseId: tc.id,
+                  name: tc.name,
+                  input: tc.input,
+                } as ContentBlock);
+              }
+
+              const messageEvent: MessageEvent = {
+                type: "message",
+                ...createModelEventBase(),
+                message: {
+                  role: "assistant" as const,
+                  content,
+                },
+                stopReason: lastStopReason,
+                usage: lastUsage,
+                model: modelId || self.metadata.id,
+                startedAt: messageStartedAt || new Date().toISOString(),
+                completedAt: new Date().toISOString(),
+              };
+
+              yield messageEvent;
+
+              // Reset accumulators for potential multi-message streams
+              messageStartedAt = undefined;
+              accumulatedText = "";
+              accumulatedReasoning = "";
+              accumulatedToolCalls.length = 0;
+            }
           }
         },
       );
@@ -418,25 +634,42 @@ export abstract class ModelAdapter<
     return this._stream;
   }
 
-  /** Aggregate stream chunks into final output */
-  public async processStream(chunks: TChunk[] | StreamChunk[]): Promise<TModelOutput> {
-    const streamChunks = chunks as StreamChunk[];
+  /** Aggregate stream events into final output */
+  public async processStream(events: TChunk[] | StreamEvent[]): Promise<TModelOutput> {
+    const streamEvents = events as StreamEvent[];
     let text = "";
     const toolCalls: any[] = [];
     const usage = { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
     let stopReason: any = "unspecified";
     let model = this.metadata.id;
 
-    for (const chunk of streamChunks) {
-      if (chunk?.delta) text += chunk.delta;
-      if (chunk?.toolCalls) toolCalls.push(...chunk.toolCalls);
-      if (chunk?.usage) {
-        usage.inputTokens = Math.max(usage.inputTokens, chunk.usage.inputTokens || 0);
-        usage.outputTokens = Math.max(usage.outputTokens, chunk.usage.outputTokens || 0);
-        usage.totalTokens = Math.max(usage.totalTokens, chunk.usage.totalTokens || 0);
+    for (const event of streamEvents) {
+      if (event.type === "content_delta") {
+        text += (event as ContentDeltaEvent).delta;
       }
-      if (chunk?.stopReason) stopReason = chunk.stopReason;
-      if (chunk?.model) model = chunk.model;
+      if (event.type === "tool_call") {
+        const tc = event as ToolCallEvent;
+        toolCalls.push({ id: tc.callId, name: tc.name, input: tc.input });
+      }
+      if (event.type === "message_end") {
+        const endEvent = event as MessageEndEvent;
+        if (endEvent.usage) {
+          usage.inputTokens = Math.max(usage.inputTokens, endEvent.usage.inputTokens || 0);
+          usage.outputTokens = Math.max(usage.outputTokens, endEvent.usage.outputTokens || 0);
+          usage.totalTokens = Math.max(usage.totalTokens, endEvent.usage.totalTokens || 0);
+        }
+        stopReason = endEvent.stopReason;
+      }
+      if (event.type === "message") {
+        const msgEvent = event as MessageEvent;
+        if (msgEvent.model) model = msgEvent.model;
+        if (msgEvent.usage) {
+          usage.inputTokens = Math.max(usage.inputTokens, msgEvent.usage.inputTokens || 0);
+          usage.outputTokens = Math.max(usage.outputTokens, msgEvent.usage.outputTokens || 0);
+          usage.totalTokens = Math.max(usage.totalTokens, msgEvent.usage.totalTokens || 0);
+        }
+        stopReason = msgEvent.stopReason;
+      }
     }
 
     return {
@@ -790,7 +1023,7 @@ export interface ModelOutput extends BaseModelOutput {
   raw: any;
 }
 
-// StreamChunk and StreamChunkType are now exported from 'aidk-shared'
+// StreamEvent types are exported from 'aidk-shared/streaming'
 
 export type ModelToolReference =
   | BaseModelToolReference
@@ -826,7 +1059,7 @@ export interface ModelOperations {
   /**
    * Generate completion (streaming)
    */
-  stream: Procedure<(input: ModelInput) => AsyncIterable<StreamChunk>>;
+  stream: Procedure<(input: ModelInput) => AsyncIterable<StreamEvent>>;
 }
 
 /**

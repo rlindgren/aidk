@@ -78,9 +78,11 @@ AIDK spans multiple contexts: backend engines, frontend clients, model adapters,
 │   ┌────────▼────────┐     ┌─────────────────┐                   │
 │   │  streaming.ts   │     │    tools.ts     │                   │
 │   │  ─────────────  │     │  ─────────────  │                   │
-│   │  StreamChunk    │     │  ToolDefinition │                   │
-│   │  StreamChunkType│     │  ToolExecType   │                   │
-│   │  StopReason     │     │  AgentToolCall  │                   │
+│   │  StreamEvent    │     │  ToolDefinition │                   │
+│   │  EngineEvent    │     │  ToolExecType   │                   │
+│   │  StreamChunk    │     │  AgentToolCall  │                   │
+│   │  (legacy)       │     │                 │                   │
+│   │  StopReason     │     │                 │                   │
 │   └─────────────────┘     └─────────────────┘                   │
 │                                                                 │
 │   ┌─────────────────┐     ┌─────────────────┐                   │
@@ -112,20 +114,20 @@ AIDK spans multiple contexts: backend engines, frontend clients, model adapters,
 
 ### File Overview
 
-| File             | Lines | Purpose                                       |
-| ---------------- | ----- | --------------------------------------------- |
-| `block-types.ts` | 109   | Enums for block types, roles, MIME types      |
-| `blocks.ts`      | 540   | Content block interfaces and helper functions |
-| `messages.ts`    | 139   | Message types and factory functions           |
-| `streaming.ts`   | 101   | Streaming protocol types                      |
-| `tools.ts`       | 199   | Tool calling interfaces                       |
-| `models.ts`      | 170   | Model input/output contracts                  |
-| `timeline.ts`    | 68    | Timeline entry types                          |
-| `input.ts`       | 92    | Input normalization utilities                 |
-| `errors.ts`      | 789   | Structured error hierarchy                    |
-| `identity.ts`    | ~30   | Symbol-based identity utilities               |
-| `index.ts`       | 9     | Re-exports all modules                        |
-| `testing/`       | ~250  | Test utilities, fixtures, and helpers         |
+| File             | Lines | Purpose                                                               |
+| ---------------- | ----- | --------------------------------------------------------------------- |
+| `block-types.ts` | 109   | Enums for block types, roles, MIME types                              |
+| `blocks.ts`      | 540   | Content block interfaces and helper functions                         |
+| `messages.ts`    | 139   | Message types and factory functions                                   |
+| `streaming.ts`   | ~600  | StreamEvent types, EngineEvent types, type guards, legacy StreamChunk |
+| `tools.ts`       | 199   | Tool calling interfaces                                               |
+| `models.ts`      | 170   | Model input/output contracts                                          |
+| `timeline.ts`    | 68    | Timeline entry types                                                  |
+| `input.ts`       | 92    | Input normalization utilities                                         |
+| `errors.ts`      | 789   | Structured error hierarchy                                            |
+| `identity.ts`    | ~30   | Symbol-based identity utilities                                       |
+| `index.ts`       | 9     | Re-exports all modules                                                |
+| `testing/`       | ~500  | Test fixtures (messages, events, streams) and helpers                 |
 
 ---
 
@@ -221,7 +223,38 @@ Tool intent describes WHAT a tool does, independent of where it runs:
 
 ### 6. Streaming Protocol
 
-The `StreamChunk` type defines the streaming contract between backend and frontend:
+AIDK has two streaming event systems:
+
+#### StreamEvent (Typed Event System)
+
+The newer `StreamEvent` / `EngineStreamEvent` types provide strongly-typed discriminated unions for all streaming events. Use these for new code.
+
+**Event Categories:**
+
+- **StreamEvent** - Model output events (content, reasoning, messages, tool calls)
+- **EngineEvent** - Orchestration events (execution lifecycle, ticks, tool results, fork/spawn)
+- **EngineStreamEvent** - Combined union (what `engine.stream()` yields)
+
+**Event Pattern:**
+
+```
+[thing]_start → [thing]_delta (0..n) → [thing]_end → [thing] (complete)
+```
+
+Example for text streaming:
+
+```
+message_start → content_start → content_delta* → content_end → content → message_end → message
+```
+
+This pattern allows consumers to choose granularity:
+
+- **Streaming UI**: Listen for `*_delta` events for real-time updates
+- **Simple consumption**: Listen for `content`, `reasoning`, `message`, `tool_call` for complete objects
+
+#### StreamChunk (Legacy)
+
+The `StreamChunk` type is the legacy flat streaming structure. It's still used internally by the model layer for backwards compatibility with adapters. New code should use `StreamEvent` instead.
 
 ```
 message_start ─▶ content_start ─▶ content_delta... ─▶ content_end ─▶ message_end
@@ -234,6 +267,17 @@ message_start ─▶ content_start ─▶ content_delta... ─▶ content_end �
                                ▼
                       tool_input_end ─▶ tool_result
 ```
+
+#### When to Use Which
+
+| Context                      | Use                                   |
+| ---------------------------- | ------------------------------------- |
+| Engine event handling        | `EngineStreamEvent` (typed)           |
+| Client event handling        | `StreamEvent` / `EngineEvent` (typed) |
+| Model adapter implementation | `StreamChunk` (legacy, internal)      |
+| UI components                | `StreamEvent` (typed)                 |
+| Testing engine/client        | `StreamEvent` fixtures                |
+| Testing model adapters       | `StreamChunk` fixtures                |
 
 ---
 
@@ -415,7 +459,168 @@ isEventMessage(message: Message): message is EventMessage
 
 ### streaming.ts
 
-#### `StreamChunkType` (enum)
+The streaming module exports two event systems: **StreamEvent** (typed, recommended) and **StreamChunk** (legacy).
+
+#### `StopReason` (enum)
+
+Common stop reasons used by both event systems:
+
+| Value                 | Description                                 |
+| --------------------- | ------------------------------------------- |
+| `MAX_TOKENS`          | Token limit reached                         |
+| `STOP_SEQUENCE`       | Stop sequence encountered                   |
+| `CONTENT_FILTER`      | Content filtered                            |
+| `TOOL_USE`            | Stopped for tool execution                  |
+| `STOP`                | Natural stop                                |
+| `PAUSED`              | Execution paused                            |
+| `ERROR`               | Error occurred                              |
+| `EXPLICIT_COMPLETION` | Engine/runtime requested stop               |
+| `NATURAL_COMPLETION`  | Model decided to stop (end_turn, stop, etc) |
+
+---
+
+#### StreamEvent Types (Recommended)
+
+Strongly-typed discriminated unions for all streaming events.
+
+##### `StreamEventBase`
+
+Base fields shared by all stream events:
+
+```typescript
+interface StreamEventBase {
+  id: string;        // Normalized event ID
+  tick: number;      // Tick number (default 1)
+  timestamp: string; // ISO 8601 timestamp
+  raw?: unknown;     // Original provider event
+}
+```
+
+##### Content Events
+
+| Type            | Description            | Key Fields                                          |
+| --------------- | ---------------------- | --------------------------------------------------- |
+| `content_start` | Content block started  | `blockType`, `blockIndex`                           |
+| `content_delta` | Incremental content    | `blockType`, `blockIndex`, `delta`                  |
+| `content_end`   | Content block ended    | `blockType`, `blockIndex`                           |
+| `content`       | Complete content block | `content`, `blockIndex`, `startedAt`, `completedAt` |
+
+##### Reasoning Events
+
+| Type              | Description           | Key Fields                                            |
+| ----------------- | --------------------- | ----------------------------------------------------- |
+| `reasoning_start` | Reasoning started     | `blockIndex`                                          |
+| `reasoning_delta` | Incremental reasoning | `blockIndex`, `delta`                                 |
+| `reasoning_end`   | Reasoning ended       | `blockIndex`                                          |
+| `reasoning`       | Complete reasoning    | `reasoning`, `blockIndex`, `startedAt`, `completedAt` |
+
+##### Message Events
+
+| Type            | Description      | Key Fields                                                              |
+| --------------- | ---------------- | ----------------------------------------------------------------------- |
+| `message_start` | Message started  | `role`, `model?`                                                        |
+| `message_end`   | Message ended    | `stopReason`, `usage?`                                                  |
+| `message`       | Complete message | `message`, `stopReason`, `usage?`, `model?`, `startedAt`, `completedAt` |
+
+##### Tool Call Events
+
+| Type              | Description        | Key Fields                                                          |
+| ----------------- | ------------------ | ------------------------------------------------------------------- |
+| `tool_call_start` | Tool call started  | `callId`, `name`, `blockIndex`                                      |
+| `tool_call_delta` | Incremental input  | `callId`, `blockIndex`, `delta`                                     |
+| `tool_call_end`   | Tool call ended    | `callId`, `blockIndex`                                              |
+| `tool_call`       | Complete tool call | `callId`, `name`, `input`, `blockIndex`, `startedAt`, `completedAt` |
+
+##### Error Event
+
+| Type    | Description  | Key Fields                  |
+| ------- | ------------ | --------------------------- |
+| `error` | Stream error | `error: { message, code? }` |
+
+---
+
+#### EngineEvent Types (Orchestration)
+
+Events from engine orchestration (not model output).
+
+##### Execution Events
+
+| Type              | Description        | Key Fields                                                                         |
+| ----------------- | ------------------ | ---------------------------------------------------------------------------------- |
+| `execution_start` | Execution started  | `executionId`, `sessionId?`, `metadata?`, `parentExecutionId?`, `rootExecutionId?` |
+| `execution_end`   | Execution ended    | `executionId`, `sessionId?`, `metadata?`, `output`                                 |
+| `execution`       | Complete execution | `executionId`, `sessionId?`, `metadata?`, `output`, `usage`, `stopReason`, `ticks` |
+
+> **Note**: App-specific identifiers like `threadId` are passed via `metadata`. The `sessionId` field is kept top-level as it's universal for client connections.
+
+##### Tick Events
+
+| Type         | Description   | Key Fields                                                |
+| ------------ | ------------- | --------------------------------------------------------- |
+| `tick_start` | Tick started  | `tick`                                                    |
+| `tick_end`   | Tick ended    | `tick`, `usage?`                                          |
+| `tick`       | Complete tick | `tick`, `usage`, `stopReason`, `startedAt`, `completedAt` |
+
+##### Tool Result Events
+
+| Type                         | Description             | Key Fields                                           |
+| ---------------------------- | ----------------------- | ---------------------------------------------------- |
+| `tool_result`                | Tool execution result   | `callId`, `name`, `result`, `isError?`, `executedBy` |
+| `tool_confirmation_required` | Tool needs confirmation | `callId`, `name`, `input`, `message`                 |
+| `tool_confirmation_result`   | Confirmation response   | `callId`, `confirmed`, `always?`                     |
+
+##### Fork Events
+
+Fork creates parallel execution branches that race or vote.
+
+| Type         | Description  | Key Fields                                                                     |
+| ------------ | ------------ | ------------------------------------------------------------------------------ |
+| `fork_start` | Fork started | `forkId`, `parentExecutionId`, `strategy`, `branches`, `branchCount`, `input?` |
+| `fork_end`   | Fork ended   | `forkId`, `parentExecutionId`, `selectedBranch?`, `results`, `usage?`          |
+
+```typescript
+// Fork strategies
+type ForkStrategy = "race" | "vote" | "all";
+```
+
+##### Spawn Events
+
+Spawn creates a child execution that runs independently.
+
+| Type          | Description   | Key Fields                                                                               |
+| ------------- | ------------- | ---------------------------------------------------------------------------------------- |
+| `spawn_start` | Spawn started | `spawnId`, `parentExecutionId`, `childExecutionId`, `componentName?`, `label?`, `input?` |
+| `spawn_end`   | Spawn ended   | `spawnId`, `parentExecutionId`, `childExecutionId`, `output`, `isError?`, `usage?`       |
+
+##### Engine Error Event
+
+| Type           | Description  | Key Fields                  |
+| -------------- | ------------ | --------------------------- |
+| `engine_error` | Engine error | `error: { message, code? }` |
+
+---
+
+#### Type Guards
+
+```typescript
+// StreamEvent vs EngineEvent
+isStreamEvent(event: EngineStreamEvent): event is StreamEvent
+isEngineEvent(event: EngineStreamEvent): event is EngineEvent
+
+// Specific event types
+isForkEvent(event: EngineStreamEvent): event is ForkStartEvent | ForkEndEvent
+isSpawnEvent(event: EngineStreamEvent): event is SpawnStartEvent | SpawnEndEvent
+isDeltaEvent(event: EngineStreamEvent): event is ContentDeltaEvent | ReasoningDeltaEvent | ToolCallDeltaEvent
+isFinalEvent(event: EngineStreamEvent): event is ContentEvent | ReasoningEvent | MessageEvent | ToolCallEvent | TickEvent | ExecutionEvent
+```
+
+---
+
+#### StreamChunk (Legacy)
+
+The legacy flat streaming structure. Still used internally by model adapters.
+
+##### `StreamChunkType` (enum)
 
 | Value              | Description                   |
 | ------------------ | ----------------------------- |
@@ -438,43 +643,26 @@ isEventMessage(message: Message): message is EventMessage
 | `STEP_START`       | Multi-step execution started  |
 | `STEP_END`         | Multi-step execution ended    |
 
-#### `StopReason` (enum)
-
-| Value                 | Description                |
-| --------------------- | -------------------------- |
-| `MAX_TOKENS`          | Token limit reached        |
-| `STOP_SEQUENCE`       | Stop sequence encountered  |
-| `CONTENT_FILTER`      | Content filtered           |
-| `TOOL_USE`            | Stopped for tool execution |
-| `STOP`                | Natural stop               |
-| `PAUSED`              | Execution paused           |
-| `ERROR`               | Error occurred             |
-| `EXPLICIT_COMPLETION` | Explicitly marked complete |
-| `NATURAL_COMPLETION`  | Naturally completed        |
-
-#### `StreamChunk`
-
-The streaming protocol contract:
+##### `StreamChunk` Interface
 
 ```typescript
 interface StreamChunk {
-  type: StreamChunkType;
-  delta?: string; // Content delta
-  reasoning?: string; // Reasoning delta
-  id?: string; // Block/message ID
-  toolCallId?: string; // Tool use ID
-  toolName?: string; // Tool name
-  toolResult?: any; // Tool result
-  isToolError?: boolean; // Tool error flag
+  type: string;
+  delta?: string;            // Content delta
+  reasoning?: string;        // Reasoning delta
+  id?: string;               // Block/message ID
+  toolCallId?: string;       // Tool use ID
+  toolName?: string;         // Tool name
+  toolResult?: unknown;      // Tool result
+  isToolError?: boolean;     // Tool error flag
   providerExecuted?: boolean; // Provider-executed tool
-  model?: string; // Model identifier
-  stopReason?: StopReason; // Why generation stopped
-  message?: Message; // Full message
-  block?: ContentBlock; // Full content block
-  index?: number; // Block position
-  createdAt?: string; // ISO 8601 timestamp
+  model?: string;            // Model identifier
+  stopReason?: StopReason;   // Why generation stopped
+  message?: Message;         // Full message
+  block?: ContentBlock;      // Full content block
+  index?: number;            // Block position
+  createdAt?: string;        // ISO 8601 timestamp
   usage?: {
-    // Token usage
     inputTokens: number;
     outputTokens: number;
     totalTokens: number;
@@ -864,7 +1052,7 @@ createToolDefinition(name?: string, description?: string): ToolDefinition
 createAgentToolCall(name?: string, input?: object): AgentToolCall
 createAgentToolResult(toolUseId: string, content?: ContentBlock[]): AgentToolResult
 
-// Stream Chunks
+// Legacy Stream Chunks (for model adapter tests)
 createStreamChunk(type: StreamChunkType, overrides?: object): StreamChunk
 createTextDeltaChunk(delta: string): StreamChunk
 createMessageStartChunk(id?: string): StreamChunk
@@ -873,6 +1061,52 @@ createToolCallChunk(name: string, input?: object): StreamChunk
 createToolResultChunk(toolUseId: string, content?: ContentBlock[]): StreamChunk
 createTextStreamSequence(text: string): StreamChunk[]
 createToolCallStreamSequence(name: string, input: object): StreamChunk[]
+
+// StreamEvent Fixtures (recommended for engine/client tests)
+createEventBase(tick?: number): StreamEventBase
+createContentStartEvent(blockType?, blockIndex?): ContentStartEvent
+createContentDeltaEvent(delta: string, blockType?, blockIndex?): ContentDeltaEvent
+createContentEndEvent(blockType?, blockIndex?): ContentEndEvent
+createContentEvent(content: ContentBlock, blockIndex?): ContentEvent
+createReasoningStartEvent(blockIndex?): ReasoningStartEvent
+createReasoningDeltaEvent(delta: string, blockIndex?): ReasoningDeltaEvent
+createReasoningEndEvent(blockIndex?): ReasoningEndEvent
+createReasoningCompleteEvent(reasoning: string, blockIndex?): ReasoningEvent
+createMessageStartEvent(model?: string): MessageStartEvent
+createMessageEndEvent(stopReason?, usage?): MessageEndEvent
+createMessageCompleteEvent(message: Message, stopReason?): MessageEvent
+createToolCallStartEvent(name: string, callId?, blockIndex?): ToolCallStartEvent
+createToolCallDeltaEvent(callId: string, delta: string, blockIndex?): ToolCallDeltaEvent
+createToolCallEndEvent(callId: string, blockIndex?): ToolCallEndEvent
+createToolCallCompleteEvent(name: string, input?, callId?, blockIndex?): ToolCallEvent
+createStreamErrorEvent(message: string, code?): StreamErrorEvent
+
+// EngineEvent Fixtures
+createExecutionStartEvent(executionId?, overrides?): ExecutionStartEvent
+createExecutionEndEvent(executionId: string, output?, overrides?): ExecutionEndEvent
+createExecutionCompleteEvent(executionId?, output?, overrides?): ExecutionEvent
+createTickStartEvent(tick?: number): TickStartEvent
+createTickEndEvent(tick?: number, usage?): TickEndEvent
+createTickCompleteEvent(tick?: number): TickEvent
+createToolResultEvent(callId: string, name: string, result: unknown, executedBy?): ToolResultEvent
+createToolConfirmationRequiredEvent(callId: string, name: string, input?, message?): ToolConfirmationRequiredEvent
+createToolConfirmationResultEvent(callId: string, confirmed: boolean, always?): ToolConfirmationResultEvent
+createEngineErrorEvent(message: string, code?): EngineErrorEvent
+
+// Fork/Spawn Event Fixtures
+createForkStartEvent(forkId?, parentExecutionId?, branches?, strategy?): ForkStartEvent
+createForkEndEvent(forkId: string, parentExecutionId: string, results?, overrides?): ForkEndEvent
+createSpawnStartEvent(spawnId?, parentExecutionId?, childExecutionId?, overrides?): SpawnStartEvent
+createSpawnEndEvent(spawnId: string, parentExecutionId: string, childExecutionId: string, output?, overrides?): SpawnEndEvent
+
+// StreamEvent Sequences
+createTextStreamEventSequence(text: string, chunkSize?, tick?): StreamEvent[]
+createToolCallEventSequence(toolName: string, toolInput: object, tick?): StreamEvent[]
+createForkEventSequence(branchCount?, strategy?, input?, tick?): EngineEvent[]
+createSpawnEventSequence(componentName?, input?, output?, tick?): EngineEvent[]
+
+// Utility Fixtures
+createTokenUsage(overrides?): TokenUsage
 ```
 
 #### Helpers (helpers.ts)
@@ -912,13 +1146,23 @@ createMockSequence<T>(values: T[]): () => T
 
 ```typescript
 import {
+  // Message fixtures
   createUserMessage,
   createAssistantMessage,
+  resetTestIds,
+  // Legacy StreamChunk fixtures (for model adapter tests)
   createTextStreamSequence,
+  // StreamEvent fixtures (for engine/client tests)
+  createTextStreamEventSequence,
+  createForkEventSequence,
+  createSpawnEventSequence,
+  // Helpers
   captureAsyncGenerator,
   waitFor,
   createDeferred,
 } from "aidk-shared/testing";
+
+import { isStreamEvent, isForkEvent } from "aidk-shared/streaming";
 
 describe("My Agent", () => {
   beforeEach(() => {
@@ -932,8 +1176,18 @@ describe("My Agent", () => {
       createAssistantMessage("Hi there!"),
     ];
 
-    // Create stream sequence for testing
+    // Create legacy stream sequence (for model adapter testing)
     const chunks = createTextStreamSequence("Hello world");
+
+    // Create typed event sequence (for engine/client testing)
+    const events = createTextStreamEventSequence("Hello world");
+
+    // Use type guards
+    for (const event of events) {
+      if (isStreamEvent(event)) {
+        // Handle model output event
+      }
+    }
 
     // Capture async generator output
     const results = await captureAsyncGenerator(myAsyncGenerator());
@@ -945,6 +1199,31 @@ describe("My Agent", () => {
     const { promise, resolve } = createDeferred<string>();
     setTimeout(() => resolve("done"), 100);
     await promise;
+  });
+
+  it("should handle fork events", async () => {
+    // Create fork event sequence
+    const events = createForkEventSequence(3, "vote", { question: "test" });
+
+    for (const event of events) {
+      if (isForkEvent(event)) {
+        if (event.type === "fork_start") {
+          expect(event.branchCount).toBe(3);
+          expect(event.strategy).toBe("vote");
+        }
+      }
+    }
+  });
+
+  it("should handle spawn events", async () => {
+    // Create spawn event sequence
+    const events = createSpawnEventSequence(
+      "HelperAgent",
+      { task: "research" },
+      { result: "done" }
+    );
+
+    expect(events).toHaveLength(2); // spawn_start + spawn_end
   });
 });
 ```
@@ -1172,11 +1451,68 @@ const formTool: ToolDefinition = {
 };
 ```
 
-### Streaming Chunks
+### Handling Stream Events (Recommended)
+
+```typescript
+import {
+  type EngineStreamEvent,
+  isStreamEvent,
+  isEngineEvent,
+  isForkEvent,
+  StopReason,
+} from "aidk-shared/streaming";
+
+// Handle events from engine.stream()
+function handleEngineEvent(event: EngineStreamEvent): void {
+  // Use type guards to narrow the type
+  if (isStreamEvent(event)) {
+    // Model output events
+    switch (event.type) {
+      case "message_start":
+        console.log("Message started, model:", event.model);
+        break;
+      case "content_delta":
+        process.stdout.write(event.delta);
+        break;
+      case "message":
+        console.log("\nComplete message:", event.message);
+        break;
+      case "tool_call":
+        console.log("Tool call:", event.name, event.input);
+        break;
+    }
+  } else if (isEngineEvent(event)) {
+    // Orchestration events
+    switch (event.type) {
+      case "execution_start":
+        console.log("Execution started:", event.executionId);
+        break;
+      case "tool_result":
+        console.log("Tool result:", event.name, event.result);
+        break;
+      case "tick":
+        console.log("Tick", event.tick, "completed, tokens:", event.usage.totalTokens);
+        break;
+    }
+  }
+
+  // Or check specific event types
+  if (isForkEvent(event)) {
+    if (event.type === "fork_start") {
+      console.log("Fork started with strategy:", event.strategy);
+    } else {
+      console.log("Fork completed, winner:", event.selectedBranch);
+    }
+  }
+}
+```
+
+### Legacy Stream Chunks (Model Adapters Only)
 
 ```typescript
 import { type StreamChunk, StreamChunkType, StopReason } from "aidk-shared";
 
+// Used internally by model adapters
 function handleStreamChunk(chunk: StreamChunk): void {
   switch (chunk.type) {
     case StreamChunkType.MESSAGE_START:
@@ -1320,23 +1656,39 @@ graph TB
 
 | Package        | Uses                                   | For                                 |
 | -------------- | -------------------------------------- | ----------------------------------- |
-| `aidk-core`    | All types                              | Engine, Model, Tool implementations |
-| `aidk-client`  | All types (re-exports)                 | Client-side API                     |
-| `aidk-react`   | ContentBlock, Message, StreamChunk     | Component props, hooks              |
-| `aidk-angular` | ContentBlock, Message, StreamChunk     | Component inputs, services          |
+| `aidk-core`    | All types, StreamEvent, EngineEvent    | Engine, Model, Tool implementations |
+| `aidk-client`  | StreamEvent, EngineEvent (re-exports)  | Client-side API                     |
+| `aidk-react`   | ContentBlock, Message, StreamEvent     | Component props, hooks              |
+| `aidk-angular` | ContentBlock, Message, StreamEvent     | Component inputs, services          |
 | `aidk-server`  | Message, TimelineEntry, ToolDefinition | HTTP handlers                       |
-| Adapters       | ModelInput, ModelOutput, StreamChunk   | Provider normalization              |
+| Adapters       | ModelInput, ModelOutput, StreamChunk   | Provider normalization (internal)   |
 
 ### Import Patterns
 
 ```typescript
 // Main entry point - all exports
-import { ContentBlock, Message, StreamChunk } from "aidk-shared";
+import { ContentBlock, Message } from "aidk-shared";
+
+// StreamEvent types (recommended for new code)
+import {
+  type StreamEvent,
+  type EngineEvent,
+  type EngineStreamEvent,
+  type ForkStartEvent,
+  type SpawnStartEvent,
+  isStreamEvent,
+  isEngineEvent,
+  isForkEvent,
+  isSpawnEvent,
+  StopReason,
+} from "aidk-shared/streaming";
+
+// Legacy StreamChunk (for model adapters only)
+import { type StreamChunk, StreamChunkType } from "aidk-shared/streaming";
 
 // Subpath imports for tree-shaking
 import { ContentBlock } from "aidk-shared/blocks";
 import { Message } from "aidk-shared/messages";
-import { StreamChunk } from "aidk-shared/streaming";
 import { ToolDefinition } from "aidk-shared/tools";
 import { ModelInput } from "aidk-shared/models";
 ```
@@ -1365,9 +1717,12 @@ The shared package provides the foundational type definitions for AIDK:
 
 - **Content Blocks** - 20+ block types with discriminated unions for type safety
 - **Messages** - Role-based messages with content restrictions
-- **Streaming** - Platform-independent streaming protocol
+- **Streaming** - Two event systems:
+  - **StreamEvent/EngineEvent** (typed, recommended) - Strongly-typed discriminated unions for all streaming events including Fork/Spawn orchestration
+  - **StreamChunk** (legacy) - Flat structure for model adapter backwards compatibility
 - **Tools** - Execution types, intents, and definitions
 - **Models** - Simplified input/output contracts
 - **Input Normalization** - Flexible input handling utilities
+- **Testing Utilities** - Comprehensive fixtures for messages, events, and stream sequences
 
 All other AIDK packages depend on these shared definitions to ensure type consistency and platform independence across the entire framework.

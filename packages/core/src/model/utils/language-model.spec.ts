@@ -412,4 +412,97 @@ describe("language-model transformers", () => {
       });
     });
   });
+
+  describe("modelOptions merging", () => {
+    it("should merge modelOptions from COMInput into ModelInput", async () => {
+      const input: COMInput = {
+        timeline: [
+          {
+            kind: "message",
+            message: {
+              role: "user",
+              content: [{ type: "text", text: "Hello" }],
+            },
+          },
+        ],
+        sections: {},
+        system: [],
+        tools: [],
+        ephemeral: [],
+        metadata: {},
+        modelOptions: {
+          temperature: 0.7,
+          maxTokens: 100,
+        },
+      };
+
+      const result = await fromEngineState(input);
+
+      expect(result.temperature).toBe(0.7);
+      expect(result.maxTokens).toBe(100);
+    });
+
+    it("should use parameter modelOptions over COMInput modelOptions", async () => {
+      const input: COMInput = {
+        timeline: [],
+        sections: {},
+        system: [],
+        tools: [],
+        ephemeral: [],
+        metadata: {},
+        modelOptions: {
+          temperature: 0.5,
+          maxTokens: 50,
+        },
+      };
+
+      // Parameter takes precedence
+      const result = await fromEngineState(input, {
+        temperature: 0.9,
+        maxTokens: 200,
+      });
+
+      expect(result.temperature).toBe(0.9);
+      expect(result.maxTokens).toBe(200);
+    });
+
+    it("should not include undefined modelOptions fields", async () => {
+      const input: COMInput = {
+        timeline: [],
+        sections: {},
+        system: [],
+        tools: [],
+        ephemeral: [],
+        metadata: {},
+        // No modelOptions
+      };
+
+      const result = await fromEngineState(input);
+
+      expect(result.temperature).toBeUndefined();
+      expect(result.maxTokens).toBeUndefined();
+    });
+
+    it("should merge topP and other options", async () => {
+      const input: COMInput = {
+        timeline: [],
+        sections: {},
+        system: [],
+        tools: [],
+        ephemeral: [],
+        metadata: {},
+        modelOptions: {
+          topP: 0.95,
+          frequencyPenalty: 0.5,
+          presencePenalty: 0.3,
+        },
+      };
+
+      const result = await fromEngineState(input);
+
+      expect(result.topP).toBe(0.95);
+      expect(result.frequencyPenalty).toBe(0.5);
+      expect(result.presencePenalty).toBe(0.3);
+    });
+  });
 });

@@ -1,4 +1,4 @@
-# V2 Compiler Design: Tick-Based Agent Architecture
+# Fiber Compiler Design: Tick-Based Agent Architecture
 
 ## Core Philosophy
 
@@ -548,45 +548,47 @@ function DataFetcher() {
 
 ---
 
-## Migration from V1
+## Component Patterns
 
-### Class Components: No Changes Required
+### Class Components
+
+Class components use signals and lifecycle methods:
 
 ```typescript
-// V1 class component works unchanged in V2
 class MyComponent extends Component {
   timeline = comState('timeline', []);
 
-  onMount(com) { /* ... */ }
+  onMount(com) { /* called once when component mounts */ }
+  onTickStart(com, state) { /* called at start of each tick */ }
   render(com, state) { return <Section>...</Section>; }
 }
 ```
 
-### Function Components: Now with Hooks!
+### Function Components with Hooks
+
+Function components use React-style hooks:
 
 ```typescript
-// V1: Limited (no state, no effects)
-function StatelessComponent(props) {
-  return <Section>{props.content}</Section>;
-}
-
-// V2: Full power with hooks
 function StatefulComponent(props) {
-  const [data, setData] = useState(null);
-  const [shared] = useComState('shared', {});
+  const count = useSignal(0);
+  const [shared, setShared] = useComState('shared', {});
 
   useOnMount((com) => { /* ... */ });
 
-  return <Section>{data}</Section>;
+  useTickStart((com, state) => {
+    count.update(c => c + 1);
+  });
+
+  return <Section>Count: {count()}</Section>;
 }
 ```
 
 ### Engine Configuration
 
 ```typescript
-// Opt-in to V2 compiler
-const engine = new Engine({
-  compiler: 'v2',  // Use V2 compiler
+const engine = createEngine({
+  root: MyAgent,
+  model: myModel,
   // ... other config
 });
 ```
@@ -596,14 +598,24 @@ const engine = new Engine({
 ## File Structure
 
 ```
-packages/core/src/compiler/v2/
-├── index.ts              # Public exports
-├── types.ts              # Type definitions
+packages/core/src/compiler/
+├── index.ts              # Public exports (re-exports hooks from ../state)
+├── types.ts              # Type definitions (FiberNode, HookState, Effect, etc.)
 ├── fiber.ts              # Fiber node creation/management
-├── hooks.ts              # All hook implementations
-├── fiber-compiler.ts     # Main FiberCompilerV2 class
-└── DESIGN.md             # This document
+├── fiber-compiler.ts     # Main FiberCompiler class
+├── content-block-registry.ts  # JSX-to-ContentBlock mappers
+├── extractors.ts         # Semantic node extraction from JSX
+├── structure-renderer.ts # CompiledStructure to model-ready format
+├── DESIGN.md             # This document
+└── ARCHITECTURE.md       # Detailed architecture docs
+
+packages/core/src/state/
+├── hooks.ts              # All hook implementations (useState, useEffect, etc.)
+├── signal.ts             # Signal/reactive primitives
+└── use-state.ts          # State hook utilities
 ```
+
+> **Note:** Hooks are in `state/hooks.ts` but re-exported from `compiler/index.ts` for API convenience.
 
 ---
 
@@ -861,16 +873,16 @@ Both are first-class citizens. Use what feels right.
 | Non-rendering components | ✅ Implemented |
 | Compile stabilization    | ✅ Implemented |
 | Structure collection     | ✅ Implemented |
-| Engine integration       | 🔲 Todo        |
+| Engine integration       | ✅ Implemented |
+| useOnMessage hook        | ✅ Implemented |
+| Fork/Spawn model inherit | ✅ Implemented |
 | Error boundaries         | 🔲 Todo        |
 | DevTools integration     | 🔲 Todo        |
 
 ---
 
-## Next Steps
+## Future Improvements
 
-1. **Engine Integration**: Add `compiler: 'v2'` option to Engine config
-2. **Testing**: Comprehensive test suite for hooks and reconciliation
-3. **Error Handling**: Error boundaries for component errors
-4. **DevTools**: Fiber tree visualization for debugging
-5. **Performance**: Optimize reconciliation for large trees
+1. **Error Boundaries**: Error boundaries for component errors with recovery
+2. **DevTools**: Fiber tree visualization for debugging tick flow
+3. **Performance**: Optimize reconciliation for very large trees

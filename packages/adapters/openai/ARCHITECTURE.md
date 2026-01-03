@@ -201,7 +201,7 @@ The adapter provides intelligent message transformation based on model capabilit
 
 ```typescript
 messageTransformation: (modelId: string, provider?: string) => {
-  const isGPT4 = modelId.includes("gpt-4") || modelId.includes("o1");
+  const isGPT4 = modelId.includes("gpt-5.2") || modelId.includes("o1");
   const supportsDeveloper = isGPT4; // GPT-4 and newer support developer role
 
   return {
@@ -244,7 +244,7 @@ Streaming uses async generators for efficient chunk processing:
 │  └─────────────────────────────────────────┘                    │
 │       │                                                         │
 │       ▼                                                         │
-│  processChunk() - converts each chunk to StreamChunk            │
+│  processChunk() - converts each chunk to StreamEvent            │
 │       │                                                         │
 │       ▼                                                         │
 │  processStreamChunks() - aggregates all chunks into ModelOutput │
@@ -277,7 +277,7 @@ function createOpenAIModel(config?: OpenAIAdapterConfig): OpenAIAdapter;
 
 | Parameter                | Type                     | Description                                             |
 | ------------------------ | ------------------------ | ------------------------------------------------------- |
-| `config.model`           | `string`                 | Default model (e.g., 'gpt-4o', 'gpt-4-turbo')           |
+| `config.model`           | `string`                 | Default model (e.g., 'gpt-5.2', 'gpt-5.2')              |
 | `config.apiKey`          | `string`                 | OpenAI API key (defaults to `OPENAI_API_KEY` env)       |
 | `config.baseURL`         | `string`                 | Custom base URL (defaults to `OPENAI_BASE_URL` env)     |
 | `config.organization`    | `string`                 | Organization ID (defaults to `OPENAI_ORGANIZATION` env) |
@@ -436,7 +436,7 @@ sequenceDiagram
         API-->>Client: ChatCompletionChunk
         Client-->>Adapter: yield chunk
         Adapter->>Adapter: processChunk(chunk)
-        Adapter-->>Engine: yield StreamChunk
+        Adapter-->>Engine: yield StreamEvent
     end
 
     Note over Engine: Collects all chunks
@@ -495,7 +495,7 @@ import { createEngine } from "aidk";
 
 // Create adapter with defaults (uses OPENAI_API_KEY env)
 const model = openai({
-  model: "gpt-4o",
+  model: "gpt-5.2",
 });
 
 // Use with AIDK engine
@@ -511,7 +511,7 @@ const response = await engine.run({
 import { createOpenAIModel } from "aidk-openai";
 
 const model = createOpenAIModel({
-  model: "gpt-4-turbo",
+  model: "gpt-5.2",
   apiKey: process.env.MY_OPENAI_KEY,
   organization: "org-abc123",
   baseURL: "https://my-proxy.example.com/v1",
@@ -537,7 +537,7 @@ const client = new OpenAI({
 });
 
 const model = openai({
-  model: "gpt-4o",
+  model: "gpt-5.2",
   client, // Use pre-configured client
 });
 ```
@@ -548,7 +548,7 @@ const model = openai({
 import { openai } from "aidk-openai";
 import { createEngine } from "aidk";
 
-const model = openai({ model: "gpt-4o" });
+const model = openai({ model: "gpt-5.2" });
 const engine = createEngine({ model });
 
 // Pass OpenAI-specific options in the run call
@@ -588,7 +588,7 @@ const searchTool = new Tool({
   },
 });
 
-const model = openai({ model: "gpt-4o" });
+const model = openai({ model: "gpt-5.2" });
 const engine = createEngine({
   model,
   tools: [searchTool],
@@ -608,7 +608,7 @@ const response = await engine.run({
 import { openai } from "aidk-openai";
 import { createEngine } from "aidk";
 
-const model = openai({ model: "gpt-4o" });
+const model = openai({ model: "gpt-5.2" });
 const engine = createEngine({ model });
 
 const stream = await engine.stream({
@@ -651,9 +651,8 @@ Configuration is resolved in the following order (later overrides earlier):
 
 The adapter works with any OpenAI chat completion model:
 
-- **GPT-4 family**: `gpt-4`, `gpt-4-turbo`, `gpt-4o`, `gpt-4o-mini`
-- **GPT-3.5 family**: `gpt-3.5-turbo`
-- **o1 family**: `o1-preview`, `o1-mini`
+- **GPT-5 family**: `gpt-5.2`, `gpt-5.2-mini`, `gpt-5.2-codex`
+- **o-series**: `o3`, `o4-mini`
 - **Custom/fine-tuned models**: Any model accessible via the OpenAI API
 
 ---

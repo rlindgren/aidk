@@ -184,6 +184,8 @@ export const defaultInputTransformer: InputTransformer = (body, context) => ({
   timeline: messagesToTimeline(body.messages),
   metadata: {
     threadId: context.threadId,
+    sessionId: context.sessionId,
+    userId: context.userId,
     ...context.metadata,
   },
 });

@@ -6,7 +6,7 @@ import { FiberCompiler } from "../fiber-compiler";
 import { COM } from "../../com/object-model";
 import type { TickState } from "../../component/component";
 import { Component } from "../../component/component";
-import { Section, Message, Timeline, Tool } from "../../jsx/components/primitives";
+import { Section, Message, Timeline, Tool, ModelOptions } from "../../jsx/components/primitives";
 import { Text } from "../../jsx/components/content";
 import { createElement, Fragment } from "../../jsx/jsx-runtime";
 import { useState, useComState, useTickStart, useTickEnd, useEffect } from "../../state/hooks";
@@ -428,6 +428,89 @@ describe("FiberCompiler", () => {
       const result = await compiler.compile(element2, tickState);
 
       expect(result.sections.has("props")).toBe(true);
+    });
+  });
+
+  describe("ModelOptions", () => {
+    it("should set model options during render (not onTickStart)", async () => {
+      // This tests the fix: ModelOptions should set options in render()
+      // so they are available before toInput() is called
+      const element = createElement(
+        Fragment,
+        {},
+        createElement(ModelOptions, { temperature: 0.8, maxTokens: 150 }),
+        createElement(Section, { id: "test" }, "Content"),
+      );
+
+      await compiler.compile(element, tickState);
+
+      // Check that modelOptions were set on the COM during render
+      const modelOptions = com.getModelOptions();
+      expect(modelOptions).toBeDefined();
+      expect(modelOptions?.temperature).toBe(0.8);
+      expect(modelOptions?.maxTokens).toBe(150);
+    });
+
+    it("should include model options in toInput() result", async () => {
+      const element = createElement(
+        Fragment,
+        {},
+        createElement(ModelOptions, { temperature: 0.5, maxTokens: 200 }),
+      );
+
+      await compiler.compile(element, tickState);
+
+      // Verify that toInput() includes the modelOptions
+      const comInput = com.toInput();
+      expect(comInput.modelOptions).toBeDefined();
+      expect(comInput.modelOptions?.temperature).toBe(0.5);
+      expect(comInput.modelOptions?.maxTokens).toBe(200);
+    });
+
+    it("should allow multiple ModelOptions to merge (last wins)", async () => {
+      const element = createElement(
+        Fragment,
+        {},
+        createElement(ModelOptions, { temperature: 0.5 }),
+        createElement(ModelOptions, { maxTokens: 100 }),
+        createElement(ModelOptions, { temperature: 0.9 }), // Override temperature
+      );
+
+      await compiler.compile(element, tickState);
+
+      const modelOptions = com.getModelOptions();
+      expect(modelOptions?.temperature).toBe(0.9); // Last temperature wins
+      expect(modelOptions?.maxTokens).toBe(100); // maxTokens preserved
+    });
+
+    it("should set model options before notifyTickStart", async () => {
+      // This verifies the fix: on tick 1, modelOptions should be available
+      // even though notifyTickStart happens before compile
+      let optionsAtTickStart: any = undefined;
+
+      function CheckOptionsComponent() {
+        useTickStart((comArg) => {
+          optionsAtTickStart = comArg.getModelOptions();
+        });
+        return null;
+      }
+
+      const element = createElement(
+        Fragment,
+        {},
+        createElement(ModelOptions, { temperature: 0.7 }),
+        createElement(CheckOptionsComponent, {}),
+      );
+
+      // First compile sets up the fiber tree
+      await compiler.compile(element, tickState);
+
+      // notifyTickStart runs effects (including useTickStart)
+      await compiler.notifyTickStart(tickState);
+
+      // On first tick, useTickStart runs AFTER compile, so options should be set
+      // This verifies the fix works
+      expect(optionsAtTickStart?.temperature).toBe(0.7);
     });
   });
 });

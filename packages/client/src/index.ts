@@ -113,11 +113,13 @@ export {
   CodeLanguage,
   // Streaming (enums and functions)
   StopReason,
-  StreamChunkType,
+  StreamChunkType, // @deprecated - use StreamEvent types instead
   isStreamEvent,
   isEngineEvent,
   isDeltaEvent,
   isFinalEvent,
+  isForkEvent,
+  isSpawnEvent,
   // Tool types (enums)
   ToolExecutionType,
   ToolIntent,
@@ -207,4 +209,9 @@ export type {
   ToolConfirmationResultEvent,
   StreamErrorEvent,
   EngineErrorEvent,
+  // Fork/Spawn orchestration events
+  ForkStartEvent,
+  ForkEndEvent,
+  SpawnStartEvent,
+  SpawnEndEvent,
 } from "aidk-shared";

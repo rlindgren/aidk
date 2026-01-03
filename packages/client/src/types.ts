@@ -37,6 +37,10 @@ import type {
   ClientToolDefinition,
   ToolConfirmationResult,
   EngineStreamEvent,
+  ForkStartEvent,
+  ForkEndEvent,
+  SpawnStartEvent,
+  SpawnEndEvent,
 } from "aidk-shared";
 
 // Re-export for convenience
@@ -46,6 +50,7 @@ export type {
   BlockType,
   MediaBlock,
   ToolBlock,
+  /** @deprecated Use StreamEvent/EngineEvent types instead */
   StreamChunk,
   AgentToolCall,
   AgentToolResult,
@@ -59,9 +64,15 @@ export type {
   ContentInput,
   ContentInputArray,
   TimelineEntry,
+  // Streaming event types (recommended)
   EngineStreamEvent,
+  ForkStartEvent,
+  ForkEndEvent,
+  SpawnStartEvent,
+  SpawnEndEvent,
 };
 export {
+  /** @deprecated Use StreamEvent types instead */
   StreamChunkType,
   StopReason,
   normalizeMessageInput,

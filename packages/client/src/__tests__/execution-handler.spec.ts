@@ -195,11 +195,11 @@ describe("StreamProcessor", () => {
       };
     };
 
-    it("should handle execution_start with threadId", () => {
+    it("should handle execution_start with threadId in metadata", () => {
       const context = createContext();
 
       processor.processEvent(
-        { type: "execution_start", threadId: "thread-123" } as any,
+        { type: "execution_start", metadata: { threadId: "thread-123" } } as any,
         context,
         false,
       );
@@ -477,9 +477,9 @@ describe("ExecutionHandler", () => {
   });
 
   describe("thread management", () => {
-    it("should update threadId from execution_start", async () => {
+    it("should update threadId from execution_start metadata", async () => {
       mockClient.stream.mockImplementation(async function* () {
-        yield { type: "execution_start", threadId: "new-thread" };
+        yield { type: "execution_start", metadata: { threadId: "new-thread" } };
         yield { type: "execution_end", output: {} };
       });
 
@@ -491,7 +491,7 @@ describe("ExecutionHandler", () => {
 
     it("should use existing threadId for subsequent calls", async () => {
       mockClient.stream.mockImplementation(async function* () {
-        yield { type: "execution_start", threadId: "first-thread" };
+        yield { type: "execution_start", metadata: { threadId: "first-thread" } };
         yield { type: "execution_end", output: {} };
       });
 

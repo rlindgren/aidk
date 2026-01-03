@@ -103,9 +103,7 @@ function isExecutableTool(obj: any): obj is ExecutableTool {
 }
 
 function isToolMetadata(obj: any): obj is ToolMetadata {
-  return (
-    obj && typeof obj === "object" && "name" in obj && "description" in obj && "parameters" in obj
-  );
+  return obj && typeof obj === "object" && "name" in obj && "description" in obj && "input" in obj;
 }
 
 export function normalizeMessages(messages: string | string[] | Message[]): Message[] {

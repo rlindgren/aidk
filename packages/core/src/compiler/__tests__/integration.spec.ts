@@ -8,7 +8,9 @@ import { FiberCompiler } from "../fiber-compiler";
 import { COM } from "../../com/object-model";
 import type { TickState } from "../../component/component";
 import { Component } from "../../component/component";
-import { Section, Message, Timeline } from "../../jsx/components/primitives";
+import { Section, Message, Timeline, ModelOptions } from "../../jsx/components/primitives";
+import { StructureRenderer } from "../structure-renderer";
+import { MarkdownRenderer } from "../../renderers";
 import { Text } from "../../jsx/components/content";
 import { createElement } from "../../jsx/jsx-runtime";
 import {
@@ -355,6 +357,56 @@ describe("Compiler Integration", () => {
       const result = await compiler.compile(element2, tickState);
 
       expect(result.sections.has("props")).toBe(true);
+    });
+  });
+
+  describe("StructureRenderer modelOptions", () => {
+    it("should pass through modelOptions in formatInput", async () => {
+      const structureRenderer = new StructureRenderer(com, new MarkdownRenderer());
+
+      // Set up modelOptions via ModelOptions component
+      const element = createElement(ModelOptions, { temperature: 0.7, maxTokens: 100 });
+      await compiler.compile(element, tickState);
+
+      // Get COMInput with modelOptions
+      const comInput = com.toInput();
+      expect(comInput.modelOptions).toBeDefined();
+      expect(comInput.modelOptions?.temperature).toBe(0.7);
+      expect(comInput.modelOptions?.maxTokens).toBe(100);
+
+      // Verify formatInput preserves modelOptions
+      const formatted = structureRenderer.formatInput(comInput);
+      expect(formatted.modelOptions).toBeDefined();
+      expect(formatted.modelOptions?.temperature).toBe(0.7);
+      expect(formatted.modelOptions?.maxTokens).toBe(100);
+    });
+
+    it("should preserve modelOptions with timeline content", async () => {
+      const structureRenderer = new StructureRenderer(com, new MarkdownRenderer());
+
+      // Compile component that sets modelOptions and adds a message
+      const element = createElement(
+        "div",
+        {},
+        createElement(ModelOptions, { temperature: 0.9, maxTokens: 50 }),
+        createElement(Message, { role: "user" }, "Test message"),
+      );
+
+      const compileResult = await compiler.compileUntilStable(element, tickState, {
+        maxIterations: 3,
+      });
+
+      // Apply timeline entries to COM
+      for (const entry of compileResult.compiled.timelineEntries) {
+        if (entry.kind === "message" && entry.message) {
+          com.addMessage(entry.message as any, {});
+        }
+      }
+
+      // Format and verify modelOptions preserved
+      const formatted = structureRenderer.formatInput(com.toInput());
+      expect(formatted.modelOptions?.temperature).toBe(0.9);
+      expect(formatted.modelOptions?.maxTokens).toBe(50);
     });
   });
 });

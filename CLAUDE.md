@@ -72,6 +72,7 @@ aidk/
 
 4. **Tools** (`packages/core/src/tool/tool.ts`)
    - createTool() factory
+   - createComponentTool() factory
    - Execution types: SERVER, CLIENT, PROVIDER, MCP
    - requiresConfirmation for user approval
 

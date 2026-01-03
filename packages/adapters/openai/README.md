@@ -15,7 +15,7 @@ import { OpenAIModel } from 'aidk-openai';
 
 <OpenAIModel
   apiKey={process.env.OPENAI_API_KEY}
-  model="gpt-4o"
+  model="gpt-5.2"
   temperature={0.7}
   maxTokens={4096}
 />
@@ -24,19 +24,19 @@ import { OpenAIModel } from 'aidk-openai';
 <OpenAIModel
   apiKey={process.env.AZURE_OPENAI_KEY}
   baseURL="https://your-resource.openai.azure.com"
-  model="gpt-4"
+  model="gpt-5.2"
 />
 ```
 
 ## Configuration
 
-| Prop          | Type      | Description                 |
-| ------------- | --------- | --------------------------- |
-| `apiKey`      | `string`  | OpenAI API key              |
-| `model`       | `string`  | Model name (e.g., `gpt-4o`) |
-| `baseURL`     | `string?` | Custom API endpoint         |
-| `temperature` | `number?` | Sampling temperature        |
-| `maxTokens`   | `number?` | Maximum tokens              |
+| Prop          | Type      | Description                  |
+| ------------- | --------- | ---------------------------- |
+| `apiKey`      | `string`  | OpenAI API key               |
+| `model`       | `string`  | Model name (e.g., `gpt-5.2`) |
+| `baseURL`     | `string?` | Custom API endpoint          |
+| `temperature` | `number?` | Sampling temperature         |
+| `maxTokens`   | `number?` | Maximum tokens               |
 
 ## Documentation
 

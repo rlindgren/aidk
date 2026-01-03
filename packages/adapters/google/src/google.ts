@@ -7,14 +7,16 @@ import {
 
 import { type EngineModel, Logger, createLanguageModel } from "aidk";
 
-import {
-  type ModelInput,
-  type ModelOutput,
-  type StreamChunk,
-  type ToolDefinition,
-  StopReason,
-} from "aidk";
-import type { ContentBlock, Message, TextBlock } from "aidk/content";
+import { type ModelInput, type ModelOutput, type ToolDefinition, StopReason } from "aidk";
+import type {
+  ContentBlock,
+  Message,
+  TextBlock,
+  StreamEvent,
+  StreamEventBase,
+  ContentDeltaEvent,
+} from "aidk/content";
+import { BlockType } from "aidk/content";
 import { normalizeModelInput } from "aidk/utils";
 import { type GoogleAdapterConfig, STOP_REASON_MAP } from "./types";
 import { AdapterError, ValidationError } from "aidk-shared";
@@ -22,6 +24,24 @@ import { AdapterError, ValidationError } from "aidk-shared";
 export type GoogleAdapter = EngineModel<ModelInput, ModelOutput>;
 
 const logger = Logger.for("GoogleAdapter");
+
+// ============================================================================
+// Event ID Generation
+// ============================================================================
+
+let adapterEventIdCounter = 0;
+
+function generateAdapterEventId(): string {
+  return `gevt_${Date.now()}_${++adapterEventIdCounter}`;
+}
+
+function createAdapterEventBase(): StreamEventBase {
+  return {
+    id: generateAdapterEventId(),
+    tick: 1, // Default tick, engine will override
+    timestamp: new Date().toISOString(),
+  };
+}
 
 /**
  * Factory function for creating Google model adapter using createModel
@@ -215,7 +235,7 @@ export function mapToolDefinition(tool: any): any {
     };
   }
 
-  if ("name" in tool && "parameters" in tool) {
+  if ("name" in tool && "input" in tool) {
     const toolDef = tool as ToolDefinition;
     const baseTool = {
       functionDeclarations: [
@@ -438,77 +458,92 @@ async function processOutput(output: GenerateContentResponse): Promise<ModelOutp
 }
 
 /**
- * Convert Google streaming chunk to StreamChunk
+ * Convert Google streaming chunk to StreamEvent
  */
-function processChunk(chunk: any): StreamChunk {
+function processChunk(chunk: any): StreamEvent {
+  const base = createAdapterEventBase();
   const candidate = chunk.candidates?.[0];
+
   if (!candidate) {
     return {
+      ...base,
       type: "content_delta",
+      blockType: BlockType.TEXT,
+      blockIndex: 0,
       delta: "",
       raw: chunk,
-    };
+    } as ContentDeltaEvent;
   }
 
   const delta = candidate.content?.parts?.[0];
   if (!delta) {
     return {
+      ...base,
       type: "content_delta",
+      blockType: BlockType.TEXT,
+      blockIndex: 0,
       delta: "",
       raw: chunk,
-    };
+    } as ContentDeltaEvent;
   }
 
   // Skip finish_reason chunks (handled in processStream)
   if (candidate.finishReason) {
     return {
+      ...base,
       type: "content_delta",
+      blockType: BlockType.TEXT,
+      blockIndex: 0,
       delta: "",
       raw: chunk,
-    };
+    } as ContentDeltaEvent;
   }
 
   // Content delta
   if (delta.text) {
     return {
+      ...base,
       type: "content_delta",
+      blockType: BlockType.TEXT,
+      blockIndex: 0,
       delta: delta.text,
-      model: chunk.modelVersion,
-      createdAt: new Date().toISOString(),
       raw: chunk,
-    };
+    } as ContentDeltaEvent;
   }
 
   return {
+    ...base,
     type: "content_delta",
+    blockType: BlockType.TEXT,
+    blockIndex: 0,
     delta: "",
     raw: chunk,
-  };
+  } as ContentDeltaEvent;
 }
 
 /**
- * Aggregate stream chunks into final ModelOutput
+ * Aggregate stream events into final ModelOutput
  */
-async function processStreamChunks(chunks: any[] | StreamChunk[]): Promise<ModelOutput> {
-  if (chunks.length === 0) {
-    throw new AdapterError("google", "No chunks to process", "ADAPTER_RESPONSE");
+async function processStreamChunks(events: any[] | StreamEvent[]): Promise<ModelOutput> {
+  if (events.length === 0) {
+    throw new AdapterError("google", "No events to process", "ADAPTER_RESPONSE");
   }
 
-  // Check if chunks are StreamChunks (from engine) or raw Google chunks
-  const isStreamChunk = (chunk: any): chunk is StreamChunk => {
-    return chunk && typeof chunk === "object" && "type" in chunk && !("candidates" in chunk);
+  // Check if events are StreamEvents (from engine) or raw Google chunks
+  const isStreamEventType = (event: any): event is StreamEvent => {
+    return event && typeof event === "object" && "type" in event && !("candidates" in event);
   };
 
-  // If StreamChunks, we need to reconstruct from raw data
-  if (isStreamChunk(chunks[0])) {
-    const googleChunks = chunks
-      .map((c) => (c as StreamChunk).raw)
+  // If StreamEvents, we need to reconstruct from raw data
+  if (isStreamEventType(events[0])) {
+    const googleChunks = events
+      .map((e) => (e as StreamEvent).raw)
       .filter((c) => c && typeof c === "object" && "candidates" in c);
 
     if (googleChunks.length === 0) {
       throw new AdapterError(
         "google",
-        "No valid Google chunks found in stream chunks",
+        "No valid Google chunks found in stream events",
         "ADAPTER_RESPONSE",
       );
     }
@@ -516,8 +551,8 @@ async function processStreamChunks(chunks: any[] | StreamChunk[]): Promise<Model
     return processStreamChunks(googleChunks);
   }
 
-  // Chunks are raw Google chunks
-  const googleChunks = chunks as any[];
+  // Events are raw Google chunks
+  const googleChunks = events as any[];
   const firstChunk = googleChunks[0];
   const lastChunk = googleChunks[googleChunks.length - 1];
 

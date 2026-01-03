@@ -7,14 +7,16 @@ import type {
 } from "openai/resources/chat/completions";
 
 import { createLanguageModel, Logger, type EngineModel } from "aidk";
+import { type ModelInput, type ModelOutput, StopReason, type ToolDefinition } from "aidk";
 import {
-  type ModelInput,
-  type ModelOutput,
-  type StreamChunk,
-  StopReason,
-  type ToolDefinition,
-} from "aidk";
-import { type Message, type ContentBlock, type TextBlock } from "aidk/content";
+  type Message,
+  type ContentBlock,
+  type TextBlock,
+  type StreamEvent,
+  type StreamEventBase,
+  type ContentDeltaEvent,
+  BlockType,
+} from "aidk/content";
 import { normalizeModelInput } from "aidk/utils";
 import { type OpenAIAdapterConfig, STOP_REASON_MAP } from "./types";
 import { AdapterError } from "aidk-shared";
@@ -22,6 +24,24 @@ import { AdapterError } from "aidk-shared";
 export type OpenAIAdapter = EngineModel<ModelInput, ModelOutput>;
 
 const logger = Logger.for("OpenAIAdapter");
+
+// ============================================================================
+// Event ID Generation
+// ============================================================================
+
+let adapterEventIdCounter = 0;
+
+function generateAdapterEventId(): string {
+  return `oaievt_${Date.now()}_${++adapterEventIdCounter}`;
+}
+
+function createAdapterEventBase(): StreamEventBase {
+  return {
+    id: generateAdapterEventId(),
+    tick: 1, // Default tick, engine will override
+    timestamp: new Date().toISOString(),
+  };
+}
 
 /**
  * Factory function for creating OpenAI model adapter using createModel
@@ -225,7 +245,7 @@ export function mapToolDefinition(tool: any): ChatCompletionFunctionTool {
     };
   }
 
-  if ("name" in tool && "parameters" in tool) {
+  if ("name" in tool && "input" in tool) {
     const toolDef = tool as ToolDefinition;
     const baseTool: ChatCompletionFunctionTool = {
       type: "function",
@@ -399,82 +419,98 @@ async function processOutput(output: ChatCompletion): Promise<ModelOutput> {
 }
 
 /**
- * Convert OpenAI ChatCompletionChunk to StreamChunk
+ * Convert OpenAI ChatCompletionChunk to StreamEvent
  */
-function processChunk(chunk: ChatCompletionChunk): StreamChunk {
+function processChunk(chunk: ChatCompletionChunk): StreamEvent {
+  const base = createAdapterEventBase();
   const choice = chunk.choices[0];
+
   if (!choice) {
+    // Empty chunk - return content delta with empty string
     return {
+      ...base,
       type: "content_delta",
+      blockType: BlockType.TEXT,
+      blockIndex: 0,
       delta: "",
       raw: chunk,
-    };
+    } as ContentDeltaEvent;
   }
 
   const delta = choice.delta;
   if (!delta) {
     return {
+      ...base,
       type: "content_delta",
+      blockType: BlockType.TEXT,
+      blockIndex: 0,
       delta: "",
       raw: chunk,
-    };
+    } as ContentDeltaEvent;
   }
 
   // Skip finish_reason chunks (handled in processStream)
   if (choice.finish_reason) {
     return {
+      ...base,
       type: "content_delta",
+      blockType: BlockType.TEXT,
+      blockIndex: 0,
       delta: "",
       raw: chunk,
-    };
+    } as ContentDeltaEvent;
   }
 
   // Content delta
   if (delta.content !== undefined && delta.content) {
     return {
+      ...base,
       type: "content_delta",
+      blockType: BlockType.TEXT,
+      blockIndex: 0,
       delta: delta.content,
-      model: chunk.model,
-      createdAt: chunk.created.toString(),
       raw: chunk,
-    };
+    } as ContentDeltaEvent;
   }
 
   // Tool calls are handled in processStream, not streamed incrementally
   // Return empty delta for now
   return {
+    ...base,
     type: "content_delta",
+    blockType: BlockType.TEXT,
+    blockIndex: 0,
     delta: "",
     raw: chunk,
-  };
+  } as ContentDeltaEvent;
 }
 
 /**
- * Aggregate stream chunks into final ModelOutput
+ * Aggregate stream events into final ModelOutput
  */
 async function processStreamChunks(
-  chunks: ChatCompletionChunk[] | StreamChunk[],
+  events: ChatCompletionChunk[] | StreamEvent[],
 ): Promise<ModelOutput> {
-  if (chunks.length === 0) {
-    throw new AdapterError("openai", "No chunks to process", "ADAPTER_RESPONSE");
+  if (events.length === 0) {
+    throw new AdapterError("openai", "No events to process", "ADAPTER_RESPONSE");
   }
 
-  // Check if chunks are StreamChunks (from engine) or ChatCompletionChunks (raw from provider)
-  const isStreamChunk = (chunk: any): chunk is StreamChunk => {
-    return chunk && typeof chunk === "object" && "type" in chunk && !("choices" in chunk);
+  // Check if events are StreamEvents (from engine) or ChatCompletionChunks (raw from provider)
+  const isStreamEventType = (event: any): event is StreamEvent => {
+    return event && typeof event === "object" && "type" in event && !("choices" in event);
   };
 
-  // If StreamChunks, we need to reconstruct from raw data
-  if (isStreamChunk(chunks[0])) {
-    // Chunks are StreamChunks - extract raw ChatCompletionChunk from raw property
-    const openaiChunks = chunks
-      .map((c) => (c as StreamChunk).raw)
+  // If StreamEvents, we need to reconstruct from raw data
+  if (isStreamEventType(events[0])) {
+    // Events are StreamEvents - extract raw ChatCompletionChunk from raw property
+    const openaiChunks = events
+      .map((e) => (e as StreamEvent).raw)
       .filter((c) => c && typeof c === "object" && "choices" in c) as ChatCompletionChunk[];
 
     if (openaiChunks.length === 0) {
       throw new AdapterError(
         "openai",
-        "No valid OpenAI chunks found in stream chunks",
+        "No valid OpenAI chunks found in stream events",
         "ADAPTER_RESPONSE",
       );
     }
@@ -482,8 +518,8 @@ async function processStreamChunks(
     return processStreamChunks(openaiChunks); // Recursively process as ChatCompletionChunks
   }
 
-  // Chunks are ChatCompletionChunks (raw from provider)
-  const openaiChunks = chunks as ChatCompletionChunk[];
+  // Events are ChatCompletionChunks (raw from provider)
+  const openaiChunks = events as ChatCompletionChunk[];
   const firstChunk = openaiChunks[0];
   const lastChunk = openaiChunks[openaiChunks.length - 1];
 

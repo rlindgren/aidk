@@ -66,27 +66,28 @@ export function Paragraph(props: ParagraphProps): JSX.Element {
  *
  * @example
  * ```tsx
- * // Unordered list
- * <List>
- *   <ListItem>Item 1</ListItem>
- *   <ListItem>Item 2</ListItem>
+ * // List with title
+ * <List title="Shopping List">
+ *   <ListItem>Milk</ListItem>
+ *   <ListItem>Bread</ListItem>
  * </List>
  *
  * // Ordered list
- * <List ordered>
+ * <List title="Steps" ordered>
  *   <ListItem>First</ListItem>
  *   <ListItem>Second</ListItem>
  * </List>
  *
  * // Task list (checkboxes)
- * <List task>
+ * <List title="Tasks" task>
  *   <ListItem checked>Done</ListItem>
  *   <ListItem checked={false}>Not done</ListItem>
- *   <ListItem>Also not done</ListItem>
  * </List>
  * ```
  */
 export interface ListProps extends BaseProps {
+  /** Optional title/heading for the list */
+  title?: string;
   /** Render as ordered (numbered) list */
   ordered?: boolean;
   /** Render as task list with checkboxes */

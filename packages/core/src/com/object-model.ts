@@ -368,6 +368,10 @@ export class ContextObjectModel extends EventEmitter {
     };
   }
 
+  resetModelOptions(): void {
+    this.modelOptions = undefined;
+  }
+
   /**
    * Get the current model options.
    */

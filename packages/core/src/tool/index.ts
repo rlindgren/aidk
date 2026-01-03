@@ -59,3 +59,4 @@
 
 export * from "./tool";
 export * from "./tool-hooks";
+export * from "./component-tool";

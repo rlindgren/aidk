@@ -17,6 +17,31 @@ import {
   createToolDefinition,
   createTextStreamSequence,
   createToolCallStreamSequence,
+  // New StreamEvent fixtures
+  createEventBase,
+  createContentStartEvent,
+  createContentDeltaEvent,
+  createContentEndEvent,
+  createContentEvent,
+  createMessageStartEvent,
+  createMessageEndEvent,
+  createMessageCompleteEvent,
+  createToolCallStartEvent,
+  createToolCallCompleteEvent,
+  createExecutionStartEvent,
+  createExecutionEndEvent,
+  createTickStartEvent,
+  createTickEndEvent,
+  createToolResultEvent,
+  createForkStartEvent,
+  createForkEndEvent,
+  createSpawnStartEvent,
+  createSpawnEndEvent,
+  createTextStreamEventSequence,
+  createToolCallEventSequence,
+  createForkEventSequence,
+  createSpawnEventSequence,
+  createTokenUsage,
   // Helpers
   waitForEvent,
   waitForEvents,
@@ -32,7 +57,15 @@ import {
   createSpy,
   createMockSequence,
 } from "../testing";
-import { StreamChunkType, StopReason } from "../streaming";
+import {
+  StreamChunkType,
+  StopReason,
+  isStreamEvent,
+  isEngineEvent,
+  isForkEvent,
+  isSpawnEvent,
+} from "../streaming";
+import { BlockType } from "../block-types";
 
 describe("Fixtures", () => {
   beforeEach(() => {
@@ -142,7 +175,7 @@ describe("Fixtures", () => {
     });
   });
 
-  describe("Stream Fixtures", () => {
+  describe("Stream Fixtures (Legacy StreamChunk)", () => {
     it("should create text stream sequence", () => {
       const chunks = createTextStreamSequence("Hello", 2);
 
@@ -162,6 +195,297 @@ describe("Fixtures", () => {
       expect(chunks.some((c) => c.type === StreamChunkType.TOOL_CALL)).toBe(true);
       expect(chunks.some((c) => c.type === StreamChunkType.TOOL_RESULT)).toBe(true);
       expect(chunks[chunks.length - 1].stopReason).toBe(StopReason.TOOL_USE);
+    });
+  });
+
+  describe("StreamEvent Fixtures", () => {
+    describe("Event Base", () => {
+      it("should create event base with defaults", () => {
+        const base = createEventBase();
+
+        expect(base.id).toMatch(/^evt-\d+$/);
+        expect(base.tick).toBe(1);
+        expect(base.timestamp).toBeDefined();
+      });
+
+      it("should create event base with custom tick", () => {
+        const base = createEventBase(5);
+
+        expect(base.tick).toBe(5);
+      });
+    });
+
+    describe("Content Events", () => {
+      it("should create content_start event", () => {
+        const event = createContentStartEvent(BlockType.TEXT, 0);
+
+        expect(event.type).toBe("content_start");
+        expect(event.blockType).toBe(BlockType.TEXT);
+        expect(event.blockIndex).toBe(0);
+        expect(isStreamEvent(event)).toBe(true);
+      });
+
+      it("should create content_delta event", () => {
+        const event = createContentDeltaEvent("Hello");
+
+        expect(event.type).toBe("content_delta");
+        expect(event.delta).toBe("Hello");
+        expect(event.blockType).toBe(BlockType.TEXT);
+      });
+
+      it("should create content_end event", () => {
+        const event = createContentEndEvent();
+
+        expect(event.type).toBe("content_end");
+      });
+
+      it("should create content (complete) event", () => {
+        const block = createTextBlock("Hello world");
+        const event = createContentEvent(block, 0);
+
+        expect(event.type).toBe("content");
+        expect(event.content).toBe(block);
+        expect(event.startedAt).toBeDefined();
+        expect(event.completedAt).toBeDefined();
+      });
+    });
+
+    describe("Message Events", () => {
+      it("should create message_start event", () => {
+        const event = createMessageStartEvent("gpt-4");
+
+        expect(event.type).toBe("message_start");
+        expect(event.role).toBe("assistant");
+        expect(event.model).toBe("gpt-4");
+      });
+
+      it("should create message_end event", () => {
+        const event = createMessageEndEvent(StopReason.STOP);
+
+        expect(event.type).toBe("message_end");
+        expect(event.stopReason).toBe(StopReason.STOP);
+      });
+
+      it("should create message (complete) event", () => {
+        const message = createAssistantMessage("Hello");
+        const event = createMessageCompleteEvent(message, StopReason.STOP);
+
+        expect(event.type).toBe("message");
+        expect(event.message).toBe(message);
+        expect(event.stopReason).toBe(StopReason.STOP);
+      });
+    });
+
+    describe("Tool Call Events", () => {
+      it("should create tool_call_start event", () => {
+        const event = createToolCallStartEvent("search", "call-123");
+
+        expect(event.type).toBe("tool_call_start");
+        expect(event.name).toBe("search");
+        expect(event.callId).toBe("call-123");
+      });
+
+      it("should create tool_call (complete) event", () => {
+        const event = createToolCallCompleteEvent("search", { query: "test" });
+
+        expect(event.type).toBe("tool_call");
+        expect(event.name).toBe("search");
+        expect(event.input).toEqual({ query: "test" });
+      });
+    });
+
+    describe("Token Usage", () => {
+      it("should create token usage with defaults", () => {
+        const usage = createTokenUsage();
+
+        expect(usage.inputTokens).toBe(10);
+        expect(usage.outputTokens).toBe(20);
+        expect(usage.totalTokens).toBe(30);
+      });
+
+      it("should create token usage with overrides", () => {
+        const usage = createTokenUsage({ inputTokens: 100, outputTokens: 200, totalTokens: 300 });
+
+        expect(usage.inputTokens).toBe(100);
+        expect(usage.outputTokens).toBe(200);
+        expect(usage.totalTokens).toBe(300);
+      });
+    });
+  });
+
+  describe("EngineEvent Fixtures", () => {
+    describe("Execution Events", () => {
+      it("should create execution_start event", () => {
+        const event = createExecutionStartEvent("exec-1", {
+          metadata: { threadId: "thread-1" },
+        });
+
+        expect(event.type).toBe("execution_start");
+        expect(event.executionId).toBe("exec-1");
+        expect(event.metadata?.threadId).toBe("thread-1");
+        expect(isEngineEvent(event)).toBe(true);
+      });
+
+      it("should create execution_end event", () => {
+        const event = createExecutionEndEvent("exec-1", { result: "done" });
+
+        expect(event.type).toBe("execution_end");
+        expect(event.output).toEqual({ result: "done" });
+      });
+    });
+
+    describe("Tick Events", () => {
+      it("should create tick_start event", () => {
+        const event = createTickStartEvent(3);
+
+        expect(event.type).toBe("tick_start");
+        expect(event.tick).toBe(3);
+      });
+
+      it("should create tick_end event", () => {
+        const usage = createTokenUsage();
+        const event = createTickEndEvent(2, usage);
+
+        expect(event.type).toBe("tick_end");
+        expect(event.tick).toBe(2);
+        expect(event.usage).toBe(usage);
+      });
+    });
+
+    describe("Tool Result Events", () => {
+      it("should create tool_result event", () => {
+        const event = createToolResultEvent("call-1", "search", { results: [] });
+
+        expect(event.type).toBe("tool_result");
+        expect(event.callId).toBe("call-1");
+        expect(event.name).toBe("search");
+        expect(event.result).toEqual({ results: [] });
+        expect(event.executedBy).toBe("engine");
+      });
+    });
+  });
+
+  describe("Fork Event Fixtures", () => {
+    it("should create fork_start event", () => {
+      const event = createForkStartEvent("fork-1", "exec-parent", ["a", "b", "c"], "race");
+
+      expect(event.type).toBe("fork_start");
+      expect(event.forkId).toBe("fork-1");
+      expect(event.parentExecutionId).toBe("exec-parent");
+      expect(event.strategy).toBe("race");
+      expect(event.branches).toEqual(["a", "b", "c"]);
+      expect(event.branchCount).toBe(3);
+      expect(isForkEvent(event)).toBe(true);
+      expect(isEngineEvent(event)).toBe(true);
+    });
+
+    it("should create fork_start event with input", () => {
+      const event = createForkStartEvent("fork-1", "exec-parent", ["a", "b"], "vote", {
+        input: { question: "What is 2+2?" },
+      });
+
+      expect(event.input).toEqual({ question: "What is 2+2?" });
+    });
+
+    it("should create fork_end event", () => {
+      const results = { a: "result-a", b: "result-b" };
+      const event = createForkEndEvent("fork-1", "exec-parent", results, { selectedBranch: "a" });
+
+      expect(event.type).toBe("fork_end");
+      expect(event.forkId).toBe("fork-1");
+      expect(event.results).toBe(results);
+      expect(event.selectedBranch).toBe("a");
+      expect(isForkEvent(event)).toBe(true);
+    });
+
+    it("should create fork event sequence", () => {
+      const events = createForkEventSequence(3, "vote", { query: "test" });
+
+      expect(events).toHaveLength(2); // fork_start + fork_end
+      expect(events[0].type).toBe("fork_start");
+      expect(events[1].type).toBe("fork_end");
+
+      const startEvent = events[0] as ReturnType<typeof createForkStartEvent>;
+      expect(startEvent.branchCount).toBe(3);
+      expect(startEvent.strategy).toBe("vote");
+      expect(startEvent.input).toEqual({ query: "test" });
+    });
+  });
+
+  describe("Spawn Event Fixtures", () => {
+    it("should create spawn_start event", () => {
+      const event = createSpawnStartEvent("spawn-1", "exec-parent", "exec-child");
+
+      expect(event.type).toBe("spawn_start");
+      expect(event.spawnId).toBe("spawn-1");
+      expect(event.parentExecutionId).toBe("exec-parent");
+      expect(event.childExecutionId).toBe("exec-child");
+      expect(isSpawnEvent(event)).toBe(true);
+      expect(isEngineEvent(event)).toBe(true);
+    });
+
+    it("should create spawn_start event with input and component name", () => {
+      const event = createSpawnStartEvent("spawn-1", "exec-parent", "exec-child", {
+        componentName: "ResearchAgent",
+        input: { topic: "AI safety" },
+      });
+
+      expect(event.componentName).toBe("ResearchAgent");
+      expect(event.input).toEqual({ topic: "AI safety" });
+    });
+
+    it("should create spawn_end event", () => {
+      const event = createSpawnEndEvent("spawn-1", "exec-parent", "exec-child", { answer: "42" });
+
+      expect(event.type).toBe("spawn_end");
+      expect(event.spawnId).toBe("spawn-1");
+      expect(event.output).toEqual({ answer: "42" });
+      expect(isSpawnEvent(event)).toBe(true);
+    });
+
+    it("should create spawn event sequence", () => {
+      const events = createSpawnEventSequence(
+        "HelperAgent",
+        { task: "research" },
+        { result: "done" },
+      );
+
+      expect(events).toHaveLength(2); // spawn_start + spawn_end
+      expect(events[0].type).toBe("spawn_start");
+      expect(events[1].type).toBe("spawn_end");
+
+      const startEvent = events[0] as ReturnType<typeof createSpawnStartEvent>;
+      expect(startEvent.componentName).toBe("HelperAgent");
+      expect(startEvent.input).toEqual({ task: "research" });
+
+      const endEvent = events[1] as ReturnType<typeof createSpawnEndEvent>;
+      expect(endEvent.output).toEqual({ result: "done" });
+    });
+  });
+
+  describe("StreamEvent Sequences", () => {
+    it("should create text stream event sequence with message event", () => {
+      const events = createTextStreamEventSequence("Hello world", 5);
+
+      // Should follow pattern: message_start → content_start → content_delta* → content_end → content → message_end → message
+      expect(events[0].type).toBe("message_start");
+
+      const messageEvent = events.find((e) => e.type === "message");
+      expect(messageEvent).toBeDefined();
+      expect(messageEvent?.type).toBe("message");
+
+      // All events should be StreamEvents
+      expect(events.every((e) => isStreamEvent(e))).toBe(true);
+    });
+
+    it("should create tool call event sequence with message event", () => {
+      const events = createToolCallEventSequence("search", { query: "test" });
+
+      expect(events[0].type).toBe("message_start");
+      expect(events.some((e) => e.type === "tool_call")).toBe(true);
+
+      const messageEvent = events.find((e) => e.type === "message");
+      expect(messageEvent).toBeDefined();
     });
   });
 });

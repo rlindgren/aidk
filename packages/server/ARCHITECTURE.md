@@ -550,7 +550,7 @@ sequenceDiagram
     Server->>Engine: engine.execute(input, <Agent />)
 
     loop Stream Events
-        Engine-->>Server: StreamChunk
+        Engine-->>Server: EngineStreamEvent
         Server->>Repos: messageRepo.create(...)
         Server-->>Client: SSE/WebSocket event
     end

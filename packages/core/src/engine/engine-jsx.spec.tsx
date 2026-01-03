@@ -7,7 +7,7 @@ import { Text, Image, Code } from "../jsx/components/content";
 import { createTool } from "../tool/tool";
 import { createModel, type ModelInput, type ModelOutput } from "../model/model";
 import { z } from "zod";
-import { type StreamChunk } from "aidk-shared";
+import { type StreamEvent, BlockType } from "aidk-shared";
 import type { COMInput } from "../com/types";
 import { fromEngineState, toEngineState } from "../model/utils/language-model";
 import { signal } from "../state/signal";
@@ -56,7 +56,7 @@ const processStreamMock = vi.fn(async (_chunks: any[]) => {
   } as ModelOutput;
 });
 
-const mockModel = createModel<ModelInput, ModelOutput, ModelInput, ModelOutput, StreamChunk>({
+const mockModel = createModel<ModelInput, ModelOutput, ModelInput, ModelOutput, StreamEvent>({
   metadata: { id: "mock-model", provider: "mock", capabilities: [] },
   executors: {
     execute: executeMock,
@@ -467,7 +467,7 @@ describe("Engine React Architecture", () => {
 
   describe("Dynamic Model Switching", () => {
     // Create two different mock models
-    const fastModel = createModel<ModelInput, ModelOutput, ModelInput, ModelOutput, StreamChunk>({
+    const fastModel = createModel<ModelInput, ModelOutput, ModelInput, ModelOutput, StreamEvent>({
       metadata: { id: "fast-model", provider: "mock", capabilities: [] },
       executors: {
         execute: async () =>
@@ -482,15 +482,14 @@ describe("Engine React Architecture", () => {
         executeStream: async function* () {
           yield {
             type: "content_delta",
+            blockType: BlockType.TEXT,
+            blockIndex: 0,
             delta: "Fast",
-            toolCalls: [],
-            usage: { inputTokens: 0, outputTokens: 0, totalTokens: 0 },
-            stopReason: "stop",
-          } as StreamChunk;
+          } as StreamEvent;
         },
       },
       transformers: {
-        processStream: async (_chunks: StreamChunk[]) =>
+        processStream: async (_chunks: StreamEvent[]) =>
           ({
             model: "fast-model",
             createdAt: new Date().toISOString(),
@@ -509,7 +508,7 @@ describe("Engine React Architecture", () => {
       ModelOutput,
       ModelInput,
       ModelOutput,
-      StreamChunk
+      StreamEvent
     >({
       metadata: { id: "accurate-model", provider: "mock", capabilities: [] },
       executors: {
@@ -525,15 +524,14 @@ describe("Engine React Architecture", () => {
         executeStream: async function* () {
           yield {
             type: "content_delta",
+            blockType: BlockType.TEXT,
+            blockIndex: 0,
             delta: "Accurate",
-            toolCalls: [],
-            usage: { inputTokens: 0, outputTokens: 0, totalTokens: 0 },
-            stopReason: "stop",
-          } as StreamChunk;
+          } as StreamEvent;
         },
       },
       transformers: {
-        processStream: async (_chunks: StreamChunk[]) =>
+        processStream: async (_chunks: StreamEvent[]) =>
           ({
             model: "accurate-model",
             createdAt: new Date().toISOString(),

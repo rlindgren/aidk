@@ -315,6 +315,11 @@ export class SSETransport implements ChannelTransport {
     const target = event.target;
     const sourceConnectionId = event.metadata?.["sourceConnectionId"] as string | undefined;
 
+    this.log(
+      `Send: channel=${event.channel}, type=${event.type}, target.rooms=${JSON.stringify(target?.rooms)}`,
+    );
+    this.log(`Send: All rooms in transport:`, Array.from(this.roomConnections.keys()));
+
     let targetConnections: Set<string>;
 
     if (target?.connectionId) {
@@ -323,6 +328,7 @@ export class SSETransport implements ChannelTransport {
       targetConnections = new Set<string>();
       for (const room of target.rooms) {
         const roomConns = this.roomConnections.get(room);
+        this.log(`Send: room=${room}, connections=${roomConns?.size || 0}`);
         if (roomConns) {
           for (const connId of roomConns) {
             targetConnections.add(connId);

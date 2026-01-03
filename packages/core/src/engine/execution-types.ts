@@ -127,6 +127,14 @@ export interface ForkInheritanceOptions {
    * Default: true (hooks are inherited from parent engine)
    */
   hooks?: boolean;
+
+  /**
+   * Inherit model from parent execution
+   * Default: true (model is inherited from parent)
+   * If parent has a model set via <Model> component, it will be used as the
+   * default model for the forked execution.
+   */
+  model?: boolean;
 }
 
 /**
@@ -336,13 +344,14 @@ export interface EngineMetrics {
 }
 
 /**
- * Generate a unique process ID
+ * Generate a unique process ID (execution identifier)
+ * @param _prefix - Deprecated, ignored. Kept for backwards compatibility.
  */
-export function generatePid(prefix: string = "exec"): string {
+export function generatePid(_prefix?: string): string {
   try {
-    return `${prefix}_${randomUUID()}`;
+    return randomUUID();
   } catch {
     // Fallback if crypto.randomUUID is not available
-    return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2)}`;
+    return `${Date.now().toString(36)}_${Math.random().toString(36).slice(2)}`;
   }
 }

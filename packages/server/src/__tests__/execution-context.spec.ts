@@ -337,6 +337,7 @@ describe("Input Transformers", () => {
       };
       const context: RequestContext = {
         threadId: "thread-123",
+        sessionId: "session-789",
         userId: "user-456",
         metadata: { custom: "value" },
       };
@@ -346,6 +347,8 @@ describe("Input Transformers", () => {
       expect(input.timeline).toHaveLength(1);
       expect(input.metadata).toEqual({
         threadId: "thread-123",
+        sessionId: "session-789",
+        userId: "user-456",
         custom: "value",
       });
     });

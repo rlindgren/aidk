@@ -80,6 +80,13 @@ export interface SpawnProps extends ComponentBaseProps {
    * Engine configuration for child engine
    */
   engineConfig?: Partial<EngineConfig>;
+
+  /**
+   * Whether to inherit model from parent execution
+   * Default: true (model is inherited)
+   * Set to false for truly independent spawns
+   */
+  inheritModel?: boolean;
 }
 
 /**
@@ -115,8 +122,19 @@ export class SpawnComponent extends Component<SpawnProps> {
     // Start spawn on first render (instance persists across ticks)
     if (!this.spawnStarted) {
       try {
+        // Inherit model from parent unless explicitly disabled
+        const shouldInheritModel = this.props.inheritModel !== false;
+        const parentModel = shouldInheritModel ? com.getModel() : undefined;
+
+        // Build engine config with inherited model
+        const engineConfig = {
+          ...this.props.engineConfig,
+          // Parent model is used as fallback if no model in engineConfig
+          ...(parentModel && !this.props.engineConfig?.model ? { model: parentModel } : {}),
+        };
+
         this.spawnHandle = com.process.spawn(this.props.input || { timeline: [] }, rootDefinition, {
-          engineConfig: this.props.engineConfig,
+          engineConfig,
         });
 
         // Set up handlers
