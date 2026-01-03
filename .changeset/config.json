@@ -3,7 +3,19 @@
   "changelog": "@changesets/cli/changelog",
   "commit": false,
   "fixed": [],
-  "linked": [],
+  "linked": [
+    [
+      "aidk",
+      "aidk-kernel",
+      "aidk-shared",
+      "aidk-client",
+      "aidk-server",
+      "aidk-express",
+      "aidk-nestjs",
+      "aidk-react",
+      "aidk-angular"
+    ]
+  ],
   "access": "public",
   "baseBranch": "master",
   "updateInternalDependencies": "patch",
