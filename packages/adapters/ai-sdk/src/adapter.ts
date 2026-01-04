@@ -528,7 +528,11 @@ export function createAiSdkModel(config: AiSdkAdapterConfig): AiSdkAdapter {
                 stepWarnings: chunk.warnings || [],
               },
             } as ContentDeltaEvent;
-          case "finish-step":
+          case "finish-step": {
+            // AI SDK provides inputTokens/outputTokens OR promptTokens/completionTokens
+            const su = chunk.usage as Record<string, number> | undefined;
+            const stepInTokens = su?.inputTokens ?? su?.promptTokens ?? 0;
+            const stepOutTokens = su?.outputTokens ?? su?.completionTokens ?? 0;
             return {
               type: "content_delta",
               ...base,
@@ -538,17 +542,17 @@ export function createAiSdkModel(config: AiSdkAdapterConfig): AiSdkAdapter {
               raw: {
                 type: "step_end",
                 stepResponse: chunk.response,
-                usage: chunk.usage
+                usage: su
                   ? {
-                      inputTokens: chunk.usage.promptTokens ?? 0,
-                      outputTokens: chunk.usage.completionTokens ?? 0,
-                      totalTokens:
-                        (chunk.usage.promptTokens ?? 0) + (chunk.usage.completionTokens ?? 0),
+                      inputTokens: stepInTokens,
+                      outputTokens: stepOutTokens,
+                      totalTokens: su?.totalTokens ?? stepInTokens + stepOutTokens,
                     }
                   : undefined,
                 stopReason: toStopReason(chunk.finishReason),
               },
             } as ContentDeltaEvent;
+          }
 
           // Stream lifecycle
           case "start":
@@ -557,21 +561,31 @@ export function createAiSdkModel(config: AiSdkAdapterConfig): AiSdkAdapter {
               ...base,
               role: "assistant",
             } as MessageStartEvent;
-          case "finish":
+          case "finish": {
+            // AI SDK provides inputTokens/outputTokens OR promptTokens/completionTokens
+            // depending on the provider. Handle both cases.
+            const tu = chunk.totalUsage as Record<string, number> | undefined;
+            const inTokens = tu?.inputTokens ?? tu?.promptTokens ?? 0;
+            const outTokens = tu?.outputTokens ?? tu?.completionTokens ?? 0;
+            const totalTokens = tu?.totalTokens ?? inTokens + outTokens;
+            const reasoningTokens = tu?.reasoningTokens;
+            const cachedInputTokens = tu?.cachedInputTokens;
+
             return {
               type: "message_end",
               ...base,
               stopReason: toStopReason(chunk.finishReason),
-              usage: chunk.totalUsage
+              usage: tu
                 ? {
-                    inputTokens: chunk.totalUsage.promptTokens ?? 0,
-                    outputTokens: chunk.totalUsage.completionTokens ?? 0,
-                    totalTokens:
-                      (chunk.totalUsage.promptTokens ?? 0) +
-                      (chunk.totalUsage.completionTokens ?? 0),
+                    inputTokens: inTokens,
+                    outputTokens: outTokens,
+                    totalTokens,
+                    ...(reasoningTokens !== undefined && { reasoningTokens }),
+                    ...(cachedInputTokens !== undefined && { cachedInputTokens }),
                   }
                 : undefined,
             } as MessageEndEvent;
+          }
           case "abort":
             return {
               type: "error",
