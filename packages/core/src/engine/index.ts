@@ -61,6 +61,9 @@
 export { Engine } from "./engine";
 export type { EngineConfig, EngineLifecycleHooks, EngineStaticHooks } from "./engine";
 
+// Re-export DevToolsConfig for convenience
+export type { DevToolsConfig } from "aidk-shared";
+
 // Execution
 export * from "./execution-handle";
 export * from "./execution-types";

@@ -1,4 +1,4 @@
-import { createEngine, Engine, EngineContext, Logger } from "aidk";
+import { createEngine, Engine, EngineContext, Logger, type DevToolsConfig } from "aidk";
 import { attachDevTools } from "aidk-devtools";
 import { getStore } from "./persistence/database";
 import {
@@ -45,13 +45,33 @@ export function getEngine(): Engine {
     return engineInstance;
   }
 
-  // Create engine with channel service configured for SSE transport
-  engineInstance = createEngine({ channels });
+  // DevTools configuration
+  // - DEVTOOLS=true: Start embedded devtools server (default)
+  // - DEVTOOLS_REMOTE=true: Send events to external CLI server (npx aidk-devtools)
+  const devToolsEnabled = process.env["DEVTOOLS"] === "true" || process.env["DEVTOOLS"] === "1";
+  const devToolsRemote = process.env["DEVTOOLS_REMOTE"] === "true";
+  const devToolsPort = +(process.env["DEVTOOLS_PORT"] || 3004);
 
-  // Attach devtools if DEVTOOLS env var is set
-  if (process.env["DEVTOOLS"] === "true" || process.env["DEVTOOLS"] === "1") {
+  let devToolsConfig: DevToolsConfig | undefined;
+  if (devToolsEnabled && devToolsRemote) {
+    // Remote mode: send events to external CLI server
+    devToolsConfig = {
+      remote: true,
+      remoteUrl: `http://localhost:${devToolsPort}`,
+      secret: process.env["DEVTOOLS_SECRET"],
+    };
+  } else if (devToolsEnabled) {
+    // Embedded mode: engine emits events, attachDevTools will capture them
+    devToolsConfig = { enabled: true };
+  }
+
+  // Create engine with channel service configured for SSE transport
+  engineInstance = createEngine({ channels, devTools: devToolsConfig });
+
+  // Attach devtools server if embedded mode (not remote)
+  if (devToolsEnabled && !devToolsRemote) {
     detachDevTools = attachDevTools(engineInstance, {
-      port: +(process.env["DEVTOOLS_PORT"] || 3004),
+      port: devToolsPort,
       open: process.env["DEVTOOLS_OPEN"] !== "false",
       debug: process.env["DEVTOOLS_DEBUG"] === "true",
     });

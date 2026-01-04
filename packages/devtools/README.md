@@ -8,72 +8,100 @@ Developer tools for visualizing and debugging AIDK agent execution.
 pnpm add aidk-devtools aidk
 ```
 
-## Usage
+## Quick Start
 
-### Recommended: Engine Config
+### Embedded Mode (Simple)
 
-Enable devtools directly in your engine configuration for automatic fork/spawn visibility:
+DevTools runs inside your app process:
 
 ```typescript
 import { createEngine } from 'aidk';
-import { initDevTools } from 'aidk-devtools';
+import { attachDevTools } from 'aidk-devtools';
 
-// Initialize devtools server
-initDevTools({ port: 3004, open: true });
+const engine = createEngine({ devTools: true });
+attachDevTools(engine, { port: 3004, open: true });
+```
 
-// Enable devtools on the engine - events are emitted automatically
+### Remote Mode (Persistent)
+
+DevTools runs as a standalone server. UI persists across app restarts.
+
+**Terminal 1 - Start the CLI:**
+
+```bash
+npx aidk-devtools --port 3004 --open
+```
+
+**Terminal 2 - Your app sends events to the CLI:**
+
+```typescript
 const engine = createEngine({
-  devTools: true,
+  devTools: {
+    remote: true,
+    remoteUrl: 'http://localhost:3004',
+  },
 });
 ```
 
-### Alternative: Attach to Engine
+Or with environment variables:
 
-```typescript
-import { createEngine } from 'aidk';
-import { attachDevTools } from 'aidk-devtools/integration';
-
-const engine = createEngine();
-
-// Attach devtools - starts server and opens browser
-const detach = attachDevTools(engine, {
-  port: 3004,      // Server port (default: 3004)
-  open: true,      // Auto-open browser (default: true)
-  debug: false,    // Enable debug logging
-});
-
-// Your agent code...
-
-// Later, to stop devtools:
-detach();
+```bash
+DEVTOOLS=true DEVTOOLS_REMOTE=true DEVTOOLS_PORT=3004 node app.js
 ```
 
-### Environment Variables
-
-You can also configure devtools via environment variables:
+## Environment Variables
 
 ```bash
 DEVTOOLS=true           # Enable devtools
+DEVTOOLS_REMOTE=true    # Use remote mode (send to CLI server)
 DEVTOOLS_PORT=3004      # Server port
 DEVTOOLS_OPEN=false     # Disable auto-open browser
 DEVTOOLS_DEBUG=true     # Enable debug logging
+DEVTOOLS_SECRET=token   # Auth token for remote mode
 ```
 
-### Express Integration
+## Full Setup Example
+
+Support both embedded and remote modes via environment variables:
 
 ```typescript
 import { createEngine } from 'aidk';
-import { attachDevTools } from 'aidk-devtools/integration';
+import { attachDevTools } from 'aidk-devtools';
 
-const engine = createEngine();
+const devToolsEnabled = process.env.DEVTOOLS === 'true';
+const devToolsRemote = process.env.DEVTOOLS_REMOTE === 'true';
+const devToolsPort = +(process.env.DEVTOOLS_PORT || 3004);
 
-if (process.env.DEVTOOLS === 'true') {
+const engine = createEngine({
+  devTools: devToolsEnabled ? {
+    remote: devToolsRemote,
+    remoteUrl: devToolsRemote ? `http://localhost:${devToolsPort}` : undefined,
+    secret: process.env.DEVTOOLS_SECRET,
+  } : undefined,
+});
+
+// Only start embedded server if NOT in remote mode
+if (devToolsEnabled && !devToolsRemote) {
   attachDevTools(engine, {
-    port: +(process.env.DEVTOOLS_PORT || 3004),
+    port: devToolsPort,
     open: process.env.DEVTOOLS_OPEN !== 'false',
   });
 }
 ```
+
+## CLI Options
+
+```bash
+npx aidk-devtools [options]
+```
+
+| Option         | Description                 | Default   |
+| -------------- | --------------------------- | --------- |
+| `--port, -p`   | Server port                 | 3001      |
+| `--host`       | Host to bind to             | 127.0.0.1 |
+| `--secret, -s` | Auth token for POST /events | none      |
+| `--open, -o`   | Auto-open browser           | false     |
+| `--debug, -d`  | Enable debug logging        | false     |
 
 ## Features
 
@@ -83,6 +111,8 @@ if (process.env.DEVTOOLS === 'true') {
 - **Tool Call Visualization** - See tool inputs and results in context
 - **Raw Output Access** - Inspect raw provider responses for debugging
 - **Fork/Spawn Visibility** - Automatic hierarchy display with parent links and aggregate token counts
+- **CLI Support** - Run standalone server with `npx aidk-devtools`
+- **Security** - Token auth, rate limiting, localhost-only binding by default
 
 ## UI Overview
 

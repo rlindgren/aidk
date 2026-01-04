@@ -1710,12 +1710,12 @@ This is better because:
   - [x] Add memory management (history limits)
   - [ ] Update all documentation
 
-- [ ] **Phase 3: Remote Support**
-  - [ ] Add `POST /events` endpoint to server
-  - [ ] Implement remote posting in emitter
-  - [ ] Add authentication (secret token)
-  - [ ] Implement backpressure/retry logic
-  - [ ] Create CLI wrapper mode
+- [x] **Phase 3: Remote Support** ✅ Core complete
+  - [x] Add `POST /events` endpoint to server
+  - [x] Implement remote posting in engine (`devTools: { remote: true, remoteUrl }`)
+  - [x] Add authentication (secret token via `Authorization: Bearer` header)
+  - [ ] Implement backpressure/retry logic (future enhancement)
+  - [x] CLI binary (`npx aidk-devtools`) with connection instructions
 
 - [ ] **Phase 4: Cleanup**
   - [ ] Remove `attachDevTools()` completely

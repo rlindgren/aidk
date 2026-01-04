@@ -53,13 +53,18 @@ export type {
   ToolCallEvent,
   ToolResultEvent,
   StateChangeEvent,
-} from "./events";
+} from "./events.js";
 
-export { DEVTOOLS_CHANNEL } from "./events";
+export { DEVTOOLS_CHANNEL } from "./events.js";
 
 // Server exports (for advanced usage)
-export { DevToolsServer, type DevToolsServerConfig } from "./server";
-export { getDevToolsServer, emitDevToolsEvent, isDevToolsActive, stopDevTools } from "./server";
+export { DevToolsServer, type DevToolsServerConfig } from "./server/index.js";
+export {
+  getDevToolsServer,
+  emitDevToolsEvent,
+  isDevToolsActive,
+  stopDevTools,
+} from "./server/index.js";
 
 // Integration exports
 export {
@@ -69,4 +74,4 @@ export {
   attachDevTools,
   type DevToolsEngine,
   type DevToolsOptions,
-} from "./integration";
+} from "./integration/index.js";

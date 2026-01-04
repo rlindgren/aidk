@@ -10,10 +10,10 @@ import {
   emitDevToolsEvent,
   isDevToolsActive,
   type DevToolsOptions,
-} from "../server";
-import type { DevToolsEvent } from "../events";
+} from "../server/index.js";
+import type { DevToolsEvent } from "../events.js";
 
-export { type DevToolsOptions } from "../server";
+export { type DevToolsOptions } from "../server/index.js";
 
 /**
  * Engine hook registry interface for devtools integration.

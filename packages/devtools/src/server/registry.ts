@@ -8,7 +8,7 @@
  * to receive events emitted by the engine. Events are forwarded to the
  * DevToolsServer which broadcasts them to connected UI clients.
  */
-import { DevToolsServer, type DevToolsServerConfig } from "./devtools-server";
+import { DevToolsServer, type DevToolsServerConfig } from "./devtools-server.js";
 import { devToolsEmitter, type DevToolsEvent } from "aidk-shared";
 
 // HMR-safe global symbols - survive module reloads
@@ -35,6 +35,7 @@ let emitterUnsubscribe: (() => void) | null = globalRef[UNSUBSCRIBE_KEY] ?? null
 export interface DevToolsOptions extends DevToolsServerConfig {
   /** Auto-open browser when server starts */
   open?: boolean;
+  // Note: host, secret, allowedOrigins, rateLimit are inherited from DevToolsServerConfig
 }
 
 /**

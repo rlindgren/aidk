@@ -11,17 +11,25 @@ import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { existsSync, readFileSync } from "fs";
 import type { IncomingMessage, ServerResponse } from "http";
-import type { DevToolsEvent } from "../events";
+import type { DevToolsEvent } from "../events.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export interface DevToolsServerConfig {
   /** Port to listen on (default: 3001) */
   port?: number;
+  /** Host to bind to (default: '127.0.0.1' - localhost only for security) */
+  host?: string;
   /** Enable debug logging */
   debug?: boolean;
   /** Heartbeat interval in ms (default: 30000) */
   heartbeatInterval?: number;
+  /** Secret token for POST /events authentication (optional but recommended for non-localhost) */
+  secret?: string;
+  /** Allowed origins for CORS (default: localhost only) */
+  allowedOrigins?: string[];
+  /** Max requests per minute per IP for POST /events (default: 1000) */
+  rateLimit?: number;
 }
 
 interface SSEClient {
@@ -29,18 +37,39 @@ interface SSEClient {
   heartbeatInterval: NodeJS.Timeout;
 }
 
+interface RateLimitEntry {
+  count: number;
+  resetTime: number;
+}
+
+// Required config with defaults applied
+interface ResolvedConfig {
+  port: number;
+  host: string;
+  debug: boolean;
+  heartbeatInterval: number;
+  secret?: string;
+  allowedOrigins: string[];
+  rateLimit: number;
+}
+
 export class DevToolsServer {
   private server: Server | null = null;
   private clients = new Set<SSEClient>();
-  private config: Required<DevToolsServerConfig>;
+  private config: ResolvedConfig;
   private eventHistory: DevToolsEvent[] = [];
   private maxHistorySize = 1000;
+  private rateLimitMap = new Map<string, RateLimitEntry>();
 
   constructor(config: DevToolsServerConfig = {}) {
     this.config = {
       port: config.port ?? 3001,
+      host: config.host ?? "127.0.0.1", // Localhost only by default for security
       debug: config.debug ?? false,
       heartbeatInterval: config.heartbeatInterval ?? 30000,
+      secret: config.secret,
+      allowedOrigins: config.allowedOrigins ?? ["http://localhost:*", "http://127.0.0.1:*"],
+      rateLimit: config.rateLimit ?? 1000, // 1000 requests per minute per IP
     };
   }
 
@@ -61,8 +90,18 @@ export class DevToolsServer {
 
     this.server = createServer((req, res) => this.handleRequest(req, res));
 
-    this.server.listen(this.config.port, () => {
-      this.log(`Server listening on port ${this.config.port}`);
+    // Security warning for non-localhost binding
+    if (this.config.host !== "127.0.0.1" && this.config.host !== "localhost") {
+      console.warn(
+        "⚠️  [DevTools] WARNING: Server binding to non-localhost address.",
+        this.config.secret
+          ? "Secret token authentication is enabled."
+          : "Consider setting a secret token for security!",
+      );
+    }
+
+    this.server.listen(this.config.port, this.config.host, () => {
+      this.log(`Server listening on ${this.config.host}:${this.config.port}`);
     });
   }
 
@@ -113,13 +152,87 @@ export class DevToolsServer {
     return `http://localhost:${this.config.port}`;
   }
 
-  private handleRequest(req: IncomingMessage, res: ServerResponse): void {
-    const url = new URL(req.url || "/", `http://localhost:${this.config.port}`);
+  /**
+   * Get client IP address from request
+   */
+  private getClientIp(req: IncomingMessage): string {
+    // Support proxied requests
+    const forwarded = req.headers["x-forwarded-for"];
+    if (typeof forwarded === "string") {
+      return forwarded.split(",")[0].trim();
+    }
+    return req.socket.remoteAddress || "unknown";
+  }
 
-    // Enable CORS
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  /**
+   * Check if origin is allowed for CORS
+   */
+  private isOriginAllowed(origin: string | undefined): boolean {
+    if (!origin) return true; // Same-origin requests don't have Origin header
+
+    for (const pattern of this.config.allowedOrigins) {
+      if (pattern === "*") return true;
+      if (pattern.includes("*")) {
+        // Simple wildcard matching (e.g., "http://localhost:*")
+        const regex = new RegExp("^" + pattern.replace(/\*/g, ".*") + "$");
+        if (regex.test(origin)) return true;
+      } else if (origin === pattern) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Check rate limit for IP
+   */
+  private checkRateLimit(ip: string): boolean {
+    const now = Date.now();
+    const entry = this.rateLimitMap.get(ip);
+
+    if (!entry || now > entry.resetTime) {
+      // New window
+      this.rateLimitMap.set(ip, { count: 1, resetTime: now + 60000 }); // 1 minute window
+      return true;
+    }
+
+    if (entry.count >= this.config.rateLimit) {
+      return false;
+    }
+
+    entry.count++;
+    return true;
+  }
+
+  /**
+   * Verify authorization token
+   */
+  private verifyAuth(req: IncomingMessage): boolean {
+    if (!this.config.secret) return true; // No secret configured
+
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return false;
+
+    const [type, token] = authHeader.split(" ");
+    return type === "Bearer" && token === this.config.secret;
+  }
+
+  private handleRequest(req: IncomingMessage, res: ServerResponse): void {
+    const url = new URL(req.url || "/", `http://${this.config.host}:${this.config.port}`);
+    const origin = req.headers.origin as string | undefined;
+
+    // CORS handling - only allow configured origins
+    if (this.isOriginAllowed(origin)) {
+      res.setHeader("Access-Control-Allow-Origin", origin || "*");
+    } else {
+      this.log(`Blocked request from origin: ${origin}`);
+      res.writeHead(403, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Origin not allowed" }));
+      return;
+    }
+
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
     if (req.method === "OPTIONS") {
       res.writeHead(204);
@@ -128,7 +241,9 @@ export class DevToolsServer {
     }
 
     // Route handling
-    if (url.pathname === "/events") {
+    if (url.pathname === "/events" && req.method === "POST") {
+      this.handlePostEvent(req, res);
+    } else if (url.pathname === "/events") {
       this.handleSSE(req, res);
     } else if (url.pathname === "/api/history") {
       this.handleHistory(res);
@@ -174,6 +289,129 @@ export class DevToolsServer {
   private handleHistory(res: ServerResponse): void {
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify(this.eventHistory));
+  }
+
+  /**
+   * Handle POST /events - receive events from remote engines
+   *
+   * Security measures:
+   * - Token authentication (if secret configured)
+   * - Rate limiting per IP
+   * - Payload size limit (1MB)
+   * - Event structure validation
+   */
+  private handlePostEvent(req: IncomingMessage, res: ServerResponse): void {
+    const ip = this.getClientIp(req);
+
+    // Check authentication
+    if (!this.verifyAuth(req)) {
+      this.log(`Unauthorized POST from ${ip}`);
+      res.writeHead(401, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Unauthorized" }));
+      return;
+    }
+
+    // Check rate limit
+    if (!this.checkRateLimit(ip)) {
+      this.log(`Rate limited POST from ${ip}`);
+      res.writeHead(429, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Too many requests" }));
+      return;
+    }
+
+    let body = "";
+
+    req.on("data", (chunk) => {
+      body += chunk;
+      // Limit body size to 1MB
+      if (body.length > 1024 * 1024) {
+        res.writeHead(413, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Payload too large" }));
+        req.destroy();
+      }
+    });
+
+    req.on("end", () => {
+      try {
+        const event = JSON.parse(body) as DevToolsEvent;
+
+        // Validate event structure
+        if (!this.validateEvent(event)) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "Invalid event structure" }));
+          return;
+        }
+
+        // Emit the event to all connected SSE clients
+        this.emit(event);
+
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: true }));
+      } catch {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Invalid JSON" }));
+      }
+    });
+
+    req.on("error", () => {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Request error" }));
+    });
+  }
+
+  /**
+   * Validate event structure to prevent malicious payloads
+   */
+  private validateEvent(event: unknown): event is DevToolsEvent {
+    if (!event || typeof event !== "object") return false;
+
+    const e = event as Record<string, unknown>;
+
+    // Required fields
+    if (typeof e.type !== "string" || e.type.length === 0 || e.type.length > 50) return false;
+    if (
+      typeof e.executionId !== "string" ||
+      e.executionId.length === 0 ||
+      e.executionId.length > 100
+    )
+      return false;
+    if (typeof e.timestamp !== "number" || e.timestamp < 0) return false;
+
+    // Validate type is one of known types
+    const validTypes = [
+      "execution_start",
+      "execution_end",
+      "tick_start",
+      "tick_end",
+      "compiled",
+      "model_start",
+      "model_output",
+      "content_delta",
+      "reasoning_delta",
+      "tool_call",
+      "tool_result",
+      "tool_confirmation",
+      "state_change",
+    ];
+    if (!validTypes.includes(e.type)) return false;
+
+    // Tick-scoped events need tick number
+    const tickEvents = [
+      "tick_start",
+      "tick_end",
+      "compiled",
+      "model_start",
+      "model_output",
+      "content_delta",
+      "reasoning_delta",
+      "tool_call",
+      "tool_result",
+      "tool_confirmation",
+      "state_change",
+    ];
+    if (tickEvents.includes(e.type) && (typeof e.tick !== "number" || e.tick < 0)) return false;
+
+    return true;
   }
 
   private handleStatic(pathname: string, res: ServerResponse): void {
