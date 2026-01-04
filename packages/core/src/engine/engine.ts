@@ -70,7 +70,42 @@ import { createEngineHandleFactory, ExecutionHandleImpl } from "./execution-hand
 import type { CompiledStructure } from "../compiler/types";
 import type { Renderer } from "../renderers/base";
 import { isAbortError, mergeAbortSignals, AbortError } from "../utils/abort-utils";
-import { NotFoundError, StateError, ValidationError } from "aidk-shared";
+import {
+  NotFoundError,
+  StateError,
+  ValidationError,
+  type DevToolsConfig,
+  type DevToolsEvent,
+  devToolsEmitter,
+  normalizeDevToolsConfig,
+} from "aidk-shared";
+
+/**
+ * Check if DevTools should be enabled based on environment variables.
+ *
+ * Supported environment variables:
+ * - DEVTOOLS=true or AIDK_DEVTOOLS=true - Enable DevTools
+ * - DEVTOOLS_REMOTE_URL - Remote server URL
+ * - DEVTOOLS_DEBUG=true - Enable debug logging
+ *
+ * @returns DevToolsConfig or undefined if not enabled via env
+ * @internal
+ */
+function getDevToolsConfigFromEnv(): DevToolsConfig | undefined {
+  const enabled = process.env.DEVTOOLS === "true" || process.env.AIDK_DEVTOOLS === "true";
+
+  if (!enabled) return undefined;
+
+  const remoteUrl = process.env.DEVTOOLS_REMOTE_URL;
+
+  return {
+    enabled: true,
+    remote: !!remoteUrl,
+    remoteUrl,
+    secret: process.env.DEVTOOLS_SECRET,
+    debug: process.env.DEVTOOLS_DEBUG === "true",
+  };
+}
 import { CompileJSXService, type CompileSession } from "../utils/compile-jsx-service";
 
 // Module-level logger for Engine
@@ -126,6 +161,10 @@ export interface EngineLifecycleHooks {
         handle?: ExecutionHandle,
       ) => Promise<void> | void)
   )[];
+  onAfterRender?: (
+    | EngineLifecycleHook<"onAfterRender">
+    | ((formatted: COMInput, state: TickState, handle?: ExecutionHandle) => Promise<void> | void)
+  )[];
 }
 
 export interface EngineConfig {
@@ -150,6 +189,34 @@ export interface EngineConfig {
   renderers?: {
     [key: string]: Renderer;
   };
+  /**
+   * DevTools configuration for execution visualization.
+   *
+   * - `true` - Enable with defaults (inherit on fork/spawn)
+   * - `false` - Disable
+   * - `DevToolsConfig` - Enable with custom settings
+   *
+   * Can also be enabled via environment variables:
+   * - DEVTOOLS=true or AIDK_DEVTOOLS=true
+   * - DEVTOOLS_REMOTE_URL for cross-process mode
+   *
+   * @example
+   * ```typescript
+   * const engine = createEngine({
+   *   devTools: true, // Enable with defaults
+   * });
+   *
+   * const engine = createEngine({
+   *   devTools: {
+   *     enabled: true,
+   *     inheritOnFork: true,
+   *     inheritOnSpawn: true,
+   *     debug: true,
+   *   },
+   * });
+   * ```
+   */
+  devTools?: boolean | DevToolsConfig;
 }
 
 export interface EngineStaticHooks {
@@ -199,6 +266,8 @@ export class Engine extends EventEmitter {
   private renderers: {
     [key: string]: Renderer;
   };
+  /** DevTools configuration (false if disabled) */
+  private devToolsConfig: DevToolsConfig | false;
   // Internal Procedure implementations
   // For execute: handler returns Promise<COMInput>, so TOutput = COMInput
   // For stream: handler returns AsyncIterable<EngineStreamEvent>, so TOutput = AsyncIterable<EngineStreamEvent>
@@ -297,6 +366,15 @@ export class Engine extends EventEmitter {
       ...(config.renderers || {}),
     };
 
+    // Initialize DevTools config (check env vars if not explicitly configured)
+    const devToolsFromEnv = config.devTools === undefined ? getDevToolsConfigFromEnv() : undefined;
+    this.devToolsConfig = normalizeDevToolsConfig(config.devTools ?? devToolsFromEnv);
+
+    if (this.devToolsConfig && this.devToolsConfig.debug) {
+      devToolsEmitter.setDebug(true);
+      log.info("DevTools enabled", { config: this.devToolsConfig });
+    }
+
     // Initialize MCP client/service if MCP servers are configured
     if (config.mcpServers && Object.keys(config.mcpServers).length > 0) {
       this.mcpClient = new MCPClient();
@@ -342,6 +420,79 @@ export class Engine extends EventEmitter {
 
   getRenderers(): { [key: string]: Renderer } {
     return this.renderers;
+  }
+
+  /**
+   * Check if DevTools is enabled for this engine
+   */
+  get isDevToolsEnabled(): boolean {
+    return this.devToolsConfig !== false && this.devToolsConfig.enabled !== false;
+  }
+
+  /**
+   * Get the DevTools configuration (for fork/spawn inheritance)
+   * @internal
+   */
+  getDevToolsConfig(): DevToolsConfig | false {
+    return this.devToolsConfig;
+  }
+
+  /**
+   * Emit a DevTools event.
+   *
+   * This is a no-op if DevTools is disabled. Events are emitted to the
+   * singleton DevToolsEmitter which the DevTools UI subscribes to.
+   *
+   * @param event - Event to emit (timestamp will be added automatically)
+   * @internal
+   */
+  protected emitDevToolsEvent(
+    event: { type: string; executionId: string } & Record<string, unknown>,
+  ): void {
+    if (!this.devToolsConfig) return;
+
+    const fullEvent = {
+      ...event,
+      timestamp: Date.now(),
+      engineId: this.id,
+    } as DevToolsEvent;
+
+    if (this.devToolsConfig.remote && this.devToolsConfig.remoteUrl) {
+      // Cross-process: POST to remote server
+      this.postToRemoteDevTools(fullEvent);
+    } else {
+      // In-process: emit to singleton
+      devToolsEmitter.emitEvent(fullEvent);
+    }
+  }
+
+  /**
+   * POST event to remote DevTools server
+   * @internal
+   */
+  private async postToRemoteDevTools(event: DevToolsEvent): Promise<void> {
+    if (!this.devToolsConfig || !this.devToolsConfig.remoteUrl) return;
+
+    try {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+
+      if (this.devToolsConfig.secret) {
+        headers["Authorization"] = `Bearer ${this.devToolsConfig.secret}`;
+      }
+
+      await fetch(`${this.devToolsConfig.remoteUrl}/events`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(event),
+      });
+    } catch (error) {
+      // Silent failure - devtools is optional, don't break execution
+      if (this.devToolsConfig.debug) {
+        log.warn({ err: error }, "[DevTools] Failed to POST event");
+      }
+    }
   }
 
   /**
@@ -958,6 +1109,9 @@ export class Engine extends EventEmitter {
 
   /**
    * Register onAfterCompile lifecycle hook.
+   * Called after JSX compilation, BEFORE structure is rendered to COMInput.
+   * NOTE: compiled.tools will be empty here - use onAfterRender for tools.
+   *
    * @param handler Async function that receives compiled, state, and handle
    * @returns Unregister function
    */
@@ -969,6 +1123,24 @@ export class Engine extends EventEmitter {
     ) => Promise<void> | void,
   ): () => void {
     return this.createLifecycleHook("onAfterCompile", handler);
+  }
+
+  /**
+   * Register onAfterRender lifecycle hook.
+   * Called after structure is rendered to COMInput, BEFORE model execution.
+   * The formatted COMInput includes tools, timeline, system message, etc.
+   *
+   * @param handler Async function that receives formatted COMInput, state, and handle
+   * @returns Unregister function
+   */
+  onAfterRender(
+    handler: (
+      formatted: COMInput,
+      state: TickState,
+      handle?: ExecutionHandle,
+    ) => Promise<void> | void,
+  ): () => void {
+    return this.createLifecycleHook("onAfterRender", handler);
   }
 
   /**
@@ -1508,6 +1680,25 @@ export class Engine extends EventEmitter {
         metadata: input.metadata,
       } as EngineStreamEvent;
 
+      // Emit DevTools execution_start event
+      // Try to get agent name from: 1) config.name, 2) root component name, 3) "Engine"
+      const componentName =
+        typeof rootElement.type === "function"
+          ? rootElement.type.name || (rootElement.type as any).displayName
+          : typeof rootElement.type === "string"
+            ? rootElement.type
+            : undefined;
+      const agentName = this.config.name || componentName || "Engine";
+      this.emitDevToolsEvent({
+        type: "execution_start",
+        executionId: handle.pid,
+        agentName,
+        sessionId,
+        executionType: handle.parentPid ? (handle.type === "fork" ? "fork" : "spawn") : "root",
+        parentExecutionId: handle.parentPid,
+        rootExecutionId: handle.rootPid,
+      });
+
       // Check abort flag immediately after setup (before entering tick loop)
       if (shouldAbort) {
         throw new AbortError();
@@ -1535,6 +1726,13 @@ export class Engine extends EventEmitter {
 
           yield createTickStartEvent(session.tick);
 
+          // Emit DevTools tick_start event
+          this.emitDevToolsEvent({
+            type: "tick_start",
+            executionId: handle.pid,
+            tick: session.tick,
+          });
+
           // 1. Pre-model compilation (Session handles internally)
           let compilationResult;
           try {
@@ -1553,6 +1751,44 @@ export class Engine extends EventEmitter {
             shouldStop,
             stopReason: _compilationStopReason,
           } = compilationResult;
+
+          // Emit DevTools compiled event with context sent to model
+          // Extract system prompt text from COMTimelineEntry[] structure
+          let systemForDevTools: unknown = formatted.system;
+          if (Array.isArray(formatted.system)) {
+            // formatted.system is COMTimelineEntry[] - extract text content
+            const systemTexts: string[] = [];
+            for (const entry of formatted.system) {
+              if (entry && typeof entry === "object" && "message" in entry) {
+                const message = entry.message as { content?: unknown[] };
+                if (Array.isArray(message?.content)) {
+                  for (const block of message.content) {
+                    if (
+                      block &&
+                      typeof block === "object" &&
+                      "type" in block &&
+                      block.type === "text" &&
+                      "text" in block
+                    ) {
+                      systemTexts.push(String(block.text));
+                    }
+                  }
+                }
+              } else if (typeof entry === "string") {
+                systemTexts.push(entry);
+              }
+            }
+            systemForDevTools =
+              systemTexts.length > 0 ? systemTexts.join("\n\n") : formatted.system;
+          }
+          this.emitDevToolsEvent({
+            type: "compiled",
+            executionId: handle.pid,
+            tick: session.tick,
+            messages: formatted.timeline || [],
+            tools: formatted.tools || [],
+            system: systemForDevTools,
+          });
 
           // Handle compilation stop request (from TickState.stop() callback)
           if (shouldStop) {
@@ -1931,6 +2167,16 @@ export class Engine extends EventEmitter {
           // tick_end with usage stats and new timeline entries (for persistence)
           yield createTickEndEvent(session.tick, response.usage, response.newTimelineEntries);
 
+          // Emit DevTools tick_end event
+          this.emitDevToolsEvent({
+            type: "tick_end",
+            executionId: handle.pid,
+            tick: session.tick,
+            usage: response.usage,
+            stopReason: response.stopReason?.reason || response.stopReason,
+            model: this.getRawModel(session.com)?.metadata?.id,
+          });
+
           // Note: onTickEnd lifecycle hook is called by session.ingestTickResult()
           // for consistency with onTickStart being called by session.compileTick()
 
@@ -1987,6 +2233,18 @@ export class Engine extends EventEmitter {
           metadata: input.metadata,
         } as EngineStreamEvent;
 
+        // Emit DevTools execution_end event
+        this.emitDevToolsEvent({
+          type: "execution_end",
+          executionId: handle.pid,
+          totalUsage: (finalOutput as any)?.metadata?.totalUsage || {
+            inputTokens: 0,
+            outputTokens: 0,
+            totalTokens: 0,
+          },
+          finalState: "completed",
+        });
+
         await this.callLifecycleHooks("onExecutionEnd", [finalOutput, handle]);
       } catch (error: any) {
         const isAbort = isAbortError(error);
@@ -2007,6 +2265,18 @@ export class Engine extends EventEmitter {
         }
 
         yield createEngineErrorEvent(error, session?.tick || 1);
+
+        // Emit DevTools execution_end with error state
+        this.emitDevToolsEvent({
+          type: "execution_end",
+          executionId: handle.pid,
+          totalUsage: { inputTokens: 0, outputTokens: 0, totalTokens: 0 },
+          finalState: isAbort ? "cancelled" : "error",
+          error:
+            error instanceof Error
+              ? { name: error.name, message: error.message, stack: error.stack }
+              : { name: "Error", message: String(error) },
+        });
 
         await this.callLifecycleHooks("onExecutionError", [
           error instanceof Error ? error : new Error(String(error)),
@@ -2161,8 +2431,15 @@ export class Engine extends EventEmitter {
     const rootPid = pid;
 
     const EngineClass = options?.engineClass || (this.constructor as typeof Engine);
+
+    // Handle devTools inheritance
+    const shouldInheritDevTools =
+      this.devToolsConfig !== false && this.devToolsConfig.inheritOnSpawn !== false;
+    const devToolsOverride = shouldInheritDevTools ? {} : { devTools: false as const };
+
     const childEngine = new EngineClass({
       ...this.config,
+      ...devToolsOverride,
       ...options?.engineConfig,
     });
 
@@ -2237,9 +2514,15 @@ export class Engine extends EventEmitter {
       }
     }
 
+    // Handle devTools inheritance
+    const shouldInheritDevTools =
+      this.devToolsConfig !== false && this.devToolsConfig.inheritOnFork !== false;
+    const devToolsOverride = shouldInheritDevTools ? {} : { devTools: false as const };
+
     // Build child engine config - exclude lifecycle hooks if not inheriting
     const childConfig: EngineConfig = {
       ...this.config,
+      ...devToolsOverride,
       ...options?.engineConfig,
       // Inherit model from parent if not explicitly set in engineConfig
       ...(inheritedModel && !options?.engineConfig?.model ? { model: inheritedModel } : {}),

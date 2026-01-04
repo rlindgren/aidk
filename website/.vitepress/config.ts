@@ -149,6 +149,7 @@ export default withMermaid(
               { text: "Metrics & Telemetry", link: "/docs/guides/metrics-telemetry" },
               { text: "Error Handling", link: "/docs/guides/error-handling" },
               { text: "Testing", link: "/docs/guides/testing" },
+              { text: "DevTools", link: "/docs/guides/devtools" },
             ],
           },
           {

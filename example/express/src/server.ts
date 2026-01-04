@@ -3,7 +3,7 @@ import cors from "cors";
 import { Logger } from "aidk";
 import { defineRoutes } from "./routes";
 
-import { getEngine, setupEngine } from "./setup";
+import { getEngine, setupEngine, stopDevToolsServer } from "./setup";
 
 const app = express();
 const PORT = +(process.env["PORT"] || 3000);
@@ -35,6 +35,9 @@ const server = app.listen(PORT, () => {
 
 async function gracefulShutdown(signal: string) {
   log.info({ signal }, "Shutdown signal received");
+
+  // Stop devtools server
+  stopDevToolsServer();
 
   // Cleanup engine resources (channels, executions, lifecycle hooks)
   getEngine().destroy();

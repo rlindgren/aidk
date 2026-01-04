@@ -51,3 +51,4 @@ export * from "./input";
 export * from "./timeline";
 export * from "./errors";
 export * from "./identity";
+export * from "./devtools";

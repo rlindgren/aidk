@@ -281,6 +281,29 @@ const DeleteFile = createTool({
 });
 ```
 
+## Common Gotchas
+
+### Middleware for Async Iterable Procedures
+
+When writing middleware for `engine.stream` or other async iterable procedures, the signature is `(args, envelope, next)` - NOT `(next, args)`:
+
+```typescript
+// ❌ WRONG - causes "next is not a function"
+const middleware = async (next, input) => { ... };
+
+// ✅ CORRECT - args, envelope, next (in that order!)
+const middleware = async (args, envelope, next) => {
+  const stream = await next();  // Get the stream first
+  return (async function* () {
+    for await (const event of stream) {
+      yield event;  // Pass through (or transform) events
+    }
+  })();
+};
+```
+
+See `packages/kernel/ARCHITECTURE.md` section "Middleware for Async Iterable Procedures" for full details.
+
 ## Questions?
 
 - Check ARCHITECTURE.md files for design decisions

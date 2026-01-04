@@ -19,6 +19,7 @@ export type EngineLifecycleHookName =
   | "onTickStart"
   | "onTickEnd"
   | "onAfterCompile"
+  | "onAfterRender"
   | "onToolConfirmation"
   | "onClientToolResult";
 
@@ -47,15 +48,17 @@ export type EngineLifecycleHookArgs<T extends EngineLifecycleHookName> = T exten
                   ]
                 : T extends "onAfterCompile"
                   ? [compiled: CompiledStructure, state: TickState, handle?: ExecutionHandle]
-                  : T extends "onToolConfirmation"
-                    ? [
-                        confirmation: ToolConfirmationResult,
-                        call: AgentToolCall,
-                        handle?: ExecutionHandle,
-                      ]
-                    : T extends "onClientToolResult"
-                      ? [result: AgentToolResult, call: AgentToolCall, handle?: ExecutionHandle]
-                      : never;
+                  : T extends "onAfterRender"
+                    ? [formatted: COMInput, state: TickState, handle?: ExecutionHandle]
+                    : T extends "onToolConfirmation"
+                      ? [
+                          confirmation: ToolConfirmationResult,
+                          call: AgentToolCall,
+                          handle?: ExecutionHandle,
+                        ]
+                      : T extends "onClientToolResult"
+                        ? [result: AgentToolResult, call: AgentToolCall, handle?: ExecutionHandle]
+                        : never;
 
 /**
  * Engine lifecycle hook - a Procedure that performs side effects.
@@ -86,6 +89,7 @@ export class EngineLifecycleHookRegistry extends BaseHookRegistry<
       "onTickStart",
       "onTickEnd",
       "onAfterCompile",
+      "onAfterRender",
       "onToolConfirmation",
       "onClientToolResult",
     ] as const;

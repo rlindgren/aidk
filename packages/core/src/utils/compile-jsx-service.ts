@@ -591,6 +591,13 @@ export class CompileSession {
     // Format input
     const formatted = this.structureRenderer.formatInput(this._com.toInput());
 
+    // Call onAfterRender hook (tools are now available in formatted.tools)
+    await this.service.callLifecycleHooks("onAfterRender", [
+      formatted,
+      this._tickState,
+      this.handle,
+    ]);
+
     // Capture what was sent to the model (for previous in next tick)
     const rawComInput = this._com.toInput();
     const { system: _sys, ...inputWithoutSystem } = rawComInput;

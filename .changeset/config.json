@@ -13,7 +13,8 @@
       "aidk-express",
       "aidk-nestjs",
       "aidk-react",
-      "aidk-angular"
+      "aidk-angular",
+      "aidk-devtools"
     ]
   ],
   "access": "public",

@@ -167,6 +167,7 @@ const unsubscribe = engine.onExecutionError((error, handle) => { ... });
 const unsubscribe = engine.onTickStart((tick, state, handle) => { ... });
 const unsubscribe = engine.onTickEnd((tick, state, response, handle) => { ... });
 const unsubscribe = engine.onAfterCompile((compiled, state, handle) => { ... });
+const unsubscribe = engine.onAfterRender((formatted, state, handle) => { ... });
 ```
 
 ### Hook Types
@@ -181,7 +182,16 @@ const unsubscribe = engine.onAfterCompile((compiled, state, handle) => { ... });
 | `onExecutionError` | `(error, handle?)`                 | On execution error          |
 | `onTickStart`      | `(tick, state, handle?)`           | At start of each tick       |
 | `onTickEnd`        | `(tick, state, response, handle?)` | At end of each tick         |
-| `onAfterCompile`   | `(compiled, state, handle?)`       | After component compilation |
+| `onAfterCompile`   | `(compiled, state, handle?)`       | After JSX compilation       |
+| `onAfterRender`    | `(formatted, state, handle?)`      | After rendering to COMInput |
+
+::: tip onAfterCompile vs onAfterRender
+
+- **onAfterCompile** fires after JSX compilation but _before_ structure rendering. `compiled.tools` will be empty.
+- **onAfterRender** fires after rendering to `COMInput`. The `formatted` object includes `tools`, `timeline`, and `system` - everything being sent to the model.
+
+Use `onAfterRender` for instrumentation, logging, or devtools that need the complete context.
+:::
 
 ## Properties
 

@@ -1126,6 +1126,90 @@ async function askUserConfirmation(message: string): Promise<boolean> {
 }
 ```
 
+### Middleware for Async Iterable Procedures
+
+When writing middleware for procedures that return `AsyncIterable` (like `engine.stream`), the pattern is different from regular middleware. This is a common source of errors.
+
+**Middleware signature**: `(args, envelope, next) => Promise<result>`
+
+**WRONG** (causes "next is not a function"):
+
+```typescript
+// ❌ WRONG - Wrong argument order (next is not first!)
+const middleware = async (next, input) => {
+  const stream = await next();
+  // ...
+};
+
+// ❌ WRONG - Don't write middleware as an async generator directly
+const middleware = async function* (args, envelope, next) {
+  for await (const event of next()) {
+    yield event;  // next() returns Promise, not AsyncIterable!
+  }
+};
+```
+
+**CORRECT** pattern:
+
+```typescript
+// ✅ CORRECT - args, envelope, next (in that order!)
+const middleware = async (args, envelope, next) => {
+  // 1. Get the stream by awaiting next()
+  const stream = await next();
+
+  // 2. Return a NEW async generator that wraps the stream
+  return (async function* () {
+    for await (const event of stream) {
+      // Transform, log, or intercept events here
+      console.log("Event:", event.type);
+
+      // Yield each event (optionally modified)
+      yield event;
+    }
+  })();
+};
+```
+
+**Why this works**:
+
+1. Middleware signature is always `(args, envelope, next)` - not `(next, args)`!
+2. `next()` returns a `Promise<AsyncIterable>`, not an `AsyncIterable` directly
+3. You must `await next()` to get the actual stream
+4. Return a new async generator that iterates over and yields from the stream
+
+**Complete example with event interception**:
+
+```typescript
+const streamLoggingMiddleware = async (
+  args: any[],
+  envelope: ProcedureEnvelope<any>,
+  next: () => Promise<AsyncIterable<any>>,
+): Promise<AsyncIterable<any>> => {
+  const stream = await next();
+
+  return (async function* () {
+    let eventCount = 0;
+
+    for await (const event of stream) {
+      eventCount++;
+
+      // Log specific events
+      if (event.type === "content_delta") {
+        console.log("Content:", event.delta);
+      }
+
+      // Pass through unchanged
+      yield event;
+    }
+
+    console.log(`Stream complete. Total events: ${eventCount}`);
+  })();
+};
+
+// Register on engine
+engine.engineHooks.register("stream", streamLoggingMiddleware);
+```
+
 ### Structured Logging
 
 ```typescript

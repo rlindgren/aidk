@@ -1,4 +1,5 @@
 import { createEngine, Engine, EngineContext, Logger } from "aidk";
+import { attachDevTools } from "aidk-devtools";
 import { getStore } from "./persistence/database";
 import {
   getExecutionRepository,
@@ -12,6 +13,7 @@ import { setupPersistenceHooks } from "./persistence/hooks";
 import { channels } from "./channels";
 
 let engineInstance: Engine | null = null;
+let detachDevTools: (() => void) | null = null;
 
 export function setupEngine() {
   // Configure logger with app-specific context fields
@@ -46,6 +48,15 @@ export function getEngine(): Engine {
   // Create engine with channel service configured for SSE transport
   engineInstance = createEngine({ channels });
 
+  // Attach devtools if DEVTOOLS env var is set
+  if (process.env["DEVTOOLS"] === "true" || process.env["DEVTOOLS"] === "1") {
+    detachDevTools = attachDevTools(engineInstance, {
+      port: +(process.env["DEVTOOLS_PORT"] || 3004),
+      open: process.env["DEVTOOLS_OPEN"] !== "false",
+      debug: process.env["DEVTOOLS_DEBUG"] === "true",
+    });
+  }
+
   return engineInstance;
 }
 
@@ -58,4 +69,11 @@ export function getRepositories() {
     interactionRepo: getInteractionRepository(),
     toolStateRepo: getToolStateRepository(),
   };
+}
+
+export function stopDevToolsServer() {
+  if (detachDevTools) {
+    detachDevTools();
+    detachDevTools = null;
+  }
 }

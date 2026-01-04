@@ -77,6 +77,9 @@ importers:
       aidk-ai-sdk:
         specifier: link:../../packages/adapters/ai-sdk
         version: link:../../packages/adapters/ai-sdk
+      aidk-devtools:
+        specifier: link:../../packages/devtools
+        version: link:../../packages/devtools
       aidk-express:
         specifier: link:../../packages/express
         version: link:../../packages/express
