@@ -237,7 +237,7 @@ describe("DevTools Integration", () => {
       };
 
       expect(isDevToolsActive()).toBe(false);
-      const detach = attachDevTools(mockEngine, { port: 0, debug: false });
+      const detach = attachDevTools({ instance: mockEngine, port: 0, debug: false });
       expect(isDevToolsActive()).toBe(true);
 
       // Clean up
@@ -249,7 +249,7 @@ describe("DevTools Integration", () => {
         id: "test-engine",
       };
 
-      const detach = attachDevTools(mockEngine, { port: 0, debug: false });
+      const detach = attachDevTools({ instance: mockEngine, port: 0, debug: false });
       expect(typeof detach).toBe("function");
 
       // Detach should not throw
@@ -265,7 +265,7 @@ describe("DevTools Integration", () => {
         },
       };
 
-      const detach = attachDevTools(mockEngine, { port: 0, debug: false });
+      const detach = attachDevTools({ instance: mockEngine, port: 0, debug: false });
 
       expect(registerSpy).toHaveBeenCalledWith("stream", expect.any(Function));
 
@@ -278,7 +278,7 @@ describe("DevTools Integration", () => {
         // No engineHooks
       };
 
-      const detach = attachDevTools(mockEngine, { port: 0, debug: false });
+      const detach = attachDevTools({ instance: mockEngine, port: 0, debug: false });
 
       // Should not throw
       expect(isDevToolsActive()).toBe(true);

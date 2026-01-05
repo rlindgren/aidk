@@ -21,7 +21,8 @@
  * const engine = createEngine();
  *
  * // Attach devtools (starts server and opens browser)
- * const detach = attachDevTools(engine, {
+ * const detach = attachDevTools({
+ *   instance: engine,
  *   port: 3004,
  *   open: true,
  * });
@@ -53,6 +54,9 @@ export type {
   ToolCallEvent,
   ToolResultEvent,
   StateChangeEvent,
+  ProcedureStartEvent,
+  ProcedureEndEvent,
+  ProcedureErrorEvent,
 } from "./events.js";
 
 export { DEVTOOLS_CHANNEL } from "./events.js";
@@ -69,9 +73,18 @@ export {
 // Integration exports
 export {
   initDevTools,
+  initKernelSubscriberRemote,
   isDevToolsActive as devToolsActive,
   devtools,
   attachDevTools,
   type DevToolsEngine,
   type DevToolsOptions,
+  type RemoteDevToolsConfig,
 } from "./integration/index.js";
+
+// Kernel-level observability exports
+export {
+  startKernelSubscriber,
+  stopKernelSubscriber,
+  isKernelSubscriberActive,
+} from "./kernel-subscriber.js";

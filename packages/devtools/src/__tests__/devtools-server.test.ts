@@ -315,6 +315,495 @@ describe("DevToolsServer rate limiting", () => {
   });
 });
 
+describe("DevToolsServer API endpoints", () => {
+  let server: DevToolsServer;
+
+  beforeEach(() => {
+    server = new DevToolsServer({ port: 0, debug: false });
+  });
+
+  afterEach(() => {
+    server.stop();
+  });
+
+  describe("handleApiEvents", () => {
+    it("should return empty events with pagination", () => {
+      const url = new URL("http://localhost/api/events");
+      // @ts-expect-error - accessing private method for testing
+      const mockRes = createMockResponse();
+      // @ts-expect-error - accessing private method for testing
+      server["handleApiEvents"](url, mockRes);
+
+      const response = JSON.parse(mockRes.body);
+      expect(response.events).toEqual([]);
+      expect(response.pagination).toEqual({
+        total: 0,
+        limit: 100,
+        offset: 0,
+        hasMore: false,
+      });
+    });
+
+    it("should filter by event type", () => {
+      // Add some events to history
+      const events: DevToolsEvent[] = [
+        { type: "execution_start", executionId: "exec-1", agentName: "Agent1", timestamp: 1000 },
+        { type: "tool_call", executionId: "exec-1", tick: 1, toolName: "myTool", timestamp: 2000 },
+        { type: "execution_end", executionId: "exec-1", timestamp: 3000 },
+      ];
+      for (const event of events) {
+        server.emit(event);
+      }
+
+      const url = new URL("http://localhost/api/events?type=tool_call");
+      const mockRes = createMockResponse();
+      // @ts-expect-error - accessing private method for testing
+      server["handleApiEvents"](url, mockRes);
+
+      const response = JSON.parse(mockRes.body);
+      expect(response.events).toHaveLength(1);
+      expect(response.events[0].type).toBe("tool_call");
+    });
+
+    it("should filter by executionId", () => {
+      const events: DevToolsEvent[] = [
+        { type: "execution_start", executionId: "exec-1", agentName: "Agent1", timestamp: 1000 },
+        { type: "execution_start", executionId: "exec-2", agentName: "Agent2", timestamp: 2000 },
+      ];
+      for (const event of events) {
+        server.emit(event);
+      }
+
+      const url = new URL("http://localhost/api/events?executionId=exec-1");
+      const mockRes = createMockResponse();
+      // @ts-expect-error - accessing private method for testing
+      server["handleApiEvents"](url, mockRes);
+
+      const response = JSON.parse(mockRes.body);
+      expect(response.events).toHaveLength(1);
+      expect(response.events[0].executionId).toBe("exec-1");
+    });
+
+    it("should support pagination with limit and offset", () => {
+      const events: DevToolsEvent[] = [];
+      for (let i = 0; i < 10; i++) {
+        events.push({
+          type: "execution_start",
+          executionId: `exec-${i}`,
+          agentName: `Agent${i}`,
+          timestamp: 1000 + i,
+        });
+      }
+      for (const event of events) {
+        server.emit(event);
+      }
+
+      const url = new URL("http://localhost/api/events?limit=3&offset=2");
+      const mockRes = createMockResponse();
+      // @ts-expect-error - accessing private method for testing
+      server["handleApiEvents"](url, mockRes);
+
+      const response = JSON.parse(mockRes.body);
+      expect(response.events).toHaveLength(3);
+      expect(response.pagination.total).toBe(10);
+      expect(response.pagination.hasMore).toBe(true);
+    });
+
+    it("should respect max limit of 1000", () => {
+      const url = new URL("http://localhost/api/events?limit=5000");
+      const mockRes = createMockResponse();
+      // @ts-expect-error - accessing private method for testing
+      server["handleApiEvents"](url, mockRes);
+
+      const response = JSON.parse(mockRes.body);
+      expect(response.pagination.limit).toBe(1000);
+    });
+
+    it("should sort by timestamp ascending", () => {
+      const events: DevToolsEvent[] = [
+        { type: "execution_start", executionId: "exec-1", agentName: "Agent1", timestamp: 3000 },
+        { type: "execution_start", executionId: "exec-2", agentName: "Agent2", timestamp: 1000 },
+        { type: "execution_start", executionId: "exec-3", agentName: "Agent3", timestamp: 2000 },
+      ];
+      for (const event of events) {
+        server.emit(event);
+      }
+
+      const url = new URL("http://localhost/api/events?order=asc");
+      const mockRes = createMockResponse();
+      // @ts-expect-error - accessing private method for testing
+      server["handleApiEvents"](url, mockRes);
+
+      const response = JSON.parse(mockRes.body);
+      expect(response.events[0].timestamp).toBe(1000);
+      expect(response.events[1].timestamp).toBe(2000);
+      expect(response.events[2].timestamp).toBe(3000);
+    });
+  });
+
+  describe("handleApiSummary", () => {
+    it("should return markdown content type", () => {
+      const mockRes = createMockResponse();
+      // @ts-expect-error - accessing private method for testing
+      server["handleApiSummary"](mockRes);
+
+      expect(mockRes.headers["Content-Type"]).toBe("text/markdown; charset=utf-8");
+    });
+
+    it("should include summary header", () => {
+      const mockRes = createMockResponse();
+      // @ts-expect-error - accessing private method for testing
+      server["handleApiSummary"](mockRes);
+
+      expect(mockRes.body).toContain("# AIDK DevTools Summary");
+    });
+
+    it("should include executions section", () => {
+      const mockRes = createMockResponse();
+      // @ts-expect-error - accessing private method for testing
+      server["handleApiSummary"](mockRes);
+
+      expect(mockRes.body).toContain("## Executions");
+    });
+
+    it("should include procedures section", () => {
+      const mockRes = createMockResponse();
+      // @ts-expect-error - accessing private method for testing
+      server["handleApiSummary"](mockRes);
+
+      expect(mockRes.body).toContain("## Recent Procedures");
+    });
+
+    it("should include API help section", () => {
+      const mockRes = createMockResponse();
+      // @ts-expect-error - accessing private method for testing
+      server["handleApiSummary"](mockRes);
+
+      expect(mockRes.body).toContain("## API Endpoints");
+      expect(mockRes.body).toContain("GET /api/events");
+      expect(mockRes.body).toContain("GET /api/summary");
+    });
+
+    it("should summarize executions from events", () => {
+      const events: DevToolsEvent[] = [
+        { type: "execution_start", executionId: "exec-1", agentName: "TestAgent", timestamp: 1000 },
+        {
+          type: "tick_end",
+          executionId: "exec-1",
+          tick: 1,
+          usage: { totalTokens: 100 },
+          timestamp: 2000,
+        },
+        { type: "execution_end", executionId: "exec-1", timestamp: 3000 },
+      ];
+      for (const event of events) {
+        server.emit(event);
+      }
+
+      const mockRes = createMockResponse();
+      // @ts-expect-error - accessing private method for testing
+      server["handleApiSummary"](mockRes);
+
+      expect(mockRes.body).toContain("TestAgent");
+      expect(mockRes.body).toContain("completed");
+    });
+
+    it("should track procedures from events", () => {
+      const events: DevToolsEvent[] = [
+        {
+          type: "procedure_start",
+          executionId: "exec-1",
+          procedureId: "proc-1",
+          procedureName: "engine:stream",
+          timestamp: 1000,
+        },
+        { type: "procedure_end", executionId: "exec-1", procedureId: "proc-1", timestamp: 2000 },
+      ];
+      for (const event of events) {
+        server.emit(event);
+      }
+
+      const mockRes = createMockResponse();
+      // @ts-expect-error - accessing private method for testing
+      server["handleApiSummary"](mockRes);
+
+      expect(mockRes.body).toContain("engine:stream");
+      expect(mockRes.body).toContain("completed");
+    });
+  });
+
+  describe("handleApiExecutions", () => {
+    it("should list executions with summary", () => {
+      const events: DevToolsEvent[] = [
+        { type: "execution_start", executionId: "exec-1", agentName: "Agent1", timestamp: 1000 },
+        {
+          type: "tick_end",
+          executionId: "exec-1",
+          tick: 1,
+          usage: { totalTokens: 100 },
+          timestamp: 2000,
+        },
+        {
+          type: "tool_call",
+          executionId: "exec-1",
+          tick: 1,
+          toolName: "myTool",
+          callId: "call-1",
+          timestamp: 2500,
+        },
+        { type: "execution_end", executionId: "exec-1", timestamp: 3000 },
+      ];
+      for (const event of events) {
+        server.emit(event);
+      }
+
+      const mockRes = createMockResponse();
+      // @ts-expect-error - accessing private method for testing
+      server["handleApiExecutions"](new URL("http://localhost/api/executions"), mockRes);
+
+      const response = JSON.parse(mockRes.body);
+      expect(response.executions).toHaveLength(1);
+      expect(response.executions[0].agentName).toBe("Agent1");
+      expect(response.executions[0].status).toBe("completed");
+      expect(response.executions[0].ticks).toBe(1);
+      expect(response.executions[0].totalTokens).toBe(100);
+      expect(response.executions[0].toolCalls).toBe(1);
+    });
+  });
+
+  describe("handleApiExecutionTree", () => {
+    it("should return execution with procedure tree", () => {
+      const events: DevToolsEvent[] = [
+        { type: "execution_start", executionId: "exec-1", agentName: "Agent1", timestamp: 1000 },
+        {
+          type: "procedure_start",
+          executionId: "exec-1",
+          procedureId: "proc-1",
+          procedureName: "engine:stream",
+          timestamp: 1100,
+        },
+        {
+          type: "procedure_start",
+          executionId: "exec-1",
+          procedureId: "proc-2",
+          procedureName: "model:generate",
+          parentProcedureId: "proc-1",
+          timestamp: 1200,
+        },
+        { type: "procedure_end", executionId: "exec-1", procedureId: "proc-2", timestamp: 1300 },
+        { type: "procedure_end", executionId: "exec-1", procedureId: "proc-1", timestamp: 1400 },
+        { type: "execution_end", executionId: "exec-1", timestamp: 2000 },
+      ];
+      for (const event of events) {
+        server.emit(event);
+      }
+
+      const mockRes = createMockResponse();
+      // @ts-expect-error - accessing private method for testing
+      server["handleApiExecutionTree"](
+        new URL("http://localhost/api/executions/exec-1/tree"),
+        "exec-1",
+        mockRes,
+      );
+
+      const response = JSON.parse(mockRes.body);
+      expect(response.execution.agentName).toBe("Agent1");
+      expect(response.procedureTree).toHaveLength(1);
+      expect(response.procedureTree[0].name).toBe("engine:stream");
+      expect(response.procedureTree[0].children).toHaveLength(1);
+      expect(response.procedureTree[0].children[0].name).toBe("model:generate");
+    });
+
+    it("should return 404 for unknown execution", () => {
+      const mockRes = createMockResponse();
+      // @ts-expect-error - accessing private method for testing
+      server["handleApiExecutionTree"](
+        new URL("http://localhost/api/executions/unknown/tree"),
+        "unknown",
+        mockRes,
+      );
+
+      expect(mockRes.statusCode).toBe(404);
+    });
+  });
+
+  describe("handleApiProcedureTree", () => {
+    it("should return procedure with subtree and ancestry", () => {
+      const events: DevToolsEvent[] = [
+        {
+          type: "procedure_start",
+          executionId: "exec-1",
+          procedureId: "proc-1",
+          procedureName: "engine:stream",
+          timestamp: 1000,
+        },
+        {
+          type: "procedure_start",
+          executionId: "exec-1",
+          procedureId: "proc-2",
+          procedureName: "model:generate",
+          parentProcedureId: "proc-1",
+          timestamp: 1100,
+        },
+        {
+          type: "procedure_start",
+          executionId: "exec-1",
+          procedureId: "proc-3",
+          procedureName: "tool:myTool",
+          parentProcedureId: "proc-2",
+          timestamp: 1200,
+        },
+        { type: "procedure_end", executionId: "exec-1", procedureId: "proc-3", timestamp: 1300 },
+        { type: "procedure_end", executionId: "exec-1", procedureId: "proc-2", timestamp: 1400 },
+        { type: "procedure_end", executionId: "exec-1", procedureId: "proc-1", timestamp: 1500 },
+      ];
+      for (const event of events) {
+        server.emit(event);
+      }
+
+      const mockRes = createMockResponse();
+      // @ts-expect-error - accessing private method for testing
+      server["handleApiProcedureTree"](
+        new URL("http://localhost/api/procedures/proc-2/tree"),
+        "proc-2",
+        mockRes,
+      );
+
+      const response = JSON.parse(mockRes.body);
+      expect(response.procedure.name).toBe("model:generate");
+      expect(response.ancestry).toHaveLength(1);
+      expect(response.ancestry[0]).toContain("engine:stream");
+      expect(response.children).toHaveLength(1);
+      expect(response.children[0].name).toBe("tool:myTool");
+    });
+  });
+
+  describe("handleApiErrors", () => {
+    it("should return errors with ancestry", () => {
+      const events: DevToolsEvent[] = [
+        {
+          type: "procedure_start",
+          executionId: "exec-1",
+          procedureId: "proc-1",
+          procedureName: "engine:stream",
+          timestamp: 1000,
+        },
+        {
+          type: "procedure_start",
+          executionId: "exec-1",
+          procedureId: "proc-2",
+          procedureName: "tool:myTool",
+          parentProcedureId: "proc-1",
+          timestamp: 1100,
+        },
+        {
+          type: "procedure_error",
+          executionId: "exec-1",
+          procedureId: "proc-2",
+          procedureName: "tool:myTool",
+          error: { message: "Something failed" },
+          timestamp: 1200,
+        },
+      ];
+      for (const event of events) {
+        server.emit(event);
+      }
+
+      const mockRes = createMockResponse();
+      // @ts-expect-error - accessing private method for testing
+      server["handleApiErrors"](new URL("http://localhost/api/errors"), mockRes);
+
+      const response = JSON.parse(mockRes.body);
+      expect(response.count).toBe(1);
+      expect(response.errors[0].procedureName).toBe("tool:myTool");
+      expect(response.errors[0].error.message).toBe("Something failed");
+      expect(response.errors[0].ancestry).toHaveLength(1);
+    });
+  });
+
+  describe("handleApiTools", () => {
+    it("should pair tool calls with results", () => {
+      const events: DevToolsEvent[] = [
+        {
+          type: "tool_call",
+          executionId: "exec-1",
+          tick: 1,
+          toolName: "myTool",
+          callId: "call-1",
+          input: { query: "test" },
+          timestamp: 1000,
+        },
+        {
+          type: "tool_result",
+          executionId: "exec-1",
+          tick: 1,
+          callId: "call-1",
+          output: { result: "success" },
+          isError: false,
+          timestamp: 1100,
+        },
+        {
+          type: "tool_call",
+          executionId: "exec-1",
+          tick: 1,
+          toolName: "failTool",
+          callId: "call-2",
+          input: {},
+          timestamp: 1200,
+        },
+        {
+          type: "tool_result",
+          executionId: "exec-1",
+          tick: 1,
+          callId: "call-2",
+          output: { error: "failed" },
+          isError: true,
+          timestamp: 1300,
+        },
+      ];
+      for (const event of events) {
+        server.emit(event);
+      }
+
+      const mockRes = createMockResponse();
+      // @ts-expect-error - accessing private method for testing
+      server["handleApiTools"](new URL("http://localhost/api/tools"), mockRes);
+
+      const response = JSON.parse(mockRes.body);
+      expect(response.summary.total).toBe(2);
+      expect(response.summary.succeeded).toBe(1);
+      expect(response.summary.failed).toBe(1);
+      expect(response.tools).toHaveLength(2);
+      expect(response.tools[0].result).toBeDefined();
+    });
+  });
+});
+
+// Helper to create a mock ServerResponse
+function createMockResponse() {
+  const res: {
+    body: string;
+    headers: Record<string, string>;
+    statusCode: number;
+    writeHead: (code: number, headers?: Record<string, string>) => void;
+    end: (body?: string) => void;
+  } = {
+    body: "",
+    headers: {},
+    statusCode: 200,
+    writeHead(code: number, headers?: Record<string, string>) {
+      this.statusCode = code;
+      if (headers) {
+        Object.assign(this.headers, headers);
+      }
+    },
+    end(body?: string) {
+      this.body = body || "";
+    },
+  };
+  return res;
+}
+
 describe("DevToolsServer Registry", () => {
   afterEach(() => {
     stopDevTools();

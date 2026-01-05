@@ -16,9 +16,7 @@ import { Context } from "./context";
  * }
  * ```
  */
-export function isAsyncIterable(obj: any): obj is AsyncIterable<any> {
-  return obj && typeof obj[Symbol.asyncIterator] === "function";
-}
+export { isAsyncIterable } from "./procedure";
 
 /**
  * Transform items in an async stream using a mapper function.

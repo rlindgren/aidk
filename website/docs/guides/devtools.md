@@ -40,10 +40,11 @@ import { attachDevTools } from 'aidk-devtools/integration';
 const engine = createEngine();
 
 // Attach devtools - starts server and opens browser
-const detach = attachDevTools(engine, {
-  port: 3004,      // Server port (default: 3004)
-  open: true,      // Auto-open browser (default: true)
-  debug: false,    // Enable debug logging
+const detach = attachDevTools({
+  instance: engine, // Engine to attach to
+  port: 3004,       // Server port (default: 3004)
+  open: true,       // Auto-open browser (default: true)
+  debug: false,     // Enable debug logging
 });
 
 // Your agent code...
@@ -72,7 +73,8 @@ import { attachDevTools } from 'aidk-devtools/integration';
 const engine = createEngine();
 
 if (process.env.DEVTOOLS === 'true') {
-  attachDevTools(engine, {
+  attachDevTools({
+    instance: engine,
     port: +(process.env.DEVTOOLS_PORT || 3004),
     open: process.env.DEVTOOLS_OPEN !== 'false',
     debug: process.env.DEVTOOLS_DEBUG === 'true',
@@ -82,23 +84,21 @@ if (process.env.DEVTOOLS === 'true') {
 
 ## UI Overview
 
-The devtools UI is organized into three main areas:
+The devtools UI is organized into two main areas:
 
 ### Sidebar - Execution List
 
 Shows all agent executions with:
 
-- Agent name
-- Tick count and duration
+- Agent name and execution type badge (engine, model, tool, fork, spawn)
+- Tick count and total duration
+- Procedure count per execution
 - Token usage (with aggregate totals for parents)
 - Running/completed status
-- **Fork/Spawn badges** - Visual indicators for child executions
 
-Executions are displayed hierarchically: parent executions appear first, with their forked/spawned children indented below. Token counts show both own usage and aggregate (including children), e.g., "0 (352) tokens".
+Executions are displayed hierarchically: parent executions appear first, with their forked/spawned children indented below. Click an execution to view its details.
 
-Click an execution to view its details. For child executions, click the parent link to navigate to the parent.
-
-### Main Panel - Timeline View
+### Main Panel - Execution Details
 
 Each execution shows a tick-by-tick breakdown:
 
@@ -135,6 +135,19 @@ A timeline of events within the tick:
 - Tool results
 - State changes
 
+#### Procedures
+
+An expandable tree showing all kernel-level procedure calls within the execution:
+
+- **Engine procedures** - `engine:stream`, `engine:execute`
+- **Model calls** - `model:generate`, `model:stream`
+- **Tool handlers** - Individual tool executions
+- **Component lifecycle** - `render`, `onMount`, `onUnmount` hooks
+
+Each procedure shows its name, component context (if applicable), and duration. Click a procedure name to see full details including parent/child relationships, metrics, metadata, and error stack traces.
+
+The first two levels of the tree are auto-expanded for easy navigation.
+
 ### Header
 
 Shows connection status and provides a "Clear All" button to reset.
@@ -157,7 +170,7 @@ import { createEngine } from 'aidk';
 import { attachDevTools } from 'aidk-devtools';
 
 const engine = createEngine({ devTools: true });
-attachDevTools(engine, { port: 3004, open: true });
+attachDevTools({ instance: engine, port: 3004, open: true });
 ```
 
 ### Remote Mode (CLI)
@@ -206,7 +219,7 @@ const engine = createEngine({
 
 // Only attach embedded server if NOT in remote mode
 if (devToolsEnabled && !devToolsRemote) {
-  attachDevTools(engine, { port: devToolsPort, open: true });
+  attachDevTools({ instance: engine, port: devToolsPort, open: true });
 }
 ```
 
@@ -241,7 +254,7 @@ npx aidk-devtools --port 3004 --open --debug
 
 ## Security
 
-DevTools includes several security measures for the `POST /events` endpoint:
+DevTools includes several security measures:
 
 ### Localhost Binding (Default)
 
@@ -264,6 +277,13 @@ devTools: {
   remoteUrl: 'http://your-server:3001',
   secret: 'my-secure-token',
 }
+```
+
+When a secret is configured, **all API endpoints** require authentication via Bearer token:
+
+```bash
+# API calls require Authorization header when secret is set
+curl -H "Authorization: Bearer my-secure-token" http://localhost:3001/api/executions
 ```
 
 ### Additional Security Measures
@@ -382,6 +402,249 @@ devtools.tickEnd(executionId, 1, usage, stopReason, model);
 devtools.executionEnd(executionId, totalUsage);
 ```
 
+## LLM-Friendly API
+
+DevTools provides structured API endpoints optimized for AI agent consumption. When the CLI server starts, it prints curl examples for these endpoints.
+
+### Structured Endpoints (Recommended)
+
+These endpoints return hierarchical data that's easier to understand than raw events.
+
+#### List Executions
+
+```bash
+curl http://localhost:3001/api/executions
+
+# Filter by status
+curl "http://localhost:3001/api/executions?status=running"
+
+# Filter by agent name (substring match)
+curl "http://localhost:3001/api/executions?agentName=MyAgent"
+
+# Filter by session
+curl "http://localhost:3001/api/executions?sessionId=sess-123"
+
+# Filter by execution type
+curl "http://localhost:3001/api/executions?executionType=engine"
+curl "http://localhost:3001/api/executions?executionType=fork"
+
+# Pagination
+curl "http://localhost:3001/api/executions?limit=10&offset=0"
+```
+
+Query params: `status` (running/completed/error), `agentName`, `sessionId`, `executionType` (engine/model/tool/fork/spawn), `limit`, `offset`
+
+Returns executions with summary info and pagination:
+
+```json
+{
+  "executions": [{
+    "id": "exec-123",
+    "agentName": "MyAgent",
+    "executionType": "engine",
+    "status": "completed",
+    "ticks": 3,
+    "totalTokens": 1500,
+    "toolCalls": 2,
+    "errors": 0,
+    "durationMs": 2500
+  }],
+  "pagination": { "total": 50, "limit": 100, "offset": 0, "hasMore": false }
+}
+```
+
+#### Execution with Procedure Tree
+
+Get a full execution with its procedure call hierarchy:
+
+```bash
+curl http://localhost:3001/api/executions/{id}/tree
+
+# Filter procedures by status
+curl "http://localhost:3001/api/executions/{id}/tree?procedureStatus=error"
+
+# Filter procedures by type (model, tool, component, etc.)
+curl "http://localhost:3001/api/executions/{id}/tree?procedureType=tool"
+
+# Filter procedures by name (substring match)
+curl "http://localhost:3001/api/executions/{id}/tree?procedureName=search"
+```
+
+Query params: `procedureStatus` (running/completed/error), `procedureType`, `procedureName`
+
+Returns:
+
+```json
+{
+  "execution": { ... },
+  "procedureCount": 15,
+  "procedureTree": [{
+    "id": "proc-1",
+    "name": "engine:stream",
+    "status": "completed",
+    "durationMs": 2400,
+    "children": [{
+      "id": "proc-2",
+      "name": "model:generate",
+      "status": "completed",
+      "durationMs": 1200,
+      "children": [...]
+    }]
+  }],
+  "filters": { "procedureStatus": null, "procedureType": null, "procedureName": null }
+}
+```
+
+#### Procedure Subtree
+
+Drill into a specific procedure and see what it called:
+
+```bash
+curl http://localhost:3001/api/procedures/{id}/tree
+
+# Filter descendants by status
+curl "http://localhost:3001/api/procedures/{id}/tree?status=error"
+
+# Filter descendants by type
+curl "http://localhost:3001/api/procedures/{id}/tree?type=tool"
+
+# Filter descendants by name
+curl "http://localhost:3001/api/procedures/{id}/tree?name=search"
+
+# Limit tree depth
+curl "http://localhost:3001/api/procedures/{id}/tree?maxDepth=2"
+```
+
+Query params: `status` (running/completed/error), `type`, `name`, `maxDepth`
+
+Returns the procedure, its ancestry (path from root), and all descendants:
+
+```json
+{
+  "procedure": {
+    "id": "proc-5",
+    "name": "tool:searchDocs",
+    "status": "completed",
+    "durationMs": 150
+  },
+  "ancestry": ["engine:stream (abc12...)", "model:generate (def34...)"],
+  "children": [...],
+  "filters": { "status": null, "type": null, "name": null, "maxDepth": null }
+}
+```
+
+#### Errors with Context
+
+Get all errors with their procedure ancestry for debugging:
+
+```bash
+curl http://localhost:3001/api/errors
+
+# Filter by execution
+curl "http://localhost:3001/api/errors?executionId=exec-123"
+
+# Filter by procedure name
+curl "http://localhost:3001/api/errors?procedureName=myTool"
+
+# Pagination
+curl "http://localhost:3001/api/errors?limit=10&offset=0"
+```
+
+Query params: `executionId`, `procedureName`, `limit`, `offset`
+
+Returns:
+
+```json
+{
+  "count": 2,
+  "errors": [{
+    "timestamp": 1704380400000,
+    "executionId": "exec-123",
+    "procedureId": "proc-5",
+    "procedureName": "tool:myTool",
+    "error": {
+      "name": "Error",
+      "message": "Connection timeout",
+      "stack": "..."
+    },
+    "ancestry": ["engine:stream (abc...)", "model:generate (def...)"]
+  }],
+  "pagination": { "total": 2, "limit": 100, "offset": 0, "hasMore": false }
+}
+```
+
+#### Tool Calls with Results
+
+Get tool calls paired with their results:
+
+```bash
+curl http://localhost:3001/api/tools
+
+# Filter by execution
+curl "http://localhost:3001/api/tools?executionId=exec-123"
+
+# Filter by tool name
+curl "http://localhost:3001/api/tools?toolName=search"
+
+# Filter by status
+curl "http://localhost:3001/api/tools?status=failed"
+
+# Pagination
+curl "http://localhost:3001/api/tools?limit=10&offset=0"
+```
+
+Query params: `executionId`, `toolName`, `status` (succeeded/failed/pending), `limit`, `offset`
+
+Returns:
+
+```json
+{
+  "summary": {
+    "total": 5,
+    "succeeded": 4,
+    "failed": 1,
+    "pending": 0
+  },
+  "tools": [{
+    "callId": "call-123",
+    "toolName": "searchDocs",
+    "input": { "query": "authentication" },
+    "timestamp": 1704380400000,
+    "result": {
+      "timestamp": 1704380400150,
+      "output": { "results": [...] },
+      "isError": false
+    }
+  }],
+  "pagination": { "total": 5, "limit": 100, "offset": 0, "hasMore": false }
+}
+```
+
+#### Markdown Summary
+
+Get a human/LLM-readable markdown overview:
+
+```bash
+curl http://localhost:3001/api/summary
+```
+
+### Raw Event Filtering
+
+For lower-level access, query raw events with filtering:
+
+```bash
+# Filter by event type
+curl "http://localhost:3001/api/events?type=tool_call"
+
+# Filter by execution ID
+curl "http://localhost:3001/api/events?executionId=abc123&order=asc"
+
+# Pagination
+curl "http://localhost:3001/api/events?limit=50&offset=100"
+```
+
+Query parameters: `type`, `executionId`, `procedureId`, `sessionId`, `limit` (max 1000), `offset`, `order` (asc/desc)
+
 ## Debugging Tips
 
 ### Token Usage Shows 0
@@ -406,7 +669,7 @@ Ensure:
 Enable debug mode to see detailed event logging:
 
 ```typescript
-attachDevTools(engine, { debug: true });
+attachDevTools({ instance: engine, debug: true });
 ```
 
 This logs every event as it's emitted, helping identify where data might be lost.

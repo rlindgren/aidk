@@ -28,7 +28,7 @@ import {
 } from "../mcp";
 import { ChannelService, type ChannelServiceConfig } from "../channels/service";
 import { toolRegistry } from "./registry";
-import { isAsyncIterable, Logger } from "aidk-kernel";
+import { isAsyncIterable, Logger, Context, type KernelContext } from "aidk-kernel";
 import { ensureElement } from "../jsx/jsx-runtime";
 import type { ExecutionHandle, ExecutionMessage } from "../engine/execution-types";
 import { getWaitHandles } from "../jsx/components/fork-spawn-helpers";
@@ -412,6 +412,13 @@ export class CompileSession {
   private _lastCompiledInput?: COMInput; // Captured during compileTick for previous
   private _isComplete = false;
 
+  /**
+   * Captured kernel context from session creation time.
+   * Used to ensure lifecycle hooks run in the correct execution context
+   * (with proper executionHandle and procedureGraph).
+   */
+  private readonly kernelContext?: KernelContext;
+
   constructor(
     private readonly service: CompileJSXService,
     private readonly _com: COM,
@@ -420,7 +427,52 @@ export class CompileSession {
     private readonly rootElement: JSX.Element,
     private readonly handle?: ExecutionHandle,
     private readonly maxTicks: number = 10,
-  ) {}
+    kernelContext?: KernelContext,
+  ) {
+    this.kernelContext = kernelContext;
+  }
+
+  // === Context Helper ===
+
+  /**
+   * Run a function ensuring executionHandle is in context.
+   *
+   * This preserves the current context's procedurePid (for correct parent lookup)
+   * while ensuring executionHandle is available (for executionId fallback).
+   *
+   * The logic:
+   * 1. If current context has executionHandle, use it as-is
+   * 2. If current context lacks executionHandle but we have one captured, add it
+   * 3. If no current context, use the captured context
+   * 4. Otherwise, run directly
+   */
+  private async runInContext<T>(fn: () => Promise<T>): Promise<T> {
+    const currentContext = Context.tryGet();
+
+    // Case 1: Current context already has executionHandle - use it
+    if (currentContext?.executionHandle) {
+      return fn();
+    }
+
+    // Case 2: Current context exists but lacks executionHandle - add it from captured
+    if (currentContext && this.kernelContext?.executionHandle) {
+      const contextWithHandle = {
+        ...currentContext,
+        executionHandle: this.kernelContext.executionHandle,
+        // Also ensure procedureGraph is available for parent lookup
+        procedureGraph: currentContext.procedureGraph || this.kernelContext.procedureGraph,
+      };
+      return Context.run(contextWithHandle, fn);
+    }
+
+    // Case 3: No current context - use captured context entirely
+    if (this.kernelContext) {
+      return Context.run(this.kernelContext, fn);
+    }
+
+    // Case 4: Fallback - run directly
+    return fn();
+  }
 
   // === State Accessors ===
 
@@ -542,21 +594,25 @@ export class CompileSession {
       this.handle,
     ]);
 
-    // Notify compiler that tick is starting
-    await this.compiler.notifyTickStart(this._tickState);
+    // Notify compiler that tick is starting.
+    // Run in captured context to ensure lifecycle hooks inherit correct executionId.
+    await this.runInContext(() => this.compiler.notifyTickStart(this._tickState!));
 
     // Check abort before compilation
     this.service.checkAbort();
 
-    // Compile until stable
+    // Compile until stable.
+    // Run in captured context to ensure component render procedures inherit correct executionId.
+    // This is important for forks where the fork's executionHandle must be available.
     const compileOptions: CompileStabilizationOptions = {
       maxIterations: 50,
       trackMutations: process.env["NODE_ENV"] === "development",
       ...this.service["config"].compileOptions,
     };
 
-    let { compiled, iterations, forcedStable, recompileReasons } =
-      await this.compiler.compileUntilStable(this.rootElement, this._tickState, compileOptions);
+    let { compiled, iterations, forcedStable, recompileReasons } = await this.runInContext(() =>
+      this.compiler.compileUntilStable(this.rootElement, this._tickState!, compileOptions),
+    );
 
     if (iterations > 1) {
       log.debug({ iterations, reasons: recompileReasons }, "Compilation stabilized");
@@ -572,14 +628,18 @@ export class CompileSession {
       this.handle,
     ]);
 
-    // Wait for forks/spawns and re-compile if needed
-    const { compiled: finalCompiled } = await this.service.waitForForksAndRecompile(
-      this._com,
-      this.compiler,
-      this.rootElement,
-      this._tickState,
-      compiled,
-      this.handle,
+    // Wait for forks/spawns and re-compile if needed.
+    // Run in captured context because waitForForksAndRecompile may call compileUntilStable
+    // again if forks completed, and those render procedures need the correct executionId.
+    const { compiled: finalCompiled } = await this.runInContext(() =>
+      this.service.waitForForksAndRecompile(
+        this._com,
+        this.compiler,
+        this.rootElement,
+        this._tickState!,
+        compiled,
+        this.handle,
+      ),
     );
 
     // Apply compiled structure
@@ -750,9 +810,10 @@ export class CompileSession {
       this._tickState.usage = response.usage;
     }
 
-    // 7. Call component lifecycle hooks (notifyTickEnd)
+    // 7. Call component lifecycle hooks (notifyTickEnd).
+    // Run in captured context to ensure lifecycle hooks inherit correct executionId.
     try {
-      await this.compiler.notifyTickEnd(this._tickState!);
+      await this.runInContext(() => this.compiler.notifyTickEnd(this._tickState!));
     } catch (error: any) {
       // Try recovery via compiler.notifyError
       const errorState: TickState = {
@@ -765,7 +826,7 @@ export class CompileSession {
         },
       };
 
-      const recovery = await this.compiler.notifyError(errorState);
+      const recovery = await this.runInContext(() => this.compiler.notifyError(errorState));
       if (recovery?.continue) {
         // Apply recovery modifications if any
         if (recovery.modifications) {
@@ -936,9 +997,10 @@ export class CompileSession {
     // Get final state
     const finalOutput = this.structureRenderer.formatInput(this._com.toInput());
 
-    // Notify components that execution is complete
+    // Notify components that execution is complete.
+    // Run in captured context to ensure lifecycle hooks inherit correct executionId.
     try {
-      await this.compiler.notifyComplete(finalOutput);
+      await this.runInContext(() => this.compiler.notifyComplete(finalOutput));
     } catch (error: any) {
       // Try recovery
       const errorState: TickState = {
@@ -953,7 +1015,7 @@ export class CompileSession {
         queuedMessages: [],
       };
 
-      const recovery = await this.compiler.notifyError(errorState);
+      const recovery = await this.runInContext(() => this.compiler.notifyError(errorState));
       if (!recovery?.continue) {
         log.error({ err: error }, "Error in onComplete, no recovery");
         // Don't throw - complete should be best-effort
@@ -967,10 +1029,11 @@ export class CompileSession {
   /**
    * Unmount the compiler (cleanup).
    * Called by Engine in finally block.
+   * Run in captured context to ensure lifecycle hooks inherit correct executionId.
    */
   async unmount(): Promise<void> {
     try {
-      await this.compiler.unmount();
+      await this.runInContext(() => this.compiler.unmount());
     } catch (error) {
       log.error({ err: error }, "Error during compiler unmount");
     }
@@ -1452,8 +1515,23 @@ export class CompileJSXService {
     // Note: onExecutionStart is NOT called here - it's an Engine lifecycle hook
     // that Engine should call with its own error handling
 
+    // Capture the kernel context at session creation time.
+    // This context has the correct executionHandle and procedureGraph.
+    // We'll use it when running lifecycle hooks to ensure they inherit
+    // the correct execution context.
+    const kernelContext = Context.tryGet();
+
     // Create and return session
-    return new CompileSession(this, com, compiler, structureRenderer, element, handle, maxTicks);
+    return new CompileSession(
+      this,
+      com,
+      compiler,
+      structureRenderer,
+      element,
+      handle,
+      maxTicks,
+      kernelContext,
+    );
   }
 
   /**

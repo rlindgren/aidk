@@ -9,11 +9,46 @@ import {
   getDevToolsServer,
   emitDevToolsEvent,
   isDevToolsActive,
-  type DevToolsOptions,
+  type DevToolsOptions as BaseDevToolsOptions,
 } from "../server/index.js";
 import type { DevToolsEvent } from "../events.js";
+import {
+  startKernelSubscriber,
+  stopKernelSubscriber,
+  isKernelSubscriberActive,
+} from "../kernel-subscriber.js";
 
-export { type DevToolsOptions } from "../server/index.js";
+/**
+ * Remote DevTools configuration.
+ * When set, events are POSTed to an external DevTools server instead of
+ * starting an embedded server.
+ */
+export interface RemoteDevToolsConfig {
+  /** URL of the remote DevTools server (e.g., "http://localhost:3004") */
+  url: string;
+  /** Optional secret for authentication */
+  secret?: string;
+}
+
+/**
+ * DevTools configuration options.
+ */
+export interface DevToolsOptions extends BaseDevToolsOptions {
+  /**
+   * Remote mode configuration. When set, the engine will POST events to
+   * an external DevTools server instead of running an embedded server.
+   * In remote mode, no engine is required.
+   */
+  remote?: RemoteDevToolsConfig;
+
+  /**
+   * Engine instance to attach devtools to.
+   * This is used to attach stream middleware to the engine.
+   * In embedded mode only.
+   * Remote mode uses kernel subscriber instead.
+   */
+  instance?: DevToolsEngine;
+}
 
 /**
  * Engine hook registry interface for devtools integration.
@@ -40,41 +75,93 @@ export interface DevToolsEngine {
  * Attaches devtools instrumentation to an engine.
  * Returns an unsubscribe function to remove all hooks.
  *
- * NOTE: If the engine has `devTools: true` in its config (or auto-detected from
- * DEVTOOLS env var), lifecycle events (execution_start, tick_start, etc.) are
- * already emitted by the engine itself. This function only adds stream middleware
- * for streaming events (content_delta, tool_call, tool_result) which the engine
- * doesn't emit directly.
+ * Supports two modes:
  *
- * @example
+ * **Embedded mode** (default): Starts a DevTools server in the same process.
+ * Requires an engine to attach stream middleware.
+ *
+ * **Remote mode**: Sends events to an external DevTools server (e.g., `npx aidk-devtools`).
+ * Engine is optional in this mode - if provided, stream middleware is attached.
+ *
+ * @example Embedded mode
  * ```typescript
- * import { attachDevTools } from "aidk-devtools/integration";
- * import { Engine } from "aidk";
+ * import { attachDevTools } from "aidk-devtools";
+ * import { createEngine } from "aidk";
  *
- * const engine = new Engine({ ... });
- * const detach = attachDevTools(engine);
+ * const engine = createEngine();
+ * const detach = attachDevTools(engine, { port: 3004, open: true });
  *
- * // Later, to stop sending events:
+ * // Later, to stop:
  * detach();
  * ```
+ *
+ * @example Remote mode (with engine)
+ * ```typescript
+ * import { attachDevTools } from "aidk-devtools";
+ * import { createEngine } from "aidk";
+ *
+ * const engine = createEngine({ devTools: { remote: true, remoteUrl: "http://localhost:3004" } });
+ * const detach = attachDevTools(engine, {
+ *   remote: { url: "http://localhost:3004", secret: process.env.DEVTOOLS_SECRET }
+ * });
+ * ```
+ *
+ * @example Remote mode (no engine - just kernel observability)
+ * ```typescript
+ * import { attachDevTools } from "aidk-devtools";
+ *
+ * // Start kernel subscriber for remote mode without an engine reference
+ * const detach = attachDevTools({
+ *   remote: { url: "http://localhost:3004" },
+ *   debug: true
+ * });
+ * ```
  */
-export function attachDevTools(engine: DevToolsEngine, options: DevToolsOptions = {}): () => void {
-  // Always log when attaching (helps debug)
-  console.log("[DevTools] attachDevTools called", {
-    engineId: engine.id,
-    hasEngineHooks: !!engine.engineHooks,
-    debug: options.debug,
-  });
+export function attachDevTools(options: DevToolsOptions = {}): () => void {
+  // Handle overloaded signatures:
+  // attachDevTools(options) - remote mode without engine
+  // attachDevTools(engine, options) - with engine
+  const engine: DevToolsEngine | null = options?.instance ?? null;
+  const isRemoteMode = !!options?.remote;
 
-  // Initialize the server if not already running
-  initDevTools(options);
+  if (options?.debug) {
+    console.log("[DevTools] attachDevTools called", {
+      engineId: engine?.id ?? "(no engine)",
+      hasEngineHooks: !!engine?.engineHooks,
+      mode: isRemoteMode ? "remote" : "embedded",
+    });
+  }
 
   const unsubscribers: (() => void)[] = [];
+
+  if (isRemoteMode) {
+    if (engine) {
+      throw new Error("attachDevTools: engine is not allowed for remote mode.");
+    }
+    // Remote mode: start kernel subscriber to POST events to remote server
+    if (!isKernelSubscriberActive()) {
+      const stopSubscriber = startKernelSubscriber({
+        debug: options?.debug,
+        remote: {
+          url: options?.remote!.url,
+          secret: options?.remote!.secret,
+        },
+      });
+      unsubscribers.push(stopSubscriber);
+    }
+  } else {
+    if (!engine) {
+      throw new Error("attachDevTools: engine is required for embedded mode.");
+    }
+    // Embedded mode: start local server + kernel subscriber
+    initDevTools(options);
+  }
 
   // Track discovered tools per execution (from tool_call events as fallback)
   const executionTools = new Map<string, Map<string, ToolDefinition>>();
 
   // Register stream middleware to capture content_delta, tool_call, tool_result events
+  // Only if we have an engine with hooks
   //
   // IMPORTANT: Middleware pattern for async iterable procedures (like engine.stream)
   // ================================================================================
@@ -96,21 +183,18 @@ export function attachDevTools(engine: DevToolsEngine, options: DevToolsOptions 
   //     })();
   //   }
   //
-  if (engine.engineHooks) {
-    console.log("[DevTools] Registering stream middleware");
+  if (engine?.engineHooks) {
+    const engineId = engine.id;
     const streamMiddleware = async (
-      args: any[],
-      envelope: any,
+      _args: any[],
+      _envelope: any,
       next: () => Promise<AsyncIterable<any>>,
     ): Promise<AsyncIterable<any>> => {
-      console.log("[DevTools] Stream middleware CALLED");
-
       // Get the stream from the next middleware
       const stream = await next();
-      console.log("[DevTools] Stream obtained from next()");
 
       // Get execution context for this stream
-      let executionId = engine.id;
+      let executionId = engineId;
       // Track current tick ourselves - don't rely on event.tick which may be stale
       let currentTick = 1;
 
@@ -177,7 +261,7 @@ export function attachDevTools(engine: DevToolsEngine, options: DevToolsOptions 
 
             case "message":
               // Capture the final model output message with raw provider response
-              if (options.debug) {
+              if (options?.debug) {
                 console.log("[DevTools] message event:", {
                   hasMessage: !!event.message,
                   hasUsage: !!event.usage,
@@ -194,7 +278,7 @@ export function attachDevTools(engine: DevToolsEngine, options: DevToolsOptions 
           }
 
           // Debug log all events if needed
-          if (options.debug && event.type !== "content_delta") {
+          if (options?.debug && event.type !== "content_delta") {
             console.log("[DevTools] Stream event:", event.type, { tick: currentTick, executionId });
           }
 
@@ -219,9 +303,54 @@ export function attachDevTools(engine: DevToolsEngine, options: DevToolsOptions 
 
 /**
  * Initialize devtools. Call this when engine is created with devTools option.
+ * This starts both the DevTools server and the kernel-level event subscriber.
  */
 export function initDevTools(options: DevToolsOptions = {}): void {
+  // Start the DevTools server
   getDevToolsServer(options);
+
+  // Start kernel-level event subscriber (captures all procedure events)
+  if (!isKernelSubscriberActive()) {
+    startKernelSubscriber({ debug: options.debug });
+  }
+}
+
+/**
+ * Initialize kernel subscriber for remote mode.
+ *
+ * @deprecated Use `attachDevTools({ remote: { url, secret }, debug })` instead.
+ * This provides a unified API for both embedded and remote modes.
+ *
+ * @example
+ * ```typescript
+ * // OLD (deprecated):
+ * import { initKernelSubscriberRemote } from "aidk-devtools";
+ * const stop = initKernelSubscriberRemote({ url: "http://localhost:3004" });
+ *
+ * // NEW (preferred):
+ * import { attachDevTools } from "aidk-devtools";
+ * const detach = attachDevTools({ remote: { url: "http://localhost:3004" } });
+ * ```
+ */
+export function initKernelSubscriberRemote(options: {
+  url: string;
+  secret?: string;
+  debug?: boolean;
+}): () => void {
+  if (isKernelSubscriberActive()) {
+    console.log("[DevTools] Kernel subscriber already active");
+    return () => stopKernelSubscriber();
+  }
+
+  console.log("[DevTools] Starting kernel subscriber for remote mode", { url: options.url });
+
+  return startKernelSubscriber({
+    debug: options.debug,
+    remote: {
+      url: options.url,
+      secret: options.secret,
+    },
+  });
 }
 
 /**

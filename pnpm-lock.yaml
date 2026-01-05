@@ -153,6 +153,9 @@ importers:
       aidk-client:
         specifier: workspace:*
         version: link:../client
+      aidk-kernel:
+        specifier: workspace:*
+        version: link:../kernel
       aidk-shared:
         specifier: workspace:*
         version: link:../shared

@@ -67,6 +67,7 @@
   },
   "dependencies": {
     "aidk-client": "workspace:*",
+    "aidk-kernel": "workspace:*",
     "aidk-shared": "workspace:*",
     "marked": "^17.0.1"
   },

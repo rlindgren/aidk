@@ -17,13 +17,16 @@ import {
   isAssistantMessage,
   Section,
 } from "aidk";
+import { type ComponentBaseProps } from "aidk/jsx/jsx-types";
 import { aisdk, openai } from "../models/models";
 
 /**
  * TaskSolver - Individual solver that answers a question.
  * Each solver gets slightly different temperature for diversity.
  */
-class TaskSolver extends Component<{ task: string; solverId: number; modelName?: string }> {
+class TaskSolver extends Component<
+  { task: string; solverId: number; modelName?: string } & ComponentBaseProps
+> {
   task = input<string>();
   solverId = input<number>(0);
   modelName = input<string>(process.env["OPENAI_MODEL"] || "gpt-4o-mini");

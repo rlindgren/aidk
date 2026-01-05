@@ -210,6 +210,59 @@ export interface DTStateChangeEvent extends DevToolsEventBase {
 }
 
 // ============================================================================
+// Procedure Events (from kernel-level observability)
+// ============================================================================
+
+/**
+ * Emitted when any procedure starts execution.
+ * This captures model calls, tool executions, engine operations, etc.
+ */
+export interface DTProcedureStartEvent extends DevToolsEventBase {
+  type: "procedure_start";
+  /** Unique procedure instance ID */
+  procedureId: string;
+  /** Procedure name (e.g., 'model:stream', 'tool:calculator') */
+  procedureName: string;
+  /** Procedure type from metadata */
+  procedureType?: string;
+  /** Parent procedure ID for call tree */
+  parentProcedureId?: string;
+  /** Additional metadata from the procedure */
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Emitted when a procedure completes successfully.
+ */
+export interface DTProcedureEndEvent extends DevToolsEventBase {
+  type: "procedure_end";
+  procedureId: string;
+  procedureName?: string;
+  status: "completed";
+  /** Metrics accumulated during execution */
+  metrics?: Record<string, number>;
+  /** Duration in milliseconds */
+  durationMs?: number;
+}
+
+/**
+ * Emitted when a procedure fails with an error.
+ */
+export interface DTProcedureErrorEvent extends DevToolsEventBase {
+  type: "procedure_error";
+  procedureId: string;
+  procedureName?: string;
+  status: "failed" | "cancelled";
+  error: {
+    name: string;
+    message: string;
+    stack?: string;
+  };
+  /** Metrics accumulated before failure */
+  metrics?: Record<string, number>;
+}
+
+// ============================================================================
 // Union Type
 // ============================================================================
 
@@ -229,7 +282,10 @@ export type DevToolsEvent =
   | DTToolCallEvent
   | DTToolResultEvent
   | DTToolConfirmationEvent
-  | DTStateChangeEvent;
+  | DTStateChangeEvent
+  | DTProcedureStartEvent
+  | DTProcedureEndEvent
+  | DTProcedureErrorEvent;
 
 // ============================================================================
 // DevTools Configuration

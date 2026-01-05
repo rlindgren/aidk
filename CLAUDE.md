@@ -304,6 +304,59 @@ const middleware = async (args, envelope, next) => {
 
 See `packages/kernel/ARCHITECTURE.md` section "Middleware for Async Iterable Procedures" for full details.
 
+## DevTools for AI Agents
+
+DevTools provides real-time observability and has an LLM-friendly API for AI agent consumption.
+
+### Starting DevTools CLI
+
+```bash
+npx aidk-devtools --port 3001 --open
+```
+
+### LLM-Friendly Endpoints
+
+**Get markdown summary** (recommended starting point):
+
+```bash
+curl http://localhost:3001/api/summary
+```
+
+Returns a structured markdown document with executions, procedures, errors, and token usage.
+
+**Query events with filtering**:
+
+```bash
+# All events (newest first, limit 100)
+curl http://localhost:3001/api/events
+
+# Filter by type
+curl "http://localhost:3001/api/events?type=tool_call"
+curl "http://localhost:3001/api/events?type=procedure_error"
+
+# Filter by execution/procedure/session
+curl "http://localhost:3001/api/events?executionId=<id>"
+curl "http://localhost:3001/api/events?procedureId=<id>"
+
+# Pagination
+curl "http://localhost:3001/api/events?limit=50&offset=100&order=asc"
+```
+
+### Useful Queries for Debugging
+
+```bash
+# See all errors
+curl "http://localhost:3001/api/events?type=procedure_error"
+
+# See all tool calls
+curl "http://localhost:3001/api/events?type=tool_call"
+
+# Trace a specific execution
+curl "http://localhost:3001/api/events?executionId=<id>&order=asc"
+```
+
+See `website/docs/guides/devtools.md` for complete documentation.
+
 ## Questions?
 
 - Check ARCHITECTURE.md files for design decisions

@@ -68,11 +68,25 @@ export function getEngine(): Engine {
   // Create engine with channel service configured for SSE transport
   engineInstance = createEngine({ channels, devTools: devToolsConfig });
 
-  // Attach devtools server if embedded mode (not remote)
-  if (devToolsEnabled && !devToolsRemote) {
-    detachDevTools = attachDevTools(engineInstance, {
-      port: devToolsPort,
-      open: process.env["DEVTOOLS_OPEN"] !== "false",
+  // Attach devtools - handles both embedded and remote modes
+  if (devToolsEnabled) {
+    // Remote mode: POST events to external CLI server (npx aidk-devtools)
+    detachDevTools = attachDevTools({
+      ...(devToolsRemote
+        ? {
+            // Remote mode: POST events to external CLI server (npx aidk-devtools)
+            remote: {
+              url: `http://localhost:${devToolsPort}`,
+              secret: process.env["DEVTOOLS_SECRET"],
+            },
+          }
+        : {
+            // Embedded mode: start server in-process
+            instance: engineInstance,
+            port: devToolsPort,
+            open: process.env["DEVTOOLS_OPEN"] !== "false",
+            debug: process.env["DEVTOOLS_DEBUG"] === "true",
+          }),
       debug: process.env["DEVTOOLS_DEBUG"] === "true",
     });
   }

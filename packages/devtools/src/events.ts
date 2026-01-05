@@ -21,6 +21,9 @@ import type {
   DTToolResultEvent,
   DTToolConfirmationEvent,
   DTStateChangeEvent,
+  DTProcedureStartEvent,
+  DTProcedureEndEvent,
+  DTProcedureErrorEvent,
 } from "aidk-shared";
 
 // Re-export constants, emitter, and helpers from aidk-shared
@@ -50,3 +53,6 @@ export type ToolCallEvent = DTToolCallEvent;
 export type ToolResultEvent = DTToolResultEvent;
 export type ToolConfirmationEvent = DTToolConfirmationEvent;
 export type StateChangeEvent = DTStateChangeEvent;
+export type ProcedureStartEvent = DTProcedureStartEvent;
+export type ProcedureEndEvent = DTProcedureEndEvent;
+export type ProcedureErrorEvent = DTProcedureErrorEvent;

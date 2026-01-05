@@ -195,6 +195,12 @@ export interface KernelContext {
 const storage = new AsyncLocalStorage<KernelContext>();
 
 /**
+ * Global event subscribers that receive ALL context events across all contexts.
+ * Use `Context.subscribeGlobal()` to register a subscriber.
+ */
+const globalSubscribers = new Set<(event: ExecutionEvent, ctx: KernelContext) => void>();
+
+/**
  * Static class for managing execution context via AsyncLocalStorage.
  *
  * Context flows automatically through all async operations without explicit passing.
@@ -349,6 +355,10 @@ export class Context {
 
   /**
    * Helper to emit an event on the current context.
+   * Events are broadcast to:
+   * 1. The context's local event bus (ctx.events)
+   * 2. The operation handle (ctx.executionHandle) if present
+   * 3. All global subscribers registered via subscribeGlobal()
    */
   static emit(type: string, payload: any, source: string = "system"): void {
     const ctx = this.tryGet();
@@ -370,7 +380,51 @@ export class Context {
         ctx.executionHandle.emit?.(type, event);
         ctx.executionHandle.emit?.("*", event);
       }
+
+      // 3. Emit to global subscribers (for DevTools, telemetry, etc.)
+      for (const subscriber of globalSubscribers) {
+        try {
+          subscriber(event, ctx);
+        } catch {
+          // Silently ignore subscriber errors - don't break execution
+        }
+      }
     }
+  }
+
+  /**
+   * Subscribe to ALL context events globally.
+   * This is useful for observability tools like DevTools that need to see
+   * all procedure:start/end/error events across all contexts.
+   *
+   * @param handler - Callback that receives every event with its context
+   * @returns Unsubscribe function
+   *
+   * @example
+   * ```typescript
+   * const unsubscribe = Context.subscribeGlobal((event, ctx) => {
+   *   if (event.type === 'procedure:start') {
+   *     console.log(`Procedure ${event.payload.name} started`);
+   *   }
+   * });
+   *
+   * // Later, to stop receiving events:
+   * unsubscribe();
+   * ```
+   */
+  static subscribeGlobal(handler: (event: ExecutionEvent, ctx: KernelContext) => void): () => void {
+    globalSubscribers.add(handler);
+    return () => {
+      globalSubscribers.delete(handler);
+    };
+  }
+
+  /**
+   * Check if there are any global subscribers.
+   * Useful for conditional event emission to avoid overhead when no one is listening.
+   */
+  static hasGlobalSubscribers(): boolean {
+    return globalSubscribers.size > 0;
   }
 }
 

@@ -220,8 +220,44 @@ Each `ProcedureNode` contains:
 - `status` - running | completed | failed | cancelled
 - `metrics` - Accumulated metrics for this procedure
 - `startedAt` / `completedAt` - Timing
+- `executionId` - Which logical execution this procedure belongs to
+- `isExecutionBoundary` - Whether this is an execution entry point
+- `executionType` - Type derived from procedure name prefix (e.g., 'model', 'tool', 'engine')
 
 **Metric propagation**: When a child completes, its metrics are merged into the parent's metrics.
+
+### Execution Boundaries
+
+An **execution boundary** is a procedure that starts a new logical execution. This enables observability regardless of entry point (Engine, Model, Tool).
+
+```
+Direct model call:
+  model.generate()
+    └─ procedure('model:generate')
+         executionId = 'proc-1' (self, is boundary)
+         executionType = 'model'
+
+Through Engine:
+  engine.stream()
+    └─ procedure('engine:stream')
+         executionId = 'handle-pid' (from ExecutionHandle)
+         executionType = 'engine'
+         └─ procedure('compile:tick')
+              executionId = 'handle-pid' (inherited)
+              └─ procedure('model:generate')
+                   executionId = 'handle-pid' (inherited)
+```
+
+**Boundary Detection Rules:**
+
+1. If a procedure has a parent with `executionId`, it **inherits** that ID (not a boundary)
+2. If no parent executionId exists, it **becomes a boundary** and creates a new execution
+3. At boundaries, `executionId` priority is:
+   - Explicit `options.executionId` (if provided)
+   - `ctx.executionHandle.pid` (from Engine's handle)
+   - Fall back to `procedurePid`
+
+This ensures Engine's `ExecutionHandle.pid` correlates with kernel's `executionId` for proper DevTools integration.
 
 ### 4. Channels
 
@@ -481,6 +517,11 @@ class ProcedureNode {
   error?: Error;
   metrics: Record<string, number>;
 
+  // Execution boundary fields
+  readonly executionId: string;        // Which execution this belongs to
+  readonly isExecutionBoundary: boolean; // Is this an execution entry point?
+  readonly executionType?: string;     // 'model', 'tool', 'engine', etc.
+
   // Methods
   addMetric(key: string, value: number): void;
   setMetric(key: string, value: number): void;
@@ -499,7 +540,17 @@ class ProcedureNode {
 
 ```typescript
 class ProcedureGraph {
-  register(pid, parentPid?, name?, metadata?): ProcedureNode;
+  // Register with execution boundary fields
+  register(
+    pid: string,
+    parentPid?: string,
+    name?: string,
+    metadata?: Record<string, any>,
+    executionId?: string,
+    isExecutionBoundary?: boolean,
+    executionType?: string,
+  ): ProcedureNode;
+
   get(pid: string): ProcedureNode | undefined;
   getParent(pid: string): string | undefined;
   getParentNode(pid: string): ProcedureNode | undefined;
@@ -533,6 +584,13 @@ class ProcedureGraph {
 Wraps a function execution with automatic tracking:
 
 ```typescript
+interface ExecutionTrackerOptions {
+  name?: string;              // Procedure name (e.g., 'model:generate')
+  metadata?: Record<string, any>;
+  parentPid?: string;         // Parent procedure ID
+  executionId?: string;       // Explicit execution ID (for Engine correlation)
+}
+
 const result = await ExecutionTracker.track(
   ctx,
   { name: "model:generate", parentPid: ctx.procedurePid },
@@ -546,12 +604,21 @@ const result = await ExecutionTracker.track(
 
 **What it does:**
 
-1. Creates a `ProcedureNode` in the graph
+1. Creates a `ProcedureNode` in the graph with execution boundary detection
 2. Starts a telemetry span
 3. Sets up metrics proxy on `ctx.metrics`
 4. Checks abort signal before/after execution
 5. Propagates metrics to parent on completion
 6. Records errors to telemetry
+7. Emits `procedure:start` / `procedure:end` / `procedure:error` events with `executionId`
+
+**Execution Boundary Detection:**
+
+When a procedure has no parent `executionId`, it becomes a boundary:
+
+- Uses `options.executionId` if provided
+- Otherwise uses `ctx.executionHandle.pid` if available (Engine integration)
+- Falls back to `procedurePid`
 
 ---
 

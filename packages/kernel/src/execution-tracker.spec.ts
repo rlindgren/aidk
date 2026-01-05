@@ -224,6 +224,242 @@ describe("ExecutionTracker", () => {
     });
   });
 
+  describe("execution boundary detection", () => {
+    it("should mark root procedure as execution boundary", async () => {
+      await runInContext(async () => {
+        return ExecutionTracker.track(ctx, { name: "model:generate" }, async (node) => {
+          expect(node.isExecutionBoundary).toBe(true);
+          expect(node.executionId).toBe(node.pid);
+          expect(node.executionType).toBe("model");
+          return "result";
+        });
+      });
+
+      const node = ctx.procedureGraph!.getAllNodes()[0];
+      expect(node.isExecutionBoundary).toBe(true);
+      expect(node.executionType).toBe("model");
+    });
+
+    it("should derive executionType from procedure name prefix", async () => {
+      await runInContext(async () => {
+        await ExecutionTracker.track(ctx, { name: "tool:search" }, async (node) => {
+          expect(node.executionType).toBe("tool");
+          return "result";
+        });
+      });
+
+      // Create fresh context for second test
+      const ctx2 = Context.create();
+      await Context.run(ctx2, async () => {
+        await ExecutionTracker.track(ctx2, { name: "engine:stream" }, async (node) => {
+          expect(node.executionType).toBe("engine");
+          return "result";
+        });
+      });
+    });
+
+    it("should use procedure name as executionType when no colon present", async () => {
+      await runInContext(async () => {
+        return ExecutionTracker.track(ctx, { name: "anonymous" }, async (node) => {
+          expect(node.executionType).toBe("anonymous");
+          return "result";
+        });
+      });
+    });
+
+    it("should inherit executionId from parent (not create new boundary)", async () => {
+      await runInContext(async () => {
+        return ExecutionTracker.track(ctx, { name: "engine:stream" }, async (parentNode) => {
+          const parentCtx = Context.get();
+
+          await ExecutionTracker.track(parentCtx, { name: "model:generate" }, async (childNode) => {
+            // Child should inherit parent's executionId
+            expect(childNode.executionId).toBe(parentNode.executionId);
+            // Child should NOT be a boundary
+            expect(childNode.isExecutionBoundary).toBe(false);
+            // Child should not have executionType set (only boundaries have it)
+            expect(childNode.executionType).toBeUndefined();
+            return "child-result";
+          });
+
+          return "parent-result";
+        });
+      });
+
+      const nodes = ctx.procedureGraph!.getAllNodes();
+      expect(nodes.length).toBe(2);
+
+      // All nodes should share the same executionId
+      const executionIds = new Set(nodes.map((n) => n.executionId));
+      expect(executionIds.size).toBe(1);
+
+      // Only parent should be a boundary
+      const boundaries = nodes.filter((n) => n.isExecutionBoundary);
+      expect(boundaries.length).toBe(1);
+      expect(boundaries[0].name).toBe("engine:stream");
+    });
+
+    it("should propagate executionId through deeply nested procedures", async () => {
+      await runInContext(async () => {
+        return ExecutionTracker.track(ctx, { name: "engine:execute" }, async (rootNode) => {
+          const ctx1 = Context.get();
+
+          await ExecutionTracker.track(ctx1, { name: "compile:tick" }, async (tickNode) => {
+            const ctx2 = Context.get();
+
+            await ExecutionTracker.track(ctx2, { name: "model:generate" }, async (modelNode) => {
+              const ctx3 = Context.get();
+
+              await ExecutionTracker.track(ctx3, { name: "tool:execute" }, async (toolNode) => {
+                // All should share the same executionId
+                expect(toolNode.executionId).toBe(rootNode.executionId);
+                expect(modelNode.executionId).toBe(rootNode.executionId);
+                expect(tickNode.executionId).toBe(rootNode.executionId);
+                return "tool-result";
+              });
+
+              return "model-result";
+            });
+
+            return "tick-result";
+          });
+
+          return "engine-result";
+        });
+      });
+
+      const nodes = ctx.procedureGraph!.getAllNodes();
+      expect(nodes.length).toBe(4);
+
+      // All should share same executionId
+      const executionIds = new Set(nodes.map((n) => n.executionId));
+      expect(executionIds.size).toBe(1);
+    });
+
+    it("should allow explicit executionId to be provided", async () => {
+      const explicitExecutionId = "explicit-exec-123";
+
+      await runInContext(async () => {
+        return ExecutionTracker.track(
+          ctx,
+          { name: "engine:stream", executionId: explicitExecutionId },
+          async (node) => {
+            expect(node.executionId).toBe(explicitExecutionId);
+            expect(node.isExecutionBoundary).toBe(true);
+            return "result";
+          },
+        );
+      });
+
+      const node = ctx.procedureGraph!.getAllNodes()[0];
+      expect(node.executionId).toBe(explicitExecutionId);
+    });
+
+    it("should use executionHandle.pid from context when available", async () => {
+      const handlePid = "handle-pid-456";
+
+      // Simulate Engine setting executionHandle on context (like handleFactory does)
+      ctx.executionHandle = { pid: handlePid } as any;
+
+      await runInContext(async () => {
+        return ExecutionTracker.track(ctx, { name: "engine:stream" }, async (node) => {
+          // Should use the handle's pid as executionId
+          expect(node.executionId).toBe(handlePid);
+          expect(node.isExecutionBoundary).toBe(true);
+          return "result";
+        });
+      });
+
+      const node = ctx.procedureGraph!.getAllNodes()[0];
+      expect(node.executionId).toBe(handlePid);
+    });
+
+    it("should prefer explicit executionId over executionHandle.pid", async () => {
+      const explicitId = "explicit-id";
+      const handlePid = "handle-pid";
+
+      ctx.executionHandle = { pid: handlePid } as any;
+
+      await runInContext(async () => {
+        return ExecutionTracker.track(
+          ctx,
+          { name: "engine:stream", executionId: explicitId },
+          async (node) => {
+            // Explicit executionId takes priority
+            expect(node.executionId).toBe(explicitId);
+            return "result";
+          },
+        );
+      });
+
+      const node = ctx.procedureGraph!.getAllNodes()[0];
+      expect(node.executionId).toBe(explicitId);
+    });
+
+    it("should include execution info in procedure:start event", async () => {
+      const events: Array<{ type: string; payload: Record<string, unknown> }> = [];
+      const unsubscribe = Context.subscribeGlobal((event) => {
+        events.push(event as { type: string; payload: Record<string, unknown> });
+      });
+
+      try {
+        await runInContext(async () => {
+          return ExecutionTracker.track(ctx, { name: "model:generate" }, async () => "result");
+        });
+
+        const startEvent = events.find((e) => e.type === "procedure:start");
+        expect(startEvent).toBeDefined();
+        expect(startEvent!.payload.executionId).toBeDefined();
+        expect(startEvent!.payload.isExecutionBoundary).toBe(true);
+        expect(startEvent!.payload.executionType).toBe("model");
+      } finally {
+        unsubscribe();
+      }
+    });
+
+    it("should include executionId in procedure:end event", async () => {
+      const events: Array<{ type: string; payload: Record<string, unknown> }> = [];
+      const unsubscribe = Context.subscribeGlobal((event) => {
+        events.push(event as { type: string; payload: Record<string, unknown> });
+      });
+
+      try {
+        await runInContext(async () => {
+          return ExecutionTracker.track(ctx, { name: "test:proc" }, async () => "result");
+        });
+
+        const endEvent = events.find((e) => e.type === "procedure:end");
+        expect(endEvent).toBeDefined();
+        expect(endEvent!.payload.executionId).toBeDefined();
+      } finally {
+        unsubscribe();
+      }
+    });
+
+    it("should include executionId in procedure:error event", async () => {
+      const events: Array<{ type: string; payload: Record<string, unknown> }> = [];
+      const unsubscribe = Context.subscribeGlobal((event) => {
+        events.push(event as { type: string; payload: Record<string, unknown> });
+      });
+
+      try {
+        await expect(
+          runInContext(async () => {
+            return ExecutionTracker.track(ctx, { name: "test:proc" }, async () => {
+              throw new Error("Test error");
+            });
+          }),
+        ).rejects.toThrow("Test error");
+
+        const errorEvent = events.find((e) => e.type === "procedure:error");
+        expect(errorEvent).toBeDefined();
+        expect(errorEvent!.payload.executionId).toBeDefined();
+      } finally {
+        unsubscribe();
+      }
+    });
+  });
+
   describe("context isolation", () => {
     it("should have forked context with procedurePid inside callback", async () => {
       const initialPid = ctx.procedurePid;

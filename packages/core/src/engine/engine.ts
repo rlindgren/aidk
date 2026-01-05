@@ -1831,6 +1831,16 @@ export class Engine extends EventEmitter {
               throw new AbortError();
             }
 
+            // Emit model_start to DevTools
+            const modelMetadata = model.metadata;
+            this.emitDevToolsEvent({
+              type: "model_start",
+              executionId: handle.pid,
+              tick: session.tick,
+              modelId: modelMetadata?.id || "unknown",
+              provider: modelMetadata?.provider,
+            });
+
             Context.emit("tick:model:request", {
               tick: session.tick,
               input: modelInput,
@@ -1961,6 +1971,16 @@ export class Engine extends EventEmitter {
 
           // Yield events for already-executed tools (from provider/adapter)
           for (const result of toolResults) {
+            // Emit to DevTools
+            this.emitDevToolsEvent({
+              type: "tool_result",
+              executionId: handle.pid,
+              tick: session.tick,
+              toolUseId: result.toolUseId,
+              result: result.content,
+              isError: !result.success,
+            });
+
             yield createToolResultEvent({
               callId: result.toolUseId,
               name: result.name,
@@ -1989,6 +2009,16 @@ export class Engine extends EventEmitter {
                 callStartTimes.set(call.id, startedAt);
                 // Skip if already emitted by the adapter during streaming
                 if (!emittedToolCallIds.has(call.id)) {
+                  // Emit to DevTools
+                  this.emitDevToolsEvent({
+                    type: "tool_call",
+                    executionId: handle.pid,
+                    tick: session.tick,
+                    toolName: call.name,
+                    toolUseId: call.id,
+                    input: call.input,
+                  });
+
                   yield createToolCallEvent({
                     callId: call.id,
                     name: call.name,
@@ -2098,6 +2128,16 @@ export class Engine extends EventEmitter {
 
                 // Add to results array
                 toolResults.push(result);
+
+                // Emit to DevTools
+                this.emitDevToolsEvent({
+                  type: "tool_result",
+                  executionId: handle.pid,
+                  tick: session.tick,
+                  toolUseId: result.toolUseId,
+                  result: result.content,
+                  isError: !result.success,
+                });
 
                 // Yield tool_result event
                 yield createToolResultEvent({
@@ -2646,10 +2686,16 @@ export class Engine extends EventEmitter {
       // Pass the fork handle in context so the handle factory reuses it instead of creating a new one
       // This ensures abort signals propagate correctly to the fork execution
       // Use EngineContext cast to include executionHandle and other Engine-specific properties
+      //
+      // IMPORTANT: Clear procedurePid to ensure the fork's first procedure becomes an execution
+      // boundary (not a child of the parent's current procedure). This is essential for correct
+      // executionId assignment - fork procedures should get the fork's executionId, not the parent's.
       const result = await childEngine.execute
         .withContext({
           ...kernelOptions,
           executionHandle: handle, // Pass fork handle so it's reused by handle factory
+          procedurePid: undefined, // Clear parent procedure - this is a new execution boundary
+          procedureGraph: undefined, // Clear parent's procedure graph - fork has its own
         } as Partial<EngineContext>)
         .call(input, normalizedRoot);
 

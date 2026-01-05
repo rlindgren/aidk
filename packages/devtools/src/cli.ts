@@ -152,6 +152,26 @@ async function main(): Promise<void> {
   console.log(`    },`);
   console.log(`  });\n`);
 
+  // LLM/Agent-friendly API info
+  console.log(`📡 LLM-Friendly API (for AI agents):\n`);
+  if (args.secret) {
+    console.log(`  # All API endpoints require authentication when secret is set`);
+    console.log(`  # Add header: -H "Authorization: Bearer <secret>"\n`);
+  }
+  const curlAuth = args.secret ? ` -H "Authorization: Bearer <secret>"` : "";
+  console.log(`  # Overview`);
+  console.log(`  curl${curlAuth} ${url}/api/summary`);
+  console.log(`  curl${curlAuth} ${url}/api/executions\n`);
+  console.log(`  # Drill into an execution (get full procedure tree)`);
+  console.log(`  curl${curlAuth} ${url}/api/executions/<id>/tree\n`);
+  console.log(`  # Drill into a procedure (get subtree + ancestry)`);
+  console.log(`  curl${curlAuth} ${url}/api/procedures/<id>/tree\n`);
+  console.log(`  # Specialized queries`);
+  console.log(`  curl${curlAuth} ${url}/api/errors`);
+  console.log(`  curl${curlAuth} ${url}/api/tools\n`);
+  console.log(`  # Raw event filtering`);
+  console.log(`  curl${curlAuth} "${url}/api/events?type=tool_call&limit=50"\n`);
+
   // Keep process alive
   process.on("SIGINT", () => {
     console.log("\nShutting down...");

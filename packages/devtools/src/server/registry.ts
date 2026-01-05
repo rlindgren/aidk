@@ -158,4 +158,11 @@ export function stopDevTools(): void {
     instance = null;
     globalRef[INSTANCE_KEY] = null;
   }
+
+  // Stop kernel subscriber (imported dynamically to avoid circular deps)
+  import("../kernel-subscriber.js")
+    .then(({ stopKernelSubscriber }) => stopKernelSubscriber())
+    .catch(() => {
+      // Ignore errors during cleanup
+    });
 }

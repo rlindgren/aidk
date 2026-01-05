@@ -204,6 +204,12 @@ export interface ProcedureOptions {
   metadata?: Record<string, any>;
   /** Timeout in milliseconds. If exceeded, throws AbortError.timeout() */
   timeout?: number;
+  /**
+   * Skip ExecutionTracker procedure tracking for this procedure.
+   * Used for transparent wrappers like withContext() that delegate to another procedure.
+   * @internal
+   */
+  skipTracking?: boolean;
 }
 
 /**
@@ -565,7 +571,7 @@ export function createPipeline(middleware: Middleware<any[]>[] = []): Middleware
 // Helper Functions
 // ============================================================================
 
-function isAsyncIterable(obj: any): obj is AsyncIterable<any> {
+export function isAsyncIterable(obj: any): obj is AsyncIterable<any> {
   return obj && typeof obj[Symbol.asyncIterator] === "function";
 }
 
@@ -629,6 +635,7 @@ class ProcedureImpl<
   private metadata?: Record<string, any>; // For telemetry span attributes
   private handler?: THandler;
   private timeout?: number; // Timeout in milliseconds
+  private skipTracking?: boolean; // Skip ExecutionTracker for transparent wrappers
 
   constructor(options: ProcedureOptions = {}, handler?: THandler) {
     this.procedureName = options.name;
@@ -638,6 +645,7 @@ class ProcedureImpl<
     this.handleFactory = options.handleFactory;
     this.metadata = options.metadata; // Store metadata for telemetry
     this.timeout = options.timeout; // Store timeout
+    this.skipTracking = options.skipTracking; // Store skipTracking flag
 
     if (options.middleware) {
       this.middlewares = flattenMiddleware(
@@ -703,6 +711,58 @@ class ProcedureImpl<
       );
     }
 
+    // Helper function to run the middleware pipeline
+    const executeMiddlewarePipeline = async (): Promise<ExtractReturn<THandler>> => {
+      // Check Abort Signal before starting
+      if (context?.signal?.aborted) {
+        throw new AbortError();
+      }
+
+      // Run Middleware Pipeline
+      let index = 0;
+      let currentInput: TArgs = args;
+
+      const runMiddleware = async (transformedInput?: TArgs): Promise<ExtractReturn<THandler>> => {
+        // Check Abort Signal before each middleware/handler
+        if (context?.signal?.aborted) {
+          throw new AbortError();
+        }
+
+        // Update current input if middleware provided transformed input
+        if (transformedInput !== undefined) {
+          currentInput = transformedInput;
+        }
+
+        if (index < this.internalMiddlewares.length) {
+          const middleware = this.internalMiddlewares[index++];
+          const result = await middleware(currentInput, context, runMiddleware);
+          // Check Abort Signal after middleware execution (middleware might have aborted)
+          if (context?.signal?.aborted) {
+            throw new AbortError();
+          }
+          return result;
+        } else {
+          // Check Abort Signal before handler
+          if (context?.signal?.aborted) {
+            throw new AbortError();
+          }
+
+          // Call handler with current input (which may have been transformed)
+          const result = this.handler!(...currentInput);
+          // Handler can return anything - Promise.resolve handles Promise, value, or AsyncIterable
+          return result as ExtractReturn<THandler>;
+        }
+      };
+
+      return runMiddleware();
+    };
+
+    // Skip ExecutionTracker for transparent wrappers (e.g., withContext)
+    // This prevents duplicate procedure tracking when a wrapper delegates to another procedure
+    if (this.skipTracking) {
+      return executeMiddlewarePipeline();
+    }
+
     // Wrap execution with ExecutionTracker
     return ExecutionTracker.track(
       context,
@@ -712,50 +772,7 @@ class ProcedureImpl<
         metadata: this.metadata, // Pass metadata to ExecutionTracker for span attributes
       },
       async (_node: ProcedureNode) => {
-        // Check Abort Signal before starting
-        if (context?.signal?.aborted) {
-          throw new AbortError();
-        }
-
-        // Run Middleware Pipeline
-        let index = 0;
-        let currentInput: TArgs = args;
-
-        const runMiddleware = async (
-          transformedInput?: TArgs,
-        ): Promise<ExtractReturn<THandler>> => {
-          // Check Abort Signal before each middleware/handler
-          if (context?.signal?.aborted) {
-            throw new AbortError();
-          }
-
-          // Update current input if middleware provided transformed input
-          if (transformedInput !== undefined) {
-            currentInput = transformedInput;
-          }
-
-          if (index < this.internalMiddlewares.length) {
-            const middleware = this.internalMiddlewares[index++];
-            const result = await middleware(currentInput, context, runMiddleware);
-            // Check Abort Signal after middleware execution (middleware might have aborted)
-            if (context?.signal?.aborted) {
-              throw new AbortError();
-            }
-            return result;
-          } else {
-            // Check Abort Signal before handler
-            if (context?.signal?.aborted) {
-              throw new AbortError();
-            }
-
-            // Call handler with current input (which may have been transformed)
-            const result = this.handler!(...currentInput);
-            // Handler can return anything - Promise.resolve handles Promise, value, or AsyncIterable
-            return result as ExtractReturn<THandler>;
-          }
-        };
-
-        return runMiddleware();
+        return executeMiddlewarePipeline();
       },
     );
   }
@@ -824,91 +841,12 @@ class ProcedureImpl<
         result = await this.runMiddlewarePipeline(validatedArgs, context!);
       }
 
-      // If handler returned AsyncIterable, wrap it
-      if (isAsyncIterable(result)) {
-        const capturedContext = context!;
-        const capturedIsRoot = isRoot;
-
-        const wrappedIterable = (async function* () {
-          const iterator = result[Symbol.asyncIterator]();
-          try {
-            let next;
-            while (true) {
-              // Always check capturedContext.signal first (it has the original signal reference)
-              // Also check current context signal in case it was updated
-              const currentCtx = capturedIsRoot
-                ? Context.tryGet() || capturedContext
-                : capturedContext;
-              const signalToCheck = capturedContext?.signal || currentCtx?.signal;
-              if (signalToCheck?.aborted) {
-                throw new AbortError();
-              }
-
-              if (capturedIsRoot) {
-                next = await Context.run(capturedContext, async () => iterator.next());
-              } else {
-                next = await iterator.next();
-              }
-
-              // Check abort again after iterator.next() - generator might have aborted during execution
-              // Always prefer capturedContext.signal (original execution context)
-              const postCheckCtx = capturedIsRoot
-                ? Context.tryGet() || capturedContext
-                : capturedContext;
-              const postSignalToCheck = capturedContext?.signal || postCheckCtx?.signal;
-              if (postSignalToCheck?.aborted) {
-                throw new AbortError();
-              }
-
-              if (next.done) break;
-
-              const chunkPayload = { value: next.value };
-              if (capturedIsRoot) {
-                await Context.run(capturedContext, async () => {
-                  Context.emit("stream:chunk", chunkPayload);
-                });
-              } else {
-                const emitCtx = Context.tryGet() || capturedContext;
-                if (emitCtx === capturedContext) {
-                  Context.emit("stream:chunk", chunkPayload);
-                } else {
-                  await Context.run(capturedContext, async () => {
-                    Context.emit("stream:chunk", chunkPayload);
-                  });
-                }
-              }
-
-              yield next.value;
-            }
-          } catch (err) {
-            if (capturedIsRoot) {
-              await Context.run(capturedContext, async () => {
-                Context.emit("procedure:error", { error: err });
-              });
-            } else {
-              Context.emit("procedure:error", { error: err });
-            }
-            throw err;
-          } finally {
-            if (iterator.return) {
-              if (capturedIsRoot) {
-                await Context.run(capturedContext, async () => iterator.return!());
-              } else {
-                await iterator.return!();
-              }
-            }
-            if (capturedIsRoot) {
-              await Context.run(capturedContext, async () => {
-                Context.emit("procedure:end", {});
-              });
-            } else {
-              Context.emit("procedure:end", {});
-            }
-          }
-        })();
-
-        return wrappedIterable as ExtractReturn<THandler>;
-      }
+      // AsyncIterables are now fully handled by ExecutionTracker (context, procedure:end/error)
+      // No additional wrapping needed here - just return the result
+      // ExecutionTracker wraps AsyncIterables to:
+      // 1. Maintain the forked context with procedurePid during iteration
+      // 2. Emit procedure:end when iteration completes
+      // 3. Emit procedure:error on errors
 
       return result as ExtractReturn<THandler>;
     };
@@ -1071,6 +1009,7 @@ class ProcedureImpl<
 
     // Don't copy middleware here! The original proc.execute() will run its middleware.
     // Copying middleware would cause double execution.
+    // Skip tracking for this wrapper - the inner proc.execute() will handle tracking.
     return createProcedureFromImpl<TArgs, THandler>(
       {
         name: this.procedureName,
@@ -1080,6 +1019,7 @@ class ProcedureImpl<
         sourceType: this.sourceType,
         sourceId: this.sourceId,
         metadata: this.metadata, // Preserve metadata for telemetry
+        skipTracking: true, // Wrapper delegates to original - don't double-track
       },
       wrappedHandler,
     );

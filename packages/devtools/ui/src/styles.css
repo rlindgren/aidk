@@ -15,7 +15,7 @@
   --accent-green: #4caf50;
   --accent-red: #f44336;
   --accent-orange: #ff9800;
-  --accent-purple: #9c27b0;
+  --accent-purple: #e863ff;
   --border: #363652;
 }
 
@@ -40,11 +40,27 @@ body {
 
 /* Sidebar */
 .sidebar {
-  width: 260px;
+  min-width: 200px;
+  max-width: 600px;
+  flex-shrink: 0;
   background: var(--bg-secondary);
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
+}
+
+/* Resize handle */
+.resize-handle {
+  width: 4px;
+  background: transparent;
+  cursor: col-resize;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+.resize-handle:hover,
+.resize-handle:active {
+  background: var(--accent-blue);
 }
 
 .sidebar-header {
@@ -233,7 +249,6 @@ body {
 }
 
 .expand-icon {
-  margin-left: 8px;
   font-weight: bold;
   color: var(--text-muted);
   font-size: 11px;
@@ -986,4 +1001,882 @@ body {
   margin-top: 0;
   max-height: 300px;
   overflow: auto;
+}
+
+/* Header actions */
+.header-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.view-toggle {
+  padding: 4px 8px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.1s;
+}
+
+.view-toggle:hover {
+  background: var(--bg-primary);
+  border-color: var(--accent-blue);
+}
+
+.view-toggle.active {
+  background: var(--accent-blue);
+  border-color: var(--accent-blue);
+  color: white;
+}
+
+/* Procedure tree styles */
+.procedure-list {
+  padding: 4px;
+}
+
+.procedure-node {
+  margin-bottom: 1px;
+}
+
+.procedure-item {
+  padding: 6px 8px;
+  background: var(--bg-tertiary);
+  cursor: pointer;
+  border-left: 2px solid transparent;
+  transition: all 0.1s;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.procedure-item:hover {
+  background: #353560;
+}
+
+.procedure-item.running {
+  border-left-color: var(--accent-green);
+  background: rgba(76, 175, 80, 0.1);
+}
+
+.procedure-item.error {
+  border-left-color: var(--accent-red);
+  background: rgba(244, 67, 54, 0.1);
+}
+
+.procedure-item.cancelled {
+  border-left-color: var(--accent-orange);
+  opacity: 0.7;
+}
+
+.procedure-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.procedure-header .expand-icon {
+  font-size: 9px;
+  margin: 0;
+  color: var(--text-muted);
+  width: 10px;
+}
+
+.procedure-header .no-expand {
+  width: 10px;
+}
+
+.procedure-status {
+  font-size: 10px;
+  width: 12px;
+  text-align: center;
+}
+
+.procedure-status.running {
+  color: var(--accent-green);
+  animation: pulse 1s infinite;
+}
+
+.procedure-status.completed {
+  color: var(--accent-green);
+}
+
+.procedure-status.failed {
+  color: var(--accent-red);
+}
+
+.procedure-status.cancelled {
+  color: var(--accent-orange);
+}
+
+.procedure-status.orphaned {
+  color: #ffcc00;
+  animation: none;
+}
+
+.procedure-item.orphaned {
+  border-left-color: #ffcc00;
+  background: rgba(255, 204, 0, 0.1);
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.procedure-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.procedure-type {
+  font-size: 9px;
+  padding: 1px 4px;
+  background: var(--bg-primary);
+  color: var(--text-muted);
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.procedure-meta {
+  display: flex;
+  gap: 8px;
+  font-size: 10px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.procedure-metrics {
+  color: var(--accent-blue);
+  font-family: "SF Mono", Monaco, Consolas, monospace;
+}
+
+.procedure-children {
+  border-left: 1px solid var(--border);
+  margin-left: 10px;
+}
+
+.procedure-error {
+  padding: 4px 8px;
+  margin-top: 2px;
+  background: rgba(244, 67, 54, 0.1);
+  border-left: 2px solid var(--accent-red);
+  font-size: 11px;
+}
+
+.procedure-error .error-name {
+  color: var(--accent-red);
+  font-weight: 600;
+  margin-right: 4px;
+}
+
+.procedure-error .error-message {
+  color: var(--text-secondary);
+}
+
+/* Procedure tree in tick details */
+.procedures-section {
+  margin-top: 8px;
+}
+
+.procedures-section .section-header {
+  padding: 6px 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+}
+
+.procedures-section .section-header:hover {
+  background: var(--bg-secondary);
+}
+
+.procedures-section .section-title {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  /* text-transform: uppercase; */
+  /* letter-spacing: 0.5px; */
+}
+
+.procedures-section .expand-icon {
+  margin-right: 6px;
+  font-size: 8px;
+  color: var(--text-muted);
+}
+
+.procedures-tree {
+  padding: 4px 0;
+  font-family: "SF Mono", Monaco, Consolas, monospace;
+  font-size: 11px;
+}
+
+.procedure-tree-node {
+  line-height: 1.4;
+}
+
+.procedure-tree-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+
+.procedure-tree-item:hover {
+  background: var(--bg-tertiary);
+}
+
+.procedure-tree-item .expand-icon.small {
+  font-size: 8px;
+  width: 12px;
+  cursor: pointer;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.procedure-tree-item .tree-spacer {
+  width: 12px;
+  flex-shrink: 0;
+}
+
+.procedure-tree-item .procedure-name {
+  color: var(--text-primary);
+  font-size: 11px;
+}
+
+.procedure-tree-item .procedure-name.clickable {
+  cursor: pointer;
+}
+
+.procedure-tree-item .procedure-name.clickable:hover {
+  color: var(--accent-blue);
+  text-decoration: underline;
+}
+
+.procedure-tree-item .component-name {
+  color: var(--accent-orange);
+  font-size: 10px;
+  margin-left: 2px;
+}
+
+.procedure-tree-item .procedure-duration {
+  color: var(--text-muted);
+  font-size: 10px;
+  margin-left: auto;
+}
+
+.procedure-tree-item.running .procedure-name {
+  color: var(--accent-green);
+}
+
+.procedure-tree-item.failed .procedure-name {
+  color: var(--accent-red);
+}
+
+/* Model badges in sidebar and headers */
+.execution-model {
+  margin-top: 2px;
+  margin-bottom: 2px;
+}
+
+.model-badge {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 500;
+  padding: 2px 6px;
+  background: rgba(156, 39, 176, 0.2);
+  color: var(--accent-purple);
+  border-radius: 3px;
+  font-family: "SF Mono", Monaco, Consolas, monospace;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.model-badge.large {
+  font-size: 11px;
+  padding: 3px 8px;
+}
+
+/* Execution summary bar */
+.execution-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.execution-summary .model-badge {
+  font-size: 10px;
+}
+
+.execution-summary .usage-summary {
+  color: var(--accent-blue);
+  font-weight: 600;
+  font-family: "SF Mono", Monaco, Consolas, monospace;
+}
+
+.execution-summary .usage-summary .cached {
+  color: var(--accent-green);
+  font-weight: 400;
+  font-size: 11px;
+}
+
+.execution-summary .ticks-count {
+  color: var(--accent-orange);
+}
+
+.execution-summary .duration {
+  color: var(--text-muted);
+}
+
+/* Tree controls for expand/collapse all */
+.tree-controls {
+  display: flex;
+  gap: 4px;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.tree-btn {
+  padding: 2px 8px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.tree-btn:hover {
+  background: var(--bg-primary);
+  color: var(--accent-blue);
+  border-color: var(--accent-blue);
+}
+
+/* Selected procedure in sidebar */
+.procedure-item.selected {
+  border-left-color: var(--accent-blue);
+  background: #353560;
+}
+
+.procedure-item.selected .procedure-name {
+  color: var(--accent-blue);
+}
+
+/* Procedure details view */
+.procedure-details {
+  padding: 16px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.procedure-status-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 3px;
+  text-transform: uppercase;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.procedure-status-badge.running {
+  background: rgba(76, 175, 80, 0.2);
+  color: var(--accent-green);
+}
+
+.procedure-status-badge.completed {
+  background: rgba(76, 175, 80, 0.2);
+  color: var(--accent-green);
+}
+
+.procedure-status-badge.failed {
+  background: rgba(244, 67, 54, 0.2);
+  color: var(--accent-red);
+}
+
+.procedure-status-badge.cancelled {
+  background: rgba(255, 152, 0, 0.2);
+  color: var(--accent-orange);
+}
+
+.procedure-type-badge {
+  display: inline-block;
+  font-size: 10px;
+  padding: 2px 8px;
+  background: var(--bg-primary);
+  color: var(--text-muted);
+  border-radius: 3px;
+}
+
+.duration-ms {
+  font-family: "SF Mono", Monaco, Consolas, monospace;
+  color: var(--text-muted);
+}
+
+.detail-section {
+  margin-bottom: 20px;
+  padding: 12px;
+  background: var(--bg-tertiary);
+  border-radius: 6px;
+}
+
+.detail-section h4 {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.detail-section.error-section {
+  background: rgba(244, 67, 54, 0.1);
+  border: 1px solid rgba(244, 67, 54, 0.3);
+}
+
+.error-display {
+  font-family: "SF Mono", Monaco, Consolas, monospace;
+}
+
+.error-display .error-header {
+  margin-bottom: 8px;
+}
+
+.error-display .error-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent-red);
+}
+
+.error-display .error-message {
+  font-size: 13px;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.error-stack {
+  font-size: 11px;
+  color: var(--text-muted);
+  background: var(--bg-primary);
+  padding: 10px;
+  border-radius: 4px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Metrics grid */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+}
+
+.metric-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  background: var(--bg-primary);
+  border-radius: 4px;
+}
+
+.metric-key {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.metric-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent-blue);
+  font-family: "SF Mono", Monaco, Consolas, monospace;
+}
+
+/* Children list */
+.children-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.procedure-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--bg-primary);
+  border: none;
+  border-radius: 4px;
+  width: 100%;
+  text-align: left;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.procedure-link:hover {
+  background: #353560;
+}
+
+.procedure-link .procedure-status {
+  font-size: 10px;
+}
+
+.procedure-link .procedure-type {
+  margin-left: auto;
+}
+
+.child-duration {
+  margin-left: auto;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+/* Execution tree styles */
+.execution-tree {
+  padding: 4px;
+}
+
+.execution-node {
+  margin-bottom: 1px;
+}
+
+.execution-item {
+  padding: 8px 10px;
+  background: var(--bg-tertiary);
+  cursor: pointer;
+  border-left: 2px solid transparent;
+  transition: all 0.1s;
+}
+
+.execution-item:hover {
+  background: #353560;
+}
+
+.execution-item.selected {
+  border-left-color: var(--accent-blue);
+  background: #353560;
+}
+
+.execution-item.running {
+  border-left-color: var(--accent-green);
+}
+
+.execution-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 2px;
+  gap: 6px;
+}
+
+.execution-header .expand-icon {
+  font-size: 9px;
+  color: var(--text-muted);
+  width: 12px;
+  cursor: pointer;
+}
+
+.execution-header .expand-icon:hover {
+  color: var(--accent-blue);
+}
+
+.execution-header .no-expand {
+  width: 0;
+}
+
+.execution-name-text {
+  font-weight: 500;
+  font-size: 13px;
+}
+
+.execution-children {
+  border-left: 1px solid var(--border);
+  margin-left: 6px;
+}
+
+/* Fix parent procedure link readability */
+.procedure-link .procedure-status {
+  font-size: 12px;
+}
+
+.procedure-link .procedure-status.running {
+  color: var(--accent-green);
+}
+
+.procedure-link .procedure-status.completed {
+  color: var(--accent-green);
+}
+
+.procedure-link .procedure-status.failed {
+  color: var(--accent-red);
+}
+
+.procedure-link .procedure-status.cancelled {
+  color: var(--accent-orange);
+}
+
+.procedure-link {
+  color: var(--text-primary);
+}
+
+.procedure-link .procedure-type {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+/* Component name in procedure display */
+.component-name {
+  color: var(--accent-blue);
+  font-size: 10px;
+  margin-left: 4px;
+  font-weight: 400;
+}
+
+.component-name-large {
+  color: var(--accent-blue);
+  font-size: 14px;
+  margin-left: 8px;
+  font-weight: 400;
+}
+
+/* Search filter */
+.search-container {
+  padding: 8px;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+}
+
+.search-input {
+  width: 100%;
+  padding: 6px 28px 6px 10px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-size: 12px;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--accent-blue);
+}
+
+.search-input::placeholder {
+  color: var(--text-muted);
+}
+
+.search-clear {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 16px;
+  padding: 0;
+  line-height: 1;
+}
+
+.search-clear:hover {
+  color: var(--text-primary);
+}
+
+/* Sidebar procedure nodes - procedures nested in execution tree */
+.procedure-sidebar-node {
+  margin-left: 8px;
+}
+
+.procedure-sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--text-secondary);
+  border-left: 2px solid transparent;
+  transition: all 0.1s;
+}
+
+.procedure-sidebar-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.procedure-sidebar-item.selected {
+  background: rgba(77, 166, 255, 0.15);
+  border-left-color: var(--accent-blue);
+}
+
+.procedure-sidebar-item.running {
+  border-left-color: var(--accent-green);
+}
+
+.procedure-sidebar-item.failed {
+  border-left-color: var(--accent-red);
+}
+
+.procedure-sidebar-item .expand-icon.small {
+  font-size: 8px;
+  width: 10px;
+  color: var(--text-muted);
+}
+
+.procedure-sidebar-item .no-expand.small {
+  width: 10px;
+}
+
+.procedure-sidebar-item .status-icon {
+  font-size: 10px;
+  width: 12px;
+  text-align: center;
+}
+
+.procedure-sidebar-item .status-icon.running {
+  color: var(--accent-green);
+  animation: pulse 1s infinite;
+}
+
+.procedure-sidebar-item .status-icon.completed {
+  color: var(--accent-green);
+}
+
+.procedure-sidebar-item .status-icon.failed {
+  color: var(--accent-red);
+}
+
+.procedure-sidebar-item .procedure-name {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.procedure-sidebar-item .component-name {
+  color: var(--accent-blue);
+  font-size: 10px;
+  margin-left: 4px;
+}
+
+.procedure-sidebar-item .procedure-duration {
+  color: var(--text-muted);
+  font-size: 10px;
+  margin-left: auto;
+}
+
+.procedure-sidebar-children {
+  margin-left: 12px;
+}
+
+/* Main content scrollable wrapper */
+.main-content.scrollable {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.main-content.scrollable .main-header {
+  flex-shrink: 0;
+}
+
+.main-content.scrollable .timeline {
+  flex: 1;
+}
+
+/* Back navigation for procedure details */
+.back-nav {
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-secondary);
+}
+
+.back-btn {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  transition: all 0.15s;
+}
+
+.back-btn:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+/* Status badge for procedure header */
+.status-badge {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 2px;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.status-badge.running {
+  background: var(--accent-green);
+  color: white;
+}
+
+.status-badge.completed {
+  background: #2e7d32;
+  color: white;
+}
+
+.status-badge.failed {
+  background: var(--accent-red);
+  color: white;
+}
+
+.status-badge.cancelled {
+  background: var(--accent-orange);
+  color: white;
+}
+
+/* No ticks message */
+.no-ticks-message {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.no-ticks-message p {
+  margin-bottom: 8px;
+}
+
+.no-ticks-message .hint {
+  font-size: 12px;
+  color: var(--text-secondary);
 }

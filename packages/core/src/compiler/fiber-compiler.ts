@@ -1201,6 +1201,29 @@ export class FiberCompiler {
     const componentName = getComponentName(instance as EngineComponent, componentClass);
     const componentTags = getComponentTags(componentClass);
 
+    // Summarize props for DevTools visibility (avoid large objects)
+    const summarizeProps = (props: Record<string, unknown>): Record<string, string> => {
+      const summary: Record<string, string> = {};
+      for (const [key, value] of Object.entries(props)) {
+        if (value === undefined) continue;
+        if (value === null) {
+          summary[key] = "null";
+        } else if (typeof value === "function") {
+          summary[key] = "ƒ()";
+        } else if (Array.isArray(value)) {
+          summary[key] = `Array(${value.length})`;
+        } else if (typeof value === "object") {
+          const name = (value as any).constructor?.name;
+          summary[key] = name && name !== "Object" ? `<${name}>` : "{...}";
+        } else if (typeof value === "string" && value.length > 50) {
+          summary[key] = `"${value.slice(0, 47)}..."`;
+        } else {
+          summary[key] = String(value);
+        }
+      }
+      return summary;
+    };
+
     const methodsToWrap: ComponentHookName[] = [
       "onMount",
       "onUnmount",
@@ -1223,10 +1246,25 @@ export class FiberCompiler {
           componentTags,
         );
 
+        // Get props summary (captured at wrap time, will show initial props)
+        const propsSummary = instance.props ? summarizeProps(instance.props) : undefined;
+
         // Create a Procedure for the component method with middleware applied
-        const procedure = createEngineProcedure({ name: methodName }, originalMethod as any).use(
-          ...(middleware as any[]),
-        );
+        // Include component name and props in metadata for DevTools visibility
+        const procedure = createEngineProcedure(
+          {
+            name: `component:${methodName}`,
+            metadata: {
+              type: "component",
+              component: componentName,
+              hook: methodName,
+              ...(propsSummary && Object.keys(propsSummary).length > 0
+                ? { props: propsSummary }
+                : {}),
+            },
+          },
+          originalMethod as any,
+        ).use(...(middleware as any[]));
 
         if (!this.wrappedMethods.has(instance)) {
           this.wrappedMethods.set(instance, new Map());

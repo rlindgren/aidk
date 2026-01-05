@@ -20,12 +20,20 @@ export class ProcedureNode {
   // Metrics stored in node (not context)
   public metrics: Record<string, number> = {};
 
+  // Execution boundary fields - tracks which logical execution this procedure belongs to
+  public readonly executionId: string;
+  public readonly isExecutionBoundary: boolean;
+  public readonly executionType?: string;
+
   constructor(
     graph: ProcedureGraph,
     pid: string,
     parentPid?: string,
     name?: string,
     metadata?: Record<string, any>,
+    executionId?: string,
+    isExecutionBoundary?: boolean,
+    executionType?: string,
   ) {
     this.graph = graph;
     this.pid = pid;
@@ -34,6 +42,10 @@ export class ProcedureNode {
     this.status = "running";
     this.startedAt = new Date();
     this.metadata = metadata;
+    // Execution boundary: defaults to self as execution if not provided
+    this.executionId = executionId ?? pid;
+    this.isExecutionBoundary = isExecutionBoundary ?? false;
+    this.executionType = executionType;
   }
 
   /**
@@ -105,14 +117,34 @@ export class ProcedureGraph {
 
   /**
    * Register a new procedure
+   *
+   * @param pid Procedure ID
+   * @param parentPid Parent procedure ID (undefined for root)
+   * @param name Procedure name (e.g., 'model:generate', 'tool:run')
+   * @param metadata Optional metadata
+   * @param executionId Execution ID this procedure belongs to
+   * @param isExecutionBoundary Whether this procedure is an execution entry point
+   * @param executionType Type of execution (derived from procedure name prefix)
    */
   register(
     pid: string,
     parentPid?: string,
     name?: string,
     metadata?: Record<string, any>,
+    executionId?: string,
+    isExecutionBoundary?: boolean,
+    executionType?: string,
   ): ProcedureNode {
-    const node = new ProcedureNode(this, pid, parentPid, name, metadata);
+    const node = new ProcedureNode(
+      this,
+      pid,
+      parentPid,
+      name,
+      metadata,
+      executionId,
+      isExecutionBoundary,
+      executionType,
+    );
     this.procedures.set(pid, node);
 
     // Track parent-child relationship
