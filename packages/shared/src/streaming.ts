@@ -165,6 +165,8 @@ export type MessageEvent = {
   stopReason: StopReason;
   usage?: TokenUsage;
   model?: string;
+  /** Raw provider response (e.g., AI SDK generateText result, OpenAI ChatCompletion) */
+  raw?: unknown;
   startedAt: string;
   completedAt: string;
 } & StreamEventBase;

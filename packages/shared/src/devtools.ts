@@ -32,6 +32,21 @@ export interface DevToolsEventBase {
   executionId: string;
   /** Unix timestamp in milliseconds */
   timestamp: number;
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Optional telemetry fields (auto-populated from context when available)
+  // ─────────────────────────────────────────────────────────────────────────────
+  /** Trace ID for distributed tracing correlation */
+  traceId?: string;
+  /** Request ID for this execution context */
+  requestId?: string;
+  /** Parent execution ID for nested executions (fork, spawn, component_tool) */
+  parentExecutionId?: string;
+  /** Current procedure ID */
+  procedureId?: string;
+  /** User ID from context (for attribution and multi-tenant filtering) */
+  userId?: string;
+  /** Tenant ID from context (for multi-tenant dashboards) */
+  tenantId?: string;
 }
 
 /**
@@ -125,13 +140,50 @@ export interface DTModelStartEvent extends DevToolsEventBase {
   provider?: string;
 }
 
-export interface DTModelOutputEvent extends DevToolsEventBase {
-  type: "model_output";
+export interface DTModelRequestEvent extends DevToolsEventBase {
+  type: "model_request";
   tick: number;
-  /** Complete assistant message */
+  /** The formatted input in AIDK format (before provider transformation) */
+  input?: {
+    /** Messages array in AIDK format */
+    messages?: unknown[];
+    /** System prompt */
+    system?: string;
+    /** Tools available */
+    tools?: unknown[];
+    /** Other model parameters */
+    [key: string]: unknown;
+  };
+}
+
+export interface DTProviderRequestEvent extends DevToolsEventBase {
+  type: "provider_request";
+  /** Model ID */
+  modelId?: string;
+  /** Provider name (e.g., "openai", "anthropic", "google") */
+  provider?: string;
+  /** The actual input sent to the provider (after transformation)
+   * This is the exact shape the provider SDK receives (e.g., AI SDK format for Gemini)
+   */
+  providerInput?: unknown;
+}
+
+export interface DTProviderResponseEvent extends DevToolsEventBase {
+  type: "provider_response";
+  tick: number;
+  /** Model ID */
+  modelId?: string;
+  /** Provider name (e.g., "openai", "anthropic", "google") */
+  provider?: string;
+  /** Raw provider response before AIDK transformation */
+  providerOutput?: unknown;
+}
+
+export interface DTModelResponseEvent extends DevToolsEventBase {
+  type: "model_response";
+  tick: number;
+  /** Complete assistant message in AIDK format */
   message: Message;
-  /** Raw provider response (for debugging) */
-  raw?: unknown;
 }
 
 // ============================================================================
@@ -229,6 +281,8 @@ export interface DTProcedureStartEvent extends DevToolsEventBase {
   parentProcedureId?: string;
   /** Additional metadata from the procedure */
   metadata?: Record<string, unknown>;
+  /** Engine tick number when this procedure started (if within a tick) */
+  tick?: number;
 }
 
 /**
@@ -243,6 +297,8 @@ export interface DTProcedureEndEvent extends DevToolsEventBase {
   metrics?: Record<string, number>;
   /** Duration in milliseconds */
   durationMs?: number;
+  /** Engine tick number when this procedure ended (if within a tick) */
+  tick?: number;
 }
 
 /**
@@ -260,6 +316,8 @@ export interface DTProcedureErrorEvent extends DevToolsEventBase {
   };
   /** Metrics accumulated before failure */
   metrics?: Record<string, number>;
+  /** Engine tick number when this procedure failed (if within a tick) */
+  tick?: number;
 }
 
 // ============================================================================
@@ -276,7 +334,10 @@ export type DevToolsEvent =
   | DTTickEndEvent
   | DTCompiledEvent
   | DTModelStartEvent
-  | DTModelOutputEvent
+  | DTModelRequestEvent
+  | DTProviderRequestEvent
+  | DTProviderResponseEvent
+  | DTModelResponseEvent
   | DTContentDeltaEvent
   | DTReasoningDeltaEvent
   | DTToolCallEvent

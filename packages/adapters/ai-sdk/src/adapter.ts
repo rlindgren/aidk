@@ -819,42 +819,51 @@ export function mapToolResultContent(content: ContentBlock[], isError?: boolean)
   // Multiple blocks → use 'content' type with array
   const value: Array<
     { type: "text"; text: string } | { type: "media"; data: string; mediaType: string }
-  > = content.map((block) => {
-    if (block.type === "text") {
-      return { type: "text" as const, text: (block as TextBlock).text };
-    } else if (block.type === "json") {
-      const jsonBlock = block as JsonBlock;
-      return { type: "text" as const, text: jsonBlock.text };
-    } else if (block.type === "image") {
-      const mediaBlock = block as MediaBlock;
-      if (mediaBlock.source.type === "base64") {
-        return {
-          type: "media" as const,
-          data: mediaBlock.source.data,
-          mediaType: mediaBlock.mimeType || "image/png",
-        };
-      } else if (mediaBlock.source.type === "url") {
-        return { type: "text" as const, text: mediaBlock.source.url };
-      } else if (mediaBlock.source.type === "s3") {
+  > = content
+    .map((block) => {
+      if (block.type === "text") {
+        const textBlock = block as TextBlock;
+        // Skip empty text blocks to avoid AI SDK validation errors
+        if (!textBlock.text) return null;
+        return { type: "text" as const, text: textBlock.text };
+      } else if (block.type === "json") {
+        const jsonBlock = block as JsonBlock;
+        // JSON blocks can have either data (object) or text (string)
+        const jsonText = jsonBlock.text || JSON.stringify(jsonBlock.data, null, 2);
+        // Skip if both are empty/undefined
+        if (!jsonText) return null;
+        return { type: "text" as const, text: jsonText };
+      } else if (block.type === "image") {
+        const mediaBlock = block as MediaBlock;
+        if (mediaBlock.source.type === "base64") {
+          return {
+            type: "media" as const,
+            data: mediaBlock.source.data,
+            mediaType: mediaBlock.mimeType || "image/png",
+          };
+        } else if (mediaBlock.source.type === "url") {
+          return { type: "text" as const, text: mediaBlock.source.url };
+        } else if (mediaBlock.source.type === "s3") {
+          return {
+            type: "text" as const,
+            text: `s3://${mediaBlock.source.bucket}/${mediaBlock.source.key}`,
+          };
+        } else if (mediaBlock.source.type === "gcs") {
+          return {
+            type: "text" as const,
+            text: `gs://${mediaBlock.source.bucket}/${mediaBlock.source.object}`,
+          };
+        }
+        // file_id source fallback to text
         return {
           type: "text" as const,
-          text: `s3://${mediaBlock.source.bucket}/${mediaBlock.source.key}`,
-        };
-      } else if (mediaBlock.source.type === "gcs") {
-        return {
-          type: "text" as const,
-          text: `gs://${mediaBlock.source.bucket}/${mediaBlock.source.object}`,
+          text: `file_id:${mediaBlock.source.fileId}`,
         };
       }
-      // file_id source fallback to text
-      return {
-        type: "text" as const,
-        text: `file_id:${mediaBlock.source.fileId}`,
-      };
-    }
-    // Fallback: serialize as text
-    return { type: "text" as const, text: JSON.stringify(block) };
-  });
+      // Fallback: serialize as text
+      return { type: "text" as const, text: JSON.stringify(block) };
+    })
+    .filter((item): item is NonNullable<typeof item> => item !== null);
 
   return { type: "content" as const, value };
 }
@@ -1046,42 +1055,50 @@ export function mapContentBlocksToToolResultOutput(
   // Multiple blocks → use 'content' type
   return {
     type: "content" as const,
-    value: content.map((block) => {
-      if (block.type === "text") {
-        return { type: "text" as const, text: block.text };
-      } else if (block.type === "json") {
-        const jsonBlock = block as JsonBlock;
-        return { type: "text" as const, text: jsonBlock.text };
-      } else if (block.type === "image") {
-        const mediaBlock = block as MediaBlock;
-        if (mediaBlock.source.type === "base64") {
-          return {
-            type: "media" as const,
-            data: mediaBlock.source.data,
-            mediaType: mediaBlock.mimeType || "image/png",
-          };
-        } else if (mediaBlock.source.type === "url") {
-          return { type: "text" as const, text: mediaBlock.source.url };
-        } else if (mediaBlock.source.type === "s3") {
+    value: content
+      .map((block) => {
+        if (block.type === "text") {
+          // Skip empty text blocks to avoid AI SDK validation errors
+          if (!block.text) return null;
+          return { type: "text" as const, text: block.text };
+        } else if (block.type === "json") {
+          const jsonBlock = block as JsonBlock;
+          // JSON blocks can have either data (object) or text (string)
+          const jsonText = jsonBlock.text || JSON.stringify(jsonBlock.data, null, 2);
+          // Skip if both are empty/undefined
+          if (!jsonText) return null;
+          return { type: "text" as const, text: jsonText };
+        } else if (block.type === "image") {
+          const mediaBlock = block as MediaBlock;
+          if (mediaBlock.source.type === "base64") {
+            return {
+              type: "media" as const,
+              data: mediaBlock.source.data,
+              mediaType: mediaBlock.mimeType || "image/png",
+            };
+          } else if (mediaBlock.source.type === "url") {
+            return { type: "text" as const, text: mediaBlock.source.url };
+          } else if (mediaBlock.source.type === "s3") {
+            return {
+              type: "text" as const,
+              text: `s3://${mediaBlock.source.bucket}/${mediaBlock.source.key}`,
+            };
+          } else if (mediaBlock.source.type === "gcs") {
+            return {
+              type: "text" as const,
+              text: `gs://${mediaBlock.source.bucket}/${mediaBlock.source.object}`,
+            };
+          }
+          // URL images fallback to text
           return {
             type: "text" as const,
-            text: `s3://${mediaBlock.source.bucket}/${mediaBlock.source.key}`,
-          };
-        } else if (mediaBlock.source.type === "gcs") {
-          return {
-            type: "text" as const,
-            text: `gs://${mediaBlock.source.bucket}/${mediaBlock.source.object}`,
+            text: `file_id:${mediaBlock.source.fileId}`,
           };
         }
-        // URL images fallback to text
-        return {
-          type: "text" as const,
-          text: `file_id:${mediaBlock.source.fileId}`,
-        };
-      }
-      // Fallback: serialize as text
-      return { type: "text" as const, text: JSON.stringify(block) };
-    }),
+        // Fallback: serialize as text
+        return { type: "text" as const, text: JSON.stringify(block) };
+      })
+      .filter((item): item is NonNullable<typeof item> => item !== null),
   };
 }
 
