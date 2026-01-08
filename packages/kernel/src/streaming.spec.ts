@@ -41,8 +41,8 @@ describe("Kernel Streaming", () => {
     const { handle } = proc.withHandle().call();
     const chunks: any[] = [];
 
-    // Update expectation: payload is now wrapped in ExecutionEvent
-    handle.events.on("stream:chunk", (event) => chunks.push(event.payload.value));
+    // Payload is the stream value directly (no wrapper)
+    handle.events.on("stream:chunk", (event) => chunks.push(event.payload));
 
     const iterator = (await handle.result) as AsyncIterable<string>;
     for await (const _ of iterator) {

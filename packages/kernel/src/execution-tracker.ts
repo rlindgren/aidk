@@ -4,6 +4,16 @@ import { Telemetry } from "./telemetry";
 import { AbortError } from "aidk-shared";
 import { isAsyncIterable } from "./stream";
 
+/**
+ * Execution boundary behavior configuration.
+ *
+ * - `'always'`: Always create a new root execution (no parentExecutionId)
+ * - `'child'`: Always create a new child execution (with parentExecutionId from current context)
+ * - `'auto'`: Create only if not already in an execution (default behavior)
+ * - `false`: Never create an execution boundary, inherit from parent
+ */
+export type ExecutionBoundaryConfig = "always" | "child" | "auto" | false;
+
 export interface ExecutionTrackerOptions {
   name?: string;
   metadata?: Record<string, any>;
@@ -14,6 +24,24 @@ export interface ExecutionTrackerOptions {
    * Useful for Engine to correlate with ExecutionHandle.pid.
    */
   executionId?: string;
+
+  /**
+   * Declarative execution boundary configuration.
+   *
+   * - `'always'`: Always create a new root execution (engine:execute, engine:stream)
+   * - `'child'`: Always create a new child execution (component_tool, fork, spawn)
+   * - `'auto'`: Create only if not already in an execution (model:generate, model:stream)
+   * - `false`: Never create an execution boundary (compile:tick, internal procedures)
+   *
+   * @default 'auto'
+   */
+  executionBoundary?: ExecutionBoundaryConfig;
+
+  /**
+   * Explicit execution type (e.g., 'engine', 'model', 'component_tool', 'fork', 'spawn').
+   * If not provided, derived from procedure name.
+   */
+  executionType?: string;
 }
 
 /**
@@ -54,28 +82,72 @@ export class ExecutionTracker {
     }
 
     // Determine execution context (boundary detection)
-    // If parent has executionId, inherit it. Otherwise, we're an execution boundary.
-    const parentNode = parentPid ? ctx.procedureGraph.get(parentPid) : undefined;
-    const parentExecutionId = parentNode?.executionId;
+    // Use declarative executionBoundary config to decide behavior
+    const boundaryConfig = options.executionBoundary ?? "auto";
 
-    let executionId: string;
+    // Get current execution context from context (Phase 3 fields)
+    const currentExecutionId = ctx.executionId;
+    const contextHandlePid = (ctx.executionHandle as { pid?: string } | undefined)?.pid;
+
+    let executionId: string | undefined;
     let isExecutionBoundary: boolean;
     let executionType: string | undefined;
+    let parentExecutionId: string | undefined;
 
-    if (parentExecutionId) {
-      // Inherit from parent
-      executionId = parentExecutionId;
-      isExecutionBoundary = false;
-      executionType = undefined; // Only set on boundaries
-    } else {
-      // We're an execution boundary - create new execution
-      // Priority: explicit executionId > executionHandle.pid from context > procedurePid
-      // This ensures Engine's handle.pid is used when available for proper correlation
-      const contextHandlePid = (ctx.executionHandle as { pid?: string } | undefined)?.pid;
-      executionId = options.executionId ?? contextHandlePid ?? procedurePid;
-      isExecutionBoundary = true;
-      // Derive type from procedure name prefix (e.g., 'model:generate' -> 'model')
-      executionType = effectiveName.includes(":") ? effectiveName.split(":")[0] : effectiveName;
+    switch (boundaryConfig) {
+      case "always":
+        // Always create a new execution
+        // If ctx.parentExecutionId is set (e.g., from fork/spawn), use it for child linking
+        // Otherwise, this is a root execution with no parent
+        executionId = options.executionId ?? contextHandlePid ?? procedurePid;
+        isExecutionBoundary = true;
+        // For fork/spawn, use ctx.executionType (set by engine); fall back to options or derive from name
+        executionType =
+          ctx.executionType ??
+          options.executionType ??
+          (effectiveName.includes(":") ? effectiveName.split(":")[0] : effectiveName);
+        parentExecutionId = ctx.parentExecutionId; // May be undefined for true roots
+        break;
+
+      case "child":
+        // Always create a new child execution (with parentExecutionId)
+        executionId = options.executionId ?? procedurePid;
+        isExecutionBoundary = true;
+        // For fork/spawn, use ctx.executionType (set by engine); fall back to options or derive from name
+        executionType =
+          ctx.executionType ??
+          options.executionType ??
+          (effectiveName.includes(":") ? effectiveName.split(":")[0] : effectiveName);
+        // Parent is the current execution from context
+        parentExecutionId = currentExecutionId;
+        break;
+
+      case "auto":
+        // Create only if not already in an execution
+        if (currentExecutionId) {
+          // Already in an execution - inherit
+          executionId = currentExecutionId;
+          isExecutionBoundary = false;
+          executionType = undefined;
+          parentExecutionId = undefined; // Not applicable, inheriting
+        } else {
+          // Not in an execution - create new root
+          executionId = options.executionId ?? contextHandlePid ?? procedurePid;
+          isExecutionBoundary = true;
+          executionType =
+            options.executionType ??
+            (effectiveName.includes(":") ? effectiveName.split(":")[0] : effectiveName);
+          parentExecutionId = undefined; // Root execution
+        }
+        break;
+
+      case false:
+        // Never create an execution boundary - inherit from context (may be undefined)
+        executionId = currentExecutionId;
+        isExecutionBoundary = false;
+        executionType = undefined;
+        parentExecutionId = undefined;
+        break;
     }
 
     // Register procedure with execution context
@@ -144,12 +216,23 @@ export class ExecutionTracker {
     // This prevents race conditions when parallel procedures run - each gets its own
     // context object with its own procedurePid, procedureNode, origin, and metrics.
     // Shared state (events, procedureGraph, channels, signal) is still accessible.
+    //
+    // If this is an execution boundary, set the execution fields in the forked context.
+    // This ensures all nested procedures inherit executionId from context.
     return Context.fork(
       {
         procedurePid,
         procedureNode: node,
         origin,
         metrics: metricsProxy as Record<string, number>,
+        // Execution context (Phase 3): set if boundary, otherwise inherit from parent context
+        ...(isExecutionBoundary
+          ? {
+              executionId,
+              executionType,
+              parentExecutionId,
+            }
+          : {}),
       },
       async () => {
         try {
@@ -170,6 +253,7 @@ export class ExecutionTracker {
             executionId: node.executionId,
             isExecutionBoundary: node.isExecutionBoundary,
             executionType: node.executionType,
+            parentExecutionId, // For DevTools execution tree linking
           });
 
           // Execute function
@@ -196,8 +280,9 @@ export class ExecutionTracker {
                   }
 
                   // Emit stream:chunk event for consumers listening to the handle
+                  // The value is emitted directly (not wrapped) - it's typically an engine event
                   await Context.run(forkedContext, async () => {
-                    Context.emit("stream:chunk", { value: next.value });
+                    Context.emit("stream:chunk", next.value);
                   });
 
                   yield next.value;
@@ -211,6 +296,8 @@ export class ExecutionTracker {
                   Context.emit("procedure:end", {
                     pid: procedurePid,
                     executionId: node.executionId,
+                    metrics: node.metrics,
+                    durationMs: node.durationMs,
                   });
                 });
               } catch (error) {
@@ -250,6 +337,8 @@ export class ExecutionTracker {
             pid: procedurePid,
             executionId: node.executionId,
             result,
+            metrics: node.metrics,
+            durationMs: node.durationMs,
           });
 
           return result;

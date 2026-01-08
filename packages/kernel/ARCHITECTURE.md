@@ -161,6 +161,11 @@ interface KernelContext {
   procedurePid?: string;
   procedureNode?: ProcedureNode;
   origin?: ProcedureNode; // Root procedure of this chain
+
+  // Execution context (set by ExecutionTracker at boundaries)
+  executionId?: string; // Current execution ID (inherited from boundary)
+  executionType?: string; // Type of execution ('engine', 'model', etc.)
+  parentExecutionId?: string; // Parent execution for fork/spawn linking
 }
 ```
 
@@ -311,7 +316,34 @@ Default is `NoOpProvider`. Replace with OpenTelemetry adapter for production:
 Telemetry.setProvider(new OTelProvider(tracerProvider));
 ```
 
-### 6. Logger
+### 6. Execution Boundary Configuration
+
+Procedures can declare how they relate to executions via the `executionBoundary` configuration. This enables observability tools like DevTools to correctly group and display procedure hierarchies.
+
+```typescript
+/**
+ * Execution boundary behavior configuration.
+ *
+ * - 'always': Always create a new root execution (no parentExecutionId)
+ * - 'child': Always create a new child execution (with parentExecutionId from current context)
+ * - 'auto': Create only if not already in an execution (default behavior)
+ * - false: Never create an execution boundary, inherit from parent
+ */
+type ExecutionBoundaryConfig = 'always' | 'child' | 'auto' | false;
+```
+
+**When to use each configuration:**
+
+| Config     | Use Case                                      | Examples                           |
+| ---------- | --------------------------------------------- | ---------------------------------- |
+| `'always'` | Public entry points that start new executions | `engine:execute`, `engine:stream`  |
+| `'child'`  | Operations that spawn child executions        | `fork`, `spawn`, component tools   |
+| `'auto'`   | Public operations that may run standalone     | `model:generate`, `model:stream`   |
+| `false`    | Internal procedures that inherit from parent  | Hooks, lifecycle methods, compiler |
+
+**Execution linking**: When `'always'` is used, the procedure respects `ctx.parentExecutionId` if set. This enables fork/spawn operations to create child executions that link back to their parent for proper DevTools hierarchy display.
+
+### 7. Logger
 
 Structured logging with automatic context injection:
 
@@ -375,6 +407,8 @@ const validated = createProcedure(
     schema: z.string(),
     middleware: [loggingMiddleware],
     timeout: 5000, // Throws AbortError.timeout() if exceeded
+    executionBoundary: 'auto', // 'always' | 'child' | 'auto' | false
+    executionType: 'custom', // Optional explicit type
   },
   async (input: string) => input.toUpperCase(),
 );
@@ -391,6 +425,7 @@ const validated = createProcedure(
 | `.withContext(ctx)`   | Merge context, returns new Procedure                                          |
 | `.withMiddleware(mw)` | Add single middleware, returns new Procedure                                  |
 | `.withTimeout(ms)`    | Set timeout, returns new Procedure. Throws `AbortError.timeout()` if exceeded |
+| `.withMetadata(meta)` | Merge metadata, returns new Procedure. Flows to events and telemetry spans    |
 | `.pipe(nextProc)`     | Chain procedures, returns new Procedure that pipes output to next             |
 
 #### `ProcedureWithHandle<THandler>`
@@ -585,15 +620,21 @@ Wraps a function execution with automatic tracking:
 
 ```typescript
 interface ExecutionTrackerOptions {
-  name?: string;              // Procedure name (e.g., 'model:generate')
+  name?: string;                  // Procedure name (e.g., 'model:generate')
   metadata?: Record<string, any>;
-  parentPid?: string;         // Parent procedure ID
-  executionId?: string;       // Explicit execution ID (for Engine correlation)
+  parentPid?: string;             // Parent procedure ID
+  executionId?: string;           // Explicit execution ID (for Engine correlation)
+  executionBoundary?: ExecutionBoundaryConfig; // Boundary behavior (default: 'auto')
+  executionType?: string;         // Explicit type (e.g., 'engine', 'model', 'tool')
 }
 
 const result = await ExecutionTracker.track(
   ctx,
-  { name: "model:generate", parentPid: ctx.procedurePid },
+  {
+    name: "model:generate",
+    parentPid: ctx.procedurePid,
+    executionBoundary: 'auto',  // Create execution only if not already in one
+  },
   async (node: ProcedureNode) => {
     // node is the ProcedureNode for this execution
     node.addMetric("tokens", 100);
@@ -612,13 +653,22 @@ const result = await ExecutionTracker.track(
 6. Records errors to telemetry
 7. Emits `procedure:start` / `procedure:end` / `procedure:error` events with `executionId`
 
-**Execution Boundary Detection:**
+**Execution Boundary Behavior:**
 
-When a procedure has no parent `executionId`, it becomes a boundary:
+The `executionBoundary` config determines when a new execution is created:
 
-- Uses `options.executionId` if provided
-- Otherwise uses `ctx.executionHandle.pid` if available (Engine integration)
-- Falls back to `procedurePid`
+| Config     | Behavior                                                               |
+| ---------- | ---------------------------------------------------------------------- |
+| `'always'` | Creates new execution. Uses `ctx.parentExecutionId` if set for linking |
+| `'child'`  | Creates new child execution linked to current execution                |
+| `'auto'`   | Creates execution only if `ctx.executionId` is not set (default)       |
+| `false`    | Never creates boundary, inherits `ctx.executionId` if available        |
+
+**Execution ID Priority** (at boundaries):
+
+1. `options.executionId` if provided
+2. `ctx.executionHandle.pid` if available (Engine integration)
+3. `procedurePid` as fallback
 
 ---
 
@@ -1113,6 +1163,47 @@ try {
     console.log("Request timed out");
   }
 }
+```
+
+### Procedure with Metadata
+
+Pass execution-specific metadata that flows to procedure events and telemetry spans:
+
+```typescript
+import { createProcedure } from "aidk-kernel";
+
+const modelGenerate = createProcedure(
+  { name: "model:generate" },
+  async (messages: Message[]) => {
+    // ... model call implementation
+  },
+);
+
+// Model adapter passes model info for observability
+const result = await modelGenerate
+  .withMetadata({
+    modelId: "gpt-4o",
+    provider: "openai",
+    temperature: 0.7,
+  })
+  .call(messages);
+
+// Tool passes tool info
+const toolRun = createProcedure({ name: "tool:run" }, async (input) => {
+  // ... tool implementation
+});
+
+await toolRun
+  .withMetadata({
+    toolName: "calculator",
+    toolId: "calc-v2",
+  })
+  .call({ expression: "2+2" });
+
+// Metadata appears in:
+// 1. procedure:start events (payload.metadata)
+// 2. Telemetry spans (procedure.metadata.modelId, etc.)
+// 3. DevTools events
 ```
 
 ### Procedure Composition with Pipe

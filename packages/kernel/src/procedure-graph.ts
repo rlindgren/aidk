@@ -94,6 +94,16 @@ export class ProcedureNode {
     this.completedAt = new Date();
   }
 
+  /**
+   * Get duration in milliseconds (undefined if not completed)
+   */
+  get durationMs(): number | undefined {
+    if (!this.completedAt) {
+      return undefined;
+    }
+    return this.completedAt.getTime() - this.startedAt.getTime();
+  }
+
   getParentNode(): ProcedureNode | undefined {
     return this.parentPid ? this.graph.get(this.parentPid) : undefined;
   }

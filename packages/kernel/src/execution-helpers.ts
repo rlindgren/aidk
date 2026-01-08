@@ -8,7 +8,8 @@
  * execution hierarchy.
  */
 
-import type { KernelContext } from "./context";
+import { Context, type KernelContext } from "./context";
+import { ExecutionTracker } from "./execution-tracker";
 import type { ProcedureNode } from "./procedure-graph";
 
 /**
@@ -188,4 +189,88 @@ export function getExecutionInfo(ctx: KernelContext): {
     isWithinEngine: isWithinEngine(ctx),
     depth,
   };
+}
+
+/**
+ * Options for withExecution helper.
+ */
+export interface WithExecutionOptions {
+  /**
+   * Human-readable name for this execution (shown in DevTools).
+   */
+  name: string;
+
+  /**
+   * Execution type for categorization (e.g., 'summarization', 'validation').
+   * Shown as a badge in DevTools.
+   * @default 'custom'
+   */
+  type?: string;
+
+  /**
+   * Additional metadata to attach to the execution.
+   */
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Create a named execution boundary around an operation.
+ *
+ * Use this to mark semantically meaningful operations that should appear
+ * as distinct executions in DevTools. The execution will be linked as a
+ * child of the current execution (if any).
+ *
+ * @example
+ * ```typescript
+ * // Simple usage with just a name
+ * const summary = await withExecution("Summarize Context", async () => {
+ *   return model.generate(summarizePrompt);
+ * });
+ *
+ * // With options
+ * const result = await withExecution({
+ *   name: "Validate Response",
+ *   type: "validation",
+ *   metadata: { validator: "schema" },
+ * }, async () => {
+ *   return validateSchema(response);
+ * });
+ *
+ * // In a hook
+ * onAfterCompile: async (ctx) => {
+ *   await withExecution("Context Compaction", async () => {
+ *     const summary = await model.generate(compactPrompt);
+ *     ctx.updateContext(summary);
+ *   });
+ * }
+ * ```
+ *
+ * @param nameOrOptions - Execution name string or options object
+ * @param fn - The async function to execute within this boundary
+ * @returns The result of the function
+ */
+export async function withExecution<T>(
+  nameOrOptions: string | WithExecutionOptions,
+  fn: () => Promise<T>,
+): Promise<T> {
+  const options: WithExecutionOptions =
+    typeof nameOrOptions === "string" ? { name: nameOrOptions } : nameOrOptions;
+
+  const { name, type = "custom", metadata } = options;
+
+  // ExecutionTracker.track with 'child' boundary automatically:
+  // - Links to parent procedure via ctx.procedurePid
+  // - Links to parent execution via ctx.executionId
+  // - Creates new executionId for this boundary
+  // - Uses Context.fork() internally for isolation
+  return ExecutionTracker.track(
+    Context.tryGet() ?? Context.create(),
+    {
+      name,
+      metadata: { ...metadata, type },
+      executionBoundary: "child",
+      executionType: type,
+    },
+    async () => fn(),
+  );
 }

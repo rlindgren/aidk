@@ -65,8 +65,25 @@ export interface ExecutionEvent {
   timestamp: number;
   /** Source of the event (e.g., 'agent:sales', 'model:openai') */
   source: string;
-  /** Trace ID for correlation */
+  /** Trace ID for correlation (distributed tracing) */
   traceId: string;
+  /** Request ID for this execution context */
+  requestId?: string;
+  /** Execution ID from context (auto-populated if available) */
+  executionId?: string;
+  /** Parent execution ID for nested executions (fork, spawn, component_tool) */
+  parentExecutionId?: string;
+  /** Procedure ID from context (auto-populated if available) */
+  procedureId?: string;
+  /** Current tick number if in a tick context */
+  tick?: number;
+  // ─────────────────────────────────────────────────────────────────────────────
+  // User Context (for multi-tenant telemetry)
+  // ─────────────────────────────────────────────────────────────────────────────
+  /** User ID from context (for attribution and multi-tenant filtering) */
+  userId?: string;
+  /** Tenant ID from context (for multi-tenant dashboards) */
+  tenantId?: string;
 }
 
 /**
@@ -190,6 +207,36 @@ export interface KernelContext {
    * Set automatically by ExecutionTracker when procedures are executed.
    */
   origin?: ProcedureNode;
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Execution Context (Phase 3)
+  // Executions are "sign posts" - annotations on the procedure graph that mark
+  // significant boundaries (engine entry points, component tools, fork/spawn).
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Current execution ID. Set when entering an execution boundary.
+   * All procedures within this execution share this ID.
+   */
+  executionId?: string;
+
+  /**
+   * Type of execution at this boundary (e.g., 'engine', 'model', 'component_tool', 'fork', 'spawn').
+   * Only meaningful at execution boundaries.
+   */
+  executionType?: string;
+
+  /**
+   * Parent execution ID for nested executions (e.g., component_tool called from engine).
+   * Enables DevTools to show execution hierarchy.
+   */
+  parentExecutionId?: string;
+
+  /**
+   * Current tick number (set by engine during tick loop).
+   * Enables events to include tick context for correlation.
+   */
+  tick?: number;
 }
 
 const storage = new AsyncLocalStorage<KernelContext>();
@@ -262,6 +309,10 @@ export class Context {
       user: overrides.user,
       signal: overrides.signal,
       executionHandle: overrides.executionHandle,
+      // Execution context fields (Phase 3)
+      executionId: overrides.executionId,
+      executionType: overrides.executionType,
+      parentExecutionId: overrides.parentExecutionId,
     };
   }
 
@@ -354,6 +405,17 @@ export class Context {
   }
 
   /**
+   * Set the current tick number in the context.
+   * Called by the engine at the start of each tick.
+   */
+  static setTick(tick: number): void {
+    const ctx = this.tryGet();
+    if (ctx) {
+      ctx.tick = tick;
+    }
+  }
+
+  /**
    * Helper to emit an event on the current context.
    * Events are broadcast to:
    * 1. The context's local event bus (ctx.events)
@@ -368,7 +430,17 @@ export class Context {
         payload,
         timestamp: Date.now(),
         source,
+        // Correlation IDs for distributed tracing
         traceId: ctx.traceId,
+        requestId: ctx.requestId,
+        // Execution context (for execution tree building)
+        executionId: ctx.executionId,
+        parentExecutionId: ctx.parentExecutionId,
+        procedureId: ctx.procedurePid,
+        tick: ctx.tick,
+        // User context (for multi-tenant telemetry)
+        userId: ctx.user?.id,
+        tenantId: ctx.user?.tenantId,
       };
 
       // 1. Emit to the Global Request Bus

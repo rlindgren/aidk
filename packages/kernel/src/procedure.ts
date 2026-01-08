@@ -14,7 +14,7 @@
 import { z } from "zod";
 import { EventEmitter } from "node:events";
 import { Context, type KernelContext, isKernelContext } from "./context";
-import { ExecutionTracker } from "./execution-tracker";
+import { ExecutionTracker, type ExecutionBoundaryConfig } from "./execution-tracker";
 import { randomUUID } from "node:crypto";
 import { ProcedureNode } from "./procedure-graph";
 import { AbortError, ValidationError } from "aidk-shared";
@@ -210,6 +210,29 @@ export interface ProcedureOptions {
    * @internal
    */
   skipTracking?: boolean;
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Execution Boundary Configuration (Phase 3)
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Declarative execution boundary configuration.
+   *
+   * - `'always'`: Always create a new root execution (engine:execute, engine:stream)
+   * - `'child'`: Always create a new child execution (component_tool, fork, spawn)
+   * - `'auto'`: Create only if not already in an execution (model:generate, model:stream)
+   * - `false`: Never create an execution boundary (compile:tick, internal procedures)
+   *
+   * @default 'auto'
+   */
+  executionBoundary?: ExecutionBoundaryConfig;
+
+  /**
+   * Explicit execution type (e.g., 'engine', 'model', 'component_tool', 'fork', 'spawn').
+   * If not provided, derived from procedure name.
+   * Only used when this procedure becomes an execution boundary.
+   */
+  executionType?: string;
 }
 
 /**
@@ -310,6 +333,28 @@ export interface Procedure<THandler extends (...args: any[]) => any> {
   withTimeout(ms: number): Procedure<THandler>;
 
   /**
+   * Create a procedure variant with merged metadata. Returns a new Procedure.
+   * Metadata is passed to ExecutionTracker and included in procedure events.
+   * Useful for passing model IDs, tool names, or other execution-specific info.
+   *
+   * @param metadata - Metadata to merge with existing procedure metadata
+   *
+   * @example
+   * ```typescript
+   * // Model adapter passes model info
+   * const result = await model.generate
+   *   .withMetadata({ modelId: 'gpt-4o', provider: 'openai' })
+   *   .call(messages);
+   *
+   * // Tool passes tool info
+   * const result = await tool.run
+   *   .withMetadata({ toolName: 'search', toolId: 'search-v2' })
+   *   .call(input);
+   * ```
+   */
+  withMetadata(metadata: Record<string, unknown>): Procedure<THandler>;
+
+  /**
    * Pipe the output of this procedure to another procedure.
    * Creates a new procedure that runs this procedure, then passes its result to the next.
    *
@@ -382,6 +427,8 @@ export type ProcedureWithHandle<THandler extends (...args: any[]) => any> = {
   ): ProcedureWithHandle<THandler>;
   /** Create variant with timeout. Returns a new ProcedureWithHandle. */
   withTimeout(ms: number): ProcedureWithHandle<THandler>;
+  /** Create variant with merged metadata. Returns a new ProcedureWithHandle. */
+  withMetadata(metadata: Record<string, unknown>): ProcedureWithHandle<THandler>;
 };
 
 /**
@@ -636,6 +683,8 @@ class ProcedureImpl<
   private handler?: THandler;
   private timeout?: number; // Timeout in milliseconds
   private skipTracking?: boolean; // Skip ExecutionTracker for transparent wrappers
+  private executionBoundary?: ExecutionBoundaryConfig; // Execution boundary config (Phase 3)
+  private executionType?: string; // Explicit execution type (Phase 3)
 
   constructor(options: ProcedureOptions = {}, handler?: THandler) {
     this.procedureName = options.name;
@@ -646,6 +695,8 @@ class ProcedureImpl<
     this.metadata = options.metadata; // Store metadata for telemetry
     this.timeout = options.timeout; // Store timeout
     this.skipTracking = options.skipTracking; // Store skipTracking flag
+    this.executionBoundary = options.executionBoundary; // Execution boundary config (Phase 3)
+    this.executionType = options.executionType; // Explicit execution type (Phase 3)
 
     if (options.middleware) {
       this.middlewares = flattenMiddleware(
@@ -693,6 +744,11 @@ class ProcedureImpl<
         sourceType: this.sourceType,
         sourceId: this.sourceId,
         metadata: this.metadata, // Preserve metadata when setting new handler
+        // Preserve execution tracking options (Phase 3)
+        executionBoundary: this.executionBoundary,
+        executionType: this.executionType,
+        skipTracking: this.skipTracking,
+        timeout: this.timeout,
       },
       fn,
     );
@@ -770,6 +826,9 @@ class ProcedureImpl<
         name: this.procedureName || `procedure:${this.handler.name || "anonymous"}`,
         parentPid: context.procedurePid,
         metadata: this.metadata, // Pass metadata to ExecutionTracker for span attributes
+        // Execution boundary configuration (Phase 3)
+        executionBoundary: this.executionBoundary,
+        executionType: this.executionType,
       },
       async (_node: ProcedureNode) => {
         return executeMiddlewarePipeline();
@@ -913,6 +972,11 @@ class ProcedureImpl<
         sourceType: this.sourceType,
         sourceId: this.sourceId,
         metadata: this.metadata, // Preserve metadata when adding middleware
+        // Preserve execution tracking options (Phase 3)
+        executionBoundary: this.executionBoundary,
+        executionType: this.executionType,
+        skipTracking: this.skipTracking,
+        timeout: this.timeout,
       },
       this.handler!,
     );
@@ -978,6 +1042,7 @@ class ProcedureImpl<
     handleProcedure.withContext = proc.withContext.bind(proc) as any;
     handleProcedure.withMiddleware = proc.withMiddleware.bind(proc) as any;
     handleProcedure.withTimeout = proc.withTimeout.bind(proc) as any;
+    handleProcedure.withMetadata = proc.withMetadata.bind(proc) as any;
 
     return handleProcedure;
   }
@@ -1049,6 +1114,37 @@ class ProcedureImpl<
         sourceId: this.sourceId,
         metadata: this.metadata,
         timeout: ms,
+        // Preserve execution tracking options (Phase 3)
+        executionBoundary: this.executionBoundary,
+        executionType: this.executionType,
+        skipTracking: this.skipTracking,
+      },
+      this.handler!,
+    );
+  }
+
+  /**
+   * Create a procedure variant with merged metadata. Returns a new Procedure.
+   * Metadata flows to ExecutionTracker and is included in procedure events and telemetry spans.
+   *
+   * @param metadata - Metadata to merge with existing procedure metadata
+   */
+  withMetadata(metadata: Record<string, unknown>): Procedure<THandler> {
+    return createProcedureFromImpl<TArgs, THandler>(
+      {
+        name: this.procedureName,
+        schema: this.schema,
+        middleware: this.middlewares as unknown as (Middleware<any[]> | MiddlewarePipeline)[],
+        handleFactory: this.handleFactory,
+        sourceType: this.sourceType,
+        sourceId: this.sourceId,
+        // Merge metadata - new values override existing
+        metadata: { ...this.metadata, ...metadata },
+        timeout: this.timeout,
+        // Preserve execution tracking options (Phase 3)
+        executionBoundary: this.executionBoundary,
+        executionType: this.executionType,
+        skipTracking: this.skipTracking,
       },
       this.handler!,
     );
@@ -1136,6 +1232,7 @@ function createProcedureFromImpl<TArgs extends any[], THandler extends (...args:
   proc.withContext = impl.withContext.bind(impl);
   proc.withMiddleware = impl.withMiddleware.bind(impl) as Procedure<THandler>["withMiddleware"];
   proc.withTimeout = impl.withTimeout.bind(impl);
+  proc.withMetadata = impl.withMetadata.bind(impl);
   proc.pipe = impl.pipe.bind(impl) as Procedure<THandler>["pipe"];
 
   return proc;
