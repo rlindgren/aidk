@@ -2,6 +2,186 @@
 
 This document helps AI agents understand and work with the AIDK codebase.
 
+## Design Philosophy
+
+### The Core Insight
+
+**The JSX tree IS the application.** It's not configuration for an engine - it IS the app. The tree:
+
+- Defines what the model sees (context/prompt)
+- Defines how the model can act (tools)
+- Controls when execution stops (via hooks and state)
+- Runs across multiple ticks, maintaining state between model calls
+
+**Context = f(state).** Just like React's UI = f(state), the prompt sent to the LLM is a function of reactive state. Describe what the model should see, not how to build the prompt.
+
+### The Bigger Idea: Model Interface (MI)
+
+**We're not just building AI apps. We're building Model Interfaces.**
+
+| UI (User Interface)           | MI (Model Interface)            |
+| ----------------------------- | ------------------------------- |
+| Visual hierarchy              | Context structure               |
+| Colors, spacing               | Token efficiency                |
+| Information architecture      | Information relevance/recency   |
+| Responsive to clicks          | Responsive to model "attention" |
+| Optimized for human cognition | Optimized for inference         |
+
+HTML/CSS/JS is for building interfaces humans consume. JSX components are for building interfaces models consume.
+
+The components ARE MI primitives:
+
+- `<System>` = header/nav (persistent instructions)
+- `<Section>` = cards (organized content)
+- `<Messages>` = feed (conversation history)
+- `<Tool>` = buttons/forms (available actions)
+
+**Two framings:**
+
+- **AI app**: Agent is the engine, humans are users. `Human → AI App → Response`
+- **App for agents**: Agent is the user, app is the interface. `Agent → MI → Structured Output`
+
+AIDK supports both. The context compiled each tick IS an interface the model "uses". The model "sees" the MI, "clicks" tools, "reads" sections. We're building what HTML is for humans, but for models.
+
+```
+┌─────────────────────────────────────┐
+│            Human User               │
+│                 │                   │
+│                 ▼                   │
+│         ┌─────────────┐             │
+│         │   AI App    │             │
+│         │             │             │
+│         │  ┌───────┐  │             │
+│         │  │  MI   │◄─── Model consumes this
+│         │  │Context│  │             │
+│         │  └───────┘  │             │
+│         │      │      │             │
+│         │      ▼      │             │
+│         │   Model     │             │
+│         └─────────────┘             │
+└─────────────────────────────────────┘
+```
+
+This is bigger than "agent framework" - it's a paradigm for model-consumable interfaces.
+
+### Who This Is For
+
+**Target audience: People building production agent systems.**
+
+If you've only written `openai.chat.completions.create()` in a script, you won't feel the pain this solves. But if you've built:
+
+- Jinja/Handlebars template inheritance for prompts
+- Manual conversation state tracking across agent hand-offs
+- Routing logic with if/else spaghetti
+- Same agent with different formatting for different mediums (web vs SMS)
+- Context compaction/summarization for long conversations
+- Multi-agent orchestration
+
+Then you see this and go "oh, it's just React for AI apps."
+
+### Pain Points Solved
+
+1. **Template composition hell** - JSX components compose naturally
+2. **Dynamic context** - Conditional rendering, reactive state, hooks
+3. **Same agent, different mediums** - Props change the output format
+4. **Model-aware formatting** - XML for Claude, Markdown for GPT, automatic
+5. **Agent hand-offs** - Just setState and render a different component
+6. **Multi-agent orchestration** - Component tree with state
+7. **Context compaction** - Map old messages to summarized versions
+8. **Mid-execution model swapping** - Change `<Model>` based on task complexity
+9. **Lifecycle hooks** - onAfterCompile for context transformation
+
+### The Runtime Model
+
+```
+run(<MyAgent />, input)
+    │
+    ├── createRuntime(options)  ← Like React's createRoot()
+    │
+    └── runtime.run(jsx, input)  ← Like root.render()
+            │
+            ├── Compile JSX → context (system, messages, tools)
+            ├── Call model
+            ├── Execute tools
+            ├── Ingest results (update state)
+            └── Loop until shouldContinue() === false
+```
+
+The runtime is NOT the application. It's the execution environment. The JSX IS the application.
+
+### Architecture Layers
+
+```
+┌─────────────────────────────────────────┐
+│           App (JSX components)          │  ← User code
+├─────────────────────────────────────────┤
+│         Runtime (session, tick loop)    │  ← JSX compilation, state, hooks
+├─────────────────────────────────────────┤
+│         Executor (pluggable)            │  ← Model calls, tool execution
+│    ┌─────────┬─────────┬─────────┐      │
+│    │ AI SDK  │ OpenAI  │ Custom  │      │
+│    └─────────┴─────────┴─────────┘      │
+├─────────────────────────────────────────┤
+│         Kernel (procedures, context)    │  ← Platform primitives
+├─────────────────────────────────────────┤
+│         LLM APIs (external)             │  ← OpenAI, Anthropic, etc.
+└─────────────────────────────────────────┘
+```
+
+- **Runtime** owns: compile, ingest, shouldContinue, tick management
+- **Executor** owns: model execution, tool execution, format translation
+- **Kernel** owns: procedures, context propagation, tracking
+
+This mirrors React: App → React (reconciler) → ReactDOM (renderer) → Browser → OS
+
+### Terminology
+
+- **App** - The JSX tree. Not "agent" (overloaded buzzword). Just an app.
+- **Components** - JSX pieces that compose into an app
+- **Runtime** - The execution environment (like React's createRoot)
+- **Executor** - Pluggable model/tool execution (like ReactDOM is to React)
+- **Session** - Holds compilation state across ticks
+
+Avoid "agent" where possible. It's just an AI app.
+
+### API Direction
+
+```typescript
+// Create runtime once
+const app = createRuntime(<App />, { executor, ...opts });
+
+// Run multiple times with different inputs
+for await (const event of app.stream({ messages })) { }
+const result = await app.run({ messages });
+```
+
+Lifecycle as events, not timeline mutation:
+
+```typescript
+const App = () => {
+  onMessage((msg) => { /* incoming */ });
+  onGenerated((response) => { /* model output */ });
+  return <>{/* ... */}</>;
+};
+```
+
+### Design Decisions & Open Questions
+
+**Decided:**
+
+1. **Procedures are the hook system** - Middleware on procedures, not 5 separate registries
+2. **Session owns the tick loop** - Runtime is just orchestration
+3. **Executor is pluggable** - AI SDK, OpenAI direct, Anthropic direct, custom, mock
+4. **Progressive adoption** - compile() → run(jsx, executor) → run(jsx) → full framework
+
+**Open questions:**
+
+- **Timeline vs Messages**: "Timeline" was over-abstraction for hypothetical non-LLM models. Should probably just be `messages` until there's a real use case for something more generic.
+- **ttlTicks/ttlMs/visibility/audience**: Likely unused cruft. Delete or repurpose for DevTools only.
+- **Sections**: Keep - useful for organizing system prompts. But strip the unnecessary fields.
+
+---
+
 ## What is AIDK?
 
 AIDK is a React-inspired JSX-based framework for building AI agents. It provides:
@@ -303,6 +483,25 @@ const middleware = async (args, envelope, next) => {
 ```
 
 See `packages/kernel/ARCHITECTURE.md` section "Middleware for Async Iterable Procedures" for full details.
+
+### Procedure Immutability and Option Preservation (CRITICAL)
+
+**Procedures are immutable** - methods like `.use()`, `setHandler()`, `withContext()`, `withTimeout()`, and `pipe()` return **new** `ProcedureImpl` instances. When adding new options to `ProcedureOptions`, you MUST ensure they are copied in ALL methods that create new procedures.
+
+**Options that must be preserved:**
+
+- `executionBoundary` - Controls execution boundary behavior (`'always'`, `'child'`, `'auto'`, `false`)
+- `executionType` - Type identifier for DevTools (e.g., `'engine'`, `'model'`)
+- `skipTracking` - Bypasses `ExecutionTracker.track()` for wrapper procedures
+- `timeout` - Procedure timeout in milliseconds
+- `metadata` - Telemetry span attributes
+- `handleFactory`, `schema`, `name`, `sourceType`, `sourceId`
+
+**Example bug (fixed):** Engine procedures had `executionBoundary: "always"` set, but `.use()` was called to add middleware. The old `.use()` didn't copy `executionBoundary`, so tracking options were lost and DevTools couldn't link child executions.
+
+**Key file:** `packages/kernel/src/procedure.ts` - search for `createProcedureFromImpl` calls to find all places where options must be copied.
+
+**`withContext()` special case:** This method intentionally sets `skipTracking: true` because the wrapper delegates to the original procedure's `execute()`, which does the actual tracking. This prevents double-tracking.
 
 ## DevTools for AI Agents
 

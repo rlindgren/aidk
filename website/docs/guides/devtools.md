@@ -314,6 +314,87 @@ const engine = createEngine({
 });
 ```
 
+## Execution Boundaries
+
+The DevTools execution hierarchy is powered by **execution boundaries** - a declarative configuration on procedures that determines when new executions start and how they relate to each other.
+
+### How It Works
+
+Every procedure in AIDK can declare its `executionBoundary` behavior:
+
+| Config     | DevTools Behavior                                            |
+| ---------- | ------------------------------------------------------------ |
+| `'always'` | Creates a new execution (shows as top-level in sidebar)      |
+| `'child'`  | Creates child execution linked to parent (shows nested)      |
+| `'auto'`   | Creates execution only if not already in one (smart default) |
+| `false`    | Inherits parent's execution (groups procedures together)     |
+
+### Built-in Execution Types
+
+The following execution types appear in DevTools:
+
+| Type     | Badge Color | Created By                      |
+| -------- | ----------- | ------------------------------- |
+| `engine` | Purple      | `engine.execute()`, `.stream()` |
+| `model`  | Blue        | Direct `model.generate()` calls |
+| `tool`   | Green       | Component tool invocations      |
+| `fork`   | Orange      | `<Fork>` component              |
+| `spawn`  | Red         | `<Spawn>` component             |
+
+### Execution Hierarchy Example
+
+When you run a complex agent with fork/spawn:
+
+```
+engine:stream (execution: abc-123, type: engine)
+├── compile:tick (inherits abc-123)
+├── model:generate (inherits abc-123)
+└── fork execution (execution: def-456, type: fork, parent: abc-123)
+    ├── engine:stream (inherits def-456)
+    ├── model:generate (inherits def-456)
+    └── ...
+```
+
+DevTools shows this as:
+
+```
+Sidebar:
+┌─────────────────────────────────┐
+│ ▸ MyAgent          [engine]    │  ← abc-123
+│   ├─ ForkedAgent   [fork]      │  ← def-456 (child of abc-123)
+└─────────────────────────────────┘
+```
+
+This automatic linking ensures you can trace the full execution tree, see aggregate token usage at each level, and navigate between related executions.
+
+### User-Defined Execution Boundaries
+
+For custom operations that should appear as distinct executions in DevTools, use the `withExecution` helper:
+
+```typescript
+import { withExecution } from 'aidk';
+
+// In a hook, wrap expensive operations
+async function onAfterCompile(ctx) {
+  await withExecution("Summarize Context", async () => {
+    const summary = await model.generate(summarizePrompt);
+    ctx.updateContext(summary);
+  });
+}
+```
+
+This creates a child execution linked to the parent, visible in the execution tree:
+
+```
+Sidebar:
+┌─────────────────────────────────────┐
+│ ▸ MyAgent              [engine]     │
+│   ├─ Summarize Context [custom]     │  ← withExecution
+└─────────────────────────────────────┘
+```
+
+See [Procedures & Middleware](/docs/advanced/procedures#creating-execution-boundaries-with-withexecution) for more details.
+
 ## How It Works
 
 The engine emits events internally at key lifecycle points when `devTools` is enabled:

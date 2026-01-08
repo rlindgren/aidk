@@ -119,9 +119,107 @@ This shows the full circle: component tools are themselves components with lifec
 └─────────────────────────────────────────────────────────────┘
 ```
 
+## Default Input Schema
+
+By default, component tools accept:
+
+```typescript
+{
+  prompt: string;           // Required: The task or question
+  attachments?: Array<{     // Optional: Images, documents, audio, video
+    type: 'text' | 'image' | 'document' | 'audio' | 'video';
+    // For text: { type: 'text', text: string }
+    // For media: { type: 'image', source: { type: 'base64' | 'url', ... } }
+  }>;
+}
+```
+
+This allows the model to pass images or documents for visual analysis:
+
+```tsx
+const AnalysisTool = createComponentTool({
+  name: 'analyze',
+  description: 'Analyze text or images. Pass attachments for visual analysis.',
+  component: AnalysisAgent,
+});
+
+// Model can call with:
+// { prompt: "Research AI safety" }
+// { prompt: "What's in this image?", attachments: [{ type: "image", source: { type: "url", url: "..." } }] }
+```
+
+## Typed Options
+
+Use the `options` field to define a typed schema for component configuration. The model sees the exact options available, and they're passed as props to the component:
+
+```tsx
+// Component receives options as props
+const ConfigurableAgent = ({ maxIterations = 3, depth = 'standard' }) => (
+  <>
+    <System>
+      Run up to {maxIterations} iterations with {depth} analysis.
+    </System>
+  </>
+);
+
+const ConfigurableTool = createComponentTool({
+  name: 'configurable_task',
+  description: 'A configurable task with iteration and depth options.',
+  component: ConfigurableAgent,
+  options: z.object({
+    maxIterations: z.number().describe('Maximum iterations to run'),
+    depth: z.enum(['shallow', 'standard', 'deep']).describe('Analysis depth'),
+  }),
+});
+
+// Model sees schema: { prompt: string, attachments?: ..., options?: { maxIterations?: number, depth?: ... } }
+// Model calls: { prompt: "Do the task", options: { maxIterations: 5, depth: "deep" } }
+```
+
+**Benefits of typed options:**
+
+- Model sees exactly what configuration is available
+- Validation before passing to component
+- Better IDE autocomplete for developers
+
+**Note:** When no `options` schema is provided, the `options` field is omitted from the input schema entirely.
+
+## Transforming Input with transformInput
+
+When your component expects props not in the schema, use `transformInput` to modify the input before processing:
+
+```tsx
+// Component expects: { task: string, k?: number, numVoters?: number }
+// Default schema provides: { prompt: string, options?: { k?, numVoters? } }
+// Need to add 'task' to options so it becomes a prop
+
+const VotingTool = createComponentTool({
+  name: 'voting_agent',
+  description: 'Run a voting consensus on a question',
+  component: VotingAgent,
+  options: z.object({
+    k: z.number().describe('Lead required for consensus').optional(),
+    numVoters: z.number().describe('Number of voters').optional(),
+  }),
+  transformInput: (input) => ({
+    ...input,
+    options: { ...input.options, task: input.prompt },  // Add task to options
+  }),
+});
+
+// Model calls: { prompt: "What is 2+2?", options: { k: 2, numVoters: 5 } }
+// After transform: { prompt: "...", options: { k: 2, numVoters: 5, task: "What is 2+2?" } }
+// Component receives props from options: { task: "What is 2+2?", k: 2, numVoters: 5 }
+```
+
+The transformed input is used for:
+
+1. Creating the user message (from `prompt` and `attachments`)
+2. Extracting component props (from `options`)
+
 ## Custom Input Schema
 
-By default, component tools accept `{ prompt: string }`. You can define custom schemas:
+For structured tasks, you can define a completely custom input schema:
 
 ```tsx
 import { z } from 'zod';
