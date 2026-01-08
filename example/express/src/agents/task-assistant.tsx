@@ -5,6 +5,7 @@ import { aisdk, openai, vertex } from "../models/models";
 import { UserContextComponent } from "../components";
 import { SlidingWindowTimeline } from "../components/timeline/sliding-window.function";
 import { CalculatorTool, ScratchpadTool, TodoListTool } from "../tools";
+import { VotingAgentTool } from "../tools/voting-agent-tool";
 
 type ReasoningOptions = {
   enabled: boolean;
@@ -72,6 +73,7 @@ export class TaskAssistantAgent {
         <TodoListTool />
         <ScratchpadTool />
         <CalculatorTool />
+        <VotingAgentTool />
       </>
     );
   }

@@ -289,7 +289,6 @@ export class VotingAgent extends Component<VotingAgentProps> {
       return (
         <Complete reason="Consensus reached">
           <Assistant>
-            <Text>Final answer: {displayAnswer}</Text>
             <Json
               data={{
                 answer: displayAnswer,
