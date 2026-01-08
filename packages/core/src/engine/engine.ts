@@ -27,6 +27,7 @@ import {
   createToolConfirmationRequiredEvent,
   createToolConfirmationResultEvent,
   createEngineErrorEvent,
+  createMessageEvent,
 } from "./engine-events";
 import { type EngineResponse } from "./engine-response";
 import {
@@ -232,6 +233,68 @@ export interface EngineStaticHooks {
     [K in ToolHookName]?: ToolHookMiddleware<K>[];
   };
   lifecycle?: EngineLifecycleHooks;
+}
+
+/**
+ * Check if a value is a JSX.Element (has type, props, key)
+ */
+function isJSXElement(value: unknown): value is JSX.Element {
+  return value !== null && typeof value === "object" && "type" in value && "props" in value;
+}
+
+/**
+ * Extract component name from a ComponentDefinition, unwrapping Fragment if needed.
+ * This ensures fork/spawn executions show the actual component name, not "Fragment" or "Engine".
+ *
+ * @param element - The component definition to extract name from
+ * @returns The component name or undefined if not extractable
+ */
+function extractComponentName(element: ComponentDefinition): string | undefined {
+  // Only JSX.Element has .type property - check first
+  if (!isJSXElement(element)) {
+    // For class instances, try to get the constructor name
+    if (element && typeof element === "object" && element.constructor) {
+      const name = element.constructor.name;
+      if (name && name !== "Object") {
+        return name;
+      }
+    }
+    // For functions, get the function name
+    if (typeof element === "function") {
+      return element.name || undefined;
+    }
+    return undefined;
+  }
+
+  // Handle Fragment - look at the first child for the actual component
+  if (element.type === Fragment) {
+    const children = element.props?.children;
+    if (children) {
+      const childArray = Array.isArray(children) ? children : [children];
+      // Find first valid component child
+      for (const child of childArray) {
+        if (isJSXElement(child)) {
+          const childName = extractComponentName(child);
+          if (childName && childName !== "Fragment") {
+            return childName;
+          }
+        }
+      }
+    }
+    return undefined;
+  }
+
+  // Extract name from function/class components
+  if (typeof element.type === "function") {
+    return element.type.name || (element.type as any).displayName;
+  }
+
+  // Extract name from string elements (built-in like 'div')
+  if (typeof element.type === "string") {
+    return element.type;
+  }
+
+  return undefined;
 }
 
 /**
@@ -514,6 +577,32 @@ export class Engine extends EventEmitter {
     // Create the actual execute implementation
     const executeImpl = async (): Promise<COMInput> => {
       const rootElement = this.getRootElement(root);
+
+      // Emit DevTools execution_start event (same logic as streamImpl)
+      // Use extractComponentName to unwrap Fragment and get the actual component name
+      const componentName = extractComponentName(rootElement);
+      const agentName =
+        (input.agentName as string | undefined) || this.config.name || componentName || "Engine";
+      const sessionId = (input.metadata?.sessionId as string | undefined) || input.sessionId;
+      const parentExecutionId = handle.parentPid || (input.parentExecutionId as string | undefined);
+      const executionType = handle.parentPid
+        ? handle.type === "fork"
+          ? "fork"
+          : "spawn"
+        : parentExecutionId
+          ? "component_tool"
+          : "root";
+
+      this.emitDevToolsEvent({
+        type: "execution_start",
+        executionId: handle.pid,
+        agentName,
+        sessionId,
+        executionType,
+        parentExecutionId,
+        rootExecutionId: handle.rootPid,
+      });
+
       const iterator = this.iterateTicks(input, rootElement, false, handle, this._channelService);
       let lastComInput: COMInput | undefined;
 
@@ -546,6 +635,13 @@ export class Engine extends EventEmitter {
       } else {
         this.executionGraph.updateStatus(handle.pid, "completed");
       }
+
+      // Emit DevTools execution_end event
+      this.emitDevToolsEvent({
+        type: "execution_end",
+        executionId: handle.pid,
+      });
+
       return result;
     };
 
@@ -681,6 +777,8 @@ export class Engine extends EventEmitter {
           id: this.id,
           operation: "onShutdown",
         },
+        // Internal lifecycle hook - never creates execution boundary
+        executionBoundary: false,
       },
       async (engine: Engine, reason?: string) => {
         await handler(engine, reason);
@@ -803,6 +901,9 @@ export class Engine extends EventEmitter {
           operation: "execute",
         },
         handleFactory: handleFactory as HandleFactory<any>,
+        // Engine entry points always create root executions
+        executionBoundary: "always",
+        executionType: "engine",
       },
       async (input: EngineInput, root?: ComponentDefinition): Promise<COMInput> => {
         return this.executeInternal(input, root);
@@ -827,6 +928,9 @@ export class Engine extends EventEmitter {
           operation: "stream",
         },
         handleFactory: handleFactory as HandleFactory<any>,
+        // Engine entry points always create root executions
+        executionBoundary: "always",
+        executionType: "engine",
       },
       async function* (
         input: EngineInput,
@@ -928,6 +1032,8 @@ export class Engine extends EventEmitter {
           id: targetEngine.id, // Identifier in metadata
           operation: hookName,
         },
+        // Internal lifecycle hook - never creates execution boundary
+        executionBoundary: false,
       },
       hook,
     );
@@ -1224,6 +1330,8 @@ export class Engine extends EventEmitter {
                 id: modelId,
                 operation: "fromEngineState",
               },
+              // Internal model helper - never creates execution boundary
+              executionBoundary: false,
             },
             original,
           ),
@@ -1273,6 +1381,8 @@ export class Engine extends EventEmitter {
                 id: modelId,
                 operation: "toEngineState",
               },
+              // Internal model helper - never creates execution boundary
+              executionBoundary: false,
             },
             original,
           ),
@@ -1681,21 +1791,29 @@ export class Engine extends EventEmitter {
       } as EngineStreamEvent;
 
       // Emit DevTools execution_start event
-      // Try to get agent name from: 1) config.name, 2) root component name, 3) "Engine"
-      const componentName =
-        typeof rootElement.type === "function"
-          ? rootElement.type.name || (rootElement.type as any).displayName
-          : typeof rootElement.type === "string"
-            ? rootElement.type
-            : undefined;
-      const agentName = this.config.name || componentName || "Engine";
+      // Try to get agent name from: 1) input.agentName (component-tool), 2) config.name, 3) root component name, 4) "Engine"
+      // Use extractComponentName to unwrap Fragment and get the actual component name
+      const componentName = extractComponentName(rootElement);
+      const agentName =
+        (input.agentName as string | undefined) || this.config.name || componentName || "Engine";
+
+      // parentExecutionId: use handle.parentPid for fork/spawn, or input.parentExecutionId for componentTool
+      const parentExecutionId = handle.parentPid || (input.parentExecutionId as string | undefined);
+      const executionType = handle.parentPid
+        ? handle.type === "fork"
+          ? "fork"
+          : "spawn"
+        : parentExecutionId
+          ? "component_tool" // Sub-engine from componentTool
+          : "root";
+
       this.emitDevToolsEvent({
         type: "execution_start",
         executionId: handle.pid,
         agentName,
         sessionId,
-        executionType: handle.parentPid ? (handle.type === "fork" ? "fork" : "spawn") : "root",
-        parentExecutionId: handle.parentPid,
+        executionType,
+        parentExecutionId,
         rootExecutionId: handle.rootPid,
       });
 
@@ -1712,6 +1830,9 @@ export class Engine extends EventEmitter {
         // Engine handles: model execution, tool execution, events, lifecycle hooks
 
         while (session.shouldContinue() && session.tick <= maxTicks) {
+          // Set tick number in context for event correlation
+          Context.setTick(session.tick);
+
           // Check abort flag (set by signal listeners or COM.abort())
           if (shouldAbort || session.com.shouldAbort) {
             await this.persistExecutionState(
@@ -1845,11 +1966,18 @@ export class Engine extends EventEmitter {
               tick: session.tick,
               input: modelInput,
             });
+            // Note: model_request DevTools event is emitted by kernel-subscriber
+            // when it transforms tick:model:request. No direct emission needed.
 
             // Execute model (with streaming support)
             let modelOutput: unknown;
             if (streamModel && model.stream) {
-              const rawResult = model.stream(modelInput);
+              // Add runtime metadata to the procedure for DevTools/telemetry
+              const streamProcedure = model.stream.withMetadata({
+                modelId: modelMetadata?.id,
+                provider: modelMetadata?.provider,
+              });
+              const rawResult = streamProcedure(modelInput);
               let iterable: AsyncIterable<unknown>;
 
               if (isAsyncIterable(rawResult)) {
@@ -1910,7 +2038,12 @@ export class Engine extends EventEmitter {
               }
               modelOutput = await model.processStream(chunks as StreamEvent[]);
             } else {
-              const result = await model.generate(modelInput);
+              // Add runtime metadata to the procedure for DevTools/telemetry
+              const generateProcedure = model.generate.withMetadata({
+                modelId: modelMetadata?.id,
+                provider: modelMetadata?.provider,
+              });
+              const result = await generateProcedure(modelInput);
               if (isAsyncIterable(result)) {
                 throw new ValidationError(
                   "model.generate",
@@ -1918,6 +2051,29 @@ export class Engine extends EventEmitter {
                 );
               }
               modelOutput = result;
+            }
+
+            // Emit message event with aggregated model output (for DevTools and consumers)
+            if (streamModel && modelOutput) {
+              const typedOutput = modelOutput as ModelOutput;
+              if (typedOutput.message) {
+                yield createMessageEvent({
+                  message: typedOutput.message,
+                  stopReason: typedOutput.stopReason,
+                  usage: typedOutput.usage,
+                  model: typedOutput.model,
+                  raw: typedOutput.raw,
+                  tick: session.tick,
+                });
+              }
+              // Emit provider response for kernel-level observability (DevTools)
+              if (typedOutput.raw) {
+                Context.emit("tick:model:provider_response", {
+                  tick: session.tick,
+                  providerOutput: typedOutput.raw,
+                  model: typedOutput.model,
+                });
+              }
             }
 
             if (!model.toEngineState) {
@@ -2683,6 +2839,11 @@ export class Engine extends EventEmitter {
         ? undefined // Arrays handled by getRootElement
         : (root as ComponentDefinition | undefined);
 
+      // Get the current (parent's) executionId for linking fork/spawn to parent execution
+      // This enables DevTools to show the execution hierarchy
+      const currentCtx = Context.tryGet();
+      const parentExecutionId = currentCtx?.executionId;
+
       // Pass the fork handle in context so the handle factory reuses it instead of creating a new one
       // This ensures abort signals propagate correctly to the fork execution
       // Use EngineContext cast to include executionHandle and other Engine-specific properties
@@ -2694,8 +2855,11 @@ export class Engine extends EventEmitter {
         .withContext({
           ...kernelOptions,
           executionHandle: handle, // Pass fork handle so it's reused by handle factory
+          parentExecutionId, // Link child execution to parent (Phase 3)
           procedurePid: undefined, // Clear parent procedure - this is a new execution boundary
           procedureGraph: undefined, // Clear parent's procedure graph - fork has its own
+          executionId: undefined, // Clear parent's executionId - child creates its own
+          executionType: handle.type, // Pass fork/spawn type for kernel events
         } as Partial<EngineContext>)
         .call(input, normalizedRoot);
 

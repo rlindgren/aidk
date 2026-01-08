@@ -7,7 +7,13 @@
  * ModelAdapter is available for class-based implementations (e.g., provider adapters).
  */
 
-import type { Middleware, MiddlewarePipeline, Procedure, ProcedureOptions } from "aidk-kernel";
+import {
+  Context,
+  type Middleware,
+  type MiddlewarePipeline,
+  type Procedure,
+  type ProcedureOptions,
+} from "aidk-kernel";
 import { createEngineProcedure } from "../procedure";
 import type {
   ModelInput as BaseModelInput,
@@ -215,10 +221,29 @@ export function createModel<
       },
       handleFactory: procedures.generate?.handleFactory,
       middleware: normalizeMiddleware(procedures.generate?.middleware),
+      // Model calls are child executions within the parent engine execution
+      executionBoundary: "child",
+      executionType: "model",
     },
     async (input: TModelInput) => {
       const providerInput = await prepareInput(input);
+
+      // Emit event with the provider-formatted input (for DevTools debugging)
+      Context.emit("model:provider_request", {
+        modelId: metadata.id,
+        provider: metadata.provider,
+        providerInput,
+      });
+
       const providerOutput = await executors.execute(providerInput);
+
+      // Emit event with the raw provider response (for DevTools debugging)
+      Context.emit("model:provider_response", {
+        modelId: metadata.id,
+        provider: metadata.provider,
+        providerOutput,
+      });
+
       return processOutput(providerOutput);
     },
   );
@@ -236,9 +261,20 @@ export function createModel<
         },
         handleFactory: procedures.stream?.handleFactory,
         middleware: normalizeMiddleware(procedures.stream?.middleware),
+        // Model calls are child executions within the parent engine execution
+        executionBoundary: "child",
+        executionType: "model",
       },
       async function* (input: TModelInput) {
         const providerInput = await prepareInput(input);
+
+        // Emit event with the provider-formatted input (for DevTools debugging)
+        Context.emit("model:provider_request", {
+          modelId: metadata.id,
+          provider: metadata.provider,
+          providerInput,
+        });
+
         const iterator = executors.executeStream!(providerInput);
 
         // Accumulate content for final message event
@@ -502,10 +538,29 @@ export abstract class ModelAdapter<
             id: this.metadata.id,
             operation: "generate",
           },
+          // Model calls are child executions within the parent engine execution
+          executionBoundary: "child",
+          executionType: "model",
         },
         async (input: TModelInput) => {
           const providerInput = await this.prepareInput(input);
+
+          // Emit event with the provider-formatted input (for DevTools debugging)
+          Context.emit("model:provider_request", {
+            modelId: this.metadata.id,
+            provider: this.metadata.provider,
+            providerInput,
+          });
+
           const providerOutput = await this.execute(providerInput);
+
+          // Emit event with the raw provider response (for DevTools debugging)
+          Context.emit("model:provider_response", {
+            modelId: this.metadata.id,
+            provider: this.metadata.provider,
+            providerOutput,
+          });
+
           return this.processOutput(providerOutput);
         },
       );
@@ -527,12 +582,22 @@ export abstract class ModelAdapter<
             id: this.metadata.id,
             operation: "stream",
           },
+          // Model calls are child executions within the parent engine execution
+          executionBoundary: "child",
+          executionType: "model",
         },
         async function* (input: TModelInput): AsyncIterable<StreamEvent> {
           if (!self.executeStream) {
             throw new Error(`Model ${self.metadata.id} does not support streaming.`);
           }
           const providerInput = await self.prepareInput(input);
+
+          // Emit event with the provider-formatted input (for DevTools debugging)
+          Context.emit("model:provider_request", {
+            modelId: self.metadata.id,
+            provider: self.metadata.provider,
+            providerInput,
+          });
 
           // Accumulate content for final message event
           let messageStartedAt: string | undefined;
@@ -693,9 +758,20 @@ export abstract class ModelAdapter<
   public async toEngineState(output: TModelOutput): Promise<EngineResponse> {
     const modelOutput = output as unknown as ModelOutput;
     const stopReasonInfo = this.deriveStopReason(output);
-    const shouldStop = stopReasonInfo
-      ? !modelOutput.toolCalls?.length && this.isTerminalStopReason(stopReasonInfo.reason)
-      : false;
+
+    // Determine if we should stop:
+    // 1. No tool calls AND terminal stop reason, OR
+    // 2. No tool calls AND empty/no content (model has nothing to say)
+    const hasToolCalls = modelOutput.toolCalls && modelOutput.toolCalls.length > 0;
+    const hasContent =
+      modelOutput.message?.content &&
+      Array.isArray(modelOutput.message.content) &&
+      modelOutput.message.content.length > 0;
+    const isTerminal = stopReasonInfo ? this.isTerminalStopReason(stopReasonInfo.reason) : false;
+
+    // Stop if: no tool calls AND (terminal stop reason OR empty response)
+    // This prevents infinite loops when model returns empty content with UNSPECIFIED stop reason
+    const shouldStop = !hasToolCalls && (isTerminal || !hasContent);
 
     return {
       newTimelineEntries: modelOutput.message

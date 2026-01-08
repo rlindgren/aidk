@@ -723,7 +723,8 @@ export function createEngineHandleFactory(
 
     // Get execution type from context or default to 'root'
     // These are Engine-specific properties added via module augmentation
-    const executionType = context.executionType || "root";
+    // Note: executionType is now string in KernelContext (Phase 3), but Engine only uses valid ExecutionType values
+    const executionType = (context.executionType || "root") as ExecutionType;
     const parentPid = context.parentPid;
     const parentHandle = context.parentHandle;
 

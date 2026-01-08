@@ -434,7 +434,30 @@ import { createEngineProcedure, isProcedure } from "aidk";
 const myProc = createEngineProcedure(async (input) => {
   // Automatically has telemetry, error handling, and global middleware
 });
+
+// With execution boundary configuration
+const entryProc = createEngineProcedure(
+  {
+    name: "my:procedure",
+    executionBoundary: 'always', // 'always' | 'child' | 'auto' | false
+    executionType: 'custom',
+  },
+  async (input) => { /* ... */ }
+);
 ```
+
+**Execution Boundary Configuration**
+
+Procedures declare how they relate to executions via `executionBoundary`:
+
+| Config     | Use Case                                      | Internal Examples                     |
+| ---------- | --------------------------------------------- | ------------------------------------- |
+| `'always'` | Public entry points that start new executions | `engine:execute`, `engine:stream`     |
+| `'child'`  | Operations that spawn child executions        | Component tools (implicit)            |
+| `'auto'`   | Public operations (standalone or nested)      | `model:generate`, `model:stream`      |
+| `false`    | Internal procedures that inherit from parent  | Hooks, lifecycle, compiler procedures |
+
+This enables DevTools to correctly display execution hierarchies. See `packages/kernel/ARCHITECTURE.md` for full details.
 
 ### normalization.ts
 

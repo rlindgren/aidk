@@ -47,7 +47,7 @@ import { ProcedureGraph, ProcedureNode } from "aidk-kernel";
 import type { ChannelService } from "./channels/service";
 import { ExecutionHandleImpl } from "./engine/execution-handle";
 import type {
-  ExecutionType,
+  // ExecutionType,
   ExecutionHandle as EngineExecutionHandle,
 } from "./engine/execution-types";
 import { EventEmitter } from "node:events";
@@ -76,11 +76,9 @@ export interface EngineContextMetrics extends ContextMetrics {
  */
 declare module "aidk-kernel" {
   interface KernelContext {
-    /**
-     * Execution type for fork/spawn operations.
-     * Set by Engine when creating child executions.
-     */
-    executionType?: ExecutionType;
+    // Note: executionType, executionId, and parentExecutionId are now first-class
+    // fields in KernelContext (Phase 3). We only augment with Engine-specific fields.
+
     /**
      * Parent execution PID for fork/spawn operations.
      * Set by Engine when creating child executions.
@@ -168,14 +166,30 @@ export interface EngineContext {
   origin?: ProcedureNode;
 
   // ========================================
-  // Engine-specific properties (from module augmentation)
+  // Execution Context (Phase 3)
   // ========================================
 
   /**
-   * Execution type for fork/spawn operations.
-   * Set by Engine when creating child executions.
+   * Current execution ID. Set when entering an execution boundary.
+   * All procedures within this execution share this ID.
    */
-  executionType?: ExecutionType;
+  executionId?: string;
+
+  /**
+   * Type of execution at this boundary (e.g., 'engine', 'model', 'component_tool', 'fork', 'spawn').
+   * Only meaningful at execution boundaries.
+   */
+  executionType?: string;
+
+  /**
+   * Parent execution ID for nested executions (e.g., component_tool called from engine).
+   * Enables DevTools to show execution hierarchy.
+   */
+  parentExecutionId?: string;
+
+  // ========================================
+  // Engine-specific properties (from module augmentation)
+  // ========================================
 
   /**
    * Parent execution PID for fork/spawn operations.

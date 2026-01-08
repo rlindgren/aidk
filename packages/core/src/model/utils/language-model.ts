@@ -804,6 +804,20 @@ export async function toEngineState(output: ModelOutput): Promise<EngineResponse
     ...legacyToolCalls.filter((tc) => !seenIds.has(tc.id)),
   ];
 
+  // Determine if we should stop:
+  // 1. No tool calls AND terminal stop reason, OR
+  // 2. No tool calls AND empty content (model has nothing to say)
+  const hasToolCalls = allPendingToolCalls.length > 0;
+  const hasContent = messages.some(
+    (msg) =>
+      msg.role !== "tool" && msg.content && Array.isArray(msg.content) && msg.content.length > 0,
+  );
+  const isTerminal = stopReasonInfo ? isTerminalStopReason(stopReasonInfo.reason) : false;
+
+  // Stop if: no tool calls AND (terminal stop reason OR empty response)
+  // This prevents infinite loops when model returns empty content with UNSPECIFIED stop reason
+  const shouldStop = !hasToolCalls && (isTerminal || !hasContent);
+
   return {
     newTimelineEntries: messages
       .filter((msg) => msg.role !== "tool") // Tool messages handled separately
@@ -815,10 +829,7 @@ export async function toEngineState(output: ModelOutput): Promise<EngineResponse
     toolCalls: allPendingToolCalls.length > 0 ? allPendingToolCalls : undefined,
     executedToolResults: executedToolResults.length > 0 ? executedToolResults : undefined,
     usage: output.usage,
-    shouldStop:
-      allPendingToolCalls.length === 0 && stopReasonInfo
-        ? isTerminalStopReason(stopReasonInfo.reason)
-        : false,
+    shouldStop,
     stopReason: stopReasonInfo,
   };
 }

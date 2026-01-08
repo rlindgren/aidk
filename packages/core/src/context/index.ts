@@ -64,6 +64,14 @@ export class Context {
   static emit(type: string, payload: any, source: string = "system"): void {
     KernelContext.emit(type, payload, source);
   }
+
+  /**
+   * Set the current tick number in the context.
+   * Called by the engine at the start of each tick.
+   */
+  static setTick(tick: number): void {
+    KernelContext.setTick(tick);
+  }
 }
 
 export function context() {

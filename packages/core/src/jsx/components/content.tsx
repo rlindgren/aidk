@@ -138,7 +138,10 @@ export function Json(props: JsonProps): JSX.Element {
         : props.children?.join("") || ""
       : undefined;
   const text = childrenText ?? props.text ?? "";
-  return createContentBlock<JsonProps>(Json, { ...omit(props, ["children"]), text });
+  return createContentBlock<JsonProps>(Json, {
+    ...omit(props, ["children"]),
+    text: text || JSON.stringify(props.data),
+  });
 }
 
 function omit<T, K extends keyof T>(obj: T, keys: K[]): Omit<T, K> {

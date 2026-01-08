@@ -10,7 +10,6 @@
  * are defined in types.ts to keep them centralized.
  */
 
-import { z } from "zod";
 import { createEngineProcedure, isProcedure } from "../procedure";
 import type { ExtractArgs, Middleware, Procedure } from "aidk-kernel";
 import type { ProviderToolOptions, LibraryToolOptions } from "../types";
@@ -49,6 +48,16 @@ export type { BaseToolDefinition, ClientToolDefinition };
 // ============================================================================
 
 /**
+ * Version-agnostic Zod schema type.
+ * Allows different Zod versions to work together without "excessively deep" errors.
+ */
+export interface ZodSchema<T = unknown> {
+  parse: (data: unknown) => T;
+  safeParse: (data: unknown) => { success: boolean; data?: T; error?: unknown };
+  _output: T;
+}
+
+/**
  * Tool handler function signature.
  * Takes typed input and returns ContentBlock[].
  */
@@ -72,14 +81,14 @@ export interface CreateToolOptions<TInput = any, TOutput extends ContentBlock[] 
   description: string;
 
   /** Zod schema for input validation */
-  input: z.ZodSchema<TInput>;
+  input: ZodSchema<TInput>;
 
   /**
    * Optional Zod schema for output validation.
    * Used for type-safe tool composition, workflow orchestration,
    * and runtime validation of handler return values.
    */
-  output?: z.ZodSchema<TOutput>;
+  output?: ZodSchema<TOutput>;
 
   // === Execution Configuration ===
 
@@ -341,6 +350,9 @@ export function createTool<TInput = any, TOutput extends ContentBlock[] = Conten
               operation: "run",
             },
             middleware: options.middleware || [],
+            // Execution boundary: tool runs are child executions of the model call
+            executionBoundary: "child",
+            executionType: "tool",
           },
           options.handler,
         )
@@ -438,12 +450,12 @@ export interface ToolDefinition extends BaseToolDefinition {
 export interface ToolMetadata<TInput = any, TOutput = any> {
   name: string;
   description: string;
-  input: z.ZodSchema<TInput>;
+  input: ZodSchema<TInput>;
   /**
    * Optional Zod schema for output validation.
    * Used for type-safe tool composition and workflow orchestration.
    */
-  output?: z.ZodSchema<TOutput>;
+  output?: ZodSchema<TOutput>;
   /**
    * Tool execution type. Determines how the tool is executed.
    * Default: SERVER (engine executes tool.run on server).

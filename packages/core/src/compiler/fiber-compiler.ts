@@ -1262,6 +1262,8 @@ export class FiberCompiler {
                 ? { props: propsSummary }
                 : {}),
             },
+            // Component lifecycle methods - never create execution boundary
+            executionBoundary: false,
           },
           originalMethod as any,
         ).use(...(middleware as any[]));

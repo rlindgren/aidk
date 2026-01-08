@@ -1716,7 +1716,18 @@ export class CompileJSXService {
     return await session.complete();
   }
 
-  run = createEngineProcedure(this._run.bind(this));
+  run = createEngineProcedure(
+    {
+      name: "compile:run",
+      metadata: {
+        type: "compile",
+        operation: "run",
+      },
+      // Internal compiler service - never creates execution boundary
+      executionBoundary: false,
+    },
+    this._run.bind(this),
+  );
 
   /**
    * Execute a program with streaming support.
@@ -1852,7 +1863,18 @@ export class CompileJSXService {
    * }
    * ```
    */
-  runStream = createEngineProcedure(this._runStream.bind(this));
+  runStream = createEngineProcedure(
+    {
+      name: "compile:runStream",
+      metadata: {
+        type: "compile",
+        operation: "runStream",
+      },
+      // Internal compiler service - never creates execution boundary
+      executionBoundary: false,
+    },
+    this._runStream.bind(this),
+  );
 
   /**
    * Compile JSX with full setup (convenience method).

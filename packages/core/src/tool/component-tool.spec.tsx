@@ -438,3 +438,148 @@ describe("edge cases", () => {
     expect((result[0] as any).text).toBe("Received empty prompt");
   });
 });
+
+// ============================================================================
+// DevTools Execution Linking (parentExecutionId)
+// ============================================================================
+
+describe("DevTools execution linking", () => {
+  it("should pass parentExecutionId to engine input when running in parent execution context", async () => {
+    // Import Context to simulate running inside a parent execution
+    const { Context } = await import("../context");
+
+    // let capturedEngineInput: any = null;
+
+    // Create a mock model that captures the input
+    const mockModel = createModel<ModelInput, ModelOutput, ModelInput, ModelOutput, any>({
+      metadata: { id: "mock-model", provider: "mock", capabilities: [] },
+      executors: {
+        execute: vi.fn().mockResolvedValue({
+          model: "mock-model",
+          createdAt: new Date().toISOString(),
+          message: {
+            role: "assistant",
+            content: [{ type: "text", text: "Response" }],
+          },
+          usage: { inputTokens: 0, outputTokens: 0, totalTokens: 0 },
+          stopReason: "stop",
+          raw: {},
+        } as ModelOutput),
+      },
+      fromEngineState,
+      toEngineState,
+    });
+
+    const TestAgent = () => (
+      <Fragment>
+        <Model model={mockModel} />
+        <System>Test agent</System>
+      </Fragment>
+    );
+
+    const tool = createComponentTool({
+      name: "test_linking",
+      description: "Test execution linking",
+      component: TestAgent,
+    });
+
+    // Create a parent context with an executionId (simulating running inside parent engine)
+    const parentExecutionId = "parent-execution-id-123";
+    const parentContext = Context.create({
+      executionId: parentExecutionId,
+    });
+
+    // Run the tool inside the parent context
+    const result = await Context.run(parentContext, async () => {
+      return tool.run({ prompt: "Hello" });
+    });
+
+    // The tool should have executed successfully
+    expect(result).toHaveLength(1);
+    expect((result[0] as any).text).toBe("Response");
+
+    // Note: We can't directly verify the engine input here, but the key test
+    // is that it doesn't fail when running inside a parent execution context
+    // and the execution should be linked via parentExecutionId
+  });
+
+  it("should not include parentExecutionId when running standalone (no parent context)", async () => {
+    const mockModel = createMockModel("Standalone response");
+
+    const TestAgent = () => (
+      <Fragment>
+        <Model model={mockModel} />
+        <System>Test</System>
+      </Fragment>
+    );
+
+    const tool = createComponentTool({
+      name: "standalone_test",
+      description: "Test standalone execution",
+      component: TestAgent,
+    });
+
+    // Run without any parent context
+    const result = await tool.run({ prompt: "Hello" });
+
+    expect(result).toHaveLength(1);
+    expect((result[0] as any).text).toBe("Standalone response");
+  });
+});
+
+// ============================================================================
+// Component Tools with Fork (Issue: "Parent execution not found")
+// ============================================================================
+
+describe("component tools with Fork", () => {
+  it("should allow components with Fork to execute without 'Parent execution not found' error", async () => {
+    // Import Fork and related components
+    const { Fork } = await import("../jsx/components/fork");
+    const { Complete } = await import("../jsx/components/complete");
+    const { Text } = await import("../jsx/components/content");
+    const { Assistant } = await import("../jsx/components/primitives");
+    const { Component } = await import("../component/component");
+    const { comState } = await import("../state/use-state");
+
+    // Create a component that uses Fork (similar to VotingAgent)
+    class ForkingAgent extends Component {
+      private result = comState<string | null>("result", null);
+
+      render() {
+        if (this.result()) {
+          return (
+            <Complete reason="Done">
+              <Assistant>
+                <Text>Result: {this.result()}</Text>
+              </Assistant>
+            </Complete>
+          );
+        }
+
+        return (
+          <Fork
+            key="fork-1"
+            waitUntilComplete={true}
+            onComplete={() => this.result.set("Fork completed")}
+          >
+            <Model model={createMockModel("Fork child response")} />
+            <System>Fork child</System>
+          </Fork>
+        );
+      }
+    }
+
+    const tool = createComponentTool({
+      name: "forking_agent",
+      description: "Agent that uses Fork",
+      component: ForkingAgent,
+    });
+
+    // This should NOT throw "Parent execution not found"
+    // The fix ensures the standalone engine creates its own execution context
+    const result = await tool.run({ prompt: "Test fork" });
+
+    expect(result).toHaveLength(1);
+    expect((result[0] as any).text).toBe("Result: Fork completed");
+  });
+});

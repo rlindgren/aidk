@@ -86,9 +86,11 @@ import type {
   ToolConfirmationRequiredEvent,
   ToolConfirmationResultEvent,
   EngineErrorEvent,
+  MessageEvent,
   TokenUsage,
   StopReason,
   ToolExecutor,
+  Message,
 } from "aidk-shared";
 
 let eventIdCounter = 0;
@@ -284,5 +286,32 @@ export function createEngineErrorEvent(error: Error | string, tick: number = 1):
       message: error instanceof Error ? error.message : error,
       code: error instanceof Error ? (error as any).code : undefined,
     },
+  };
+}
+
+/**
+ * Create a message (complete) event
+ * Emitted after the model stream is fully processed with the aggregated message.
+ */
+export function createMessageEvent(params: {
+  message: Message;
+  stopReason: StopReason;
+  usage?: TokenUsage;
+  model?: string;
+  raw?: unknown;
+  tick: number;
+  startedAt?: string;
+}): MessageEvent {
+  const now = new Date().toISOString();
+  return {
+    type: "message",
+    ...createEventBase(params.tick),
+    message: params.message,
+    stopReason: params.stopReason,
+    usage: params.usage,
+    model: params.model,
+    raw: params.raw,
+    startedAt: params.startedAt || now,
+    completedAt: now,
   };
 }

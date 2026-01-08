@@ -210,11 +210,11 @@ class ChannelRouter<TSubscribeContext> {
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                        Single Instance                               │
+│                        Single Instance                              │
 ├─────────────────────────────────────────────────────────────────────┤
-│                                                                      │
+│                                                                     │
 │   ┌─────────────┐        ┌─────────────────┐        ┌────────────┐  │
-│   │   Engine    │──────▶│  ChannelService  │──────▶│  Transport │  │
+│   │   Engine    │──────▶│  ChannelService  │───-───▶│  Transport │  │
 │   │  publish()  │        │                 │        │  (WS/SSE)  │  │
 │   └─────────────┘        │  ┌───────────┐  │        └─────┬──────┘  │
 │                          │  │ Session   │  │              │         │
@@ -223,14 +223,14 @@ class ChannelRouter<TSubscribeContext> {
 │                          │  │  └─────┘  │  │        │   Client   │  │
 │                          │  └───────────┘  │        └────────────┘  │
 │                          └─────────────────┘                        │
-│                                                                      │
-│   Flow:                                                              │
+│                                                                     │
+│   Flow:                                                             │
 │   1. Engine calls channelService.publish(ctx, 'channel', event)     │
-│   2. ChannelService gets/creates session for context                 │
-│   3. Event published to local Channel (EventEmitter)                 │
-│   4. Event forwarded to Transport for external delivery              │
-│   5. Client receives event via WebSocket/SSE                         │
-│                                                                      │
+│   2. ChannelService gets/creates session for context                │
+│   3. Event published to local Channel (EventEmitter)                │
+│   4. Event forwarded to Transport for external delivery             │
+│   5. Client receives event via WebSocket/SSE                        │
+│                                                                     │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -238,10 +238,10 @@ class ChannelRouter<TSubscribeContext> {
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                     Distributed Deployment                           │
+│                     Distributed Deployment                          │
 ├─────────────────────────────────────────────────────────────────────┤
-│                                                                      │
-│  Instance A                              Instance B                  │
+│                                                                     │
+│  Instance A                              Instance B                 │
 │  ┌────────────────────────┐              ┌────────────────────────┐ │
 │  │ Engine                 │              │ Engine                 │ │
 │  │   ↓                    │              │   ↓                    │ │
@@ -261,13 +261,13 @@ class ChannelRouter<TSubscribeContext> {
 │                     │  aidk:rooms:*   │                             │
 │                     │  aidk:channels:*│                             │
 │                     └─────────────────┘                             │
-│                                                                      │
-│  Flow for room-targeted message:                                     │
+│                                                                     │
+│  Flow for room-targeted message:                                    │
 │  1. Instance A publishes event with target.rooms = ['user:alice']   │
 │  2. Adapter publishes to Redis channel 'aidk:rooms:user:alice'      │
 │  3. Instance B (subscribed to room) receives from Redis             │
 │  4. Instance B delivers to Client B (in room 'user:alice')          │
-│                                                                      │
+│                                                                     │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -275,39 +275,39 @@ class ChannelRouter<TSubscribeContext> {
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                    Room-Based Message Routing                        │
+│                    Room-Based Message Routing                       │
 ├─────────────────────────────────────────────────────────────────────┤
-│                                                                      │
-│  Scope Configuration:                                                │
+│                                                                     │
+│  Scope Configuration:                                               │
 │  { user: 'userId', thread: 'threadId' }                             │
-│                                                                      │
+│                                                                     │
 │  Context: { userId: 'alice', threadId: '123' }                      │
-│                                                                      │
+│                                                                     │
 │  Derived Rooms: ['user:alice', 'thread:123']                        │
-│                                                                      │
+│                                                                     │
 │  ┌──────────────────────────────────────────────────────────────┐   │
-│  │                        Server                                 │   │
-│  │                                                               │   │
-│  │    Room: user:alice           Room: thread:123                │   │
+│  │                        Server                                │   │
+│  │                                                              │   │
+│  │    Room: user:alice           Room: thread:123               │   │
 │  │    ┌─────────────────┐        ┌─────────────────┐            │   │
 │  │    │ - Client A      │        │ - Client A      │            │   │
 │  │    │ - Client C      │        │ - Client B      │            │   │
 │  │    └─────────────────┘        └─────────────────┘            │   │
-│  │                                                               │   │
-│  │    publisher.scope('user').to('alice').broadcast(event)       │   │
+│  │                                                              │   │
+│  │    publisher.scope('user').to('alice').broadcast(event)      │   │
 │  │    → Sends to room 'user:alice' → Clients A & C              │   │
-│  │                                                               │   │
-│  │    publisher.scope('thread').to('123').broadcast(event)       │   │
+│  │                                                              │   │
+│  │    publisher.scope('thread').to('123').broadcast(event)      │   │
 │  │    → Sends to room 'thread:123' → Clients A & B              │   │
-│  │                                                               │   │
+│  │                                                              │   │
 │  └──────────────────────────────────────────────────────────────┘   │
-│                                                                      │
-│  Broadcast Pattern (excludeSender):                                  │
-│  - Client A sends update via HTTP                                    │
-│  - Server broadcasts to room with excludeSender: true                │
-│  - All clients in room EXCEPT A receive the update                   │
-│  - A already has the update (optimistic UI)                          │
-│                                                                      │
+│                                                                     │
+│  Broadcast Pattern (excludeSender):                                 │
+│  - Client A sends update via HTTP                                   │
+│  - Server broadcasts to room with excludeSender: true               │
+│  - All clients in room EXCEPT A receive the update                  │
+│  - A already has the update (optimistic UI)                         │
+│                                                                     │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 

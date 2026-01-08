@@ -330,7 +330,12 @@ export class ToolExecutor {
 
       // Execute tool (execution type doesn't change the call pattern,
       // but MCP/CLIENT tools have different run() implementations)
-      const result = await wrappedRun(call.input);
+      // Add runtime metadata for DevTools/telemetry
+      const toolProcedure = wrappedRun.withMetadata({
+        toolName: call.name,
+        toolId: call.id,
+      });
+      const result = await toolProcedure(call.input);
 
       // Handle async iterable result (shouldn't happen for tools, but be safe)
       let content: ContentBlock[];
