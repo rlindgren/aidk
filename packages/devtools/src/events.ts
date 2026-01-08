@@ -14,7 +14,10 @@ import type {
   DTTickEndEvent,
   DTCompiledEvent,
   DTModelStartEvent,
-  DTModelOutputEvent,
+  DTModelRequestEvent,
+  DTProviderRequestEvent,
+  DTProviderResponseEvent,
+  DTModelResponseEvent,
   DTContentDeltaEvent,
   DTReasoningDeltaEvent,
   DTToolCallEvent,
@@ -46,7 +49,10 @@ export type TickStartEvent = DTTickStartEvent;
 export type TickEndEvent = DTTickEndEvent;
 export type CompiledEvent = DTCompiledEvent;
 export type ModelStartEvent = DTModelStartEvent;
-export type ModelOutputEvent = DTModelOutputEvent;
+export type ModelRequestEvent = DTModelRequestEvent;
+export type ProviderRequestEvent = DTProviderRequestEvent;
+export type ProviderResponseEvent = DTProviderResponseEvent;
+export type ModelResponseEvent = DTModelResponseEvent;
 export type ContentDeltaEvent = DTContentDeltaEvent;
 export type ReasoningDeltaEvent = DTReasoningDeltaEvent;
 export type ToolCallEvent = DTToolCallEvent;

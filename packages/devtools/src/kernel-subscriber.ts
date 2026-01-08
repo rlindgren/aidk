@@ -11,15 +11,19 @@
  * - Compiler service
  * - Any nested procedure calls
  */
-import { Context, type ExecutionEvent, type KernelContext } from "aidk-kernel";
+import { Context, Logger, type ExecutionEvent, type KernelContext } from "aidk-kernel";
 import { devToolsEmitter, type DevToolsEvent } from "aidk-shared";
 
+// Create logger for this module
+const log = Logger.for("DevTools:Kernel");
+
 let unsubscribe: (() => void) | null = null;
-let debugMode = false;
 let remoteConfig: { url: string; secret?: string } | null = null;
 
+// Track current tick per execution for associating procedures with ticks
+const currentTickByExecution = new Map<string, number>();
+
 export interface KernelSubscriberOptions {
-  debug?: boolean;
   /** Remote mode config - if set, events are POSTed to remote URL */
   remote?: {
     url: string;
@@ -31,6 +35,8 @@ export interface KernelSubscriberOptions {
  * Start subscribing to kernel procedure events.
  * Events are forwarded to devToolsEmitter (local) or POSTed to remote URL.
  *
+ * Debug logging is controlled by Logger level (set via Logger.configure or AIDK_DEBUG env var).
+ *
  * @param options - Subscriber options
  * @returns Unsubscribe function
  */
@@ -40,57 +46,52 @@ export function startKernelSubscriber(options: KernelSubscriberOptions = {}): ()
     return unsubscribe;
   }
 
-  debugMode = options.debug ?? false;
   remoteConfig = options.remote ?? null;
 
-  if (debugMode) {
-    console.log("[DevTools:Kernel] Starting kernel subscriber", {
-      remote: remoteConfig ? remoteConfig.url : false,
-    });
-  }
+  log.debug({ remote: remoteConfig ? remoteConfig.url : false }, "Starting kernel subscriber");
 
   unsubscribe = Context.subscribeGlobal((event: ExecutionEvent, ctx: KernelContext) => {
-    // Log ALL events when debug mode is enabled (helps diagnose why procedures aren't showing)
-    if (debugMode) {
-      console.log("[DevTools:Kernel] Received event:", event.type, {
+    log.debug(
+      {
+        eventType: event.type,
         payload: event.payload,
         traceId: ctx.traceId,
         procedurePid: ctx.procedurePid,
         requestId: ctx.requestId,
-      });
-    }
+      },
+      "Received kernel event",
+    );
 
     try {
       const devToolsEvents = transformToDevToolsEvents(event, ctx);
       for (const devToolsEvent of devToolsEvents) {
         emitEvent(devToolsEvent);
 
-        if (debugMode) {
-          const debugInfo: Record<string, unknown> = {
-            executionId: devToolsEvent.executionId,
-          };
-          // Only include procedureId for procedure events
-          if (devToolsEvent.type.startsWith("procedure_")) {
-            debugInfo.procedureId = (devToolsEvent as any).procedureId;
-          }
-          // Include execution boundary info
-          if ((devToolsEvent as any).isExecutionBoundary) {
-            debugInfo.isExecutionBoundary = true;
-            debugInfo.executionType = (devToolsEvent as any).executionType;
-          }
-          console.log("[DevTools:Kernel] Emitted DevTools event:", devToolsEvent.type, debugInfo);
+        const debugInfo: Record<string, unknown> = {
+          eventType: devToolsEvent.type,
+          executionId: devToolsEvent.executionId,
+        };
+        // Only include procedureId for procedure events
+        if (devToolsEvent.type.startsWith("procedure_")) {
+          debugInfo.procedureId = (devToolsEvent as any).procedureId;
         }
+        // Include execution boundary info
+        if ((devToolsEvent as any).isExecutionBoundary) {
+          debugInfo.isExecutionBoundary = true;
+          debugInfo.executionType = (devToolsEvent as any).executionType;
+        }
+        // Include parentExecutionId for execution_start events
+        if (devToolsEvent.type === "execution_start") {
+          debugInfo.parentExecutionId = (devToolsEvent as any).parentExecutionId;
+        }
+        log.debug(debugInfo, "Emitted DevTools event");
       }
     } catch (err) {
-      if (debugMode) {
-        console.error("[DevTools:Kernel] Error transforming event:", err);
-      }
+      log.error({ err }, "Error transforming event");
     }
   });
 
-  if (debugMode) {
-    console.log("[DevTools:Kernel] Started kernel subscriber");
-  }
+  log.debug("Started kernel subscriber");
 
   return () => {
     stopKernelSubscriber();
@@ -104,9 +105,7 @@ function emitEvent(event: DevToolsEvent): void {
   if (remoteConfig) {
     // Remote mode: POST to remote server
     postToRemote(event).catch((err) => {
-      if (debugMode) {
-        console.error("[DevTools:Kernel] Failed to POST event:", err);
-      }
+      log.error({ err }, "Failed to POST event to remote");
     });
   } else {
     // Local mode: emit to in-process singleton
@@ -142,9 +141,9 @@ export function stopKernelSubscriber(): void {
   if (unsubscribe) {
     unsubscribe();
     unsubscribe = null;
-    if (debugMode) {
-      console.log("[DevTools:Kernel] Stopped kernel subscriber");
-    }
+    // Clean up tick tracking state
+    currentTickByExecution.clear();
+    log.debug("Stopped kernel subscriber");
   }
 }
 
@@ -162,9 +161,15 @@ export function isKernelSubscriberActive(): boolean {
 function transformToDevToolsEvents(event: ExecutionEvent, ctx: KernelContext): DevToolsEvent[] {
   const events: DevToolsEvent[] = [];
 
+  // Base fields for all DevTools events - includes telemetry-friendly fields
   const baseFields = {
     timestamp: event.timestamp,
-    traceId: ctx.traceId,
+    // Correlation IDs for distributed tracing
+    traceId: event.traceId,
+    requestId: event.requestId,
+    // User context for multi-tenant telemetry
+    userId: event.userId,
+    tenantId: event.tenantId,
   };
 
   switch (event.type) {
@@ -176,32 +181,63 @@ function transformToDevToolsEvents(event: ExecutionEvent, ctx: KernelContext): D
         executionId: string;
         isExecutionBoundary?: boolean;
         executionType?: string;
+        parentExecutionId?: string; // For child execution boundaries (Phase 3)
       };
 
-      const { pid, name, parentPid, executionId, isExecutionBoundary, executionType } = payload;
+      const {
+        pid,
+        name,
+        parentPid,
+        executionId,
+        isExecutionBoundary,
+        executionType,
+        parentExecutionId: payloadParentExecutionId,
+      } = payload;
 
       // Get procedure node for additional metadata
       const node = ctx.procedureGraph?.get(pid);
       const metadata = node?.metadata || {};
 
+      // Get current tick for this execution (may be undefined for non-tick procedures)
+      const tick = currentTickByExecution.get(executionId);
+
       // Detect self-referential parent (bug indicator)
       if (parentPid && parentPid === pid) {
-        console.warn("[DevTools:Kernel] Self-referential parent detected in procedure_start", {
-          procedureId: pid,
-          name,
-          parentPid,
-        });
+        log.warn(
+          { procedureId: pid, name, parentPid },
+          "Self-referential parent detected in procedure_start",
+        );
       }
 
       // If this is an execution boundary, emit execution_start first
       if (isExecutionBoundary) {
+        // Get parentExecutionId from payload (Phase 3) or context (legacy/component_tool)
+        const parentExecutionId = payloadParentExecutionId ?? ctx.parentExecutionId;
+
+        log.debug(
+          {
+            executionId,
+            name,
+            parentExecutionId,
+            executionType,
+          },
+          "Execution boundary detected",
+        );
+
+        // Determine execution type:
+        // - Use executionType from payload if provided (fork, spawn, engine, etc.)
+        // - Only fall back to "component_tool" if parentExecutionId exists AND no specific type
+        const resolvedExecutionType =
+          executionType || (parentExecutionId ? "component_tool" : "unknown");
+
         events.push({
           type: "execution_start",
           executionId,
           ...baseFields,
-          executionType: executionType || "unknown",
+          executionType: resolvedExecutionType,
           rootProcedureId: pid,
           agentName: name, // Use procedure name as agent name for boundaries
+          parentExecutionId, // Link to parent execution
         } as DevToolsEvent);
       }
 
@@ -217,6 +253,7 @@ function transformToDevToolsEvents(event: ExecutionEvent, ctx: KernelContext): D
         isExecutionBoundary,
         executionType,
         metadata,
+        tick,
       } as DevToolsEvent);
 
       break;
@@ -232,6 +269,9 @@ function transformToDevToolsEvents(event: ExecutionEvent, ctx: KernelContext): D
       const { pid, executionId } = payload;
       const node = ctx.procedureGraph?.get(pid);
 
+      // Get current tick for this execution
+      const tick = currentTickByExecution.get(executionId);
+
       events.push({
         type: "procedure_end",
         executionId,
@@ -244,10 +284,14 @@ function transformToDevToolsEvents(event: ExecutionEvent, ctx: KernelContext): D
         durationMs: node?.completedAt
           ? node.completedAt.getTime() - node.startedAt.getTime()
           : undefined,
+        tick,
       } as DevToolsEvent);
 
-      // If this was an execution boundary, emit execution_end
+      // If this was an execution boundary, emit execution_end and clean up tick tracking
       if (node?.isExecutionBoundary) {
+        // Clean up tick tracking for this execution
+        currentTickByExecution.delete(executionId);
+
         // Aggregate metrics from procedure into totalUsage
         const metrics = node?.metrics || {};
         events.push({
@@ -275,6 +319,9 @@ function transformToDevToolsEvents(event: ExecutionEvent, ctx: KernelContext): D
       const { pid, executionId, error } = payload;
       const node = ctx.procedureGraph?.get(pid);
 
+      // Get current tick for this execution
+      const tick = currentTickByExecution.get(executionId);
+
       events.push({
         type: "procedure_error",
         executionId,
@@ -289,10 +336,14 @@ function transformToDevToolsEvents(event: ExecutionEvent, ctx: KernelContext): D
           stack: error?.stack,
         },
         metrics: node?.metrics || {},
+        tick,
       } as DevToolsEvent);
 
-      // If this was an execution boundary, emit execution_end with error status
+      // If this was an execution boundary, emit execution_end with error status and clean up
       if (node?.isExecutionBoundary) {
+        // Clean up tick tracking for this execution
+        currentTickByExecution.delete(executionId);
+
         const metrics = node?.metrics || {};
         events.push({
           type: "execution_end",
@@ -311,17 +362,142 @@ function transformToDevToolsEvents(event: ExecutionEvent, ctx: KernelContext): D
     }
 
     case "stream:chunk": {
-      // High-frequency event - only forward if it contains meaningful content
-      const value = event.payload?.value;
-      if (value && typeof value === "object" && "delta" in value) {
-        // For stream chunks, use context's procedureNode executionId
-        const executionId = ctx.procedureNode?.executionId || ctx.requestId || "unknown";
+      // Stream chunks contain engine events directly (no wrapper)
+      // Only extract content_delta - other events (tool_call, tool_result, tick_start, etc.)
+      // are emitted directly by the engine to DevTools, so we skip them to avoid duplicates
+      const streamEvent = event.payload;
+      if (!streamEvent || typeof streamEvent !== "object") break;
+
+      const executionId = ctx.procedureNode?.executionId || ctx.requestId || "unknown";
+      const eventType = (streamEvent as any).type;
+
+      if (eventType === "content_delta") {
+        // Streaming text content - only this comes through stream:chunk
+        // (tool_call, tool_result are emitted directly by engine)
         events.push({
           type: "content_delta",
           executionId,
           ...baseFields,
-          delta: String(value.delta),
-          tick: (value as any).tick || 0,
+          delta: String((streamEvent as any).delta || ""),
+          tick: (streamEvent as any).tick || 1,
+        } as DevToolsEvent);
+      }
+      break;
+    }
+
+    case "tick:model:request": {
+      // Engine emits this before calling the model with AIDK-format input
+      const payload = event.payload as {
+        tick?: number;
+        input?: {
+          messages?: unknown[];
+          system?: string;
+          tools?: unknown[];
+          [key: string]: unknown;
+        };
+      };
+      const executionId = ctx.procedureNode?.executionId || ctx.requestId || "unknown";
+      const tick = payload?.tick || 1;
+
+      // Track current tick for this execution (used to associate procedures with ticks)
+      currentTickByExecution.set(executionId, tick);
+
+      events.push({
+        type: "model_request",
+        executionId,
+        ...baseFields,
+        tick,
+        input: payload?.input,
+      } as DevToolsEvent);
+      break;
+    }
+
+    case "model:provider_request": {
+      // Model adapter emits this AFTER transforming to provider format
+      // This shows the actual shape of messages sent to the provider (e.g., OpenAI/Gemini format)
+      // NOTE: Use parent execution ID if available, since model executions are children
+      // and don't have their own ticks - the tick data belongs to the parent
+      const payload = event.payload as {
+        modelId?: string;
+        provider?: string;
+        providerInput?: unknown;
+      };
+      const modelExecutionId = ctx.procedureNode?.executionId || ctx.requestId || "unknown";
+      // Prefer parent execution ID so tick data goes to the right place
+      const executionId = ctx.parentExecutionId || modelExecutionId;
+      const tick =
+        currentTickByExecution.get(executionId) ||
+        currentTickByExecution.get(modelExecutionId) ||
+        1;
+      events.push({
+        type: "provider_request",
+        executionId,
+        ...baseFields,
+        tick,
+        modelId: payload?.modelId,
+        provider: payload?.provider,
+        providerInput: payload?.providerInput,
+      } as DevToolsEvent);
+      break;
+    }
+
+    case "tick:model:provider_response":
+    case "model:provider_response": {
+      // Model or engine emits this after receiving the raw provider response
+      // NOTE: Use parent execution ID if available, since model executions are children
+      // and don't have their own ticks - the tick data belongs to the parent
+      const payload = event.payload as {
+        tick?: number;
+        providerOutput?: unknown;
+        model?: string;
+        modelId?: string;
+        provider?: string;
+      };
+      const modelExecutionId = ctx.procedureNode?.executionId || ctx.requestId || "unknown";
+      // Prefer parent execution ID so tick data goes to the right place
+      const executionId = ctx.parentExecutionId || modelExecutionId;
+      const tick =
+        payload?.tick ||
+        currentTickByExecution.get(executionId) ||
+        currentTickByExecution.get(modelExecutionId) ||
+        1;
+      events.push({
+        type: "provider_response",
+        executionId,
+        ...baseFields,
+        tick,
+        providerOutput: payload?.providerOutput,
+        modelId: payload?.modelId || payload?.model,
+        provider: payload?.provider,
+      } as DevToolsEvent);
+      break;
+    }
+
+    case "tick:model:response": {
+      // Engine emits this after model stream completes with the full response
+      // Response contains newTimelineEntries with assistant messages
+      const payload = event.payload as {
+        tick?: number;
+        response?: {
+          newTimelineEntries?: Array<{
+            kind: string;
+            message?: { role: string; content: unknown };
+          }>;
+        };
+      };
+      const entries = payload?.response?.newTimelineEntries || [];
+      // Find the assistant message in timeline entries
+      const assistantEntry = entries.find(
+        (e) => e.kind === "message" && e.message?.role === "assistant",
+      );
+      if (assistantEntry?.message) {
+        const executionId = ctx.procedureNode?.executionId || ctx.requestId || "unknown";
+        events.push({
+          type: "model_response",
+          executionId,
+          ...baseFields,
+          tick: payload?.tick || 1,
+          message: assistantEntry.message,
         } as DevToolsEvent);
       }
       break;

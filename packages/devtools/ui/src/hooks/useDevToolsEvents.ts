@@ -44,6 +44,16 @@ export interface Tick {
   model?: string;
   modelOutput?: unknown;
   modelOutputRaw?: unknown;
+  /** Model request in AIDK format (before provider transformation) */
+  modelRequest?: {
+    input?: unknown;
+  };
+  /** Provider-formatted request (after transformation from AIDK format) */
+  providerRequest?: {
+    modelId?: string;
+    provider?: string;
+    providerInput?: unknown;
+  };
   startTime: number;
   endTime?: number;
 }
@@ -78,6 +88,8 @@ export interface Procedure {
   // Execution boundary fields
   executionId?: string;
   isExecutionBoundary?: boolean;
+  // Tick association (for showing procedures in their respective ticks)
+  tick?: number;
 }
 
 export function useDevToolsEvents() {
@@ -85,6 +97,36 @@ export function useDevToolsEvents() {
   const [procedures, setProcedures] = useState<Map<string, Procedure>>(new Map());
   const [isConnected, setIsConnected] = useState(false);
   const eventSourceRef = useRef<EventSource | null>(null);
+  // Track seen events to deduplicate (history + SSE may deliver same events)
+  const seenEvents = useRef<Set<string>>(new Set());
+
+  /**
+   * Generate a deduplication key for an event.
+   * Different event types have different unique fields.
+   */
+  const getEventDedupeKey = (event: DevToolsEvent): string => {
+    const base = `${event.type}:${event.executionId}:${event.timestamp}`;
+    switch (event.type) {
+      case "content_delta":
+        return `${base}:${(event as any).delta}`;
+      case "procedure_start":
+      case "procedure_end":
+      case "procedure_error":
+        return `${base}:${(event as any).procedureId}`;
+      case "tool_call":
+        return `${base}:${(event as any).toolUseId}:${(event as any).toolName}`;
+      case "tool_result":
+        return `${base}:${(event as any).toolUseId}`;
+      case "model_start":
+      case "model_request":
+      case "provider_request":
+      case "provider_response":
+      case "model_response":
+        return `${base}:${(event as any).tick || 0}`;
+      default:
+        return base;
+    }
+  };
 
   const updateExecution = useCallback(
     (executionId: string, updater: (exec: Execution) => Execution) => {
@@ -124,9 +166,71 @@ export function useDevToolsEvents() {
     [],
   );
 
+  /**
+   * Determine if an agent name is generic (should be replaced by more specific names)
+   */
+  const isGenericAgentName = (name: string | undefined): boolean => {
+    if (!name) return true;
+    const genericNames = ["engine:execute", "engine:stream", "Engine", "Unknown", "engine"];
+    return genericNames.includes(name);
+  };
+
+  /**
+   * Choose the better (more specific) agent name between two options
+   */
+  const chooseBetterAgentName = (
+    newName: string | undefined,
+    existingName: string | undefined,
+  ): string => {
+    const newIsGeneric = isGenericAgentName(newName);
+    const existingIsGeneric = isGenericAgentName(existingName);
+
+    // Prefer specific over generic
+    if (!newIsGeneric && existingIsGeneric) return newName!;
+    if (newIsGeneric && !existingIsGeneric) return existingName!;
+
+    // Both specific or both generic: prefer new if truthy, else existing, else Unknown
+    return newName || existingName || "Unknown";
+  };
+
+  /**
+   * Determine if an execution type is specific (fork/spawn) vs generic (engine)
+   */
+  const isSpecificExecutionType = (type: string | undefined): boolean => {
+    if (!type) return false;
+    // fork, spawn, component_tool are specific types
+    // engine, model, tool, unknown are generic/derived from procedure names
+    return ["fork", "spawn", "component_tool"].includes(type);
+  };
+
+  /**
+   * Choose the better execution type - prefer specific (fork/spawn) over generic (engine)
+   */
+  const chooseBetterExecutionType = (
+    newType: string | undefined,
+    existingType: string | undefined,
+  ): string | undefined => {
+    const newIsSpecific = isSpecificExecutionType(newType);
+    const existingIsSpecific = isSpecificExecutionType(existingType);
+
+    // Prefer specific over generic
+    if (newIsSpecific && !existingIsSpecific) return newType;
+    if (!newIsSpecific && existingIsSpecific) return existingType;
+
+    // Both specific or both generic: prefer new if truthy, else existing
+    return newType || existingType;
+  };
+
   // Process a single event and update state
   const processEvent = useCallback(
     (event: DevToolsEvent) => {
+      // Deduplicate events (history + SSE may deliver same events)
+      const dedupeKey = getEventDedupeKey(event);
+      if (seenEvents.current.has(dedupeKey)) {
+        return; // Skip duplicate
+      }
+      seenEvents.current.add(dedupeKey);
+
       switch (event.type) {
         case "execution_start": {
           // Handle both Engine events and kernel boundary events
@@ -144,10 +248,14 @@ export function useDevToolsEvents() {
               // Merge: another execution_start for same ID (Engine + kernel events)
               next.set(event.executionId, {
                 ...existing,
-                // Prefer more specific values over existing
-                agentName: event.agentName || existing.agentName,
+                // Prefer more specific agent names over generic ones
+                agentName: chooseBetterAgentName(event.agentName, existing.agentName),
                 sessionId: event.sessionId || existing.sessionId,
-                executionType: execStartEvent.executionType || existing.executionType,
+                // Prefer specific execution types (fork/spawn) over generic ones (engine)
+                executionType: chooseBetterExecutionType(
+                  execStartEvent.executionType,
+                  existing.executionType,
+                ),
                 parentExecutionId: execStartEvent.parentExecutionId || existing.parentExecutionId,
                 rootExecutionId: execStartEvent.rootExecutionId || existing.rootExecutionId,
                 rootProcedureId: execStartEvent.rootProcedureId || existing.rootProcedureId,
@@ -186,23 +294,48 @@ export function useDevToolsEvents() {
           break;
 
         case "tick_start":
-          updateExecution(event.executionId, (exec) => {
-            // Check if tick already exists (deduplication for history + SSE overlap)
-            if (exec.ticks.some((t) => t.number === event.tick)) {
-              return exec;
+          // Handle tick_start - may arrive before execution_start in some cases
+          setExecutions((prev) => {
+            const next = new Map(prev);
+            const existing = next.get(event.executionId);
+            if (existing) {
+              // Check if tick already exists (deduplication for history + SSE overlap)
+              if (existing.ticks.some((t) => t.number === event.tick)) {
+                return prev; // No change needed
+              }
+              next.set(event.executionId, {
+                ...existing,
+                ticks: [
+                  ...existing.ticks,
+                  {
+                    number: event.tick,
+                    events: [],
+                    content: "",
+                    startTime: event.timestamp,
+                  },
+                ],
+              });
+            } else {
+              // Execution doesn't exist yet - create placeholder with tick
+              // This handles the case where tick_start arrives before execution_start
+              next.set(event.executionId, {
+                id: event.executionId,
+                agentName: "Unknown",
+                ticks: [
+                  {
+                    number: event.tick,
+                    events: [],
+                    content: "",
+                    startTime: event.timestamp,
+                  },
+                ],
+                startTime: event.timestamp,
+                isRunning: true,
+                modelsUsed: new Set<string>(),
+                procedures: [],
+              });
             }
-            return {
-              ...exec,
-              ticks: [
-                ...exec.ticks,
-                {
-                  number: event.tick,
-                  events: [],
-                  content: "",
-                  startTime: event.timestamp,
-                },
-              ],
-            };
+            return next;
           });
           break;
 
@@ -230,7 +363,7 @@ export function useDevToolsEvents() {
           }));
           break;
 
-        case "content_delta":
+        case "content_delta": {
           updateCurrentTick(event.executionId, event.tick, (tick) => ({
             ...tick,
             content: tick.content + event.delta,
@@ -240,6 +373,7 @@ export function useDevToolsEvents() {
             ],
           }));
           break;
+        }
 
         case "tool_call":
           updateCurrentTick(event.executionId, event.tick, (tick) => ({
@@ -305,21 +439,122 @@ export function useDevToolsEvents() {
           break;
         }
 
-        case "model_output": {
-          const typedEvent = event as { message?: unknown; raw?: unknown };
+        case "model_request": {
+          // Capture the AIDK-format model input (before provider transformation)
+          const typedEvent = event as { input?: unknown };
           updateCurrentTick(event.executionId, event.tick, (tick) => ({
             ...tick,
-            modelOutput: typedEvent.message,
-            modelOutputRaw: typedEvent.raw,
+            modelRequest: {
+              input: typedEvent.input,
+            },
             events: [
               ...tick.events,
               {
-                type: "model_output",
+                type: "model_request",
                 timestamp: event.timestamp,
-                data: { message: typedEvent.message, raw: typedEvent.raw },
+                data: typedEvent,
               },
             ],
           }));
+          break;
+        }
+
+        case "provider_response": {
+          // Provider response (raw format before AIDK transformation)
+          const typedEvent = event as {
+            modelId?: string;
+            provider?: string;
+            providerOutput?: unknown;
+          };
+          updateCurrentTick(event.executionId, event.tick, (tick) => ({
+            ...tick,
+            modelOutputRaw: typedEvent.providerOutput, // Store for Model Response view
+            events: [
+              ...tick.events,
+              {
+                type: "provider_response",
+                timestamp: event.timestamp,
+                data: typedEvent,
+              },
+            ],
+          }));
+          break;
+        }
+
+        case "model_response": {
+          // Model response (AIDK format after transformation)
+          const typedEvent = event as { message?: unknown };
+          updateCurrentTick(event.executionId, event.tick, (tick) => ({
+            ...tick,
+            modelOutput: typedEvent.message,
+            events: [
+              ...tick.events,
+              {
+                type: "model_response",
+                timestamp: event.timestamp,
+                data: { message: typedEvent.message },
+              },
+            ],
+          }));
+          break;
+        }
+
+        case "provider_request": {
+          // Capture the provider-formatted input (after AIDK -> provider transformation)
+          const typedEvent = event as {
+            modelId?: string;
+            provider?: string;
+            providerInput?: unknown;
+            tick?: number;
+          };
+          // Use the tick number from the event if available, otherwise update last tick
+          const tickNum = typedEvent.tick || event.tick;
+          if (tickNum) {
+            updateCurrentTick(event.executionId, tickNum, (tick) => ({
+              ...tick,
+              providerRequest: {
+                modelId: typedEvent.modelId,
+                provider: typedEvent.provider,
+                providerInput: typedEvent.providerInput,
+              },
+              events: [
+                ...tick.events,
+                {
+                  type: "provider_request",
+                  timestamp: event.timestamp,
+                  data: typedEvent,
+                },
+              ],
+            }));
+          } else {
+            // Fallback: find the most recent tick for this execution and update it
+            setExecutions((prev) => {
+              const next = new Map(prev);
+              const exec = next.get(event.executionId);
+              if (exec && exec.ticks.length > 0) {
+                const ticks = [...exec.ticks];
+                const lastTick = ticks[ticks.length - 1];
+                ticks[ticks.length - 1] = {
+                  ...lastTick,
+                  providerRequest: {
+                    modelId: typedEvent.modelId,
+                    provider: typedEvent.provider,
+                    providerInput: typedEvent.providerInput,
+                  },
+                  events: [
+                    ...lastTick.events,
+                    {
+                      type: "provider_request",
+                      timestamp: event.timestamp,
+                      data: typedEvent,
+                    },
+                  ],
+                };
+                next.set(event.executionId, { ...exec, ticks });
+              }
+              return next;
+            });
+          }
           break;
         }
 
@@ -347,6 +582,7 @@ export function useDevToolsEvents() {
             metadata?: Record<string, unknown>;
             isExecutionBoundary?: boolean;
             executionType?: string;
+            tick?: number;
           };
           // Detect undefined procedureId
           if (!procEvent.procedureId) {
@@ -372,6 +608,7 @@ export function useDevToolsEvents() {
                 metadata: procEvent.metadata,
                 executionId: event.executionId,
                 isExecutionBoundary: procEvent.isExecutionBoundary,
+                tick: procEvent.tick ?? existing.tick, // Prefer start event's tick
                 // Keep status, endTime, error, metrics from the end/error event
               });
             } else {
@@ -387,6 +624,7 @@ export function useDevToolsEvents() {
                 children: [],
                 executionId: event.executionId,
                 isExecutionBoundary: procEvent.isExecutionBoundary,
+                tick: procEvent.tick,
               });
             }
             // Add to parent's children list (if not already added)
@@ -445,6 +683,7 @@ export function useDevToolsEvents() {
             parentProcedureId?: string;
             metrics?: Record<string, number>;
             durationMs?: number;
+            tick?: number;
           };
           // Detect undefined procedureId - indicates context loss
           if (!procEndEvent.procedureId) {
@@ -467,6 +706,8 @@ export function useDevToolsEvents() {
                 durationMs: procEndEvent.durationMs,
                 metrics: procEndEvent.metrics,
                 executionId: event.executionId || existing.executionId,
+                // Preserve tick from start event, or use end event's tick
+                tick: existing.tick ?? procEndEvent.tick,
               });
             } else {
               // Out-of-order: procedure_end arrived before procedure_start
@@ -485,6 +726,7 @@ export function useDevToolsEvents() {
                 metrics: procEndEvent.metrics,
                 children: [],
                 executionId: event.executionId,
+                tick: procEndEvent.tick,
               });
               // Add to parent's children list if parent exists
               // Guard against self-referential parent
@@ -528,6 +770,7 @@ export function useDevToolsEvents() {
             status: "failed" | "cancelled";
             error: { name: string; message: string; stack?: string };
             metrics?: Record<string, number>;
+            tick?: number;
           };
           // Handle out-of-order events: if procedure doesn't exist, create it from error event
           setProcedures((prev) => {
@@ -542,6 +785,8 @@ export function useDevToolsEvents() {
                 error: procErrorEvent.error,
                 metrics: procErrorEvent.metrics,
                 executionId: event.executionId || existing.executionId,
+                // Preserve tick from start event, or use error event's tick
+                tick: existing.tick ?? procErrorEvent.tick,
               });
             } else {
               // Out-of-order: procedure_error arrived before procedure_start
@@ -556,6 +801,7 @@ export function useDevToolsEvents() {
                 metrics: procErrorEvent.metrics,
                 children: [],
                 executionId: event.executionId,
+                tick: procErrorEvent.tick,
               });
               // Add to parent's children list if parent exists
               // Guard against self-referential parent
@@ -641,6 +887,7 @@ export function useDevToolsEvents() {
   const clearExecutions = useCallback(() => {
     setExecutions(new Map());
     setProcedures(new Map());
+    seenEvents.current.clear();
   }, []);
 
   // Build hierarchical list: roots first (sorted by time desc), then their children below each parent

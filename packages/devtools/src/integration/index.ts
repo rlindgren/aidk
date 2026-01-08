@@ -141,7 +141,7 @@ export function attachDevTools(options: DevToolsOptions = {}): () => void {
     // Remote mode: start kernel subscriber to POST events to remote server
     if (!isKernelSubscriberActive()) {
       const stopSubscriber = startKernelSubscriber({
-        debug: options?.debug,
+        // debug: options?.debug,
         remote: {
           url: options?.remote!.url,
           secret: options?.remote!.secret,
@@ -213,9 +213,8 @@ export function attachDevTools(options: DevToolsOptions = {}): () => void {
 
           switch (event.type) {
             case "content_delta":
-              if (event.delta) {
-                devtools.contentDelta(executionId, currentTick, event.delta);
-              }
+              // NOTE: content_delta is handled by kernel subscriber to avoid duplication
+              // The kernel subscriber receives stream:chunk events and emits content_delta
               break;
 
             case "tool_call":
@@ -271,7 +270,18 @@ export function attachDevTools(options: DevToolsOptions = {}): () => void {
                 });
               }
               if (event.message) {
-                devtools.modelOutput(executionId, currentTick, event.message, event.raw);
+                // Emit provider_response first (raw format)
+                if (event.raw) {
+                  devtools.providerResponse(
+                    executionId,
+                    currentTick,
+                    event.raw,
+                    event.model,
+                    undefined, // provider not available here
+                  );
+                }
+                // Then emit model_response (AIDK format)
+                devtools.modelResponse(executionId, currentTick, event.message);
               }
               // Note: tick_end is emitted by the engine, not here (to avoid duplicates)
               break;
@@ -311,7 +321,7 @@ export function initDevTools(options: DevToolsOptions = {}): void {
 
   // Start kernel-level event subscriber (captures all procedure events)
   if (!isKernelSubscriberActive()) {
-    startKernelSubscriber({ debug: options.debug });
+    startKernelSubscriber();
   }
 }
 
@@ -345,7 +355,7 @@ export function initKernelSubscriberRemote(options: {
   console.log("[DevTools] Starting kernel subscriber for remote mode", { url: options.url });
 
   return startKernelSubscriber({
-    debug: options.debug,
+    // debug: options.debug,
     remote: {
       url: options.url,
       secret: options.secret,
@@ -457,15 +467,35 @@ export const devtools = {
   },
 
   /**
-   * Emit final model output message
+   * Emit provider response (raw format before AIDK transformation)
    */
-  modelOutput(executionId: string, tick: number, message: Message, raw?: unknown): void {
+  providerResponse(
+    executionId: string,
+    tick: number,
+    providerOutput: unknown,
+    modelId?: string,
+    provider?: string,
+  ): void {
     emitDevToolsEvent({
-      type: "model_output",
+      type: "provider_response",
+      executionId,
+      tick,
+      modelId,
+      provider,
+      providerOutput,
+      timestamp: Date.now(),
+    });
+  },
+
+  /**
+   * Emit model response (AIDK format after transformation)
+   */
+  modelResponse(executionId: string, tick: number, message: Message): void {
+    emitDevToolsEvent({
+      type: "model_response",
       executionId,
       tick,
       message,
-      raw,
       timestamp: Date.now(),
     });
   },
